@@ -19,21 +19,31 @@
 | ------------------------- | ------------ | ------------------------------------------------------------------------------------------------------- | -------------- |
 | Remove replace directives | 🔵 `BLOCKED` | Upstream repos (go-health, templ-components, etc.) untagged on GitHub. Keep for local dev until tagged. | `go.mod:21-31` |
 
+## Recently Completed (v0.1.0 push)
+
+All v0.1.0 TODO items are complete. See `CHANGELOG.md` for the full list.
+
 ## High Impact
 
-| Task                                                              | Status    | Impact | Effort | Evidence                                                                                                                                                                    |
-| ----------------------------------------------------------------- | --------- | ------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Add SSE change-detection integration test                         | 🔴 `TODO` | High   | 1h     | `pusher.go:116-133` — PushOnChange has only unit tests for `fingerprintChecks`, no E2E test verifying broadcast arrives on status change and does NOT arrive when unchanged |
-| Improve `wantsJSON` Accept parsing or document the simplification | 🔴 `TODO` | High   | 30min  | `dashboard.go:154-158` — uses naive `strings.Contains`, no q-value sorting or wildcard support                                                                              |
+| Task                                               | Status    | Impact | Effort | Evidence                                        |
+| -------------------------------------------------- | --------- | ------ | ------ | ----------------------------------------------- |
+| Add `WithCSSPath` option for compiled CSS          | 🟢 `DONE` | Med    | 30min  | `dashboard.go:77`, `view.templ:65-83`           |
+| Add dark mode toggle button                        | 🟢 `DONE` | Med    | 30min  | `view.templ:27-35`                              |
+| Add favicon endpoint                               | 🟢 `DONE` | Med    | 30min  | `favicon.go`, `routes.go:8`                     |
+| Verify CSP nonce end-to-end                        | 🟢 `DONE` | Med    | 1h     | `csp_test.go` — 8 tests, all pass with `-race`  |
+| Add `WithHeartbeatInterval` + SSE connection limit | 🟢 `DONE` | Med    | 1h     | `dashboard.go:84,91`, `pusher.go:41-43,143-175` |
+| Add CI/CD GitHub Actions                           | 🟢 `DONE` | Med    | 30min  | `.github/workflows/ci.yml`                      |
+| Add Dependabot config                              | 🟢 `DONE` | Low    | 10min  | `.github/dependabot.yml`                        |
 
-## Medium Impact
+## Low Impact / Future Work
 
-| Task                                                   | Status    | Impact | Effort | Evidence                                                                          |
-| ------------------------------------------------------ | --------- | ------ | ------ | --------------------------------------------------------------------------------- |
-| Add `WithCSSPath` option                               | 🔴 `TODO` | Med    | 30min  | `view.templ:69` — Tailwind CDN hardcoded, no way to swap for compiled CSS         |
-| Add `.golangci.yml` config                             | 🔴 `TODO` | Med    | 15min  | Linter runs clean (0 issues) but no project config to pin enabled linters         |
-| Make example app port configurable                     | 🔴 `TODO` | Med    | 15min  | `example/main.go:61` — hardcodes `:8080`, conflicts with other servers            |
-| Add dark mode toggle button                            | 🔴 `TODO` | Med    | 30min  | `view.templ` — `layout.Base` includes theme script but no toggle button rendered  |
-| Add favicon endpoint                                   | 🔴 `TODO` | Med    | 15min  | `layout.Base` references `/favicon.svg` but none is served                        |
-| Verify CSP nonce end-to-end                            | 🔴 `TODO` | Med    | 1h     | `view.templ:65-74` — nonce attributes present in templ but untested with real CSP |
-| Document or improve SSE handler context test fragility | 🔴 `TODO` | Med    | 30min  | `dashboard_test.go:458,489` — 200ms timeout context, could flake on slow CI       |
+| Task                                             | Status    | Impact | Effort | Notes                  |
+| ------------------------------------------------ | --------- | ------ | ------ | ---------------------- |
+| Build-tag gating for SSE code                    | 🔴 `TODO` | Med    | 90min  | Blocked on D3 decision |
+| Embeddable dashboard mode (sub-path mounting)    | 🔴 `TODO` | Med    | 60min  |                        |
+| Auth middleware integration                      | 🔴 `TODO` | Med    | 60min  |                        |
+| Prometheus metrics endpoint                      | 🔴 `TODO` | Low    | 90min  |                        |
+| Health history / sparkline visualization         | 🔴 `TODO` | Low    | 90min  |                        |
+| SSE reconnection support (Last-Event-ID)         | 🔴 `TODO` | Med    | 60min  |                        |
+| UI flexibility options (WithHideStatCards, etc.) | 🔴 `TODO` | Low    | 90min  |                        |
+| Fuzzing for Accept header parsing                | 🔴 `TODO` | Low    | 30min  |                        |

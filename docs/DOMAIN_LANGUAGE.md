@@ -21,11 +21,11 @@ grouped by severity.
 
 The health state of a check or the overall system. Three values:
 
-| Value  | Meaning                                      |
-| ------ | -------------------------------------------- |
-| `pass` | Service is healthy and responding normally   |
-| `warn` | Non-critical issue detected                   |
-| `fail` | Critical failure — service is unavailable     |
+| Value  | Meaning                                    |
+| ------ | ------------------------------------------ |
+| `pass` | Service is healthy and responding normally |
+| `warn` | Non-critical issue detected                |
+| `fail` | Critical failure — service is unavailable  |
 
 ### Response
 
@@ -55,10 +55,10 @@ SSE clients via a `Broadcaster`. Only one pusher runs per Dashboard instance.
 
 Controls when the pusher sends updates:
 
-| Value           | Behavior                                                        |
-| --------------- | --------------------------------------------------------------- |
-| `PushOnChange`  | Broadcast only when status or check results change (default)    |
-| `PushAlways`    | Broadcast on every tick, regardless of changes                  |
+| Value          | Behavior                                                     |
+| -------------- | ------------------------------------------------------------ |
+| `PushOnChange` | Broadcast only when status or check results change (default) |
+| `PushAlways`   | Broadcast on every tick, regardless of changes               |
 
 ### Fingerprint
 
@@ -106,11 +106,11 @@ any other value renders the HTML dashboard. Equal q-values default to HTML.
 
 ## Route Layout
 
-| Route        | Purpose                              | Content Type         |
-| ------------ | ------------------------------------ | -------------------- |
-| `/health`    | HTML dashboard (or JSON via Accept)  | text/html or JSON    |
-| `/health/sse`| SSE patch stream                     | text/event-stream    |
-| `/favicon.svg`| Dashboard favicon                   | image/svg+xml        |
-| `/healthz`   | Kubernetes liveness probe            | application/json     |
-| `/readyz`    | Kubernetes readiness probe           | application/json     |
-| `/startupz`  | Kubernetes startup probe             | application/json     |
+| Route          | Purpose                             | Content Type      |
+| -------------- | ----------------------------------- | ----------------- |
+| `/health`      | HTML dashboard (or JSON via Accept) | text/html or JSON |
+| `/health/sse`  | SSE patch stream                    | text/event-stream |
+| `/favicon.svg` | Dashboard favicon                   | image/svg+xml     |
+| `/healthz`     | Kubernetes liveness probe           | application/json  |
+| `/readyz`      | Kubernetes readiness probe          | application/json  |
+| `/startupz`    | Kubernetes startup probe            | application/json  |
