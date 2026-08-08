@@ -3,35 +3,32 @@ package dashboard
 import (
 	"fmt"
 
+	"github.com/larsartmann/templ-components/datastar"
 	"github.com/larsartmann/templ-components/display"
 	"github.com/larsartmann/templ-components/feedback"
-	"github.com/larsartmann/templ-components/htmx"
 	"github.com/larsartmann/templ-components/layout"
 	"github.com/larsartmann/templ-components/utils"
 )
 
-// View renders the full HTML dashboard page: Base shell, header, StatCards,
-// and a PolledRegion that auto-refreshes the health content.
+// View renders the full HTML dashboard page: Base shell (no HTMX), Datastar
+// SDK in head, header, StatCards, and a LiveRegion that auto-connects to the
+// SSE endpoint for real-time health updates.
 templ View(data viewModel) {
 	@layout.Base(layout.PageProps{
 		Title:       data.Title,
 		CSSPath:     "",
-		HTMXVersion: layout.HTMXVersion2_0_10,
-		HTMXUseSRI:  true,
-		Nonce:       "",
-		HeadContent: tailwindScript(),
+		HTMXVersion: "", // No HTMX — Datastar handles real-time
+		HeadContent: dashboardHead(data),
 	}) {
 		@layout.Container(layout.DefaultContainerProps()) {
 			<div class="py-8">
-				<div class="mb-6 flex items-center justify-between">
-					<div>
-						<h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-							{ data.Title }
-						</h1>
-						<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-							Real-time health monitoring
-						</p>
-					</div>
+				<div class="mb-6">
+					<h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+						{ data.Title }
+					</h1>
+					<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+						Real-time health monitoring
+					</p>
 				</div>
 
 				@display.Grid(display.GridProps{Cols: display.GridCols3}) {
@@ -50,31 +47,13 @@ templ View(data viewModel) {
 				}
 
 				<div class="mt-6">
-					if data.Every != "" {
-						@dashboardPolledRegion(data)
-					} else {
-						<div
-							id="health-region"
-							if data.SSE {
-								data-sse-url={ data.SSEURL }
-							}
-						>
-							@dashboardContent(data)
-						</div>
-						if data.SSE {
-							<script>
-								(function() {
-									var el = document.getElementById('health-region');
-									if (!el) return;
-									var url = el.getAttribute('data-sse-url');
-									if (!url) return;
-									var es = new EventSource(url);
-									es.addEventListener('update', function(e) {
-										el.innerHTML = e.data;
-									});
-								})();
-							</script>
-						}
+					@datastar.LiveRegion(datastar.LiveRegionProps{
+						BaseProps: utils.BaseProps{ID: "health-region"},
+						URL:       data.SSEURL,
+						AutoStart: true,
+						Live:      datastar.LivePolite,
+					}) {
+						@dashboardContent(data)
 					}
 				</div>
 			</div>
@@ -82,26 +61,27 @@ templ View(data viewModel) {
 	}
 }
 
-// dashboardPolledRegion wraps the dashboard content in an HTMX PolledRegion
-// that auto-refreshes at the configured interval. Using outerHTML swap
-// (the default) so the polled region div — with its hx attributes — replaces
-// itself on each poll, keeping the polling loop alive.
-templ dashboardPolledRegion(data viewModel) {
-	@htmx.PolledRegion(htmx.PolledRegionProps{
-		BaseProps: utils.BaseProps{ID: "health-region"},
-		URL:       data.PartialURL,
-		Every:     data.Every,
-	}) {
-		@dashboardContent(data)
-	}
+// dashboardHead renders the head additions: the Datastar SDK script and
+// Tailwind CSS via the Play CDN.
+templ dashboardHead(data viewModel) {
+	@datastar.SDKScript(datastar.SDKScriptProps{
+		BaseProps: utils.BaseProps{Nonce: data.DatastarNonce},
+		Version:   datastar.DatastarVersion1_0_2,
+	})
+	<script nonce={ data.TailwindNonce } src="https://cdn.tailwindcss.com"></script>
+	<script nonce={ data.TailwindNonce }>
+		tailwind.config = {
+			darkMode: 'class'
+		}
+	</script>
 }
 
 // dashboardContent renders the alert banner and check-group cards. This is
-// the shared inner content used by both the full page (View) and the polling
-// partial (Partial).
+// the shared inner content used by both the initial page render (inside the
+// LiveRegion) and the SSE patches (which replace it with fresh data).
 templ dashboardContent(data viewModel) {
 	@feedback.Alert(feedback.AlertProps{
-		Type:  data.AlertType,
+		Type:  data.FeedbackType,
 		Title: data.StatusText,
 	})
 
@@ -125,18 +105,6 @@ templ dashboardContent(data viewModel) {
 			}
 		}
 	</div>
-}
-
-// tailwindScript returns a head component that loads Tailwind CSS via the
-// Play CDN. Suitable for development and dashboards; production users should
-// swap in compiled CSS.
-templ tailwindScript() {
-	<script src="https://cdn.tailwindcss.com"></script>
-	<script>
-		tailwind.config = {
-			darkMode: 'class'
-		}
-	</script>
 }
 
 // versionOrUnknown returns the version string or "unknown" when empty.
