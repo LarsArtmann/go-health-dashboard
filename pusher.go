@@ -27,9 +27,6 @@ const (
 )
 
 const (
-	// sseHeartbeatInterval is how often the SSE handler sends a comment-line
-	// keepalive to prevent proxy/load-balancer timeout.
-	sseHeartbeatInterval = 15 * time.Second
 	// healthRegionID is the DOM element ID that Datastar patches on each update.
 	healthRegionID = "health-region"
 )
@@ -38,10 +35,13 @@ const (
 // Datastar element patches to all connected SSE clients via a go-sse
 // Broadcaster. Only one pusher goroutine runs per Dashboard instance.
 type pusher struct {
-	broadcaster *sse.Broadcaster[sse.Event]
-	dashboard   *Dashboard
-	interval    time.Duration
-	pushMode    PushMode
+	broadcaster   *sse.Broadcaster[sse.Event]
+	dashboard     *Dashboard
+	interval      time.Duration
+	pushMode      PushMode
+	heartbeat     time.Duration
+	maxConns      int
+	connections   atomic.Int64
 
 	mu              sync.Mutex
 	lastStatus      health.Status
@@ -56,6 +56,8 @@ func newPusher(d *Dashboard) *pusher {
 		dashboard:   d,
 		interval:    d.cfg.PushInterval,
 		pushMode:    d.cfg.PushMode,
+		heartbeat:   d.cfg.HeartbeatInterval,
+		maxConns:    d.cfg.MaxSSEConnections,
 	}
 }
 
@@ -145,6 +147,15 @@ func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if push.maxConns > 0 && push.connections.Load() >= int64(push.maxConns) {
+		http.Error(w, "dashboard: too many SSE connections", http.StatusServiceUnavailable)
+
+		return
+	}
+
+	push.connections.Add(1)
+	defer push.connections.Add(-1)
+
 	stream := sse.NewStream(w, r)
 	defer func() { _ = stream.Close() }()
 
@@ -160,7 +171,7 @@ func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
 	defer push.broadcaster.Unsubscribe(ch)
 
 	// Heartbeat goroutine prevents proxy timeouts on long-lived connections.
-	go stream.Heartbeat(r.Context(), sseHeartbeatInterval)
+	go stream.Heartbeat(r.Context(), push.heartbeat)
 
 	for {
 		select {

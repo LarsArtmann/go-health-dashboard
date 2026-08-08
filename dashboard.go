@@ -18,6 +18,9 @@ const (
 	// defaultPushInterval is used when neither the probe's RefreshInterval
 	// nor WithPushInterval is set (e.g. live mode with zero interval).
 	defaultPushInterval = 2 * time.Second
+	// defaultHeartbeatInterval is the SSE keepalive interval when
+	// WithHeartbeatInterval is not set.
+	defaultHeartbeatInterval = 15 * time.Second
 )
 
 // Version is the current package version.
@@ -26,12 +29,14 @@ const Version = "0.1.0"
 // Config holds construction-only configuration for a Dashboard.
 // It is populated by Option functions and consumed by New.
 type Config struct {
-	Title        string
-	PushInterval time.Duration
-	PushMode     PushMode
-	Routes       Routes
-	Nonce        string
-	CSSPath      string
+	Title             string
+	PushInterval      time.Duration
+	PushMode          PushMode
+	Routes            Routes
+	Nonce             string
+	CSSPath           string
+	HeartbeatInterval time.Duration
+	MaxSSEConnections int
 }
 
 // Option configures a Dashboard. Use the With* functions to create options.
@@ -73,6 +78,20 @@ func WithCSSPath(path string) Option {
 	return func(c *Config) { c.CSSPath = path }
 }
 
+// WithHeartbeatInterval sets how often the SSE handler sends a comment-line
+// keepalive to prevent proxy/load-balancer timeout. When zero (the default),
+// the dashboard uses 15s.
+func WithHeartbeatInterval(d time.Duration) Option {
+	return func(c *Config) { c.HeartbeatInterval = d }
+}
+
+// WithMaxSSEConnections limits the number of concurrent SSE clients. When
+// zero (the default), the number of connections is unlimited. Use this to
+// prevent DoS via connection exhaustion.
+func WithMaxSSEConnections(n int) Option {
+	return func(c *Config) { c.MaxSSEConnections = n }
+}
+
 // Dashboard renders a browser-friendly health dashboard from a go-health
 // Probe using Datastar SSE for real-time updates.
 //
@@ -99,9 +118,10 @@ type Dashboard struct {
 //   - Routes: DefaultRoutes()
 func New(probe *health.Probe, opts ...Option) *Dashboard {
 	cfg := Config{
-		Title:    defaultTitle,
-		PushMode: PushOnChange,
-		Routes:   DefaultRoutes(),
+		Title:             defaultTitle,
+		PushMode:          PushOnChange,
+		Routes:            DefaultRoutes(),
+		HeartbeatInterval: defaultHeartbeatInterval,
 	}
 
 	for _, opt := range opts {
