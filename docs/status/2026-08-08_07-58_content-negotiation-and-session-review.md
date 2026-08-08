@@ -66,18 +66,18 @@ The example compiles and starts (logs "dashboard: http://localhost:8080/health")
 
 ## C. NOT STARTED
 
-| #   | Item                                      | Why it matters                                                                                                                                                           |
-| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | **LICENSE contradiction resolution**      | LICENSE file says PROPRIETARY, README says MIT. Still unresolved.                                                                                                        |
-| 2   | **`.golangci.yml` config file**           | golangci-lint runs clean with defaults (0 issues), but no project config exists.                                                                                         |
-| 3   | **flake.lock regeneration**               | flake.nix was changed (added `GOWORK=off`) but `nix flake lock` was never run.                                                                                           |
-| 4   | **SSE change-detection integration test** | PushOnChange has unit tests for `fingerprintChecks` but no end-to-end test that starts a pusher, changes health status, and verifies the broadcast arrives (or doesn't). |
-| 5   | **Stale docs cleanup**                    | `docs/status/2026-08-08_03-36_initial-implementation-review.md` describes old architecture. `docs/feedback/new/2026-08-08_seven-planning-mistakes.md` still in `new/`.   |
-| 6   | **`WithCSSPath` option**                  | Production users can't swap Tailwind CDN for compiled CSS.                                                                                                               |
-| 7   | **Dark mode toggle UI**                   | `layout.Base` includes theme script but no toggle button is rendered.                                                                                                    |
-| 8   | **Favicon served**                        | `layout.Base` references `/favicon.svg` but none is served.                                                                                                              |
-| 9   | **Replace directives removed**            | 6 replace directives in `go.mod` point to local paths. Required for dev, blocks `go get`.                                                                                |
-| 10  | **govulncheck / gosec**                   | Never run. No known vulnerabilities, but unverified.                                                                                                                     |
+| #   | Item                                      | Why it matters                                                                                                                                                           | Resolution                                            |
+| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| 1   | ~~**LICENSE contradiction resolution**~~  | LICENSE file says PROPRIETARY, README says MIT. Still unresolved.                                                                                                        | ✅ DONE — MIT, committed `dc0f257`                    |
+| 2   | ~~**`.golangci.yml` config file**~~       | golangci-lint runs clean with defaults (0 issues), but no project config exists.                                                                                         | ✅ DONE — 276-line config, 80+ linters, 0 issues      |
+| 3   | ~~**flake.lock regeneration**~~           | flake.nix was changed (added `GOWORK=off`) but `nix flake lock` was never run.                                                                                           | ✅ DONE — `nix flake check` passes, lock is current   |
+| 4   | ~~**SSE change-detection integration test**~~ | PushOnChange has unit tests for `fingerprintChecks` but no end-to-end test that starts a pusher, changes health status, and verifies the broadcast arrives (or doesn't). | ✅ DONE — `sse_integration_test.go`, 10 tests         |
+| 5   | ~~**Stale docs cleanup**~~                | `docs/status/2026-08-08_03-36_initial-implementation-review.md` describes old architecture. `docs/feedback/new/2026-08-08_seven-planning-mistakes.md` still in `new/`.   | ✅ DONE — annotated + archived by docs-health session |
+| 6   | ~~**`WithCSSPath` option**~~              | Production users can't swap Tailwind CDN for compiled CSS.                                                                                                               | ✅ DONE — `dashboard.go:77`                           |
+| 7   | ~~**Dark mode toggle UI**~~               | `layout.Base` includes theme script but no toggle button is rendered.                                                                                                    | ✅ DONE — `view.templ:36`, ThemeToggle                |
+| 8   | ~~**Favicon served**~~                    | `layout.Base` references `/favicon.svg` but none is served.                                                                                                              | ✅ DONE — `favicon.go:13`, embedded SVG               |
+| 9   | **Replace directives removed**            | 6 replace directives in `go.mod` point to local paths. Required for dev, blocks `go get`.                                                                                | 🔴 Still open — `TODO_LIST.md` BLOCKED                |
+| 10  | ~~**govulncheck / gosec**~~               | Never run. No known vulnerabilities, but unverified.                                                                                                                     | ✅ DONE — 0 vulnerabilities, 0 issues                 |
 
 ---
 
@@ -138,6 +138,13 @@ The example hardcodes `:8080`. This made it impossible to test when the port was
 ---
 
 ## F. NEXT STEPS (prioritized)
+
+> **Resolution summary:** P0 items 1–4 all DONE (MIT license, split brain fixed,
+> SSE integration tests shipped, q-value parser implemented). P1 items 5–14 all
+> DONE except item 11 (replace directives — still BLOCKED). P2 items 15–25:
+> most DONE (heartbeat interval, connection limit, dark mode, favicon); items
+> 18–19 (graceful shutdown drain, SSE reconnection) tracked in `TODO_LIST.md` /
+> `ROADMAP.md`. P3 items 26–48: long-term ideas, tracked in `ROADMAP.md`.
 
 ### P0 — Must fix before any release
 

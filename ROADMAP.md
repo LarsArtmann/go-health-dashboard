@@ -12,13 +12,12 @@ monitoring walls, proxy environments, strict CSP, and high-connection scenarios.
 
 Raw ideas:
 
-- Configurable SSE connection limit to prevent connection-exhaustion DoS
 - SSE reconnection support via `Last-Event-ID` header
 - Graceful shutdown: wait for in-flight SSE connections to drain
-- Configurable heartbeat interval (currently hardcoded 15s)
 - SSE connection timeout to prevent infinite-lived connections
 - Pusher health self-check (is the goroutine alive?)
 - Request logging middleware option
+- Rate limiting on dashboard HTML route
 
 ### 2. Multi-Service and Federation
 
@@ -83,11 +82,10 @@ Things we are deliberately NOT pursuing and why:
 
 These require user decisions and cannot be resolved by reading code:
 
-- **License:** The LICENSE file says PROPRIETARY (all rights reserved). The
-  README says MIT. Which is correct? This must be resolved before any release.
 - **Replace directives:** go.mod has 6 `replace` directives pointing to local
   sibling repos. Should these stay (local-dev-only) or should upstream repos be
-  tagged on GitHub first?
+  tagged on GitHub first? This blocks external `go get` and git tagging of
+  v0.1.0.
 - **GOEXPERIMENT=jsonv2:** Every Go command requires this env var because go-sse
-  uses `encoding/json/v2`. Accept it, fork go-sse, or build-tag gate the SSE
-  code?
+  uses `encoding/json/v2`. Accept it (and document loudly), fork go-sse, or
+  build-tag gate the SSE code?

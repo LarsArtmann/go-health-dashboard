@@ -69,16 +69,16 @@ The docs-health audit was comprehensive within its scope. Every doc that needed 
 
 These are TODO_LIST items identified during the audit but not executed (correctly — they're separate work items, not doc issues):
 
-1. **SSE change-detection integration test** — The headline PushOnChange feature has only unit tests
-2. **`wantsJSON` Accept parsing improvement** — naive `strings.Contains`, no q-values
-3. **`govulncheck` / `gosec`** — security tools never run
-4. **`flake.lock` regeneration** — flake.nix changed but lock not updated
-5. **`WithCSSPath` option** — production CSS swap not possible
-6. **`.golangci.yml` config** — linter runs clean but no project config
-7. **Example app port configurability** — hardcodes `:8080`
-8. **Dark mode toggle** — theme script loaded but no button rendered
-9. **Favicon** — referenced but not served
-10. **CSP nonce end-to-end verification** — untested with real CSP
+1. ~~**SSE change-detection integration test** — The headline PushOnChange feature has only unit tests~~ ✅ DONE — `sse_integration_test.go`, 10 tests with `-race`
+2. ~~**`wantsJSON` Accept parsing improvement** — naive `strings.Contains`, no q-values~~ ✅ DONE — full RFC 7231 §5.3.2 q-value parser (`dashboard.go:190`)
+3. ~~**`govulncheck` / `gosec`** — security tools never run~~ ✅ DONE — 0 vulnerabilities, 0 issues
+4. ~~**`flake.lock` regeneration** — flake.nix changed but lock not updated~~ ✅ DONE — `nix flake check` passes
+5. ~~**`WithCSSPath` option** — production CSS swap not possible~~ ✅ DONE — `dashboard.go:77`
+6. ~~**`.golangci.yml` config** — linter runs clean but no project config~~ ✅ DONE — 276-line config, 80+ linters
+7. ~~**Example app port configurability** — hardcodes `:8080`~~ ✅ DONE — `PORT` env var support
+8. ~~**Dark mode toggle** — theme script loaded but no button rendered~~ ✅ DONE — `view.templ:36`, ThemeToggle
+9. ~~**Favicon** — referenced but not served~~ ✅ DONE — `favicon.go:13`, embedded SVG
+10. ~~**CSP nonce end-to-end verification** — untested with real CSP~~ ✅ DONE — `csp_test.go`, 9 tests
 
 ---
 
@@ -133,6 +133,16 @@ The project has domain-specific vocabulary (Probe, Check, Status, FeedbackType, 
 ---
 
 ## F) NEXT STEPS (prioritized)
+
+> **Resolution summary:** P0 items 1–5 all DONE (LICENSE=MIT, replace directives
+> remain BLOCKED, SSE integration tests shipped, govulncheck + gosec clean).
+> P1 items 6–14 all DONE except replace-directive removal (BLOCKED). P2 items
+> 15–23: most DONE (nix build works, CSP verified, dark mode shipped, favicon
+> shipped, heartbeat + connection limit shipped); items 19–20 (graceful drain,
+> SSE reconnection) tracked in `TODO_LIST.md` / `ROADMAP.md`. P3 items 24–50:
+> long-term ideas, tracked in `ROADMAP.md`. This report's D1–D4
+> (TOTALLY FUCKED UP) items were all fixed in the session that followed
+> (`docs/status/2026-08-08_08-52_phase1-2-execution-security-race-csp.md`).
 
 ### P0 — Must do before any release
 
