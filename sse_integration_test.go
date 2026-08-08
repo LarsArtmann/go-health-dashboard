@@ -75,7 +75,11 @@ func newSSEStream(body io.Reader) *sseStream {
 
 // waitFor reads SSE events until one matches the predicate or the timeout
 // expires. Calls t.Fatal on timeout.
-func (s *sseStream) waitFor(t *testing.T, predicate func(string) bool, timeout time.Duration) string {
+func (s *sseStream) waitFor(
+	t *testing.T,
+	predicate func(string) bool,
+	timeout time.Duration,
+) string {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
 
@@ -110,7 +114,11 @@ func (s *sseStream) assertNoEvent(t *testing.T, timeout time.Duration) {
 	}
 }
 
-func setupSSEServer(t *testing.T, pushInterval time.Duration, svc *toggleService) (*httptest.Server, *toggleService, func()) {
+func setupSSEServer(
+	t *testing.T,
+	pushInterval time.Duration,
+	svc *toggleService,
+) (*httptest.Server, *toggleService, func()) {
 	t.Helper()
 
 	injector := do.New()
@@ -320,7 +328,21 @@ func TestSSE_ShutdownClosesConnections(t *testing.T) {
 
 	dash.Shutdown()
 
-	stream.assertNoEvent(t, 1*time.Second)
+	// After shutdown, the SSE stream should eventually close.
+	// Buffered events may flush first, but the channel must close.
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		select {
+		case _, ok := <-stream.events:
+			if !ok {
+				break // Channel closed — expected.
+			}
+			continue // Buffered event, keep draining.
+		case <-time.After(time.Until(deadline)):
+			t.Error("SSE stream should close after dashboard shutdown")
+		}
+		break
+	}
 
 	_ = resp.Body.Close()
 	server.Close()

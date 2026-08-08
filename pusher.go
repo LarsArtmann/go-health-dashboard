@@ -136,7 +136,8 @@ func (p *pusher) shouldBroadcast(resp health.Response) bool {
 // Datastar patch, then forwards broadcaster events to the client. Blocks
 // until the client disconnects or the pusher shuts down.
 func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
-	if d.push == nil {
+	push := d.push.Load()
+	if push == nil {
 		http.Error(w, "dashboard: SSE push is not active", http.StatusServiceUnavailable)
 		return
 	}
@@ -146,14 +147,14 @@ func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Send initial state so the client doesn't wait for the next tick.
 	resp := d.currentResponse()
-	if evt, ok := d.push.renderPatch(resp); ok {
+	if evt, ok := push.renderPatch(resp); ok {
 		if err := stream.Send(evt); err != nil {
 			return
 		}
 	}
 
-	ch := d.push.broadcaster.Subscribe()
-	defer d.push.broadcaster.Unsubscribe(ch)
+	ch := push.broadcaster.Subscribe()
+	defer push.broadcaster.Unsubscribe(ch)
 
 	// Heartbeat goroutine prevents proxy timeouts on long-lived connections.
 	go stream.Heartbeat(r.Context(), sseHeartbeatInterval)

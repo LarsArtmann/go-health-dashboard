@@ -123,6 +123,8 @@ func groupChecks(checks map[string]health.Check) []checkGroup {
 			failing = append(failing, row)
 		case health.StatusWarn:
 			warning = append(warning, row)
+		case health.StatusPass:
+			healthy = append(healthy, row)
 		default:
 			healthy = append(healthy, row)
 		}

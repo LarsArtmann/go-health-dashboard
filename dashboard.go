@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	health "github.com/larsartmann/go-health"
@@ -76,7 +77,7 @@ func WithRoutes(routes Routes) Option {
 type Dashboard struct {
 	probe *health.Probe
 	cfg   Config
-	push  *pusher
+	push  atomic.Pointer[pusher]
 }
 
 // New creates a Dashboard wired to the given Probe. The Probe provides
@@ -164,7 +165,7 @@ func wantsJSON(r *http.Request) bool {
 
 	var jsonQ, htmlQ, anyQ float64
 
-	for _, part := range strings.Split(accept, ",") {
+	for _, part := range strings.SplitSeq(accept, ",") {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
@@ -262,8 +263,9 @@ func (d *Dashboard) RegisterRoutes(mux *http.ServeMux, routes Routes) {
 // The ctx controls the lifetime of the pusher goroutine. Call Shutdown to
 // stop it cleanly.
 func (d *Dashboard) Start(ctx context.Context) error {
-	d.push = newPusher(d)
-	go d.push.start(ctx)
+	p := newPusher(d)
+	d.push.Store(p)
+	go p.start(ctx)
 
 	return nil
 }
@@ -271,8 +273,7 @@ func (d *Dashboard) Start(ctx context.Context) error {
 // Shutdown stops the SSE pusher and closes all broadcaster connections.
 // Safe to call multiple times.
 func (d *Dashboard) Shutdown() {
-	if d.push != nil {
-		d.push.broadcaster.Close()
-		d.push = nil
+	if p := d.push.Swap(nil); p != nil {
+		p.broadcaster.Close()
 	}
 }
