@@ -212,6 +212,7 @@ func rowsToTableRows(rows []checkRow) []display.TableRow {
 // produces the same output (Go map iteration order is randomized).
 func fingerprintChecks(checks map[string]health.Check) string {
 	keys := make([]string, 0, len(checks))
+
 	for k := range checks {
 		keys = append(keys, k)
 	}
