@@ -188,3 +188,27 @@ func (d *Dashboard) RegisterRoutes(mux *http.ServeMux, routes Routes) {
 	mux.HandleFunc(routes.Readiness, d.probe.ReadinessHandler())
 	mux.HandleFunc(routes.Startup, d.probe.StartupHandler())
 }
+
+// Start launches background goroutines. When RefreshMode is SSE, this starts
+// the pusher goroutine that broadcasts updates to connected clients. Call
+// before serving HTTP traffic. For HTMX polling mode (default), Start is a
+// no-op — the probe's own Start method handles the cache refresh loop.
+//
+// The ctx controls the lifetime of background goroutines. Call Shutdown to
+// stop them cleanly.
+func (d *Dashboard) Start(ctx context.Context) error {
+	if d.cfg.RefreshMode == RefreshModeSSE {
+		d.push = newSSEPusher(d)
+		go d.push.start(ctx)
+	}
+
+	return nil
+}
+
+// Shutdown stops background goroutines. Safe to call multiple times.
+func (d *Dashboard) Shutdown() {
+	if d.push != nil {
+		d.push.broadcaster.Close()
+		d.push = nil
+	}
+}

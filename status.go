@@ -83,6 +83,8 @@ type viewModel struct {
 	Groups     []checkGroup
 	PartialURL string
 	Every      string
+	SSE        bool
+	SSEURL     string
 }
 
 // buildViewModel transforms a health.Response into a template-ready viewModel.

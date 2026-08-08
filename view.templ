@@ -53,7 +53,28 @@ templ View(data viewModel) {
 					if data.Every != "" {
 						@dashboardPolledRegion(data)
 					} else {
-						@dashboardContent(data)
+						<div
+							id="health-region"
+							if data.SSE {
+								data-sse-url={ data.SSEURL }
+							}
+						>
+							@dashboardContent(data)
+						</div>
+						if data.SSE {
+							<script>
+								(function() {
+									var el = document.getElementById('health-region');
+									if (!el) return;
+									var url = el.getAttribute('data-sse-url');
+									if (!url) return;
+									var es = new EventSource(url);
+									es.addEventListener('update', function(e) {
+										el.innerHTML = e.data;
+									});
+								})();
+							</script>
+						}
 					}
 				</div>
 			</div>
