@@ -17,8 +17,6 @@
 
 | Task                      | Status       | Why blocked                                                                                                              | Evidence                    |
 | ------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
-| Remove replace directives | 🔵 `BLOCKED` | Upstream repos (go-health, templ-components, go-datastar, go-sse) untagged on GitHub. Keep for local dev until tagged.   | `go.mod:21-31`              |
-| Tag v0.1.0 in git         | 🔵 `BLOCKED` | No git tags exist. pkg.go.dev needs a tag to display a version. Blocked on replace-directive decision (same root cause). | `git tag -l` returns empty  |
 | Build-tag gating for SSE  | 🔵 `BLOCKED` | Consumers who only want HTML shouldn't need GOEXPERIMENT=jsonv2. Requires decision: accept, fork go-sse, or gate.        | `ROADMAP.md` Open Questions |
 
 ## High Impact
