@@ -14,6 +14,7 @@
 ## Context
 
 The feedback document identified 7 architectural mistakes in the v1 implementation:
+
 1. Designed prerequisite work for code that already existed in go-health
 2. Made HTMX polling the default, SSE optional
 3. Used content negotiation when separate routes are simpler
@@ -256,6 +257,7 @@ The LICENSE file says **PROPRIETARY** (all rights reserved, contact for licensin
 ### G3: Is the GOEXPERIMENT=jsonv2 requirement acceptable for consumers?
 
 Every `go build`, `go test`, `go run` for this package (and all transitive consumers) requires `GOEXPERIMENT=jsonv2` because go-sse imports `encoding/json/v2`. This is an experimental Go feature. Options:
+
 - Accept it (current approach — document loudly, set in flake.nix)
 - Fork go-sse to remove json/v2 (maintenance burden)
 - Build-tag gate the SSE code (complex, two code paths)

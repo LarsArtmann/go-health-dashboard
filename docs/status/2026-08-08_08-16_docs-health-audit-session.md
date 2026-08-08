@@ -9,37 +9,37 @@
 
 ### Living docs built from code (per docs-health BUILD procedure)
 
-| Doc | Lines | Content | Evidence |
-|-----|-------|---------|----------|
-| `FEATURES.md` | 84 | 28 features across 6 domains (rendering, real-time, routing, config, build/tooling, gaps). Honest status: 3 PARTIALLY_FUNCTIONAL, 1 PLANNED. Every row has `file:line` citation. | Verified each claim against source code |
-| `TODO_LIST.md` | 55 | 14 actionable items harvested from 3 status reports. 2 BLOCKED, 5 High, 7 Medium, 2 Low. No completed items, no trophy section. | Every item verified against code — items already done were NOT added |
-| `ROADMAP.md` | 93 | 4 themes (production hardening, multi-service, observability, deployment flexibility). 4 non-goals. 3 open questions. | No bounded tasks leaked in |
-| `CHANGELOG.md` | Rewritten | Full `[Unreleased]` + `[0.1.0-alpha]` sections from git log. Breaking changes prominent. | Every entry matches git history |
+| Doc            | Lines     | Content                                                                                                                                                                          | Evidence                                                             |
+| -------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `FEATURES.md`  | 84        | 28 features across 6 domains (rendering, real-time, routing, config, build/tooling, gaps). Honest status: 3 PARTIALLY_FUNCTIONAL, 1 PLANNED. Every row has `file:line` citation. | Verified each claim against source code                              |
+| `TODO_LIST.md` | 55        | 14 actionable items harvested from 3 status reports. 2 BLOCKED, 5 High, 7 Medium, 2 Low. No completed items, no trophy section.                                                  | Every item verified against code — items already done were NOT added |
+| `ROADMAP.md`   | 93        | 4 themes (production hardening, multi-service, observability, deployment flexibility). 4 non-goals. 3 open questions.                                                            | No bounded tasks leaked in                                           |
+| `CHANGELOG.md` | Rewritten | Full `[Unreleased]` + `[0.1.0-alpha]` sections from git log. Breaking changes prominent.                                                                                         | Every entry matches git history                                      |
 
 ### Content-negotiation split brain FIXED
 
 Three living docs said "no content negotiation" while the code does it. All updated:
 
-| File | Was | Now |
-|------|-----|-----|
-| `README.md:13` | "No content negotiation" | Describes Accept-header negotiation on `/health` |
-| `README.md:71` | `/health` → `text/html` only | `/health` → `text/html` or `application/json` |
-| `AGENTS.md:3` | "no content negotiation" | Describes content negotiation accurately |
-| `AGENTS.md:48` | "Separate routes, no content negotiation" | "Content negotiation on `/health`" |
-| `doc.go:8-10` | "no content negotiation" | Describes Accept-based JSON/HTML dispatch |
+| File           | Was                                       | Now                                              |
+| -------------- | ----------------------------------------- | ------------------------------------------------ |
+| `README.md:13` | "No content negotiation"                  | Describes Accept-header negotiation on `/health` |
+| `README.md:71` | `/health` → `text/html` only              | `/health` → `text/html` or `application/json`    |
+| `AGENTS.md:3`  | "no content negotiation"                  | Describes content negotiation accurately         |
+| `AGENTS.md:48` | "Separate routes, no content negotiation" | "Content negotiation on `/health`"               |
+| `doc.go:8-10`  | "no content negotiation"                  | Describes Accept-based JSON/HTML dispatch        |
 
 Verified: `rg -l "no content negotiation" README.md AGENTS.md doc.go` returns **nothing**.
 
 ### Historical docs annotated (per docs-health ANNOTATE procedure)
 
-| File | Action |
-|------|--------|
-| `docs/status/2026-08-08_03-36_initial-implementation-review.md` | Added SUPERSEDED banner; all 11 "NOT STARTED" items resolved inline with `done at` / `Still open — see TODO_LIST` markers |
-| `docs/status/2026-08-08_07-22_sse-rewrite-fixes-seven-mistakes.md` | Added SUPERSEDED banner; all 8 "NOT STARTED" items resolved inline |
-| `docs/status/2026-08-08_07-58_content-negotiation-and-session-review.md` | Added "Open items harvested" banner |
-| `docs/planning/2026-08-08_02-46-go-health-dashboard.md` | Status changed from PLANNING to EXECUTED with cross-references |
-| `docs/feedback/new/2026-08-08_seven-planning-mistakes.md` | Moved to `docs/feedback/archived/` via `git mv` |
-| `docs/feedback/new/` directory | Removed (empty) |
+| File                                                                     | Action                                                                                                                    |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `docs/status/2026-08-08_03-36_initial-implementation-review.md`          | Added SUPERSEDED banner; all 11 "NOT STARTED" items resolved inline with `done at` / `Still open — see TODO_LIST` markers |
+| `docs/status/2026-08-08_07-22_sse-rewrite-fixes-seven-mistakes.md`       | Added SUPERSEDED banner; all 8 "NOT STARTED" items resolved inline                                                        |
+| `docs/status/2026-08-08_07-58_content-negotiation-and-session-review.md` | Added "Open items harvested" banner                                                                                       |
+| `docs/planning/2026-08-08_02-46-go-health-dashboard.md`                  | Status changed from PLANNING to EXECUTED with cross-references                                                            |
+| `docs/feedback/new/2026-08-08_seven-planning-mistakes.md`                | Moved to `docs/feedback/archived/` via `git mv`                                                                           |
+| `docs/feedback/new/` directory                                           | Removed (empty)                                                                                                           |
 
 ### CONTRIBUTING.md updated
 

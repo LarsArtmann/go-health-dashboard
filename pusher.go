@@ -43,8 +43,8 @@ type pusher struct {
 	interval    time.Duration
 	pushMode    PushMode
 
-	mu            sync.Mutex
-	lastStatus    health.Status
+	mu              sync.Mutex
+	lastStatus      health.Status
 	lastFingerprint string
 }
 

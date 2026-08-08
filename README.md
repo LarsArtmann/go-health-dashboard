@@ -66,13 +66,13 @@ Open `http://localhost:8080/health` in a browser. Done.
 
 ## Routes
 
-| Path        | Method | Content-Type       | What It Does                                            |
-| ----------- | ------ | ------------------ | ------------------------------------------------------- |
-| `/health`   | GET    | text/html or application/json | HTML dashboard (default) or JSON health response (Accept: application/json). JSON returns 503 when critical services fail |
-| `/health/sse` | GET  | text/event-stream  | SSE endpoint (Datastar patch protocol)                  |
-| `/healthz`  | GET    | application/json   | Liveness probe (always 200, no dependency checks)       |
-| `/readyz`   | GET    | application/json   | Readiness probe (503 when critical services fail)       |
-| `/startupz` | GET    | application/json   | Startup probe (latched once all critical services pass) |
+| Path          | Method | Content-Type                  | What It Does                                                                                                              |
+| ------------- | ------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `/health`     | GET    | text/html or application/json | HTML dashboard (default) or JSON health response (Accept: application/json). JSON returns 503 when critical services fail |
+| `/health/sse` | GET    | text/event-stream             | SSE endpoint (Datastar patch protocol)                                                                                    |
+| `/healthz`    | GET    | application/json              | Liveness probe (always 200, no dependency checks)                                                                         |
+| `/readyz`     | GET    | application/json              | Readiness probe (503 when critical services fail)                                                                         |
+| `/startupz`   | GET    | application/json              | Startup probe (latched once all critical services pass)                                                                   |
 
 ## Options
 
@@ -140,12 +140,12 @@ pass/fail every 15s), and one always failing. Watch the dashboard update live.
 
 ## Dependencies
 
-| Dependency                                                          | Purpose                                           |
-| ------------------------------------------------------------------- | ------------------------------------------------- |
-| [go-health](https://github.com/larsartmann/go-health)               | Health-check Response, Probe, CachedResponse      |
-| [templ-components](https://github.com/larsartmann/templ-components) | LiveRegion, SDKScript, Alert, Table, Badge, Card  |
-| [go-datastar](https://github.com/larsartmann/go-datastar)           | Datastar SSE patch protocol (ElementsFromTempl)   |
-| [go-sse](https://github.com/larsartmann/go-sse)                     | SSE transport (Broadcaster, Stream)               |
+| Dependency                                                          | Purpose                                          |
+| ------------------------------------------------------------------- | ------------------------------------------------ |
+| [go-health](https://github.com/larsartmann/go-health)               | Health-check Response, Probe, CachedResponse     |
+| [templ-components](https://github.com/larsartmann/templ-components) | LiveRegion, SDKScript, Alert, Table, Badge, Card |
+| [go-datastar](https://github.com/larsartmann/go-datastar)           | Datastar SSE patch protocol (ElementsFromTempl)  |
+| [go-sse](https://github.com/larsartmann/go-sse)                     | SSE transport (Broadcaster, Stream)              |
 
 ## License
 

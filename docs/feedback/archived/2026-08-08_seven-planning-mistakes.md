@@ -90,8 +90,8 @@ I then designed q-value parsing, wildcard handling (`*/*`), missing-header defau
 **What happened:** The v1 plan's status mapping table:
 
 | `health.Status` | `feedback.AlertType` |
-|---|---|
-| `StatusPass` | `AlertSuccess` |
+| --------------- | -------------------- |
+| `StatusPass`    | `AlertSuccess`       |
 
 And the SSE code example:
 
@@ -100,6 +100,7 @@ datastar.WithMode(datastar.MergeInner)
 ```
 
 **The actual reality:**
+
 - `feedback.AlertType` is explicitly deprecated — it's a type alias for `feedback.FeedbackType`. The correct types are `FeedbackSuccess`, `FeedbackWarning`, `FeedbackError`.
 - `datastar.WithMode(datastar.MergeInner)` doesn't compile. The correct API is `datastar.WithModeInner()` (sugar constructor) or `datastar.WithMode(datastar.ElementPatchModeInner)`.
 - `datastar.ElementsFromTempl` returns `(ElementsPatch, error)`, not a bare `ElementsPatch`. The v1 code example ignores the error.
@@ -166,13 +167,13 @@ The entire plan was built on the assumption that the dashboard needed to modify 
 
 **The actual reality:** go-health already exports everything the dashboard needs:
 
-| Dashboard needs | go-health exports | Status |
-|---|---|---|
-| Cached health snapshot | `Probe.CachedResponse() Response` | Already exists |
-| Live evaluation | `Probe.Evaluate(ctx) Response` | Already exists |
-| Refresh cadence | `Probe.RefreshInterval() time.Duration` | Already exists |
-| JSON handlers | `Probe.ReadinessHandler()` etc. | Already exists |
-| Data model | `Response`, `Status`, `Check` types | Already exists |
+| Dashboard needs        | go-health exports                       | Status         |
+| ---------------------- | --------------------------------------- | -------------- |
+| Cached health snapshot | `Probe.CachedResponse() Response`       | Already exists |
+| Live evaluation        | `Probe.Evaluate(ctx) Response`          | Already exists |
+| Refresh cadence        | `Probe.RefreshInterval() time.Duration` | Already exists |
+| JSON handlers          | `Probe.ReadinessHandler()` etc.         | Already exists |
+| Data model             | `Response`, `Status`, `Check` types     | Already exists |
 
 Zero changes needed. The dashboard is a pure consumer.
 

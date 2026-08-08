@@ -16,10 +16,12 @@
 Implemented `Accept: application/json` content negotiation on the dashboard route. When the client requests JSON, the handler returns the full `health.Response` struct as JSON with appropriate HTTP status codes (200 for pass/warn, 503 for fail). HTML remains the default for all other Accept values.
 
 **Files changed:**
+
 - `dashboard.go:127-175` — `Handler()` now checks `wantsJSON(r)` and dispatches to `serveJSON(w)` or the HTML renderer. Two new unexported functions: `wantsJSON` (Accept header check) and `serveJSON` (writes cached probe response as JSON).
 - `dashboard_test.go:298-417` — 5 new tests covering JSON Accept, HTML Accept, no Accept header, 200 for healthy, 503 for critical failure.
 
 **Verified:**
+
 - `GOEXPERIMENT=jsonv2 go build ./...` — passes
 - `GOEXPERIMENT=jsonv2 go vet ./...` — passes
 - `GOEXPERIMENT=jsonv2 go test ./... -count=1 -race -timeout=60s` — **37/37 pass**
@@ -27,17 +29,17 @@ Implemented `Accept: application/json` content negotiation on the dashboard rout
 
 ### From previous session (verified working this session)
 
-| Item | Status |
-|------|--------|
-| SSE-first Datastar architecture | Working, 37 tests pass |
-| `pusher.go` with PushOnChange/PushAlways | Working |
-| Deterministic `fingerprintChecks` | Working |
-| `view.templ` with Datastar SDK + LiveRegion | Working |
-| All obsolete files deleted (`handlers.go`, `realtime.go`, `partial*.templ`) | Confirmed gone |
-| Separate kubelet probe routes (`/healthz`, `/readyz`, `/startupz`) | Working |
-| `routes.go` with `DefaultRoutes()` | Working |
-| `status.go` with canonical `feedback.FeedbackType` | Working |
-| Example app compiles | `go build -o /dev/null ./example/...` passes |
+| Item                                                                        | Status                                       |
+| --------------------------------------------------------------------------- | -------------------------------------------- |
+| SSE-first Datastar architecture                                             | Working, 37 tests pass                       |
+| `pusher.go` with PushOnChange/PushAlways                                    | Working                                      |
+| Deterministic `fingerprintChecks`                                           | Working                                      |
+| `view.templ` with Datastar SDK + LiveRegion                                 | Working                                      |
+| All obsolete files deleted (`handlers.go`, `realtime.go`, `partial*.templ`) | Confirmed gone                               |
+| Separate kubelet probe routes (`/healthz`, `/readyz`, `/startupz`)          | Working                                      |
+| `routes.go` with `DefaultRoutes()`                                          | Working                                      |
+| `status.go` with canonical `feedback.FeedbackType`                          | Working                                      |
+| Example app compiles                                                        | `go build -o /dev/null ./example/...` passes |
 
 ---
 
@@ -47,12 +49,12 @@ Implemented `Accept: application/json` content negotiation on the dashboard rout
 
 I added content negotiation to `/health` but **did NOT update any documentation** to reflect it. The following files still say "no content negotiation":
 
-| File | Line | Stale text |
-|------|------|------------|
-| `README.md` | — | "No content negotiation: browsers and kubelets hit different routes." |
-| `AGENTS.md` | — | "Separate routes, no content negotiation — Browsers hit `/health` (HTML), kubelet hits `/readyz` (JSON). No Accept header parsing." |
-| `doc.go` | — | "SSE for real-time updates — no polling, no content negotiation." |
-| `dashboard.go:68-70` | Doc comment on `Dashboard` type | Was updated to mention JSON Accept, but could be clearer |
+| File                 | Line                            | Stale text                                                                                                                          |
+| -------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `README.md`          | —                               | "No content negotiation: browsers and kubelets hit different routes."                                                               |
+| `AGENTS.md`          | —                               | "Separate routes, no content negotiation — Browsers hit `/health` (HTML), kubelet hits `/readyz` (JSON). No Accept header parsing." |
+| `doc.go`             | —                               | "SSE for real-time updates — no polling, no content negotiation."                                                                   |
+| `dashboard.go:68-70` | Doc comment on `Dashboard` type | Was updated to mention JSON Accept, but could be clearer                                                                            |
 
 This is a **split brain** — the code does content negotiation, the docs say it doesn't.
 
@@ -64,18 +66,18 @@ The example compiles and starts (logs "dashboard: http://localhost:8080/health")
 
 ## C. NOT STARTED
 
-| # | Item | Why it matters |
-|---|------|----------------|
-| 1 | **LICENSE contradiction resolution** | LICENSE file says PROPRIETARY, README says MIT. Still unresolved. |
-| 2 | **`.golangci.yml` config file** | golangci-lint runs clean with defaults (0 issues), but no project config exists. |
-| 3 | **flake.lock regeneration** | flake.nix was changed (added `GOWORK=off`) but `nix flake lock` was never run. |
-| 4 | **SSE change-detection integration test** | PushOnChange has unit tests for `fingerprintChecks` but no end-to-end test that starts a pusher, changes health status, and verifies the broadcast arrives (or doesn't). |
-| 5 | **Stale docs cleanup** | `docs/status/2026-08-08_03-36_initial-implementation-review.md` describes old architecture. `docs/feedback/new/2026-08-08_seven-planning-mistakes.md` still in `new/`. |
-| 6 | **`WithCSSPath` option** | Production users can't swap Tailwind CDN for compiled CSS. |
-| 7 | **Dark mode toggle UI** | `layout.Base` includes theme script but no toggle button is rendered. |
-| 8 | **Favicon served** | `layout.Base` references `/favicon.svg` but none is served. |
-| 9 | **Replace directives removed** | 6 replace directives in `go.mod` point to local paths. Required for dev, blocks `go get`. |
-| 10 | **govulncheck / gosec** | Never run. No known vulnerabilities, but unverified. |
+| #   | Item                                      | Why it matters                                                                                                                                                           |
+| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | **LICENSE contradiction resolution**      | LICENSE file says PROPRIETARY, README says MIT. Still unresolved.                                                                                                        |
+| 2   | **`.golangci.yml` config file**           | golangci-lint runs clean with defaults (0 issues), but no project config exists.                                                                                         |
+| 3   | **flake.lock regeneration**               | flake.nix was changed (added `GOWORK=off`) but `nix flake lock` was never run.                                                                                           |
+| 4   | **SSE change-detection integration test** | PushOnChange has unit tests for `fingerprintChecks` but no end-to-end test that starts a pusher, changes health status, and verifies the broadcast arrives (or doesn't). |
+| 5   | **Stale docs cleanup**                    | `docs/status/2026-08-08_03-36_initial-implementation-review.md` describes old architecture. `docs/feedback/new/2026-08-08_seven-planning-mistakes.md` still in `new/`.   |
+| 6   | **`WithCSSPath` option**                  | Production users can't swap Tailwind CDN for compiled CSS.                                                                                                               |
+| 7   | **Dark mode toggle UI**                   | `layout.Base` includes theme script but no toggle button is rendered.                                                                                                    |
+| 8   | **Favicon served**                        | `layout.Base` references `/favicon.svg` but none is served.                                                                                                              |
+| 9   | **Replace directives removed**            | 6 replace directives in `go.mod` point to local paths. Required for dev, blocks `go get`.                                                                                |
+| 10  | **govulncheck / gosec**                   | Never run. No known vulnerabilities, but unverified.                                                                                                                     |
 
 ---
 

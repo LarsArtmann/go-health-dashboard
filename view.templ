@@ -30,7 +30,6 @@ templ View(data viewModel) {
 						Real-time health monitoring
 					</p>
 				</div>
-
 				@display.Grid(display.GridProps{Cols: display.GridCols3}) {
 					@display.StatCard(display.StatCardProps{
 						Value: versionOrUnknown(data.Version),
@@ -45,7 +44,6 @@ templ View(data viewModel) {
 						Label: "Check Latency",
 					})
 				}
-
 				<div class="mt-6">
 					@datastar.LiveRegion(datastar.LiveRegionProps{
 						BaseProps: utils.BaseProps{ID: "health-region"},
@@ -84,7 +82,6 @@ templ dashboardContent(data viewModel) {
 		Type:  data.FeedbackType,
 		Title: data.StatusText,
 	})
-
 	<div class="mt-6 space-y-6">
 		if len(data.Groups) == 0 {
 			@display.Card(display.CardProps{Title: "Service Status"}) {
