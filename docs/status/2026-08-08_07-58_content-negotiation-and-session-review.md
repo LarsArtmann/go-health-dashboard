@@ -3,6 +3,10 @@
 **Date:** 2026-08-08 07:58
 **Session scope:** Adding content negotiation to `/health`, reviewing session work
 
+> **Open items harvested** — The actionable items from this report are tracked in
+> `TODO_LIST.md`. The content-negotiation split-brain (section B below) and
+> stale-doc issues have been fixed in the docs-health session that followed.
+
 ---
 
 ## A. FULLY DONE
