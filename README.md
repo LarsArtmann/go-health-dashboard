@@ -10,7 +10,7 @@ grouping, and sub-second updates.
 - **Browser visits `/health`**: sees a rich dashboard with status banners, service
   tables, and badges — updating in real-time via Datastar SSE.
 - **Kubelet hits `/readyz`**: gets the JSON readiness response from go-health.
-- **No content negotiation**: browsers and kubelets hit different routes.
+- **Content negotiation on `/health`**: browsers get the HTML dashboard, `Accept: application/json` gets JSON. Kubelet probes (`/readyz`, `/healthz`, `/startupz`) are JSON-only.
 
 ## Why a Separate Repo?
 
@@ -68,7 +68,7 @@ Open `http://localhost:8080/health` in a browser. Done.
 
 | Path        | Method | Content-Type       | What It Does                                            |
 | ----------- | ------ | ------------------ | ------------------------------------------------------- |
-| `/health`   | GET    | text/html          | HTML dashboard with Datastar SSE auto-refresh           |
+| `/health`   | GET    | text/html or application/json | HTML dashboard (default) or JSON health response (Accept: application/json). JSON returns 503 when critical services fail |
 | `/health/sse` | GET  | text/event-stream  | SSE endpoint (Datastar patch protocol)                  |
 | `/healthz`  | GET    | application/json   | Liveness probe (always 200, no dependency checks)       |
 | `/readyz`   | GET    | application/json   | Readiness probe (503 when critical services fail)       |

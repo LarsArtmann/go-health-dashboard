@@ -4,6 +4,14 @@
 **Session:** Initial implementation (P1–P16 execution plan)
 **Reporter:** Crush (self-review)
 
+> **SUPERSEDED** — This report describes the v1 HTMX-polling architecture that was
+> entirely replaced by the SSE-first rewrite (see
+> `docs/status/2026-08-08_07-22_sse-rewrite-fixes-seven-mistakes.md`). The
+> feedback driving that rewrite is archived at
+> `docs/feedback/archived/2026-08-08_seven-planning-mistakes.md`. Open items
+> from this report have been harvested into `TODO_LIST.md`. Kept for
+> historical context only.
+
 ---
 
 ## A) FULLY DONE
@@ -130,17 +138,17 @@
 
 ## C) NOT STARTED
 
-1. **go-datastar integration** — The plan explicitly designed SSE around `datastar.ElementsFromTempl()` for patch protocol. Implemented with vanilla EventSource instead. go-datastar is a dead dependency.
-2. **Datastar SDK script in head** — P14.7: Include `datastar.SDKScript` in page `<head>` when SSE mode is active. Not done.
-3. **`WithPushMode` option** — P15.3. Not implemented.
-4. **Q-value sorting in acceptsHTML** — P5.4 specified handling `Accept: application/json;q=1.0, text/html;q=0.1`. Current implementation uses naive string `Contains` which returns HTML for this case (wrong).
-5. **`WithCSSPath` option** — No way to override Tailwind CDN with compiled CSS for production.
-6. **flake.lock** — Never generated. `nix build` will fail without it.
-7. **GOWORK=off in flake.nix** — go-health's flake sets this; I didn't. The workspace `go.work` in `~/projects` will interfere with Nix builds.
-8. **LICENSE file** — Missing entirely.
-9. **.golangci.yml** — Missing.
-10. **Version constant** — No exported version string.
-11. **govulncheck / gosec** — Never run.
+1. ~~**go-datastar integration** — The plan explicitly designed SSE around `datastar.ElementsFromTempl()` for patch protocol. Implemented with vanilla EventSource instead. go-datastar is a dead dependency.~~ Done — go-datastar now used via `ElementsFromTempl` in `pusher.go:99-112`.
+2. ~~**Datastar SDK script in head** — P14.7: Include `datastar.SDKScript` in page `<head>` when SSE mode is active. Not done.~~ Done — `view.templ:67-70`.
+3. ~~**`WithPushMode` option** — P15.3. Not implemented.~~ Done — `dashboard.go:49-51`.
+4. ~~**Q-value sorting in acceptsHTML** — P5.4 specified handling `Accept: application/json;q=1.0, text/html;q=0.1`. Current implementation uses naive string `Contains` which returns HTML for this case (wrong).~~ Partially resolved — content negotiation was removed in the rewrite, then re-added in this session with the same naive approach. See `TODO_LIST.md` for the q-value improvement task.
+5. ~~**`WithCSSPath` option** — No way to override Tailwind CDN with compiled CSS for production.~~ Still open — see `TODO_LIST.md`.
+6. ~~**flake.lock** — Never generated. `nix build` will fail without it.~~ Still open — see `TODO_LIST.md`.
+7. ~~**GOWORK=off in flake.nix** — go-health's flake sets this; I didn't. The workspace `go.work` in `~/projects` will interfere with Nix builds.~~ Done — `flake.nix:77`.
+8. ~~**LICENSE file** — Missing entirely.~~ Exists but contradicts README — see `TODO_LIST.md`.
+9. ~~**.golangci.yml** — Missing.~~ Still open — see `TODO_LIST.md`.
+10. ~~**Version constant** — No exported version string.~~ Done — `dashboard.go:20`.
+11. ~~**govulncheck / gosec** — Never run.~~ Still open — see `TODO_LIST.md`.
 
 ---
 

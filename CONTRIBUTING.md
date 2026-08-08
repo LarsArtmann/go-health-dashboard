@@ -11,10 +11,23 @@ Thanks for your interest in contributing!
 
 ## Development Setup
 
-Run the following commands to set up your development environment:
+This project uses [Nix flakes](https://nixos.wiki/wiki/Flakes) for all build
+and task automation. Enter the dev shell with `nix develop`.
 
-    go test ./... -race
-    golangci-lint run ./...
+All Go commands require `GOEXPERIMENT=jsonv2` (the go-sse dependency uses
+`encoding/json/v2`). The Nix devShell sets this automatically.
+
+```bash
+nix run .#generate   # templ generate + go mod tidy (run after editing .templ files)
+nix run .#test-race  # tests with race detector
+nix run .#build      # templ generate + go build
+nix run .#lint       # golangci-lint
+nix run .#vulncheck  # govulncheck
+nix fmt              # format code (gofumpt, goimports, golines, nixfmt)
+```
+
+Without Nix, prefix all Go commands with `GOEXPERIMENT=jsonv2` and run
+`templ generate` before building.
 
 ## Reporting Issues
 

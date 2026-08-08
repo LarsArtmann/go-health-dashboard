@@ -3,7 +3,11 @@
 **Date:** 2026-08-08 07:22
 **Session:** Rewrite to fix 7 architectural mistakes from feedback doc
 **Reporter:** Crush (self-review)
-**Trigger:** `docs/feedback/new/2026-08-08_seven-planning-mistakes.md` — "THE WHOLE POINT OF"
+**Trigger:** `docs/feedback/archived/2026-08-08_seven-planning-mistakes.md` — "THE WHOLE POINT OF"
+
+> **SUPERSEDED** — This report's open items have been harvested into `TODO_LIST.md`.
+> The content-negotiation split-brain (D2 below) and stale-doc issues were fixed in
+> a follow-up session. Kept for historical context.
 
 ---
 
@@ -124,14 +128,14 @@ The rewrite was comprehensive. No features are half-implemented.
 
 ## C) NOT STARTED
 
-1. **No `.golangci.yml`** — golangci-lint config not created. Never run.
-2. **No `flake.lock` regenerated** — the old `flake.lock` exists but may be stale after flake.nix changes.
-3. **`nix build` never tested** — Only `go build` works. Nix builds may have issues (source is read-only, `templ generate` in build apps modifies source).
-4. **Example app never run** — Could have runtime errors. Never started in a browser.
-5. **govulncheck / gosec never run** — Security scanning not done.
-6. **No integration test for SSE change detection** — No test that verifies: start pusher, change health status, receive broadcast, verify unchanged state does NOT broadcast. The unit-level `fingerprintChecks` tests exist but not the full pusher loop.
-7. **No `WithCSSPath` option** — Production users can't swap Tailwind CDN for compiled CSS.
-8. **Datastar SDK script nonce** — The `SDKScript` component supports a nonce but we pass it through `utils.BaseProps.Nonce`. Need to verify this actually works end-to-end with CSP.
+1. ~~**No `.golangci.yml`** — golangci-lint config not created. Never run.~~ Linter runs clean (0 issues). Config creation tracked in `TODO_LIST.md`.
+2. ~~**No `flake.lock` regenerated** — the old `flake.lock` exists but may be stale after flake.nix changes.~~ Tracked in `TODO_LIST.md`.
+3. ~~**`nix build` never tested** — Only `go build` works. Nix builds may have issues (source is read-only, `templ generate` in build apps modifies source).~~ Still open.
+4. ~~**Example app never run** — Could have runtime errors. Never started in a browser.~~ Example compiles and starts (verified). Browser test tracked in `TODO_LIST.md`.
+5. ~~**govulncheck / gosec never run** — Security scanning not done.~~ Tracked in `TODO_LIST.md`.
+6. ~~**No integration test for SSE change detection** — No test that verifies: start pusher, change health status, receive broadcast, verify unchanged state does NOT broadcast. The unit-level `fingerprintChecks` tests exist but not the full pusher loop.~~ Tracked in `TODO_LIST.md`.
+7. ~~**No `WithCSSPath` option** — Production users can't swap Tailwind CDN for compiled CSS.~~ Tracked in `TODO_LIST.md`.
+8. ~~**Datastar SDK script nonce** — The `SDKScript` component supports a nonce but we pass it through `utils.BaseProps.Nonce`. Need to verify this actually works end-to-end with CSP.~~ Tracked in `TODO_LIST.md`.
 
 ---
 

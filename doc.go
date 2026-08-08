@@ -4,10 +4,10 @@
 // and [github.com/larsartmann/go-datastar] (SSE patch protocol) into a single
 // drop-in handler.
 //
-// The dashboard lives at a dedicated HTML route (/health) and uses Datastar
-// SSE for real-time updates — no polling, no content negotiation. Kubernetes
-// probe endpoints (/healthz, /readyz, /startupz) are wired separately as
-// JSON-only.
+// The dashboard lives at /health and uses Datastar SSE for real-time updates.
+// It serves HTML by default but returns JSON when the client sends
+// Accept: application/json. Kubernetes probe endpoints (/healthz, /readyz,
+// /startupz) are wired separately as JSON-only.
 //
 // # Quick Start
 //
