@@ -46,6 +46,7 @@ func provideUnhealthy(i do.Injector, name, reason string) {
 
 func invoke[T any](t *testing.T, i do.Injector, name string) T {
 	t.Helper()
+
 	return do.MustInvokeNamed[T](i, name)
 }
 

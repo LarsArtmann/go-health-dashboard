@@ -138,6 +138,7 @@ func (d *Dashboard) Handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if wantsJSON(r) {
 			d.serveJSON(w)
+
 			return
 		}
 
@@ -148,6 +149,7 @@ func (d *Dashboard) Handler() http.HandlerFunc {
 
 		if err := View(data).Render(r.Context(), w); err != nil {
 			http.Error(w, "dashboard: failed to render page", http.StatusInternalServerError)
+
 			return
 		}
 	}
@@ -220,6 +222,7 @@ func (d *Dashboard) serveJSON(w http.ResponseWriter) {
 	payload, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, "dashboard: failed to encode health response", http.StatusInternalServerError)
+
 		return
 	}
 
@@ -239,6 +242,7 @@ func (d *Dashboard) buildData() viewModel {
 	vm := buildViewModel(resp, d.cfg.Title, d.cfg.Routes.SSE)
 	vm.DatastarNonce = d.cfg.Nonce
 	vm.TailwindNonce = d.cfg.Nonce
+
 	return vm
 }
 
@@ -264,6 +268,7 @@ func (d *Dashboard) RegisterRoutes(mux *http.ServeMux, routes Routes) {
 // stop it cleanly.
 func (d *Dashboard) Start(ctx context.Context) error {
 	p := newPusher(d)
+
 	d.push.Store(p)
 	go p.start(ctx)
 

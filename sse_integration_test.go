@@ -3,6 +3,7 @@ package dashboard_test
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,7 +27,8 @@ func (t *toggleService) HealthCheck(_ context.Context) error {
 	if t.healthy.Load() {
 		return nil
 	}
-	return fmt.Errorf("manually toggled to unhealthy")
+
+	return errors.New("manually toggled to unhealthy")
 }
 
 func provideToggleService(i do.Injector, name string, svc *toggleService) {
@@ -63,6 +65,7 @@ func newSSEStream(body io.Reader) *sseStream {
 			if line == "" {
 				s.events <- strings.Join(lines, "\n")
 				lines = nil
+
 				continue
 			}
 
@@ -337,10 +340,12 @@ func TestSSE_ShutdownClosesConnections(t *testing.T) {
 			if !ok {
 				break // Channel closed — expected.
 			}
+
 			continue // Buffered event, keep draining.
 		case <-time.After(time.Until(deadline)):
 			t.Error("SSE stream should close after dashboard shutdown")
 		}
+
 		break
 	}
 

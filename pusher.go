@@ -70,6 +70,7 @@ func (p *pusher) start(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			p.broadcaster.Close()
+
 			return
 		case <-ticker.C:
 			p.broadcast()
@@ -126,6 +127,7 @@ func (p *pusher) shouldBroadcast(resp health.Response) bool {
 	if resp.Status != p.lastStatus || fp != p.lastFingerprint {
 		p.lastStatus = resp.Status
 		p.lastFingerprint = fp
+
 		return true
 	}
 
@@ -139,6 +141,7 @@ func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
 	push := d.push.Load()
 	if push == nil {
 		http.Error(w, "dashboard: SSE push is not active", http.StatusServiceUnavailable)
+
 		return
 	}
 

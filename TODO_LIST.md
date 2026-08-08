@@ -15,9 +15,9 @@
 
 ## Blocked (needs user decision)
 
-| Task                          | Status       | Why blocked                                                      | Evidence                     |
-| ----------------------------- | ------------ | ---------------------------------------------------------------- | ---------------------------- |
-| Remove replace directives     | 🔵 `BLOCKED` | Upstream repos (go-health, templ-components, etc.) untagged on GitHub. Keep for local dev until tagged. | `go.mod:21-31` |
+| Task                      | Status       | Why blocked                                                                                             | Evidence       |
+| ------------------------- | ------------ | ------------------------------------------------------------------------------------------------------- | -------------- |
+| Remove replace directives | 🔵 `BLOCKED` | Upstream repos (go-health, templ-components, etc.) untagged on GitHub. Keep for local dev until tagged. | `go.mod:21-31` |
 
 ## High Impact
 

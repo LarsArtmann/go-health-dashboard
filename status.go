@@ -215,9 +215,11 @@ func fingerprintChecks(checks map[string]health.Check) string {
 	for k := range checks {
 		keys = append(keys, k)
 	}
+
 	sort.Strings(keys)
 
 	var buf []byte
+
 	for _, name := range keys {
 		check := checks[name]
 		buf = append(buf, name...)

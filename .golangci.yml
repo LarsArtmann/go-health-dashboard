@@ -3,7 +3,11 @@ run:
   timeout: 5m
   go: 1.26.5
   build-tags:
+    - goexperiment.arenas
+    - goexperiment.goroutineleakprofile
     - goexperiment.jsonv2
+    - goexperiment.runtimesecret
+    - goexperiment.simd
   allow-parallel-runners: true
   allow-serial-runners: true
   issues-exit-code: 1
@@ -48,7 +52,6 @@ linters:
     - gocritic
     - gocyclo
     # - godoclint  # false positive on doc.go
-    # - nlreturn    # too noisy for non-standard Go style
     - godot
     - godox
     - goheader
@@ -80,7 +83,7 @@ linters:
     - nilerr
     - nilnesserr
     - nilnil
-    # - nlreturn    # too noisy for non-standard Go style
+    # - nlreturn    # too noisy, not standard Go style
     - noctx
     - nolintlint
     - nonamedreturns
@@ -175,6 +178,10 @@ linters:
           name: exported
         - disabled: true
           name: package-comments
+    tagliatelle:
+      case:
+        rules:
+          json: snake
     testifylint:
       disable:
         - go-require
@@ -204,11 +211,8 @@ linters:
         - ch
         - s
         - db
+        - q
       ignore-type-assert-ok: true
-    tagliatelle:
-      case:
-        rules:
-          json: snake
     wrapcheck:
       ignore-sigs:
         - .Errorf(
@@ -233,6 +237,8 @@ linters:
           - mnd
           - contextcheck
           - testpackage
+          - wsl_v5
+          - unparam
       - path: _test\.go
         text: unused
         linters:
@@ -244,6 +250,7 @@ linters:
           - gocritic
           - contextcheck
           - testpackage
+          - wsl_v5
       - path: \.go$
         linters:
           - contextcheck
