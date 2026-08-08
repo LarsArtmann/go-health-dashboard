@@ -31,6 +31,7 @@ type Config struct {
 	PushMode     PushMode
 	Routes       Routes
 	Nonce        string
+	CSSPath      string
 }
 
 // Option configures a Dashboard. Use the With* functions to create options.
@@ -63,6 +64,13 @@ func WithNonce(nonce string) Option {
 // WithRoutes overrides the default URL paths for dashboard and probe endpoints.
 func WithRoutes(routes Routes) Option {
 	return func(c *Config) { c.Routes = routes }
+}
+
+// WithCSSPath sets the URL path to a compiled CSS stylesheet. When set, the
+// dashboard uses a <link> tag instead of the Tailwind Play CDN <script> tag.
+// Use this in production to avoid the runtime overhead of the CDN.
+func WithCSSPath(path string) Option {
+	return func(c *Config) { c.CSSPath = path }
 }
 
 // Dashboard renders a browser-friendly health dashboard from a go-health
@@ -242,6 +250,7 @@ func (d *Dashboard) buildData() viewModel {
 	vm := buildViewModel(resp, d.cfg.Title, d.cfg.Routes.SSE)
 	vm.DatastarNonce = d.cfg.Nonce
 	vm.TailwindNonce = d.cfg.Nonce
+	vm.CSSPath = d.cfg.CSSPath
 
 	return vm
 }

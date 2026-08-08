@@ -16,7 +16,8 @@ import (
 templ View(data viewModel) {
 	@layout.Base(layout.PageProps{
 		Title:       data.Title,
-		CSSPath:     "",
+		CSSPath:     data.CSSPath,
+		Nonce:       data.DatastarNonce,
 		HTMXVersion: "", // No HTMX — Datastar handles real-time
 		HeadContent: dashboardHead(data),
 	}) {
@@ -60,18 +61,29 @@ templ View(data viewModel) {
 }
 
 // dashboardHead renders the head additions: the Datastar SDK script and
-// Tailwind CSS via the Play CDN.
+// Tailwind CSS via the Play CDN (when no compiled CSSPath is provided).
 templ dashboardHead(data viewModel) {
 	@datastar.SDKScript(datastar.SDKScriptProps{
 		BaseProps: utils.BaseProps{Nonce: data.DatastarNonce},
 		Version:   datastar.DatastarVersion1_0_2,
 	})
-	<script nonce={ data.TailwindNonce } src="https://cdn.tailwindcss.com"></script>
-	<script nonce={ data.TailwindNonce }>
-		tailwind.config = {
-			darkMode: 'class'
+	if data.CSSPath == "" {
+		if data.TailwindNonce != "" {
+			<script nonce={ data.TailwindNonce } src="https://cdn.tailwindcss.com"></script>
+			<script nonce={ data.TailwindNonce }>
+				tailwind.config = {
+					darkMode: 'class'
+				}
+			</script>
+		} else {
+			<script src="https://cdn.tailwindcss.com"></script>
+			<script>
+				tailwind.config = {
+					darkMode: 'class'
+				}
+			</script>
 		}
-	</script>
+	}
 }
 
 // dashboardContent renders the alert banner and check-group cards. This is
