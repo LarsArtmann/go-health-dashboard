@@ -1,0 +1,10 @@
+package dashboard
+
+// Partial renders the PolledRegion wrapper with fresh dashboard content.
+// This is the response for the HTMX polling endpoint. Using outerHTML swap
+// (the PolledRegion default), the client replaces the entire polled region
+// div on each poll — keeping the hx-get, hx-trigger, and hx-swap attributes
+// intact so polling continues indefinitely.
+templ Partial(data viewModel) {
+	@dashboardPolledRegion(data)
+}

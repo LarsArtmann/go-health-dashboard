@@ -1,0 +1,127 @@
+package dashboard
+
+import (
+	"fmt"
+
+	"github.com/larsartmann/templ-components/display"
+	"github.com/larsartmann/templ-components/feedback"
+	"github.com/larsartmann/templ-components/htmx"
+	"github.com/larsartmann/templ-components/layout"
+	"github.com/larsartmann/templ-components/utils"
+)
+
+// View renders the full HTML dashboard page: Base shell, header, StatCards,
+// and a PolledRegion that auto-refreshes the health content.
+templ View(data viewModel) {
+	@layout.Base(layout.PageProps{
+		Title:       data.Title,
+		CSSPath:     "",
+		HTMXVersion: layout.HTMXVersion2_0_10,
+		HTMXUseSRI:  true,
+		Nonce:       "",
+		HeadContent: tailwindScript(),
+	}) {
+		@layout.Container(layout.DefaultContainerProps()) {
+			<div class="py-8">
+				<div class="mb-6 flex items-center justify-between">
+					<div>
+						<h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+							{ data.Title }
+						</h1>
+						<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+							Real-time health monitoring
+						</p>
+					</div>
+				</div>
+
+				@display.Grid(display.GridProps{Cols: display.GridCols3}) {
+					@display.StatCard(display.StatCardProps{
+						Value: versionOrUnknown(data.Version),
+						Label: "Version",
+					})
+					@display.StatCard(display.StatCardProps{
+						Value: data.Uptime,
+						Label: "Uptime",
+					})
+					@display.StatCard(display.StatCardProps{
+						Value: fmt.Sprintf("%dms", data.LatencyMs),
+						Label: "Check Latency",
+					})
+				}
+
+				<div class="mt-6">
+					if data.Every != "" {
+						@dashboardPolledRegion(data)
+					} else {
+						@dashboardContent(data)
+					}
+				</div>
+			</div>
+		}
+	}
+}
+
+// dashboardPolledRegion wraps the dashboard content in an HTMX PolledRegion
+// that auto-refreshes at the configured interval. Using outerHTML swap
+// (the default) so the polled region div — with its hx attributes — replaces
+// itself on each poll, keeping the polling loop alive.
+templ dashboardPolledRegion(data viewModel) {
+	@htmx.PolledRegion(htmx.PolledRegionProps{
+		BaseProps: utils.BaseProps{ID: "health-region"},
+		URL:       data.PartialURL,
+		Every:     data.Every,
+	}) {
+		@dashboardContent(data)
+	}
+}
+
+// dashboardContent renders the alert banner and check-group cards. This is
+// the shared inner content used by both the full page (View) and the polling
+// partial (Partial).
+templ dashboardContent(data viewModel) {
+	@feedback.Alert(feedback.AlertProps{
+		Type:  data.AlertType,
+		Title: data.StatusText,
+	})
+
+	<div class="mt-6 space-y-6">
+		if len(data.Groups) == 0 {
+			@display.Card(display.CardProps{Title: "Service Status"}) {
+				@display.SimpleEmptyState("No registered services")
+			}
+		} else {
+			for _, group := range data.Groups {
+				@display.Card(display.CardProps{
+					Title:   group.Title,
+					Padding: display.CardPaddingNone,
+				}) {
+					@display.Table(display.TableProps{
+						Headers: []string{"Service", "Status", "Details"},
+						Rows:    rowsToTableRows(group.Rows),
+						Flush:   true,
+					})
+				}
+			}
+		}
+	</div>
+}
+
+// tailwindScript returns a head component that loads Tailwind CSS via the
+// Play CDN. Suitable for development and dashboards; production users should
+// swap in compiled CSS.
+templ tailwindScript() {
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script>
+		tailwind.config = {
+			darkMode: 'class'
+		}
+	</script>
+}
+
+// versionOrUnknown returns the version string or "unknown" when empty.
+func versionOrUnknown(v string) string {
+	if v == "" {
+		return "unknown"
+	}
+	return v
+}

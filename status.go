@@ -91,11 +91,19 @@ type viewModel struct {
 func buildViewModel(resp health.Response, title, partialURL, every string) viewModel {
 	groups := groupChecks(resp.Checks)
 
+	alertType := mapStatusToAlert(resp.Status)
+	statusText := mapStatusToText(resp.Status)
+
+	if resp.ShuttingDown {
+		alertType = feedback.AlertWarning
+		statusText = "Shutting Down — Draining Traffic"
+	}
+
 	return viewModel{
 		Title:      title,
 		Status:     resp.Status,
-		AlertType:  mapStatusToAlert(resp.Status),
-		StatusText: mapStatusToText(resp.Status),
+		AlertType:  alertType,
+		StatusText: statusText,
 		Version:    resp.Version,
 		Uptime:     resp.Uptime,
 		LatencyMs:  resp.TotalLatencyMs,
