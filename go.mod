@@ -17,3 +17,7 @@ require (
 	github.com/larsartmann/go-error-family v0.10.0 // indirect
 	github.com/samber/go-type-to-string v1.8.0 // indirect
 )
+
+replace github.com/larsartmann/go-health => ../go-health
+
+replace github.com/larsartmann/templ-components => ../templ-components
