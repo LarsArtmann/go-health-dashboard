@@ -10,9 +10,7 @@ import (
 )
 
 // mapStatusToBadge converts a go-health Status to the corresponding
-// templ-components BadgeType. We map directly to constants rather than relying
-// on StatusBadge's string map (which recognises "healthy"/"degraded"/
-// "unhealthy" but not "pass"/"warn"/"fail").
+// templ-components BadgeType.
 func mapStatusToBadge(s health.Status) display.BadgeType {
 	switch s {
 	case health.StatusPass:
@@ -26,18 +24,18 @@ func mapStatusToBadge(s health.Status) display.BadgeType {
 	}
 }
 
-// mapStatusToAlert converts a go-health Status to the corresponding
-// templ-components AlertType for the overall status banner.
-func mapStatusToAlert(s health.Status) feedback.AlertType {
+// mapStatusToFeedback converts a go-health Status to the corresponding
+// templ-components FeedbackType for the overall status banner.
+func mapStatusToFeedback(s health.Status) feedback.FeedbackType {
 	switch s {
 	case health.StatusPass:
-		return feedback.AlertSuccess
+		return feedback.FeedbackSuccess
 	case health.StatusWarn:
-		return feedback.AlertWarning
+		return feedback.FeedbackWarning
 	case health.StatusFail:
-		return feedback.AlertError
+		return feedback.FeedbackError
 	default:
-		return feedback.AlertInfo
+		return feedback.FeedbackInfo
 	}
 }
 
@@ -70,48 +68,44 @@ type checkGroup struct {
 }
 
 // viewModel is the template-ready representation of a health.Response.
-// All component construction (badges, alerts) is done during buildViewModel
-// so the templ templates only iterate and render.
 type viewModel struct {
-	Title      string
-	Status     health.Status
-	AlertType  feedback.AlertType
-	StatusText string
-	Version    string
-	Uptime     string
-	LatencyMs  int64
-	Groups     []checkGroup
-	PartialURL string
-	Every      string
-	SSE        bool
-	SSEURL     string
+	Title         string
+	Status        health.Status
+	FeedbackType  feedback.FeedbackType
+	StatusText    string
+	Version       string
+	Uptime        string
+	LatencyMs     int64
+	Groups        []checkGroup
+	SSEURL        string
+	DatastarNonce string
+	TailwindNonce string
 }
 
 // buildViewModel transforms a health.Response into a template-ready viewModel.
 // Checks are sorted alphabetically by name and grouped by severity:
 // failing (critical) first, then warnings (non-critical), then healthy.
-func buildViewModel(resp health.Response, title, partialURL, every string) viewModel {
+func buildViewModel(resp health.Response, title, sseURL string) viewModel {
 	groups := groupChecks(resp.Checks)
 
-	alertType := mapStatusToAlert(resp.Status)
+	feedbackType := mapStatusToFeedback(resp.Status)
 	statusText := mapStatusToText(resp.Status)
 
 	if resp.ShuttingDown {
-		alertType = feedback.AlertWarning
+		feedbackType = feedback.FeedbackWarning
 		statusText = "Shutting Down — Draining Traffic"
 	}
 
 	return viewModel{
-		Title:      title,
-		Status:     resp.Status,
-		AlertType:  alertType,
-		StatusText: statusText,
-		Version:    resp.Version,
-		Uptime:     resp.Uptime,
-		LatencyMs:  resp.TotalLatencyMs,
-		Groups:     groups,
-		PartialURL: partialURL,
-		Every:      every,
+		Title:        title,
+		Status:       resp.Status,
+		FeedbackType: feedbackType,
+		StatusText:   statusText,
+		Version:      resp.Version,
+		Uptime:       resp.Uptime,
+		LatencyMs:    resp.TotalLatencyMs,
+		Groups:       groups,
+		SSEURL:       sseURL,
 	}
 }
 
@@ -174,7 +168,7 @@ func sortByName(rows []checkRow) {
 	})
 }
 
-// badgeForStatus creates a display.Badge component for the given status.
+// badgeForStatus creates a display.BadgeProps for the given status.
 func badgeForStatus(s health.Status) display.BadgeProps {
 	return display.BadgeProps{
 		Text: string(s),
@@ -203,4 +197,28 @@ func rowsToTableRows(rows []checkRow) []display.TableRow {
 	}
 
 	return tableRows
+}
+
+// fingerprintChecks creates a deterministic string fingerprint of the checks
+// map for change detection. Keys are sorted to ensure the same input always
+// produces the same output (Go map iteration order is randomized).
+func fingerprintChecks(checks map[string]health.Check) string {
+	keys := make([]string, 0, len(checks))
+	for k := range checks {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var buf []byte
+	for _, name := range keys {
+		check := checks[name]
+		buf = append(buf, name...)
+		buf = append(buf, ':')
+		buf = append(buf, check.Status...)
+		buf = append(buf, ':')
+		buf = append(buf, check.Error...)
+		buf = append(buf, ';')
+	}
+
+	return string(buf)
 }
