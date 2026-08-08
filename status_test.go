@@ -33,26 +33,26 @@ func TestMapStatusToBadge(t *testing.T) {
 	}
 }
 
-func TestMapStatusToAlert(t *testing.T) {
+func TestMapStatusToFeedback(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name   string
 		status health.Status
-		want   feedback.AlertType
+		want   feedback.FeedbackType
 	}{
-		{"pass", health.StatusPass, feedback.AlertSuccess},
-		{"warn", health.StatusWarn, feedback.AlertWarning},
-		{"fail", health.StatusFail, feedback.AlertError},
-		{"unknown", health.Status("unknown"), feedback.AlertInfo},
+		{"pass", health.StatusPass, feedback.FeedbackSuccess},
+		{"warn", health.StatusWarn, feedback.FeedbackWarning},
+		{"fail", health.StatusFail, feedback.FeedbackError},
+		{"unknown", health.Status("unknown"), feedback.FeedbackInfo},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			if got := mapStatusToAlert(tt.status); got != tt.want {
-				t.Errorf("mapStatusToAlert(%s): want %s, got %s", tt.status, tt.want, got)
+			if got := mapStatusToFeedback(tt.status); got != tt.want {
+				t.Errorf("mapStatusToFeedback(%s): want %s, got %s", tt.status, tt.want, got)
 			}
 		})
 	}
@@ -186,7 +186,7 @@ func TestBuildViewModel(t *testing.T) {
 		},
 	}
 
-	vm := buildViewModel(resp, "My Service", "/health/partial", "2s")
+	vm := buildViewModel(resp, "My Service", "/health/sse")
 
 	if vm.Title != "My Service" {
 		t.Errorf("title: want 'My Service', got %q", vm.Title)
@@ -196,8 +196,12 @@ func TestBuildViewModel(t *testing.T) {
 		t.Errorf("status: want warn, got %s", vm.Status)
 	}
 
-	if vm.AlertType != feedback.AlertWarning {
-		t.Errorf("alert type: want warning, got %s", vm.AlertType)
+	if vm.FeedbackType != feedback.FeedbackWarning {
+		t.Errorf("feedback type: want warning, got %s", vm.FeedbackType)
+	}
+
+	if vm.SSEURL != "/health/sse" {
+		t.Errorf("SSE URL: want '/health/sse', got %q", vm.SSEURL)
 	}
 
 	if vm.Version != "1.2.3" {
@@ -208,45 +212,67 @@ func TestBuildViewModel(t *testing.T) {
 		t.Errorf("latency: want 42, got %d", vm.LatencyMs)
 	}
 
-	if vm.PartialURL != "/health/partial" {
-		t.Errorf("partial URL: want '/health/partial', got %q", vm.PartialURL)
-	}
-
 	if len(vm.Groups) != 2 {
-		t.Fatalf("want 2 groups (warning + healthy), got %d", len(vm.Groups))
+		t.Errorf("groups: want 2 (warning + healthy), got %d", len(vm.Groups))
 	}
 }
 
-func TestRowsToTableRows_BuildsCellsWithBadges(t *testing.T) {
+func TestBuildViewModel_ShuttingDown(t *testing.T) {
 	t.Parallel()
 
-	rows := []checkRow{
-		{Name: "db", Status: health.StatusPass},
-		{Name: "cache", Status: health.StatusFail, Error: "connection refused"},
+	resp := health.Response{
+		Status:       health.StatusPass,
+		ShuttingDown: true,
 	}
 
-	tableRows := rowsToTableRows(rows)
+	vm := buildViewModel(resp, "Test", "/health/sse")
 
-	if len(tableRows) != 2 {
-		t.Fatalf("want 2 table rows, got %d", len(tableRows))
+	if vm.FeedbackType != feedback.FeedbackWarning {
+		t.Errorf("shutdown feedback: want warning, got %s", vm.FeedbackType)
 	}
 
-	for _, row := range tableRows {
-		if len(row.Cells) != 3 {
-			t.Errorf("want 3 cells (name, status, error), got %d", len(row.Cells))
-		}
+	if vm.StatusText != "Shutting Down — Draining Traffic" {
+		t.Errorf("shutdown text: want 'Shutting Down — Draining Traffic', got %q", vm.StatusText)
+	}
+}
+
+func TestFingerprintChecks_Deterministic(t *testing.T) {
+	t.Parallel()
+
+	checks := map[string]health.Check{
+		"db":    {Status: health.StatusPass},
+		"cache": {Status: health.StatusWarn, Error: "slow"},
+		"queue": {Status: health.StatusFail, Error: "timeout"},
 	}
 
-	if tableRows[0].Cells[1].Content == nil {
-		t.Error("status cell should have a badge component, got nil")
+	fp1 := fingerprintChecks(checks)
+	fp2 := fingerprintChecks(checks)
+
+	if fp1 != fp2 {
+		t.Errorf("fingerprint must be deterministic:\n  fp1=%q\n  fp2=%q", fp1, fp2)
+	}
+}
+
+func TestFingerprintChecks_DetectsChanges(t *testing.T) {
+	t.Parallel()
+
+	before := map[string]health.Check{
+		"db": {Status: health.StatusPass},
 	}
 
-	if tableRows[0].Cells[2].Text != "—" {
-		t.Errorf("passing check error: want '—', got %q", tableRows[0].Cells[2].Text)
+	after := map[string]health.Check{
+		"db": {Status: health.StatusFail, Error: "connection refused"},
 	}
 
-	if tableRows[1].Cells[2].Text != "connection refused" {
-		t.Errorf("failing check error: want 'connection refused', got %q",
-			tableRows[1].Cells[2].Text)
+	if fingerprintChecks(before) == fingerprintChecks(after) {
+		t.Error("fingerprint should differ when checks change")
+	}
+}
+
+func TestFingerprintChecks_EmptyMap(t *testing.T) {
+	t.Parallel()
+
+	if fp := fingerprintChecks(map[string]health.Check{}); fp != "" {
+		t.Errorf("empty checks fingerprint: want empty string, got %q", fp)
 	}
 }
