@@ -1,0 +1,24 @@
+# templ generated files — commit these (no templ CLI needed to use the package)
+# But if you want to ignore them during development:
+# *_templ.go
+
+# Environment
+.env
+.env.*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+/vendor/
+*.exe
+*.dll
+*.so
+*.dylib
