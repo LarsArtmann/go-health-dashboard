@@ -254,7 +254,7 @@ linters:
       - path: \.go$
         linters:
           - contextcheck
-      - text: 'package has more than one godoc'
+      - text: "package has more than one godoc"
         linters:
           - godoclint
     paths:
