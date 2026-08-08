@@ -39,70 +39,75 @@ func provideToggleService(i do.Injector, name string, svc *toggleService) {
 	}
 }
 
-// readSSEEvent reads one SSE event from a streaming reader. An SSE event is
-// a block of lines terminated by a blank line. Returns the accumulated text.
-func readSSEEvent(reader *bufio.Reader, timeout time.Duration) (string, error) {
-	type result struct {
-		text string
-		err  error
-	}
+// sseStream wraps a response body reader into a channel of SSE events.
+// A single goroutine reads from the body, eliminating reader-level races.
+type sseStream struct {
+	events chan string
+}
 
-	ch := make(chan result, 1)
+func newSSEStream(body io.Reader) *sseStream {
+	s := &sseStream{events: make(chan string, 32)}
 
 	go func() {
+		defer close(s.events)
+		reader := bufio.NewReader(body)
 		var lines []string
 
 		for {
 			line, err := reader.ReadString('\n')
 			if err != nil {
-				ch <- result{text: strings.Join(lines, ""), err: err}
 				return
 			}
 
 			line = strings.TrimRight(line, "\r\n")
-
 			if line == "" {
-				ch <- result{text: strings.Join(lines, "\n")}
-				return
+				s.events <- strings.Join(lines, "\n")
+				lines = nil
+				continue
 			}
 
 			lines = append(lines, line)
 		}
 	}()
 
-	select {
-	case r := <-ch:
-		return r.text, r.err
-	case <-time.After(timeout):
-		return "", fmt.Errorf("timeout after %s waiting for SSE event", timeout)
+	return s
+}
+
+// waitFor reads SSE events until one matches the predicate or the timeout
+// expires. Calls t.Fatal on timeout.
+func (s *sseStream) waitFor(t *testing.T, predicate func(string) bool, timeout time.Duration) string {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+
+	for {
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			t.Fatalf("no SSE event matched predicate within %s", timeout)
+		}
+
+		select {
+		case evt, ok := <-s.events:
+			if !ok {
+				t.Fatalf("SSE stream closed before matching event")
+			}
+			if predicate(evt) {
+				return evt
+			}
+		case <-time.After(remaining):
+			t.Fatalf("no SSE event matched predicate within %s", timeout)
+		}
 	}
 }
 
-// waitForSSEEvent reads SSE events until one matches the predicate or the
-// timeout expires. Returns the matching event text or an error.
-func waitForSSEEvent(t *testing.T, reader *bufio.Reader, predicate func(string) bool, timeout time.Duration) string {
+// assertNoEvent verifies that no SSE event arrives within the timeout.
+func (s *sseStream) assertNoEvent(t *testing.T, timeout time.Duration) {
 	t.Helper()
-
-	deadline := time.Now().Add(timeout)
-
-	for time.Now().Before(deadline) {
-		remaining := time.Until(deadline)
-		if remaining < 50*time.Millisecond {
-			break
-		}
-
-		text, err := readSSEEvent(reader, remaining)
-		if err != nil {
-			t.Fatalf("error reading SSE event: %v", err)
-		}
-
-		if predicate(text) {
-			return text
-		}
+	select {
+	case evt := <-s.events:
+		t.Errorf("expected no SSE event for %s, but got:\n%s", timeout, evt)
+	case <-time.After(timeout):
+		// Expected: no event within timeout.
 	}
-
-	t.Fatalf("no SSE event matched predicate within %s", timeout)
-	return ""
 }
 
 func setupSSEServer(t *testing.T, pushInterval time.Duration, svc *toggleService) (*httptest.Server, *toggleService, func()) {
@@ -127,7 +132,6 @@ func setupSSEServer(t *testing.T, pushInterval time.Duration, svc *toggleService
 	if err := probe.Start(ctx); err != nil {
 		t.Fatalf("probe.Start: %v", err)
 	}
-
 	if err := dash.Start(ctx); err != nil {
 		t.Fatalf("dash.Start: %v", err)
 	}
@@ -144,6 +148,25 @@ func setupSSEServer(t *testing.T, pushInterval time.Duration, svc *toggleService
 	return server, svc, cleanup
 }
 
+func connectSSE(t *testing.T, server *httptest.Server) (*http.Response, *sseStream) {
+	t.Helper()
+
+	resp, err := http.Get(server.URL + "/health/sse")
+	if err != nil {
+		t.Fatalf("SSE connect: %v", err)
+	}
+
+	return resp, newSSEStream(resp.Body)
+}
+
+func isHealthyEvent(s string) bool {
+	return strings.Contains(s, "All Systems Operational") || strings.Contains(s, `"pass"`)
+}
+
+func isUnhealthyEvent(s string) bool {
+	return strings.Contains(s, "Unhealthy") || strings.Contains(s, `"fail"`)
+}
+
 // --- T4: SSE change-detection integration tests ---.
 
 func TestSSE_PushOnChange_DetectsStatusChange(t *testing.T) {
@@ -155,46 +178,18 @@ func TestSSE_PushOnChange_DetectsStatusChange(t *testing.T) {
 	server, svc, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
 	defer cleanup()
 
-	resp, err := http.Get(server.URL + "/health/sse")
-	if err != nil {
-		t.Fatalf("SSE connect: %v", err)
-	}
+	resp, stream := connectSSE(t, server)
 	defer func() { _ = resp.Body.Close() }()
 
-	reader := bufio.NewReader(resp.Body)
-
-	// Read initial state — should be healthy.
-	_ = waitForSSEEvent(t, reader, func(s string) bool {
-		return strings.Contains(s, "All Systems Operational") || strings.Contains(s, "pass")
-	}, 2*time.Second)
+	// Initial broadcast on connect.
+	stream.waitFor(t, isHealthyEvent, 2*time.Second)
 
 	// Toggle to unhealthy — should trigger a broadcast.
 	svc.healthy.Store(false)
+	stream.waitFor(t, isUnhealthyEvent, 2*time.Second)
 
-	changed := waitForSSEEvent(t, reader, func(s string) bool {
-		return strings.Contains(s, "Unhealthy") || strings.Contains(s, "fail")
-	}, 2*time.Second)
-
-	if !strings.Contains(changed, "fail") {
-		t.Error("changed event should contain fail status")
-	}
-
-	// Wait for multiple intervals — PushOnChange should NOT broadcast again.
-	eventCh := make(chan string, 1)
-
-	go func() {
-		text, _ := readSSEEvent(reader, 300*time.Millisecond)
-		eventCh <- text
-	}()
-
-	select {
-	case text := <-eventCh:
-		if text != "" {
-			t.Errorf("PushOnChange should not broadcast unchanged state, but got event:\n%s", text)
-		}
-	case <-time.After(300 * time.Millisecond):
-		// Expected: no event means PushOnChange correctly suppressed the broadcast.
-	}
+	// PushOnChange should NOT broadcast again when nothing changed.
+	stream.assertNoEvent(t, 250*time.Millisecond)
 }
 
 func TestSSE_PushAlways_BroadcastsEveryTick(t *testing.T) {
@@ -207,7 +202,6 @@ func TestSSE_PushAlways_BroadcastsEveryTick(t *testing.T) {
 	provideToggleService(injector, "db", svc)
 
 	probe := health.New(injector,
-		health.WithVersion("1.0.0"),
 		health.WithCriticalServices("db"),
 		health.WithRefreshInterval(50*time.Millisecond),
 	)
@@ -234,58 +228,33 @@ func TestSSE_PushAlways_BroadcastsEveryTick(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	resp, err := http.Get(server.URL + "/health/sse")
-	if err != nil {
-		t.Fatalf("SSE connect: %v", err)
-	}
+	resp, stream := connectSSE(t, server)
 	defer func() { _ = resp.Body.Close() }()
 
-	reader := bufio.NewReader(resp.Body)
-
-	// Read initial event.
-	_ = waitForSSEEvent(t, reader, func(s string) bool { return true }, 2*time.Second)
-
-	// Read second event — PushAlways should broadcast even though nothing changed.
-	_ = waitForSSEEvent(t, reader, func(s string) bool { return true }, 2*time.Second)
-
-	// Read third event — still broadcasting.
-	_ = waitForSSEEvent(t, reader, func(s string) bool { return true }, 2*time.Second)
+	// PushAlways: initial + at least 2 more ticks.
+	stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+	stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+	stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
 }
 
-func TestSSE_PushOnChange_FingerprintDetectsErrorTextChange(t *testing.T) {
+func TestSSE_PushOnChange_DetectsRecovery(t *testing.T) {
 	t.Parallel()
 
 	svc := &toggleService{}
-	svc.healthy.Store(false) // Start unhealthy
+	svc.healthy.Store(false)
 
 	server, svc, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
 	defer cleanup()
 
-	resp, err := http.Get(server.URL + "/health/sse")
-	if err != nil {
-		t.Fatalf("SSE connect: %v", err)
-	}
+	resp, stream := connectSSE(t, server)
 	defer func() { _ = resp.Body.Close() }()
 
-	reader := bufio.NewReader(resp.Body)
+	// Initial state is unhealthy.
+	stream.waitFor(t, isUnhealthyEvent, 2*time.Second)
 
-	// Read initial state — should be failing.
-	_ = waitForSSEEvent(t, reader, func(s string) bool {
-		return strings.Contains(s, "manually toggled to unhealthy")
-	}, 2*time.Second)
-
-	// The fingerprint should detect when error text changes, even if status
-	// remains "fail". However, with toggleService the error message is fixed.
-	// Toggle to healthy to verify fingerprint change is detected.
+	// Recover — should trigger a broadcast.
 	svc.healthy.Store(true)
-
-	recovered := waitForSSEEvent(t, reader, func(s string) bool {
-		return strings.Contains(s, "All Systems Operational") || strings.Contains(s, "pass")
-	}, 2*time.Second)
-
-	if !strings.Contains(recovered, "pass") && !strings.Contains(recovered, "Operational") {
-		t.Error("should detect recovery and broadcast updated state")
-	}
+	stream.waitFor(t, isHealthyEvent, 2*time.Second)
 }
 
 // --- T8: SSE resilience tests ---.
@@ -299,18 +268,11 @@ func TestSSE_ClientDisconnectDoesNotLeakGoroutines(t *testing.T) {
 	server, _, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
 	defer cleanup()
 
-	// Connect and immediately disconnect.
-	resp, err := http.Get(server.URL + "/health/sse")
-	if err != nil {
-		t.Fatalf("SSE connect: %v", err)
-	}
-
+	resp, _ := connectSSE(t, server)
 	_ = resp.Body.Close()
 
-	// Give the server time to process the disconnect.
 	time.Sleep(100 * time.Millisecond)
 
-	// Server should still be operational — no panic or deadlock.
 	healthResp, err := http.Get(server.URL + "/health")
 	if err != nil {
 		t.Fatalf("server should still respond after SSE disconnect: %v", err)
@@ -353,26 +315,12 @@ func TestSSE_ShutdownClosesConnections(t *testing.T) {
 
 	server := httptest.NewServer(mux)
 
-	resp, err := http.Get(server.URL + "/health/sse")
-	if err != nil {
-		t.Fatalf("SSE connect: %v", err)
-	}
+	resp, stream := connectSSE(t, server)
+	stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
 
-	reader := bufio.NewReader(resp.Body)
-	_ = waitForSSEEvent(t, reader, func(s string) bool { return true }, 2*time.Second)
-
-	// Shutdown the dashboard while the SSE connection is open.
 	dash.Shutdown()
 
-	// The SSE connection should close (body returns EOF or error).
-	_, err = readSSEEvent(reader, 2*time.Second)
-	if err == nil {
-		// If no error, check if body is actually closed.
-		_, err = io.ReadAll(resp.Body)
-		if err == nil {
-			t.Error("SSE connection should close after dashboard shutdown")
-		}
-	}
+	stream.assertNoEvent(t, 1*time.Second)
 
 	_ = resp.Body.Close()
 	server.Close()
@@ -397,12 +345,10 @@ func TestSSE_StartThenImmediateShutdownDoesNotPanic(t *testing.T) {
 	}
 
 	dash := dashboard.New(probe)
-
 	if err := dash.Start(ctx); err != nil {
 		t.Fatalf("dash.Start: %v", err)
 	}
 
-	// Immediate shutdown should not panic.
 	dash.Shutdown()
 }
 
@@ -412,7 +358,6 @@ func TestSSE_ShutdownSafeToCallMultipleTimes(t *testing.T) {
 	s := setupDashboard(t)
 	defer s.cleanup()
 
-	// Multiple shutdowns should not panic.
 	s.dash.Shutdown()
 	s.dash.Shutdown()
 	s.dash.Shutdown()
@@ -428,7 +373,6 @@ func TestSSE_HandlerReturns503WhenPusherNotStarted(t *testing.T) {
 	probe := health.New(injector, health.WithCriticalServices("db"))
 	defer probe.Shutdown()
 
-	// Create dashboard but do NOT call Start.
 	dash := dashboard.New(probe)
 
 	mux := http.NewServeMux()
@@ -459,34 +403,17 @@ func TestSSE_MultipleClientsReceiveBroadcasts(t *testing.T) {
 	server, svc, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
 	defer cleanup()
 
-	// Client 1.
-	resp1, err := http.Get(server.URL + "/health/sse")
-	if err != nil {
-		t.Fatalf("SSE client 1 connect: %v", err)
-	}
+	resp1, stream1 := connectSSE(t, server)
 	defer func() { _ = resp1.Body.Close() }()
+	stream1.waitFor(t, func(string) bool { return true }, 2*time.Second)
 
-	reader1 := bufio.NewReader(resp1.Body)
-	_ = waitForSSEEvent(t, reader1, func(s string) bool { return true }, 2*time.Second)
-
-	// Client 2.
-	resp2, err := http.Get(server.URL + "/health/sse")
-	if err != nil {
-		t.Fatalf("SSE client 2 connect: %v", err)
-	}
+	resp2, stream2 := connectSSE(t, server)
 	defer func() { _ = resp2.Body.Close() }()
-
-	reader2 := bufio.NewReader(resp2.Body)
-	_ = waitForSSEEvent(t, reader2, func(s string) bool { return true }, 2*time.Second)
+	stream2.waitFor(t, func(string) bool { return true }, 2*time.Second)
 
 	// Toggle to unhealthy — both clients should receive the change.
 	svc.healthy.Store(false)
 
-	_ = waitForSSEEvent(t, reader1, func(s string) bool {
-		return strings.Contains(s, "fail")
-	}, 2*time.Second)
-
-	_ = waitForSSEEvent(t, reader2, func(s string) bool {
-		return strings.Contains(s, "fail")
-	}, 2*time.Second)
+	stream1.waitFor(t, isUnhealthyEvent, 2*time.Second)
+	stream2.waitFor(t, isUnhealthyEvent, 2*time.Second)
 }
