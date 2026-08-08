@@ -71,14 +71,14 @@ Open `http://localhost:8080/health` in a browser. Done.
 
 ## Routes
 
-| Path          | Method | Content-Type                  | What It Does                                                                                                              |
-| ------------- | ------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `/health`     | GET    | text/html or application/json | HTML dashboard (default) or JSON health response (Accept: application/json). JSON returns 503 when critical services fail |
-| `/health/sse` | GET    | text/event-stream             | SSE endpoint (Datastar patch protocol)                                                                                    |
-| `/favicon.svg` | GET  | image/svg+xml                 | SVG favicon (embedded green-heart icon)                                                                                   |
-| `/healthz`    | GET    | application/json              | Liveness probe (always 200, no dependency checks)                                                                         |
-| `/readyz`     | GET    | application/json              | Readiness probe (503 when critical services fail)                                                                         |
-| `/startupz`   | GET    | application/json              | Startup probe (latched once all critical services pass)                                                                   |
+| Path           | Method | Content-Type                  | What It Does                                                                                                              |
+| -------------- | ------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `/health`      | GET    | text/html or application/json | HTML dashboard (default) or JSON health response (Accept: application/json). JSON returns 503 when critical services fail |
+| `/health/sse`  | GET    | text/event-stream             | SSE endpoint (Datastar patch protocol)                                                                                    |
+| `/favicon.svg` | GET    | image/svg+xml                 | SVG favicon (embedded green-heart icon)                                                                                   |
+| `/healthz`     | GET    | application/json              | Liveness probe (always 200, no dependency checks)                                                                         |
+| `/readyz`      | GET    | application/json              | Readiness probe (503 when critical services fail)                                                                         |
+| `/startupz`    | GET    | application/json              | Startup probe (latched once all critical services pass)                                                                   |
 
 ## Options
 
