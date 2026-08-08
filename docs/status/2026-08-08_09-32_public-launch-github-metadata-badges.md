@@ -8,23 +8,23 @@ Make the repo public and superb on GitHub (description, topics), then add a pkg.
 
 ## a) FULLY DONE
 
-| # | Task | Evidence |
-|---|------|----------|
-| 1 | **Repo made public** | `gh repo edit --visibility public --accept-visibility-change-consequences` — verified `visibility: PUBLIC` |
-| 2 | **Description set** | 161-char keyword-rich one-liner covering value prop (real-time, SSE, severity grouping, Kubernetes-ready JSON probes) and tech stack (go-health + templ-components) |
-| 3 | **16 topics added** | `go`, `golang`, `health-check`, `healthcheck`, `health-dashboard`, `status-page`, `statuspage`, `realtime`, `sse`, `server-sent-events`, `datastar`, `templ`, `monitoring`, `observability`, `kubernetes`, `dashboard` |
-| 4 | **pkg.go.dev badge added to README** | Centered `<p align="center">` badge row with Go Reference + MIT License badges, matching sibling-repo pattern (gogenfilter, go-atomic-write) |
-| 5 | **License verified** | Read `LICENSE` file — confirmed MIT, used accurate badge `license-MIT-blue.svg` |
-| 6 | **Auto-committed** | Commit `a91825d` — clean working tree |
+| #   | Task                                 | Evidence                                                                                                                                                                                                               |
+| --- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Repo made public**                 | `gh repo edit --visibility public --accept-visibility-change-consequences` — verified `visibility: PUBLIC`                                                                                                             |
+| 2   | **Description set**                  | 161-char keyword-rich one-liner covering value prop (real-time, SSE, severity grouping, Kubernetes-ready JSON probes) and tech stack (go-health + templ-components)                                                    |
+| 3   | **16 topics added**                  | `go`, `golang`, `health-check`, `healthcheck`, `health-dashboard`, `status-page`, `statuspage`, `realtime`, `sse`, `server-sent-events`, `datastar`, `templ`, `monitoring`, `observability`, `kubernetes`, `dashboard` |
+| 4   | **pkg.go.dev badge added to README** | Centered `<p align="center">` badge row with Go Reference + MIT License badges, matching sibling-repo pattern (gogenfilter, go-atomic-write)                                                                           |
+| 5   | **License verified**                 | Read `LICENSE` file — confirmed MIT, used accurate badge `license-MIT-blue.svg`                                                                                                                                        |
+| 6   | **Auto-committed**                   | Commit `a91825d` — clean working tree                                                                                                                                                                                  |
 
 ---
 
 ## b) PARTIALLY DONE
 
-| # | Task | What's Done | What's Missing |
-|---|------|-------------|----------------|
-| 1 | **README badge row** | Go Reference + License badges added | No CI badge — no `.github/workflows/ci.yml` exists yet to badge against |
-| 2 | **GitHub metadata** | Description + topics + visibility | `homepage` URL still empty (no docs website exists yet) |
+| #   | Task                 | What's Done                         | What's Missing                                                          |
+| --- | -------------------- | ----------------------------------- | ----------------------------------------------------------------------- |
+| 1   | **README badge row** | Go Reference + License badges added | No CI badge — no `.github/workflows/ci.yml` exists yet to badge against |
+| 2   | **GitHub metadata**  | Description + topics + visibility   | `homepage` URL still empty (no docs website exists yet)                 |
 
 ---
 
@@ -80,88 +80,88 @@ Nothing was broken this session. All changes were metadata-only (GitHub API + RE
 
 ### Priority 1: Critical (Split Brain & Publishability)
 
-| # | Task |
-|---|------|
-| 1 | **Fix AGENTS.md real-time architecture** — rewrite to describe Datastar SSE, remove all HTMX/PolledRegion/partial.templ references |
-| 2 | **Verify actual API surface** — grep the real option functions and methods, update whichever doc is wrong (README or AGENTS.md) |
-| 3 | **Verify README Quick Start code compiles** — `dashboard.New(probe, ...)` signature, `dash.Start(ctx)`, `dash.RegisterRoutes()` — run `GOEXPERIMENT=jsonv2 go build ./...` |
-| 4 | **Remove go.mod replace directives** (or document them prominently) before expecting `go get` to work |
-| 5 | **Tag v0.1.0** — `git tag v0.1.0 && git push origin v0.1.0` so pkg.go.dev has a version to display |
-| 6 | **Trigger pkg.go.dev indexing** — fetch `https://pkg.go.dev/github.com/larsartmann/go-health-dashboard` |
+| #   | Task                                                                                                                                                                       |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Fix AGENTS.md real-time architecture** — rewrite to describe Datastar SSE, remove all HTMX/PolledRegion/partial.templ references                                         |
+| 2   | **Verify actual API surface** — grep the real option functions and methods, update whichever doc is wrong (README or AGENTS.md)                                            |
+| 3   | **Verify README Quick Start code compiles** — `dashboard.New(probe, ...)` signature, `dash.Start(ctx)`, `dash.RegisterRoutes()` — run `GOEXPERIMENT=jsonv2 go build ./...` |
+| 4   | **Remove go.mod replace directives** (or document them prominently) before expecting `go get` to work                                                                      |
+| 5   | **Tag v0.1.0** — `git tag v0.1.0 && git push origin v0.1.0` so pkg.go.dev has a version to display                                                                         |
+| 6   | **Trigger pkg.go.dev indexing** — fetch `https://pkg.go.dev/github.com/larsartmann/go-health-dashboard`                                                                    |
 
 ### Priority 2: CI/CD & Quality Gates
 
-| # | Task |
-|---|------|
-| 7 | **Create `.github/workflows/ci.yml`** — `GOEXPERIMENT=jsonv2 go build ./...`, `go test ./...`, `golangci-lint`, `govulncheck` |
-| 8 | **Add CI badge to README** — once ci.yml exists |
-| 9 | **Add Go Report Card badge to README** — visit goreportcard.com to generate |
-| 10 | **Run `nix flake check`** — validate flake + formatting |
-| 11 | **Run `nix run .#lint`** — verify the repo passes its own lint gate |
-| 12 | **Run `nix run .#vulncheck`** — verify no known vulnerabilities |
+| #   | Task                                                                                                                          |
+| --- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 7   | **Create `.github/workflows/ci.yml`** — `GOEXPERIMENT=jsonv2 go build ./...`, `go test ./...`, `golangci-lint`, `govulncheck` |
+| 8   | **Add CI badge to README** — once ci.yml exists                                                                               |
+| 9   | **Add Go Report Card badge to README** — visit goreportcard.com to generate                                                   |
+| 10  | **Run `nix flake check`** — validate flake + formatting                                                                       |
+| 11  | **Run `nix run .#lint`** — verify the repo passes its own lint gate                                                           |
+| 12  | **Run `nix run .#vulncheck`** — verify no known vulnerabilities                                                               |
 
 ### Priority 3: README & Documentation Polish
 
-| # | Task |
-|---|------|
-| 13 | **Add "Who is this for?" section** — SREs, platform engineers, DevOps teams running Go microservices |
-| 14 | **Add "When NOT to use this" section** — projects without samber/do, projects that need Prometheus/Grafana instead |
-| 15 | **Add "Comparison" table** — vs raw health endpoints, vs Healthchecks.io, vs Grafana, vs kubectl-ready probes |
-| 16 | **Tighten GitHub description** — consider shorter version (~100 chars) |
-| 17 | **Add audience topics** — `devops`, `sre`, `site-reliability`, `goth-stack`, `hypermedia` |
-| 18 | **Verify "How Real-Time Works" section matches actual code** — does the Datastar flow described match realtime.go? |
-| 19 | **Verify Routes table matches actual DefaultRoutes()** — does `/health/sse` exist? Does `/healthz` exist? |
-| 20 | **Verify Options code block matches actual API** — `WithPushInterval` vs `WithRefreshInterval`, `WithPushMode` vs `WithRefreshMode` |
-| 21 | **Add pkg.go.dev link in documentation bar** below badges (per website-launch skill pattern) |
-| 22 | **Verify Status Mapping table matches types/status.go** |
-| 23 | **Verify Dependencies table** — does go-datastar actually provide what README claims? |
+| #   | Task                                                                                                                                |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 13  | **Add "Who is this for?" section** — SREs, platform engineers, DevOps teams running Go microservices                                |
+| 14  | **Add "When NOT to use this" section** — projects without samber/do, projects that need Prometheus/Grafana instead                  |
+| 15  | **Add "Comparison" table** — vs raw health endpoints, vs Healthchecks.io, vs Grafana, vs kubectl-ready probes                       |
+| 16  | **Tighten GitHub description** — consider shorter version (~100 chars)                                                              |
+| 17  | **Add audience topics** — `devops`, `sre`, `site-reliability`, `goth-stack`, `hypermedia`                                           |
+| 18  | **Verify "How Real-Time Works" section matches actual code** — does the Datastar flow described match realtime.go?                  |
+| 19  | **Verify Routes table matches actual DefaultRoutes()** — does `/health/sse` exist? Does `/healthz` exist?                           |
+| 20  | **Verify Options code block matches actual API** — `WithPushInterval` vs `WithRefreshInterval`, `WithPushMode` vs `WithRefreshMode` |
+| 21  | **Add pkg.go.dev link in documentation bar** below badges (per website-launch skill pattern)                                        |
+| 22  | **Verify Status Mapping table matches types/status.go**                                                                             |
+| 23  | **Verify Dependencies table** — does go-datastar actually provide what README claims?                                               |
 
 ### Priority 4: Examples & Usability
 
-| # | Task |
-|---|------|
-| 24 | **Verify `example/` directory compiles and runs** — `GOEXPERIMENT=jsonv2 go run ./example` |
-| 25 | **Screenshot the dashboard** — add a screenshot/GIF to README (huge conversion factor) |
-| 26 | **Add example with custom routes** — show `WithRoutes()` |
-| 27 | **Add example with PushAlways mode** — show `WithPushMode(PushAlways)` |
-| 28 | **Document CSP nonce usage** — `WithNonce("abc123")` in context of CSP headers |
+| #   | Task                                                                                       |
+| --- | ------------------------------------------------------------------------------------------ |
+| 24  | **Verify `example/` directory compiles and runs** — `GOEXPERIMENT=jsonv2 go run ./example` |
+| 25  | **Screenshot the dashboard** — add a screenshot/GIF to README (huge conversion factor)     |
+| 26  | **Add example with custom routes** — show `WithRoutes()`                                   |
+| 27  | **Add example with PushAlways mode** — show `WithPushMode(PushAlways)`                     |
+| 28  | **Document CSP nonce usage** — `WithNonce("abc123")` in context of CSP headers             |
 
 ### Priority 5: Website & Public Presence
 
-| # | Task |
-|---|------|
-| 29 | **Build documentation website** — Astro + Starlight + Firebase (website-launch skill, full pipeline) |
-| 30 | **Set homepage URL** on GitHub repo once website is live |
-| 31 | **Decide subdomain** — `health-dashboard.lars.software`? Collision check needed |
-| 32 | **Write docs pages** — installation, quick start, configuration, routes, real-time architecture, deployment |
-| 33 | **Add OG image** for social sharing |
+| #   | Task                                                                                                        |
+| --- | ----------------------------------------------------------------------------------------------------------- |
+| 29  | **Build documentation website** — Astro + Starlight + Firebase (website-launch skill, full pipeline)        |
+| 30  | **Set homepage URL** on GitHub repo once website is live                                                    |
+| 31  | **Decide subdomain** — `health-dashboard.lars.software`? Collision check needed                             |
+| 32  | **Write docs pages** — installation, quick start, configuration, routes, real-time architecture, deployment |
+| 33  | **Add OG image** for social sharing                                                                         |
 
 ### Priority 6: Architecture & Code Quality
 
-| # | Task |
-|---|------|
-| 34 | **Review realtime.go** — verify SSE pusher goroutine lifecycle, no leaks, proper shutdown |
-| 35 | **Verify SSE connection handler** — does it handle client disconnect? Context cancellation? |
-| 36 | **Check shouldBroadcast / hashChecks** — is change detection correct? Edge cases? |
-| 37 | **Review content negotiation logic** — Accept header parsing edge cases (`*/*`, missing, `q=` values) |
-| 38 | **Benchmark** — run existing benchmarks, verify zero-cost polling claim |
-| 39 | **Review dark mode implementation** — localStorage, OS preference, toggle persistence |
-| 40 | **Verify GOEXPERIMENT=jsonv2 is documented everywhere needed** — README, website, pkg.go.dev |
+| #   | Task                                                                                                  |
+| --- | ----------------------------------------------------------------------------------------------------- |
+| 34  | **Review realtime.go** — verify SSE pusher goroutine lifecycle, no leaks, proper shutdown             |
+| 35  | **Verify SSE connection handler** — does it handle client disconnect? Context cancellation?           |
+| 36  | **Check shouldBroadcast / hashChecks** — is change detection correct? Edge cases?                     |
+| 37  | **Review content negotiation logic** — Accept header parsing edge cases (`*/*`, missing, `q=` values) |
+| 38  | **Benchmark** — run existing benchmarks, verify zero-cost polling claim                               |
+| 39  | **Review dark mode implementation** — localStorage, OS preference, toggle persistence                 |
+| 40  | **Verify GOEXPERIMENT=jsonv2 is documented everywhere needed** — README, website, pkg.go.dev          |
 
 ### Priority 7: Ecosystem & Integration
 
-| # | Task |
-|---|------|
-| 41 | **Document Kubernetes integration** — liveness/readiness/startup probe wiring |
-| 42 | **Document samber/do integration** — how to register health-checked services |
-| 43 | **Add Dockerfile** for the example server (if useful for demos) |
-| 44 | **Add CONTRIBUTING.md** — how to develop with Nix, how to run templ generate |
-| 45 | **Add CHANGELOG.md** — track v0.1.0 release |
-| 46 | **Verify templ-components API claims** — does it export LiveRegion, SDKScript? Or Alert, Table, Badge, Card? |
-| 47 | **Review go-health API claims** — does `probe.CachedResponse()` exist? `probe.Start()`? |
-| 48 | **Consider gRPC health integration** — future feature for non-HTTP services |
-| 49 | **Consider Prometheus metrics endpoint** — complementary to the dashboard |
-| 50 | **License header audit** — verify all `.go` files are MIT or unlicensed consistently |
+| #   | Task                                                                                                         |
+| --- | ------------------------------------------------------------------------------------------------------------ |
+| 41  | **Document Kubernetes integration** — liveness/readiness/startup probe wiring                                |
+| 42  | **Document samber/do integration** — how to register health-checked services                                 |
+| 43  | **Add Dockerfile** for the example server (if useful for demos)                                              |
+| 44  | **Add CONTRIBUTING.md** — how to develop with Nix, how to run templ generate                                 |
+| 45  | **Add CHANGELOG.md** — track v0.1.0 release                                                                  |
+| 46  | **Verify templ-components API claims** — does it export LiveRegion, SDKScript? Or Alert, Table, Badge, Card? |
+| 47  | **Review go-health API claims** — does `probe.CachedResponse()` exist? `probe.Start()`?                      |
+| 48  | **Consider gRPC health integration** — future feature for non-HTTP services                                  |
+| 49  | **Consider Prometheus metrics endpoint** — complementary to the dashboard                                    |
+| 50  | **License header audit** — verify all `.go` files are MIT or unlicensed consistently                         |
 
 ---
 
