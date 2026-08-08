@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	health "github.com/larsartmann/go-health"
@@ -58,7 +59,7 @@ func main() {
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
 
-	addr := ":8080"
+	addr := ":" + envOrDefault("PORT", "8080")
 	log.Printf("dashboard: http://localhost%s/health", addr)
 	log.Printf("readiness: http://localhost%s/readyz", addr)
 
@@ -91,6 +92,14 @@ func registerService(injector do.Injector, name string, svc healthChecker) {
 }
 
 // --- Mock services ---.
+
+func envOrDefault(key, defaultVal string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+
+	return defaultVal
+}
 
 type alwaysHealthy struct{}
 

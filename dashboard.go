@@ -251,6 +251,7 @@ func (d *Dashboard) buildData() viewModel {
 	vm.DatastarNonce = d.cfg.Nonce
 	vm.TailwindNonce = d.cfg.Nonce
 	vm.CSSPath = d.cfg.CSSPath
+	vm.FaviconURL = d.cfg.Routes.Favicon
 
 	return vm
 }
@@ -261,10 +262,16 @@ func (d *Dashboard) buildData() viewModel {
 // This wires up:
 //   - Dashboard route (HTML page with Datastar SSE)
 //   - SSE route (Datastar patch stream)
+//   - Favicon route (SVG favicon)
 //   - Liveness, Readiness, Startup probe endpoints (JSON)
 func (d *Dashboard) RegisterRoutes(mux *http.ServeMux, routes Routes) {
 	mux.HandleFunc(routes.Dashboard, d.Handler())
 	mux.HandleFunc(routes.SSE, d.SSEHandler())
+
+	if routes.Favicon != "" {
+		mux.HandleFunc(routes.Favicon, d.FaviconHandler())
+	}
+
 	mux.HandleFunc(routes.Liveness, d.probe.LivenessHandler())
 	mux.HandleFunc(routes.Readiness, d.probe.ReadinessHandler())
 	mux.HandleFunc(routes.Startup, d.probe.StartupHandler())

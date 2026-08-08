@@ -17,6 +17,7 @@ templ View(data viewModel) {
 	@layout.Base(layout.PageProps{
 		Title:       data.Title,
 		CSSPath:     data.CSSPath,
+		Favicon:     data.FaviconURL,
 		Nonce:       data.DatastarNonce,
 		HTMXVersion: "", // No HTMX — Datastar handles real-time
 		HeadContent: dashboardHead(data),

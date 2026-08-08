@@ -78,6 +78,7 @@ type viewModel struct {
 	LatencyMs     int64
 	Groups        []checkGroup
 	SSEURL        string
+	FaviconURL    string
 	CSSPath       string
 	DatastarNonce string
 	TailwindNonce string
