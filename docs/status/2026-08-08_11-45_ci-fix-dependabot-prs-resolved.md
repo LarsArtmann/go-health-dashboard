@@ -10,10 +10,10 @@
 
 ### Dependabot PRs resolved (all 3)
 
-| PR  | Title                                         | Resolution |
-| --- | --------------------------------------------- | ---------- |
-| #1  | bump actions/setup-go from 5 to 7             | Applied in `101ea3d`, PR auto-closed by Dependabot |
-| #2  | bump actions/checkout from 4 to 7             | Applied in `101ea3d`, PR auto-closed by Dependabot |
+| PR  | Title                                          | Resolution                                         |
+| --- | ---------------------------------------------- | -------------------------------------------------- |
+| #1  | bump actions/setup-go from 5 to 7              | Applied in `101ea3d`, PR auto-closed by Dependabot |
+| #2  | bump actions/checkout from 4 to 7              | Applied in `101ea3d`, PR auto-closed by Dependabot |
 | #3  | bump golangci/golangci-lint-action from 6 to 9 | Applied in `101ea3d`, PR auto-closed by Dependabot |
 
 All three modified the same file (`.github/workflows/ci.yml`), so I combined them into a single commit rather than merging sequentially.
@@ -22,12 +22,12 @@ All three modified the same file (`.github/workflows/ci.yml`), so I combined the
 
 Latest run (`b9eacb8`): **4/4 jobs passing**
 
-| Job                | Status | Notes |
-| ------------------ | ------ | ----- |
-| Build              | ✅      |       |
-| Test               | ✅      | Race detector enabled |
-| Lint               | ✅      | golangci-lint v2.12.2 via action v9 |
-| Vulnerability Scan | ✅      | govulncheck clean |
+| Job                | Status | Notes                               |
+| ------------------ | ------ | ----------------------------------- |
+| Build              | ✅     |                                     |
+| Test               | ✅     | Race detector enabled               |
+| Lint               | ✅     | golangci-lint v2.12.2 via action v9 |
+| Vulnerability Scan | ✅     | govulncheck clean                   |
 
 ### Root cause identified and fixed
 
@@ -41,8 +41,8 @@ The v9 action automatically prepends the `run` subcommand. Passing `args: run ./
 
 ### Commits this session
 
-| Commit  | Description |
-| ------- | ----------- |
+| Commit    | Description                                      |
+| --------- | ------------------------------------------------ |
 | `101ea3d` | ci: bump GitHub Actions to latest major versions |
 | `b9eacb8` | ci: drop duplicate 'run' from golangci-lint args |
 
@@ -87,6 +87,7 @@ These are items from the previous session's self-review that I did NOT touch thi
 ### 3. Did NOT update TODO_LIST.md
 
 The TODO_LIST still has two items marked BLOCKED that are actually DONE:
+
 - "Remove replace directives" — BLOCKED → actually DONE (go.mod has zero replaces)
 - "Tag v0.1.0 in git" — BLOCKED → actually DONE (tag v0.1.0 exists, pushed, GitHub Release created)
 

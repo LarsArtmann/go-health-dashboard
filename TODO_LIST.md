@@ -15,9 +15,9 @@
 
 ## Blocked (needs user decision)
 
-| Task                      | Status       | Why blocked                                                                                                              | Evidence                    |
-| ------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
-| Build-tag gating for SSE  | 🔵 `BLOCKED` | Consumers who only want HTML shouldn't need GOEXPERIMENT=jsonv2. Requires decision: accept, fork go-sse, or gate.        | `ROADMAP.md` Open Questions |
+| Task                     | Status       | Why blocked                                                                                                       | Evidence                    |
+| ------------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| Build-tag gating for SSE | 🔵 `BLOCKED` | Consumers who only want HTML shouldn't need GOEXPERIMENT=jsonv2. Requires decision: accept, fork go-sse, or gate. | `ROADMAP.md` Open Questions |
 
 ## High Impact
 
