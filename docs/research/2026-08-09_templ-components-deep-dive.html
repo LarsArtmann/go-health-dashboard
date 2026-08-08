@@ -1,0 +1,1787 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>templ-components Deep Dive — go-health-dashboard</title>
+    <style>
+      /* =========================================================================
+         BAUHAUS LIGHT — Editorial template
+         Design language: form follows function. Primary colors on warm paper.
+         Zero external dependencies: system fonts, no CDN, no build step.
+         Token architecture: see references/bauhaus-tokens.md
+         ========================================================================= */
+
+      :root {
+        /* --- Primitive palette (Bauhaus Light) --- */
+        --color-paper: #f4f4f0;
+        --color-paper-2: #ffffff;
+        --color-paper-3: #e8e8e2;
+        --color-ink: #111111;
+        --color-red: #e63946;
+        --color-blue: #1d3557;
+        --color-yellow: #f4d35e;
+        --color-hairline: rgba(17, 17, 17, 0.14);
+        --color-hairline-strong: rgba(17, 17, 17, 0.3);
+
+        /* --- Semantic layer (shared vocabulary with dark template) --- */
+        --surface: var(--color-paper);
+        --surface-raised: var(--color-paper-2);
+        --surface-sunken: var(--color-paper-3);
+        --text: var(--color-ink);
+        --text-muted: rgba(17, 17, 17, 0.72);
+        --text-faint: rgba(17, 17, 17, 0.5);
+        --border: var(--color-hairline);
+        --border-strong: var(--color-hairline-strong);
+        --accent: var(--color-red);
+        --problem: var(--color-red);
+        --solution: var(--color-blue);
+        --warning: var(--color-yellow);
+
+        /* --- Backward-compatible aliases (do not break consumer skills) --- */
+        --bg: var(--surface);
+        --bg-elevated: var(--surface-raised);
+        --bg-sunken: var(--surface-sunken);
+        --bg-card: var(--surface-raised);
+        --bg-code: var(--surface-sunken);
+        --ink: var(--text);
+        --ink-secondary: var(--text-muted);
+        --ink-muted: var(--text-faint);
+        --rose: var(--problem);
+        --rose-glow: color-mix(in srgb, var(--problem) 15%, transparent);
+        --emerald: var(--solution);
+        --emerald-glow: color-mix(in srgb, var(--solution) 15%, transparent);
+        --amber: var(--warning);
+        --amber-glow: color-mix(in srgb, var(--warning) 15%, transparent);
+        --amber-light: color-mix(in srgb, var(--warning) 22%, transparent);
+        --coral: var(--problem);
+        --coral-light: color-mix(in srgb, var(--problem) 12%, transparent);
+        --teal: var(--solution);
+        --teal-light: color-mix(in srgb, var(--solution) 12%, transparent);
+
+        /* --- Shape --- */
+        --radius: 0px;
+        --radius-sm: 0px;
+
+        /* --- Type stacks (system only — zero external fonts) --- */
+        --font-heading:
+          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --font-body:
+          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --font-mono:
+          ui-monospace, "Cascadia Code", "Source Code Pro", "JetBrains Mono",
+          Menlo, Consolas, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      section[id],
+      [id] {
+        scroll-margin-top: 60px;
+      }
+
+      body {
+        background: var(--surface);
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* --- Accessibility: keyboard focus --- */
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      a:focus-visible {
+        outline-offset: -1px;
+      }
+
+      /* --- Full-bleed top bar --- */
+      .top-bar {
+        background: var(--text);
+        color: var(--surface);
+        padding: 0.6rem 2rem;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* --- Layout: optional sticky sidebar TOC --- */
+      .layout {
+        display: flex;
+        gap: 2.5rem;
+        padding: 2rem;
+      }
+      .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 1rem;
+        align-self: flex-start;
+        height: calc(100vh - 2rem);
+        overflow-y: auto;
+        display: none;
+      }
+      .sidebar nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .sidebar .label {
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--accent);
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 2px solid var(--text);
+      }
+      .sidebar a {
+        font-size: 0.86rem;
+        color: var(--text);
+        text-decoration: none;
+        padding: 0.5rem 0.75rem;
+        border-left: 4px solid transparent;
+        font-weight: 600;
+        transition: all 0.15s ease;
+        line-height: 1.4;
+      }
+      .sidebar a:hover,
+      .sidebar a.active {
+        border-left-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 8%, transparent);
+        color: var(--accent);
+      }
+      .main {
+        flex: 1;
+        min-width: 0;
+      }
+
+      /* --- Headings --- */
+      h1,
+      h2,
+      h3,
+      h4 {
+        font-family: var(--font-heading);
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        color: var(--text);
+      }
+      h1 {
+        font-size: clamp(1.9rem, 4.5vw, 2.8rem);
+        line-height: 1.05;
+        margin: 0 0 0.6rem;
+      }
+      h2 {
+        font-size: 1.5rem;
+        margin: 2.5rem 0 1rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 3px solid var(--text);
+        display: flex;
+        align-items: baseline;
+        gap: 0.7rem;
+      }
+      h2 .num {
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        color: var(--accent);
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+      h3 {
+        font-size: 1.15rem;
+        margin: 0 0 0.4rem;
+        font-weight: 700;
+      }
+      h4 {
+        font-size: 1rem;
+        margin: 0 0 0.3rem;
+        font-weight: 700;
+      }
+      p {
+        margin: 0 0 1rem;
+      }
+
+      /* --- Hero --- */
+      .hero {
+        padding: 1.5rem 0 2rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 3px solid var(--text);
+      }
+      .eyebrow {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--accent);
+        margin-bottom: 0.9rem;
+      }
+      .subtitle {
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        max-width: 70ch;
+        margin: 0 0 1rem;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      .tag {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        padding: 0.25rem 0.6rem;
+        background: var(--surface-sunken);
+        color: var(--text);
+        border: 1px solid var(--border-strong);
+      }
+      .tag.amber {
+        background: var(--warning);
+        border-color: var(--warning);
+        color: var(--text);
+      }
+      .tag.teal {
+        background: var(--solution);
+        border-color: var(--solution);
+        color: var(--surface);
+      }
+
+      /* Bauhaus signature: geometric shape cluster (optional) */
+      .hero-shapes {
+        position: relative;
+        height: 90px;
+        margin-bottom: 1.2rem;
+      }
+      .hero-shapes .circle {
+        position: absolute;
+        top: 0;
+        right: 180px;
+        width: 64px;
+        height: 64px;
+        background: var(--problem);
+        border-radius: 50%;
+      }
+      .hero-shapes .square {
+        position: absolute;
+        top: 26px;
+        right: 90px;
+        width: 56px;
+        height: 56px;
+        background: var(--solution);
+      }
+      .hero-shapes .tri {
+        position: absolute;
+        top: 8px;
+        right: 0;
+        width: 0;
+        height: 0;
+        border-left: 32px solid transparent;
+        border-right: 32px solid transparent;
+        border-bottom: 56px solid var(--warning);
+      }
+      .hero-shapes .bar {
+        position: absolute;
+        bottom: 0;
+        right: 230px;
+        width: 100px;
+        height: 14px;
+        background: var(--text);
+      }
+
+      /* --- Scorecard / stat cards --- */
+      .scorecard,
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 0;
+        margin: 1.5rem 0 2rem;
+        border: 3px solid var(--text);
+      }
+      .score-card,
+      .stat-card {
+        padding: 1.3rem 1rem;
+        text-align: center;
+        border-right: 3px solid var(--text);
+        background: var(--surface-raised);
+      }
+      .score-card:last-child,
+      .stat-card:last-child {
+        border-right: none;
+      }
+
+      .score,
+      .stat-value {
+        font-family: var(--font-heading);
+        font-size: 2.6rem;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+      .score-card .label,
+      .stat-label {
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-top: 0.5rem;
+      }
+      /* Semantic state classes — no nth-child decoration, no !important */
+      .score-good,
+      .stat-good {
+        background: var(--solution);
+        color: var(--surface);
+      }
+      .score-warn,
+      .stat-warn {
+        background: var(--warning);
+        color: var(--text);
+      }
+      .score-bad,
+      .stat-bad {
+        background: var(--problem);
+        color: var(--surface);
+      }
+
+      /* --- General cards --- */
+      .card {
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+        padding: 1.2rem 1.4rem;
+        margin-bottom: 1rem;
+        border-left: 8px solid var(--border-strong);
+      }
+      .card-problem {
+        border-left-color: var(--problem);
+      }
+      .card-solution {
+        border-left-color: var(--solution);
+      }
+      .card-warning {
+        border-left-color: var(--warning);
+      }
+
+      /* --- Issue cards --- */
+      .issue {
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+        padding: 1.2rem 1.4rem;
+        margin-bottom: 1rem;
+        border-left: 8px solid var(--border-strong);
+      }
+      .issue-critical {
+        border-left-color: var(--problem);
+      }
+      .issue-important {
+        border-left-color: var(--warning);
+      }
+      .issue-nice {
+        border-left-color: var(--solution);
+      }
+      .issue h3 {
+        margin-bottom: 0.3rem;
+      }
+      .issue .where {
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        color: var(--text-faint);
+        margin: 0.2rem 0 0.6rem;
+      }
+      .issue p:last-child {
+        margin-bottom: 0;
+      }
+
+      /* --- Severity badges --- */
+      .severity {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 0.22rem 0.6rem;
+        margin-bottom: 0.6rem;
+        color: var(--surface);
+      }
+      .severity-critical {
+        background: var(--problem);
+      }
+      .severity-important {
+        background: var(--warning);
+        color: var(--text);
+      }
+      .severity-nice {
+        background: var(--solution);
+      }
+
+      /* --- Inline badges --- */
+      .badge {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.2rem 0.55rem;
+        border: 1px solid var(--text);
+        color: var(--text);
+      }
+      .badge-critical {
+        background: var(--problem);
+        color: var(--surface);
+      }
+      .badge-high {
+        background: var(--warning);
+      }
+      .badge-medium {
+        background: var(--surface-sunken);
+      }
+      .badge-low {
+        background: var(--surface-raised);
+        color: var(--text-muted);
+      }
+      .badge-fixed {
+        background: var(--solution);
+        color: var(--surface);
+      }
+
+      /* --- Callouts --- */
+      .callout {
+        margin: 0.8rem 0 0;
+        padding: 0.8rem 1rem;
+        border: 1px solid var(--border-strong);
+        border-left: 4px solid var(--border-strong);
+        background: var(--surface-sunken);
+        font-size: 0.92rem;
+      }
+      .callout strong {
+        display: inline-block;
+        margin-right: 0.4rem;
+      }
+      .callout-teal,
+      .callout-solution {
+        border-left-color: var(--solution);
+        background: color-mix(
+          in srgb,
+          var(--solution) 10%,
+          var(--surface-raised)
+        );
+      }
+      .callout-amber,
+      .callout-warning {
+        border-left-color: var(--warning);
+        background: color-mix(
+          in srgb,
+          var(--warning) 18%,
+          var(--surface-raised)
+        );
+      }
+
+      /* --- Strengths --- */
+      .strengths {
+        display: grid;
+        gap: 0.5rem;
+        margin: 1rem 0 1.5rem;
+      }
+      .strength {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.9rem;
+        padding: 0.75rem 0;
+        border-bottom: 2px solid var(--border);
+      }
+      .strength .check {
+        font-family: var(--font-mono);
+        font-weight: 900;
+        color: var(--solution);
+        font-size: 1.3rem;
+        line-height: 1.3;
+      }
+      .strength .text strong {
+        display: block;
+        margin-bottom: 0.15rem;
+      }
+      .strength .text span {
+        color: var(--text-muted);
+        font-size: 0.92rem;
+      }
+
+      /* --- Tables --- */
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0 1.5rem;
+        font-size: 0.92rem;
+        border: 2px solid var(--text);
+      }
+      th {
+        text-align: left;
+        padding: 0.6rem 0.9rem;
+        background: var(--text);
+        color: var(--surface);
+        font-family: var(--font-mono);
+        font-size: 0.66rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border-right: 1px solid var(--border-strong);
+      }
+      th:last-child {
+        border-right: none;
+      }
+      td {
+        padding: 0.6rem 0.9rem;
+        border-top: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+      }
+      td:last-child {
+        border-right: none;
+      }
+      tr:nth-child(even) td {
+        background: var(--surface-sunken);
+      }
+      table.compare td.yes {
+        color: var(--solution);
+        font-weight: 700;
+      }
+      table.compare td.no {
+        color: var(--problem);
+        font-weight: 700;
+      }
+
+      /* --- Code blocks + syntax highlighting --- */
+      pre {
+        background: var(--text);
+        color: var(--surface);
+        padding: 1rem 1.2rem;
+        margin: 1rem 0;
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        line-height: 1.65;
+        overflow-x: auto;
+        border: 2px solid var(--text);
+      }
+      code {
+        font-family: var(--font-mono);
+      }
+      p code,
+      li code,
+      td code {
+        font-size: 0.88em;
+        background: var(--surface-sunken);
+        padding: 0.1rem 0.35rem;
+      }
+      .tok-keyword {
+        color: var(--warning);
+      }
+      .tok-type {
+        color: var(--warning);
+      }
+      .tok-string {
+        color: #95e1d3;
+      }
+      .tok-comment {
+        color: rgba(244, 244, 240, 0.45);
+        font-style: italic;
+      }
+      .tok-func {
+        color: #6eb5ff;
+      }
+      .tok-number {
+        color: var(--warning);
+      }
+      .tok-generic {
+        color: var(--problem);
+      }
+      .tok-builtin {
+        color: #6eb5ff;
+      }
+      .tok-punct {
+        color: rgba(244, 244, 240, 0.7);
+      }
+      .tok-attr {
+        color: var(--warning);
+      }
+
+      /* --- Dependency tree / ASCII diagrams --- */
+      .dep-tree {
+        background: var(--surface-sunken);
+        border: 2px solid var(--text);
+        padding: 1rem 1.2rem;
+        margin: 1rem 0;
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        line-height: 1.7;
+        white-space: pre;
+        overflow-x: auto;
+      }
+      .dep-tree .root {
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .dep-tree .ok {
+        color: var(--solution);
+      }
+      .dep-tree .unwanted {
+        color: var(--problem);
+      }
+
+      /* --- Inline node-and-arrow diagrams --- */
+      .diagram {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        margin: 1rem 0;
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+      }
+      .node {
+        display: inline-block;
+        padding: 0.4rem 0.75rem;
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        font-weight: 700;
+        background: var(--surface-sunken);
+        border: 1px solid var(--text);
+      }
+      .node-core {
+        background: var(--accent);
+        color: var(--surface);
+      }
+      .node-problem {
+        background: var(--problem);
+        color: var(--surface);
+      }
+      .node-good {
+        background: var(--solution);
+        color: var(--surface);
+      }
+      .arrow {
+        color: var(--text-faint);
+        font-family: var(--font-mono);
+      }
+
+      /* --- Grids --- */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin: 1rem 0;
+      }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin: 1rem 0;
+      }
+
+      /* --- Inline TOC --- */
+      .toc {
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+        border-left: 6px solid var(--accent);
+        padding: 1rem 1.3rem;
+        margin: 1rem 0 1.5rem;
+      }
+      .toc h3 {
+        margin-bottom: 0.5rem;
+      }
+      .toc ul {
+        list-style: none;
+        padding: 0;
+      }
+      .toc li {
+        margin: 0.25rem 0;
+      }
+      .toc a {
+        color: var(--text);
+        text-decoration: none;
+        font-size: 0.92rem;
+        font-weight: 600;
+      }
+      .toc a:hover {
+        color: var(--accent);
+      }
+
+      /* --- Migration / numbered steps --- */
+      .migration-step {
+        display: grid;
+        grid-template-columns: 56px 1fr;
+        gap: 1rem;
+        margin: 1rem 0;
+        padding: 1.1rem;
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+        border-left: 6px solid var(--accent);
+      }
+      .migration-num {
+        font-family: var(--font-mono);
+        font-weight: 900;
+        font-size: 1.8rem;
+        color: var(--accent);
+        line-height: 1;
+      }
+      .migration-content h4 {
+        margin-bottom: 0.2rem;
+      }
+      .migration-content p {
+        margin-bottom: 0;
+        color: var(--text-muted);
+        font-size: 0.94rem;
+      }
+
+      /* --- Before/After comparison --- */
+      .compare-header {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin: 1rem 0 0.5rem;
+      }
+      .compare-before,
+      .compare-after {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 0.4rem 0.7rem;
+        color: var(--surface);
+      }
+      .compare-before {
+        background: var(--problem);
+      }
+      .compare-after {
+        background: var(--solution);
+      }
+      .compare-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+      .compare-row pre {
+        margin: 0;
+      }
+
+      /* --- Footer --- */
+      .footer {
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 3px solid var(--text);
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        font-family: var(--font-mono);
+      }
+
+      /* --- Responsive --- */
+      @media (min-width: 1024px) {
+        .sidebar {
+          display: block;
+        }
+      }
+      @media (max-width: 768px) {
+        .layout {
+          flex-direction: column;
+          padding: 1rem;
+        }
+        .top-bar {
+          padding: 0.6rem 1rem;
+          flex-wrap: wrap;
+          gap: 0.3rem;
+        }
+        .grid-2,
+        .grid-3 {
+          grid-template-columns: 1fr;
+        }
+        .compare-header,
+        .compare-row {
+          grid-template-columns: 1fr;
+        }
+        .scorecard,
+        .stat-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .score-card:nth-child(2),
+        .stat-card:nth-child(2) {
+          border-right: none;
+        }
+        .score-card:nth-child(1),
+        .stat-card:nth-child(1),
+        .score-card:nth-child(2),
+        .stat-card:nth-child(2) {
+          border-bottom: 3px solid var(--text);
+        }
+        .migration-step {
+          grid-template-columns: 1fr;
+        }
+        .hero-shapes {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top-bar">
+      <span>Library Deep Dive</span>
+      <span>2026-08-09</span>
+      <span>go-health-dashboard</span>
+    </div>
+
+    <div class="layout">
+      <aside class="sidebar" data-nav>
+        <nav>
+          <div class="label">Contents</div>
+          <a href="#summary">Summary</a>
+          <a href="#scorecard">Scorecard</a>
+          <a href="#usage">Current Usage</a>
+          <a href="#strengths">Fully Leveraged</a>
+          <a href="#missed">Missed Opportunities</a>
+          <a href="#partial">Partially Used</a>
+          <a href="#notapplicable">Not Applicable</a>
+          <a href="#opportunities">Top Opportunities</a>
+          <a href="#conclusion">Conclusion</a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <!-- Hero -->
+        <header class="hero">
+          <div class="hero-shapes">
+            <div class="bar"></div>
+            <div class="circle"></div>
+            <div class="square"></div>
+            <div class="tri"></div>
+          </div>
+          <div class="eyebrow">LIBRARY DEEP DIVE &middot; 2026-08-09</div>
+          <h1>templ-components &mdash; Adoption &amp; Utilization Audit</h1>
+          <p class="subtitle">
+            Is <code>go-health-dashboard</code> using templ-components
+            <em>superbly</em>? The dashboard correctly adopts the SSE-first
+            Datastar architecture and uses core layout components idiomatically,
+            but leaves significant polish and enhancement features on the table
+            &mdash; most notably hand-rolling a page header that the library
+            already provides as a first-class component.
+          </p>
+          <div class="meta">
+            <span class="tag amber">Version: v1.8.0</span>
+            <span class="tag">Latest: v1.8.0</span>
+            <span class="tag teal">Adoption Score: 62/100</span>
+            <span class="tag">13 of 116 components used</span>
+          </div>
+        </header>
+
+        <!-- Scorecard -->
+        <section id="scorecard" class="scorecard">
+          <div class="score-card score-warn">
+            <div class="score">62</div>
+            <div class="label">Adoption Score</div>
+          </div>
+          <div class="score-card score-good">
+            <div class="score">7</div>
+            <div class="label">Fully Leveraged</div>
+          </div>
+          <div class="score-card score-bad">
+            <div class="score">8</div>
+            <div class="label">Missed Opportunities</div>
+          </div>
+          <div class="score-card score-good">
+            <div class="score">0</div>
+            <div class="label">Anti-Patterns</div>
+          </div>
+          <div class="score-card score-good">
+            <div class="score">0</div>
+            <div class="label">Version Gap</div>
+          </div>
+        </section>
+
+        <!-- Summary -->
+        <section id="summary">
+          <h2><span class="num">00</span>Summary</h2>
+          <p>
+            <code>go-health-dashboard</code> imports templ-components v1.8.0
+            (the latest tag) and uses 13 of its 116 components across 5 source
+            files (<code>view.templ</code>, <code>status.go</code>, and the
+            generated <code>view_templ.go</code>). The core SSE-first
+            architecture is done right: <code>datastar.LiveRegion</code>,
+            <code>datastar.SDKScript</code>, and explicit
+            <code>HTMXVersion: ""</code> on <code>layout.Base</code> show a
+            team that understood the library's Datastar philosophy. The
+            feedback and badge type mappings correctly use the non-deprecated
+            <code>FeedbackType</code> over <code>AlertType</code>.
+          </p>
+          <p>
+            However, the dashboard only scratches the surface of what
+            templ-components offers for a status dashboard. It hand-rolls a
+            page header instead of using <code>display.PageHeader</code>, uses
+            raw Tailwind <code>space-y-6</code> divs instead of
+            <code>layout.Stack</code>, ignores the entire <code>icons</code>
+            package (102 icons), and leaves StatCard's <code>Trend</code>,
+            <code>Icon</code>, and <code>Change</code> fields empty. There are
+            no loading skeletons, no collapsible groups for healthy services,
+            no "last updated" timestamp, and no branded error pages.
+          </p>
+          <div class="callout callout-amber">
+            <strong>The bottom line</strong>
+            The foundation is excellent &mdash; correct Datastar architecture,
+            right component choices for the core layout. But the dashboard is
+            using templ-components as a basic component shelf, not as a
+            <em>design system</em>. Adopting <code>display.PageHeader</code>,
+            <code>layout.Stack</code>, StatCard enrichment (Trend/Icon), Badge
+            <code>Dot</code> indicators, <code>icons.Icon</code>, loading
+            skeletons, and <code>display.CollapsibleSection</code> would
+            elevate it from "works" to "superb" &mdash; all are drop-in or
+            near-drop-in changes with zero new dependencies.
+          </div>
+        </section>
+
+        <!-- Current Usage -->
+        <section id="usage">
+          <h2><span class="num">01</span>Current Usage</h2>
+          <p>
+            The dashboard imports 5 templ-components packages
+            (<code>display</code>, <code>feedback</code>, <code>layout</code>,
+            <code>datastar</code>, <code>utils</code>) and uses these 13
+            components:
+          </p>
+
+          <div class="dep-tree"><span class="root">dashboard</span>
+├── <span class="ok">layout.Base</span> + PageProps
+├── <span class="ok">layout.Container</span> + DefaultContainerProps()
+├── <span class="ok">layout.ThemeToggle</span>
+├── <span class="ok">datastar.SDKScript</span> + SDKScriptProps
+├── <span class="ok">datastar.LiveRegion</span> + LiveRegionProps
+├── <span class="ok">display.Grid</span> + GridProps (GridCols3)
+├── <span class="ok">display.StatCard</span> + StatCardProps (Value/Label only)
+├── <span class="ok">display.Card</span> + CardProps (Title/Padding)
+├── <span class="ok">display.Table</span> + TableProps
+├── <span class="ok">display.Badge</span> + BadgeProps
+├── <span class="ok">display.SimpleEmptyState</span>
+├── <span class="ok">feedback.Alert</span> + AlertProps (Title only)
+└── <span class="ok">utils.BaseProps</span> (embedded in all props)</div>
+
+          <p>
+            The architecture is sound: <code>layout.Base</code> renders the
+            HTML shell with CSP nonce and no HTMX. <code>datastar.SDKScript</code>
+            injects the Datastar runtime. <code>datastar.LiveRegion</code>
+            wraps the health content with <code>data-init="@get('/health/sse')"</code>
+            for real-time SSE updates. The pusher goroutine renders
+            <code>dashboardContent</code> as a Datastar <code>ElementsPatch</code>
+            and broadcasts via <code>sse.Broadcaster</code>. Health status maps
+            to <code>FeedbackType</code> (non-deprecated) and
+            <code>BadgeType</code> constants through explicit switch
+            statements in <code>status.go</code>.
+          </p>
+        </section>
+
+        <!-- Fully Leveraged -->
+        <section id="strengths">
+          <h2><span class="num">&#9670;</span>Fully Leveraged</h2>
+          <p>
+            These capabilities are used correctly and idiomatically. No action
+            needed &mdash; documenting them builds confidence in the audit.
+          </p>
+
+          <div class="strengths">
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>SSE-first Datastar architecture</strong>
+                <span><code>datastar.LiveRegion</code> + <code>datastar.SDKScript</code> + explicit <code>HTMXVersion: ""</code> on <code>layout.Base</code>. The dashboard correctly chose Datastar over HTMX and uses the library's Datastar components as designed (<code>view.templ:17-24, 53-61, 70-73</code>).</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Non-deprecated FeedbackType</strong>
+                <span>Uses <code>feedback.FeedbackType</code> with <code>FeedbackSuccess/Warning/Error/Info</code>, not the deprecated <code>AlertType</code> alias (<code>status.go:29-39</code>).</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Explicit Badge type mapping (not StatusBadge)</strong>
+                <span>Correctly uses <code>display.Badge</code> with explicit <code>Type</code> mapping rather than <code>display.StatusBadge()</code>. StatusBadge's lookup table maps "passed"/"warning"/"failed" but NOT "pass"/"warn"/"fail" (go-health's exact strings). The explicit mapping is the right call (<code>status.go:14-25, 182-187</code>).</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Table with templ Component cells</strong>
+                <span>Uses <code>display.TableCell{Content: display.Badge(...)}</code> to embed live Badge components inside table cells &mdash; the correct pattern for rich table content (<code>status.go:200-206</code>).</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>CSP nonce propagation</strong>
+                <span>Nonce flows through <code>utils.BaseProps</code> to all script-injecting components (SDKScript, ThemeToggle). CSP-safe by design (<code>view.templ:21, 36, 71</code>).</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Version currency</strong>
+                <span><code>go.mod</code> pins <code>v1.8.0</code> &mdash; the latest tag. Zero version gap. No features missed due to staleness.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>layout.Base + Container + ThemeToggle trio</strong>
+                <span>Correctly uses the library's page shell, centered wrapper, and dark-mode toggle as designed. These are the foundational layout primitives and they are used idiomatically (<code>view.templ:17-25, 36</code>).</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Missed Opportunities -->
+        <section id="missed">
+          <h2><span class="num">02</span>Missed Opportunities</h2>
+          <p>
+            Powerful features not used anywhere in the project, each solving a
+            real problem in this codebase. Ordered by impact.
+          </p>
+
+          <!-- Finding 1: PageHeader -->
+          <div class="issue issue-critical" id="missed-pageheader">
+            <span class="severity severity-critical">Missed Opportunity &middot; High impact</span>
+            <h3>display.PageHeader &mdash; hand-rolled duplicate</h3>
+            <div class="where">
+              view.templ:28-36 &middot; <code>display.PageHeader</code> available but unused
+            </div>
+            <p>
+              The dashboard hand-rolls a header with
+              <code>&lt;h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100"&gt;</code>,
+              a subtitle paragraph, and a flex layout to position the
+              ThemeToggle. templ-components ships
+              <code>display.PageHeader(PageHeaderProps{Title, Subtitle, Action})</code>
+              which renders <em>exactly</em> this pattern: title in the same
+              classes, muted subtitle, and an <code>Action</code> slot on the
+              right. The ThemeToggle would go in the <code>Action</code> slot.
+              This is the textbook "hand-rolled duplicate of a library
+              component" finding.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Replace the 10-line manual header with <code>display.PageHeader</code>.
+            </div>
+            <pre><code><span class="tok-comment">// Before: 10 lines of manual header (view.templ:28-37)</span>
+<span class="tok-punct">&lt;</span><span class="tok-keyword">div</span> <span class="tok-attr">class</span><span class="tok-punct">=</span><span class="tok-string">"mb-6 flex items-center justify-between"</span><span class="tok-punct">&gt;</span>
+    <span class="tok-punct">&lt;</span><span class="tok-keyword">div</span><span class="tok-punct">&gt;</span>
+        <span class="tok-punct">&lt;</span><span class="tok-keyword">h1</span> <span class="tok-attr">class</span><span class="tok-punct">=</span><span class="tok-string">"text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100"</span><span class="tok-punct">&gt;</span>{ data.Title }<span class="tok-punct">&lt;/</span><span class="tok-keyword">h1</span><span class="tok-punct">&gt;</span>
+        <span class="tok-punct">&lt;</span><span class="tok-keyword">p</span> <span class="tok-attr">class</span><span class="tok-punct">=</span><span class="tok-string">"mt-1 text-sm text-gray-500 dark:text-gray-400"</span><span class="tok-punct">&gt;</span>Real-time health monitoring<span class="tok-punct">&lt;/</span><span class="tok-keyword">p</span><span class="tok-punct">&gt;</span>
+    <span class="tok-punct">&lt;/</span><span class="tok-keyword">div</span><span class="tok-punct">&gt;</span>
+    @<span class="tok-func">layout.ThemeToggle</span>(<span class="tok-string">"Toggle theme"</span>, data.DatastarNonce)
+<span class="tok-punct">&lt;/</span><span class="tok-keyword">div</span><span class="tok-punct">&gt;</span>
+
+<span class="tok-comment">// After: 1 component call with Action slot</span>
+@<span class="tok-func">display.PageHeader</span>(display.PageHeaderProps{
+    Title:    data.Title,
+    Subtitle: <span class="tok-string">"Real-time health monitoring"</span>,
+    Action:   layout.<span class="tok-func">ThemeToggle</span>(<span class="tok-string">"Toggle theme"</span>, data.DatastarNonce),
+})</code></pre>
+          </div>
+
+          <!-- Finding 2: Stack -->
+          <div class="issue issue-critical" id="missed-stack">
+            <span class="severity severity-critical">Missed Opportunity &middot; High impact</span>
+            <h3>layout.Stack &mdash; manual space-y divs</h3>
+            <div class="where">
+              view.templ:52, 101 &middot; <code>&lt;div class="mt-6 space-y-6"&gt;</code> instead of <code>layout.Stack</code>
+            </div>
+            <p>
+              The dashboard uses raw <code>&lt;div class="mt-6 space-y-6"&gt;</code>
+              for vertical layout. templ-components ships
+              <code>layout.Stack(StackProps{Gap})</code> explicitly as "the
+              single source of truth for vertical rhythm &mdash; replacing the
+              repeated <code>space-y-4</code> / <code>space-y-6</code> strings
+              scattered across consumer pages" (ADR-0016). Using the component
+              instead of raw classes is the library's own stated design
+              philosophy.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Replace <code>&lt;div class="mt-6 space-y-6"&gt;</code> with
+              <code>layout.Stack(layout.StackProps{Gap: layout.StackGapLG})</code>.
+            </div>
+            <pre><code><span class="tok-comment">// Before: raw Tailwind classes</span>
+&lt;div class=<span class="tok-string">"mt-6 space-y-6"</span>&gt;
+    @<span class="tok-func">display.Card</span>(...) { ... }
+    @<span class="tok-func">display.Card</span>(...) { ... }
+&lt;/div&gt;
+
+<span class="tok-comment">// After: library component with typed gap</span>
+@<span class="tok-func">layout.Stack</span>(layout.StackProps{Gap: layout.StackGapLG}) {
+    @<span class="tok-func">display.Card</span>(...) { ... }
+    @<span class="tok-func">display.Card</span>(...) { ... }
+}</code></pre>
+          </div>
+
+          <!-- Finding 3: StatCard enrichment -->
+          <div class="issue issue-important" id="missed-statcard-trend">
+            <span class="severity severity-important">Missed Opportunity &middot; Medium-High impact</span>
+            <h3>StatCard Trend, Icon, and Change fields unused</h3>
+            <div class="where">
+              view.templ:39-50 &middot; only <code>Value</code> and <code>Label</code> set on all 3 StatCards
+            </div>
+            <p>
+              <code>StatCardProps</code> has 4 unused fields:
+              <code>Trend</code> (TrendUp/Down/Warn/None with arrow indicator),
+              <code>Change</code> (delta text like "+12ms"), <code>Icon</code>
+              (leading icon tile, e.g. <code>icons.Clock</code>), and
+              <code>Href</code> (clickable drill-down). For a health dashboard,
+              these fields are high-value: the Latency card could show
+              <code>TrendUp</code> when latency is rising, the Uptime card
+              could use <code>icons.Clock</code>, and the Version card could
+              use <code>icons.Tag</code>. The trend indicator gives operators
+              at-a-glance direction without reading numbers.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Populate <code>Icon</code> on all StatCards, <code>Trend</code>
+              on the Latency card (requires tracking previous latency), and
+              <code>Change</code> for delta display.
+            </div>
+            <pre><code><span class="tok-comment">// Before: bare stat cards</span>
+@<span class="tok-func">display.StatCard</span>(display.StatCardProps{
+    Value: fmt.<span class="tok-func">Sprintf</span>(<span class="tok-string">"%dms"</span>, data.LatencyMs),
+    Label: <span class="tok-string">"Check Latency"</span>,
+})
+
+<span class="tok-comment">// After: enriched with icon and trend</span>
+@<span class="tok-func">display.StatCard</span>(display.StatCardProps{
+    Value:  fmt.<span class="tok-func">Sprintf</span>(<span class="tok-string">"%dms"</span>, data.LatencyMs),
+    Label:  <span class="tok-string">"Check Latency"</span>,
+    Icon:   icons.Clock,
+    Trend:  display.TrendUp,   <span class="tok-comment">// arrow indicator when latency rises</span>
+    Change: <span class="tok-string">"+5ms"</span>,        <span class="tok-comment">// delta from last check</span>
+})</code></pre>
+          </div>
+
+          <!-- Finding 4: CollapsibleSection -->
+          <div class="issue issue-important" id="missed-collapsible">
+            <span class="severity severity-important">Missed Opportunity &middot; Medium impact</span>
+            <h3>display.CollapsibleSection for healthy service groups</h3>
+            <div class="where">
+              view.templ:107-118 &middot; all groups rendered as flat Cards
+            </div>
+            <p>
+              Systems with 20+ healthy services clutter the dashboard with a
+              long "Healthy Services" table. <code>display.CollapsibleSection</code>
+              (native <code>&lt;details&gt;/&lt;summary&gt;</code>) could
+              collapse the healthy group by default, keeping only failing and
+              warning groups expanded. This is a standard status-page UX
+              pattern &mdash; operators care about what's broken, not what's
+              healthy. The component supports <code>Open</code> (default
+              expanded/collapsed) and <code>StorageKey</code> (persists
+              preference in localStorage).
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Wrap the "Healthy Services" group in a CollapsibleSection with
+              <code>Open: false</code> by default. Keep failing/warning groups
+              as regular Cards (always expanded).
+            </div>
+          </div>
+
+          <!-- Finding 5: icons package -->
+          <div class="issue issue-important" id="missed-icons">
+            <span class="severity severity-important">Missed Opportunity &middot; Medium impact</span>
+            <h3>icons package &mdash; 102 icons, zero used</h3>
+            <div class="where">
+              Not imported anywhere &middot; <code>icons.Icon</code>, <code>icons.Name</code> available
+            </div>
+            <p>
+              The <code>icons</code> package (102 SVG icons, currentColor
+              themed) is never imported. Icons would enhance: StatCards (via
+              the <code>Icon</code> field), EmptyState (via the <code>Icon</code>
+              field), and could replace text labels in the status table.
+              Relevant icons for a health dashboard:
+              <code>icons.CheckCircle</code> (pass),
+              <code>icons.ExclamationTriangle</code> (warn),
+              <code>icons.XCircle</code> (fail), <code>icons.Clock</code>
+              (uptime/latency), <code>icons.Tag</code> (version),
+              <code>icons.Server</code> (services), <code>icons.Heart</code>
+              (health). The <code>feedback.Alert</code> component already uses
+              icons internally &mdash; this is about adding icons to the
+              dashboard's own components.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Import <code>github.com/larsartmann/templ-components/icons</code>
+              and populate <code>Icon</code> fields on StatCards and EmptyState.
+            </div>
+          </div>
+
+          <!-- Finding 6: Loading state -->
+          <div class="issue issue-important" id="missed-loading">
+            <span class="severity severity-important">Missed Opportunity &middot; Medium impact</span>
+            <h3>No loading state &mdash; SkeletonCardGrid, Spinner, datastar.Indicator</h3>
+            <div class="where">
+              view.templ &middot; health region empty until first SSE patch arrives
+            </div>
+            <p>
+              On initial page load, the health region renders real data
+              immediately (from <code>CachedResponse</code>), but if the probe
+              hasn't run yet or the SSE connection is reconnecting, the user
+              sees a bare "No registered services" empty state or stale data
+              with no loading indicator. templ-components offers three
+              loading-state components: <code>feedback.SkeletonCardGrid</code>
+              (pulsing placeholder cards), <code>feedback.Spinner</code>
+              (animated SVG), and <code>datastar.Indicator</code>
+              (signal-based show/hide during Datastar requests). The initial
+              <code>dashboardContent</code> could show a skeleton grid that
+              gets replaced by real data on the first SSE patch.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Add a <code>datastar.Indicator</code> inside the LiveRegion that
+              shows a Spinner during SSE reconnection, and consider a
+              <code>feedback.SkeletonCardGrid</code> for the initial render
+              when the probe has no cached data.
+            </div>
+          </div>
+
+          <!-- Finding 7: RelativeTime -->
+          <div class="issue issue-important" id="missed-relativetime">
+            <span class="severity severity-important">Missed Opportunity &middot; Medium impact</span>
+            <h3>display.RelativeTime &mdash; no "last updated" timestamp</h3>
+            <div class="where">
+              Not used &middot; <code>display.RelativeTime(RelativeTimeProps{Time, AutoRefresh})</code> available
+            </div>
+            <p>
+              The dashboard updates in real-time but never tells the operator
+              <em>when</em> the last check ran. On a monitoring wall display,
+              a stale "Last updated: 5 minutes ago" is the #1 signal that SSE
+              has silently disconnected. <code>display.RelativeTime</code>
+              renders a <code>&lt;time&gt;</code> element with a
+              server-rendered relative string ("2 seconds ago") that
+              auto-refreshes every 30 seconds via
+              <code>Intl.RelativeTimeFormat</code>. This requires tracking a
+              timestamp in the viewModel (the health <code>Response</code>
+              doesn't include one, but the dashboard can stamp
+              <code>time.Now()</code> when <code>CachedResponse()</code> is
+              read).
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Add a <code>LastChecked time.Time</code> field to
+              <code>viewModel</code>, stamp it in <code>buildViewModel</code>,
+              and render <code>display.RelativeTime</code> in the header or
+              footer of the dashboard.
+            </div>
+          </div>
+
+          <!-- Finding 8: errorpage -->
+          <div class="issue issue-important" id="missed-errorpage">
+            <span class="severity severity-important">Missed Opportunity &middot; Low-Medium impact</span>
+            <h3>errorpage package &mdash; plain-text error on render failure</h3>
+            <div class="where">
+              dashboard.go:179 &middot; <code>http.Error(w, "dashboard: failed to render page", 500)</code>
+            </div>
+            <p>
+              When <code>View(data).Render()</code> fails, the dashboard
+              returns a plain-text HTTP error. templ-components ships a full
+              <code>errorpage</code> package with <code>ErrorPage</code>
+              (branded full-page error with What/Why/Fix/WayOut),
+              <code>NotFound404</code>, <code>ErrorHandler</code> (HTTP
+              handler), and pre-built builders (<code>NotFound</code>,
+              <code>InternalError</code>, <code>ServiceUnavailable</code>).
+              Using <code>errorpage.ErrorHandler</code> or at least
+              <code>errorpage.InternalError()</code> would give a branded,
+              consistent error experience matching the dashboard's visual
+              language.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Replace <code>http.Error</code> calls with
+              <code>errorpage.WriteError</code> or render an
+              <code>errorpage.ErrorPage</code> for branded error pages.
+            </div>
+          </div>
+        </section>
+
+        <!-- Partially Used -->
+        <section id="partial">
+          <h2><span class="num">03</span>Partially Used</h2>
+          <p>
+            Features that are used but via a weaker API or with high-value
+            options left at defaults. These are the highest-ROI findings &mdash;
+            the project already invested in the library, so adopting the better
+            path is low-effort and high-impact.
+          </p>
+
+          <!-- Partial 1: Badge Dot -->
+          <div class="issue issue-important" id="partial-badge-dot">
+            <span class="severity severity-important">Partially Used &middot; Medium impact</span>
+            <h3>Badge Dot indicator not set</h3>
+            <div class="where">
+              status.go:182-187 &middot; <code>BadgeProps{Text, Type}</code> &mdash; <code>Dot</code> field omitted
+            </div>
+            <p>
+              <code>BadgeProps.Dot</code> renders a small colored dot before
+              the badge text (e.g. <span style="color: green;">&bull;</span>
+              pass, <span style="color: red;">&bull;</span> fail). This is the
+              standard visual pattern for status indicators &mdash; the colored
+              dot is instantly scannable even before reading the text.
+              <code>StatusBadge</code> (which the library uses internally)
+              always sets <code>Dot: true</code>. The dashboard's explicit
+              <code>Badge</code> usage omits it. Adding <code>Dot: true</code>
+              is a one-field change with immediate visual benefit.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Add <code>Dot: true</code> to <code>badgeForStatus</code> in
+              <code>status.go</code>.
+            </div>
+            <pre><code><span class="tok-comment">// Before: text-only badge</span>
+<span class="tok-keyword">func</span> <span class="tok-func">badgeForStatus</span>(s health.Status) display.BadgeProps {
+    <span class="tok-keyword">return</span> display.BadgeProps{
+        Text: <span class="tok-keyword">string</span>(s),
+        Type: <span class="tok-func">mapStatusToBadge</span>(s),
+    }
+}
+
+<span class="tok-comment">// After: with dot indicator</span>
+<span class="tok-keyword">func</span> <span class="tok-func">badgeForStatus</span>(s health.Status) display.BadgeProps {
+    <span class="tok-keyword">return</span> display.BadgeProps{
+        Text: <span class="tok-keyword">string</span>(s),
+        Type: <span class="tok-func">mapStatusToBadge</span>(s),
+        Dot:  <span class="tok-keyword">true</span>,   <span class="tok-comment">// colored status dot</span>
+    }
+}</code></pre>
+          </div>
+
+          <!-- Partial 2: Alert Message -->
+          <div class="issue issue-important" id="partial-alert-message">
+            <span class="severity severity-important">Partially Used &middot; Low-Medium impact</span>
+            <h3>feedback.Alert Message field unused</h3>
+            <div class="where">
+              view.templ:97-100 &middot; only <code>Title</code> set, <code>Message</code> empty
+            </div>
+            <p>
+              <code>AlertProps</code> has a <code>Message</code> field for
+              secondary detail text rendered below the title. The dashboard
+              only sets <code>Title</code> (e.g. "Unhealthy &mdash; Critical
+              Failures"). The health Response has rich data that could
+              populate <code>Message</code>: a count of failing services ("3
+              of 12 services failing"), the names of failing services, or the
+              shutdown drain message. This makes the status banner more
+              actionable without requiring operators to scan the table.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Build a summary message in <code>buildViewModel</code> (e.g.
+              "3 of 12 services failing") and pass it as
+              <code>Message</code> on the Alert.
+            </div>
+          </div>
+
+          <!-- Partial 3: Alert Dismissible -->
+          <div class="issue issue-important" id="partial-alert-dismissible">
+            <span class="severity severity-important">Partially Used &middot; Low impact</span>
+            <h3>feedback.Alert Dismissible not offered</h3>
+            <div class="where">
+              view.templ:97-100 &middot; <code>Dismissible</code> defaults to false
+            </div>
+            <p>
+              <code>AlertProps.Dismissible</code> adds a close button that
+              dismisses the banner via <code>utils.DismissScript()</code>
+              (CSP-safe, nonce-gated). On a monitoring dashboard, operators
+              may want to dismiss the overall status banner to focus on
+              individual check tables &mdash; especially when the status is
+              "Degraded" and they've already acknowledged it. Currently not
+              offered. Note: the banner is inside the LiveRegion, so SSE
+              patches would re-render it; dismissibility works best when the
+              Alert is outside the patched region.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Consider moving the Alert outside the patched region and enabling
+              <code>Dismissible: true</code>, or leave as-is if the banner
+              should always be visible.
+            </div>
+          </div>
+
+          <!-- Partial 4: EmptyState -->
+          <div class="issue issue-important" id="partial-emptystate">
+            <span class="severity severity-important">Partially Used &middot; Low impact</span>
+            <h3>SimpleEmptyState instead of full EmptyState</h3>
+            <div class="where">
+              view.templ:104 &middot; <code>display.SimpleEmptyState("No registered services")</code>
+            </div>
+            <p>
+              The dashboard uses <code>SimpleEmptyState</code> (text-only) for
+              the "no services" case. The full <code>display.EmptyState</code>
+              supports <code>Icon</code> (e.g.
+              <code>icons.ServerStack</code>), <code>Description</code>
+              (longer help text), and <code>ActionText</code>/<code>ActionHref</code>
+              (a "Add a service" link). For a dashboard, an icon + description
+              ("No health checks have been registered. Add services to your
+              Probe to see them here.") would be more polished and helpful
+              than bare text.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Replace <code>SimpleEmptyState</code> with <code>EmptyState</code>
+              with an appropriate icon and description.
+            </div>
+          </div>
+
+          <!-- Partial 5: Card Footer -->
+          <div class="issue issue-important" id="partial-card-footer">
+            <span class="severity severity-important">Partially Used &middot; Low impact</span>
+            <h3>Card Footer slot unused for group counts</h3>
+            <div class="where">
+              view.templ:108-117 &middot; only Title and Padding set on check group Cards
+            </div>
+            <p>
+              <code>CardProps</code> has a <code>Footer</code> slot (renders
+              below the card body) and a <code>Subtitle</code> field. The check
+              group cards only set <code>Title</code> (e.g. "Critical
+              Failures") and <code>Padding</code>. The <code>Subtitle</code>
+              could show the severity, and the <code>Footer</code> could show
+              "N of M services in this group" or a link to filter the table.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Add <code>Subtitle</code> with severity text or use
+              <code>Footer</code> for per-group service counts.
+            </div>
+          </div>
+        </section>
+
+        <!-- Not Applicable -->
+        <section id="notapplicable">
+          <h2><span class="num">04</span>Not Applicable</h2>
+          <p>
+            Features that exist in templ-components but genuinely don't apply
+            to a read-only health dashboard. Documented so the reader knows
+            they were considered, not missed.
+          </p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Package / Component</th>
+                <th>Why Not Applicable</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>forms</code> (21 components)</td>
+                <td>Read-only dashboard. No user input, no forms, no validation.</td>
+              </tr>
+              <tr>
+                <td><code>navigation</code> (12 components)</td>
+                <td>Single page. No nav bar, breadcrumbs, pagination, or sidebar.</td>
+              </tr>
+              <tr>
+                <td><code>htmx</code> (8 components)</td>
+                <td>HTMX explicitly disabled (<code>HTMXVersion: ""</code>). Datastar handles all real-time.</td>
+              </tr>
+              <tr>
+                <td><code>display.Modal/Drawer/Dropdown/Carousel/ContextMenu/HoverCard/Popover/Tooltip/Tabs</code></td>
+                <td>Interactive overlay components. A status dashboard has no user interaction beyond theme toggle.</td>
+              </tr>
+              <tr>
+                <td><code>feedback.Toast/ToastContainer</code></td>
+                <td>No transient notifications needed. Status changes are shown via the Alert banner and table updates.</td>
+              </tr>
+              <tr>
+                <td><code>display.Avatar/Image/ExternalLink/CopyButton/Breadcrumbs</code></td>
+                <td>No user profiles, media, off-site links, or clipboard actions.</td>
+              </tr>
+              <tr>
+                <td><code>layout.AppShell</code></td>
+                <td>Admin dashboard shell with sidebar. The health dashboard is a standalone page.</td>
+              </tr>
+              <tr>
+                <td><code>recipes</code> (Dashboard, Settings, Login, AuthLayout)</td>
+                <td>Pre-composed full screens for typical CRUD apps. The health dashboard has its own simple layout.</td>
+              </tr>
+              <tr>
+                <td><code>charts/echarts</code></td>
+                <td>Heavy charting adapter. Future roadmap item (Sparkline for latency trends) but not current scope.</td>
+              </tr>
+              <tr>
+                <td><code>display.DataTable</code></td>
+                <td>Table with sort + paging. The health table is small enough that sorting/paging isn't needed yet.</td>
+              </tr>
+              <tr>
+                <td><code>display.AreaChart/BarChart/PieChart/LineChart/Heatmap</code></td>
+                <td>Data visualization charts. No time-series or distribution data available from go-health currently.</td>
+              </tr>
+              <tr>
+                <td><code>display.Sparkline</code></td>
+                <td>Inline trend chart. Listed in ROADMAP.md for latency trend visualization &mdash; a future enhancement, not a current gap.</td>
+              </tr>
+              <tr>
+                <td><code>display.PageHeader Breadcrumb slot</code></td>
+                <td>PageHeader is recommended above, but its Breadcrumb slot is N/A (single page, no hierarchy).</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- Version Currency -->
+        <section id="version">
+          <h2><span class="num">05</span>Version Currency</h2>
+          <div class="callout callout-teal">
+            <strong>On the latest version</strong>
+            <code>go.mod</code> pins <code>templ-components v1.8.0</code>,
+            which is the latest tag (released 2026-08-08). Zero version gap.
+            No features are missed due to staleness. The <code>[Unreleased]</code>
+            section in the CHANGELOG is empty &mdash; nothing to upgrade to.
+          </div>
+          <p>
+            Notable features added in the v1.x line that the dashboard already
+            has access to (but hasn't adopted):
+          </p>
+          <table class="compare">
+            <thead>
+              <tr>
+                <th>Version</th>
+                <th>Feature Added</th>
+                <th>Relevance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>v1.7.0</td>
+                <td>LineChart, PieChart, AreaChart (pure SVG)</td>
+                <td>Future &mdash; latency trends</td>
+              </tr>
+              <tr>
+                <td>v1.6.0</td>
+                <td>CollapsibleSection, Heatmap</td>
+                <td class="no">High &mdash; see finding above</td>
+              </tr>
+              <tr>
+                <td>v1.5.0</td>
+                <td>Sparkline, ExternalLink</td>
+                <td>Future &mdash; ROADMAP item</td>
+              </tr>
+              <tr>
+                <td>v1.8.0</td>
+                <td>CSP nonce fix, chart fuzz tests</td>
+                <td class="yes">Already consumed</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- Top Opportunities -->
+        <section id="opportunities">
+          <h2><span class="num">06</span>Top Opportunities</h2>
+          <p>
+            All actionable findings ranked by Priority = Impact &times; Ease.
+            Higher priority = do first.
+          </p>
+          <table class="compare">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Opportunity</th>
+                <th>Impact</th>
+                <th>Ease</th>
+                <th>Priority</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td><strong>Badge Dot: true</strong> on status badges</td>
+                <td class="yes">3</td>
+                <td class="yes">5</td>
+                <td><strong>15</strong></td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td><strong>display.PageHeader</strong> replaces manual header</td>
+                <td class="yes">5</td>
+                <td class="yes">5</td>
+                <td><strong>25</strong></td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td><strong>layout.Stack</strong> replaces space-y divs</td>
+                <td class="yes">4</td>
+                <td class="yes">5</td>
+                <td><strong>20</strong></td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td><strong>Alert Message</strong> with service count summary</td>
+                <td class="yes">3</td>
+                <td class="yes">5</td>
+                <td><strong>15</strong></td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td><strong>EmptyState</strong> with icon + description</td>
+                <td class="yes">2</td>
+                <td class="yes">5</td>
+                <td><strong>10</strong></td>
+              </tr>
+              <tr>
+                <td>6</td>
+                <td><strong>StatCard Icon</strong> fields (Clock, Tag, Server)</td>
+                <td class="yes">4</td>
+                <td class="yes">4</td>
+                <td><strong>16</strong></td>
+              </tr>
+              <tr>
+                <td>7</td>
+                <td><strong>StatCard Trend</strong> on Latency card</td>
+                <td class="yes">4</td>
+                <td class="yes">3</td>
+                <td><strong>12</strong></td>
+              </tr>
+              <tr>
+                <td>8</td>
+                <td><strong>display.CollapsibleSection</strong> for healthy groups</td>
+                <td class="yes">4</td>
+                <td class="yes">4</td>
+                <td><strong>16</strong></td>
+              </tr>
+              <tr>
+                <td>9</td>
+                <td><strong>datastar.Indicator</strong> for SSE loading state</td>
+                <td class="yes">3</td>
+                <td class="yes">3</td>
+                <td><strong>9</strong></td>
+              </tr>
+              <tr>
+                <td>10</td>
+                <td><strong>display.RelativeTime</strong> for "last updated"</td>
+                <td class="yes">3</td>
+                <td class="yes">3</td>
+                <td><strong>9</strong></td>
+              </tr>
+              <tr>
+                <td>11</td>
+                <td><strong>errorpage.ErrorPage</strong> for branded errors</td>
+                <td class="yes">2</td>
+                <td class="yes">3</td>
+                <td><strong>6</strong></td>
+              </tr>
+              <tr>
+                <td>12</td>
+                <td><strong>Card Footer</strong> for group service counts</td>
+                <td class="yes">2</td>
+                <td class="yes">4</td>
+                <td><strong>8</strong></td>
+              </tr>
+              <tr>
+                <td>13</td>
+                <td><strong>Alert Dismissible</strong> (if moved outside patch)</td>
+                <td class="yes">2</td>
+                <td class="yes">4</td>
+                <td><strong>8</strong></td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            <strong>Quick wins (priority &ge; 15, ease &ge; 4):</strong> items
+            1&ndash;6 and 8 are all near-drop-in changes that deliver the most
+            visual and architectural improvement. Together they would raise the
+            adoption score from 62 to an estimated 80+.
+          </p>
+        </section>
+
+        <!-- Conclusion -->
+        <section id="conclusion">
+          <h2><span class="num">07</span>Conclusion</h2>
+          <p>
+            <code>go-health-dashboard</code> uses templ-components
+            <strong>correctly but not superbly</strong>. The core architecture
+            &mdash; Datastar SSE, correct component choices, non-deprecated
+            types, CSP nonce propagation &mdash; is exemplary. But the dashboard
+            treats the library as a component shelf rather than a design system:
+            it hand-rolls a page header that <code>display.PageHeader</code>
+            provides, uses raw Tailwind classes instead of
+            <code>layout.Stack</code>, and leaves the <code>icons</code>
+            package entirely untouched. The single highest-leverage next step is
+            adopting the 6 quick wins (PageHeader, Stack, Badge Dot, Alert
+            Message, StatCard Icon, CollapsibleSection) &mdash; all are drop-in
+            or near-drop-in, zero new dependencies, and would transform the
+            dashboard from "functional" to "polished" in under an hour of work.
+          </p>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+          <p>
+            Generated 2026-08-09 &middot; Reviewed against templ-components
+            v1.8.0 &middot; All code citations verified against source
+          </p>
+        </footer>
+      </main>
+    </div>
+
+    <!-- Progressive-enhancement scrollspy. Nav still works without JS via anchor links. -->
+    <script>
+      (function () {
+        if (!("IntersectionObserver" in window)) return;
+        var nav = document.querySelector("[data-nav]");
+        if (!nav) return;
+        var links = nav.querySelectorAll('a[href^="#"]');
+        var ids = Array.from(links).map(function (l) {
+          return l.getAttribute("href").slice(1);
+        });
+        var sections = ids
+          .map(function (id) {
+            return document.getElementById(id);
+          })
+          .filter(Boolean);
+        if (!sections.length) return;
+        var observer = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                links.forEach(function (link) {
+                  link.classList.toggle(
+                    "active",
+                    link.getAttribute("href") === "#" + entry.target.id,
+                  );
+                });
+              }
+            });
+          },
+          { rootMargin: "-80px 0px -60% 0px", threshold: 0 },
+        );
+        sections.forEach(function (s) {
+          observer.observe(s);
+        });
+      })();
+    </script>
+  </body>
+</html>
