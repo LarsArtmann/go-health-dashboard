@@ -74,11 +74,13 @@
               pkgs.trash-cli
             ];
 
+            GOWORK = "off";
             GOEXPERIMENT = "jsonv2";
 
             shellHook = ''
               echo "go-health-dashboard dev shell — $(go version)"
               echo "GOEXPERIMENT=$GOEXPERIMENT (required for go-sse dependency)"
+              echo "GOWORK=off (ignore parent workspace)"
             '';
           };
 

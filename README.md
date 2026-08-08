@@ -1,16 +1,16 @@
 # go-health-dashboard
 
-A browser-friendly health dashboard for [go-health](https://github.com/larsartmann/go-health).
-Drops one handler into your mux and gets a live status page with green/yellow/red
-badges, auto-refresh, and content negotiation for kubelet compatibility.
+A real-time health dashboard for [go-health](https://github.com/larsartmann/go-health),
+powered by [Datastar](https://data-star.dev) SSE. Drops into your mux with one
+call and gives you a live status page with green/yellow/red badges, severity
+grouping, and sub-second updates.
 
 ## What It Does
 
 - **Browser visits `/health`**: sees a rich dashboard with status banners, service
-  tables, and badges — auto-refreshing every few seconds.
-- **Kubelet hits `/health`**: gets the JSON readiness response (zero overhead).
-- **Content negotiation via Accept header**: `text/html` renders the dashboard,
-  `application/json` delegates to go-health's readiness handler.
+  tables, and badges — updating in real-time via Datastar SSE.
+- **Kubelet hits `/readyz`**: gets the JSON readiness response from go-health.
+- **No content negotiation**: browsers and kubelets hit different routes.
 
 ## Why a Separate Repo?
 
@@ -29,8 +29,8 @@ import (
     "net/http"
     "time"
 
-    "github.com/larsartmann/go-health-dashboard"
     health "github.com/larsartmann/go-health"
+    dashboard "github.com/larsartmann/go-health-dashboard"
     "github.com/samber/do/v2"
 )
 
@@ -52,6 +52,8 @@ func main() {
     dash := dashboard.New(probe,
         dashboard.WithTitle("My Service"),
     )
+    _ = dash.Start(ctx)
+    defer dash.Shutdown()
 
     mux := http.NewServeMux()
     dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
@@ -64,56 +66,44 @@ Open `http://localhost:8080/health` in a browser. Done.
 
 ## Routes
 
-| Path              | Method | Content-Type | What It Does                                            |
-| ----------------- | ------ | ------------ | ------------------------------------------------------- |
-| `/health`         | GET    | HTML or JSON | Content-negotiated dashboard (Accept header)            |
-| `/health/partial` | GET    | HTML         | HTMX polling partial (auto-refresh fragment)            |
-| `/healthz`        | GET    | JSON         | Liveness probe (always 200, no dependency checks)       |
-| `/readyz`         | GET    | JSON         | Readiness probe (503 when critical services fail)       |
-| `/startupz`       | GET    | JSON         | Startup probe (latched once all critical services pass) |
+| Path        | Method | Content-Type       | What It Does                                            |
+| ----------- | ------ | ------------------ | ------------------------------------------------------- |
+| `/health`   | GET    | text/html          | HTML dashboard with Datastar SSE auto-refresh           |
+| `/health/sse` | GET  | text/event-stream  | SSE endpoint (Datastar patch protocol)                  |
+| `/healthz`  | GET    | application/json   | Liveness probe (always 200, no dependency checks)       |
+| `/readyz`   | GET    | application/json   | Readiness probe (503 when critical services fail)       |
+| `/startupz` | GET    | application/json   | Startup probe (latched once all critical services pass) |
 
 ## Options
 
 ```go
 dash := dashboard.New(probe,
-    dashboard.WithTitle("My Service"),                    // Page title
-    dashboard.WithRefreshInterval(5*time.Second),          // Polling interval
-    dashboard.WithRefreshMode(dashboard.RefreshModePoll),  // HTMX polling (default)
-    // dashboard.WithRefreshMode(dashboard.RefreshModeSSE),  // SSE push mode
-    // dashboard.WithRefreshMode(dashboard.RefreshModeOff),  // Static (no auto-refresh)
+    dashboard.WithTitle("My Service"),                        // Page title
+    dashboard.WithPushInterval(5*time.Second),                 // SSE push interval
+    dashboard.WithPushMode(dashboard.PushOnChange),            // Only push on change (default)
+    // dashboard.WithPushMode(dashboard.PushAlways),            // Push on every tick
+    dashboard.WithNonce("abc123"),                             // CSP nonce
     dashboard.WithRoutes(dashboard.Routes{
         Dashboard: "/status",
+        SSE:       "/status/sse",
         Readiness: "/ready",
         // ...
     }),
 )
 ```
 
-## Refresh Modes
+## How Real-Time Works
 
-| Mode                        | Mechanism               | Latency    | Use Case                       |
-| --------------------------- | ----------------------- | ---------- | ------------------------------ |
-| `RefreshModePoll` (default) | HTMX polling            | 2-5s       | Operators watching a dashboard |
-| `RefreshModeSSE`            | Server-Sent Events push | Sub-second | NOC monitors, wall displays    |
-| `RefreshModeOff`            | None (manual reload)    | N/A        | Debugging, static snapshots    |
+The dashboard uses [Datastar](https://data-star.dev) for real-time DOM updates:
 
-### SSE Push Mode
+1. The HTML page loads the Datastar SDK via a `<script>` tag
+2. A `datastar.LiveRegion` div wraps the health content with `data-init="@get('/health/sse')"`
+3. The Datastar SDK opens an SSE connection to `/health/sse`
+4. A background pusher goroutine reads `probe.CachedResponse()` at the configured interval
+5. On each update, the pusher renders the content as a Datastar element patch and broadcasts it
+6. The Datastar SDK applies the patch, replacing the inner HTML of the LiveRegion
 
-For sub-second updates, enable SSE push:
-
-```go
-dash := dashboard.New(probe,
-    dashboard.WithRefreshMode(dashboard.RefreshModeSSE),
-)
-if err := dash.Start(ctx); err != nil {
-    log.Fatal(err)
-}
-defer dash.Shutdown()
-```
-
-A background goroutine reads the probe's cached response and pushes updates to
-all connected SSE clients. Status change detection (default) means traffic only
-flows when something actually changes.
+By default, `PushOnChange` mode only sends updates when the health status actually changes — minimizing SSE traffic for NOC monitors that stay connected for long periods.
 
 ## Build
 
@@ -153,8 +143,9 @@ pass/fail every 15s), and one always failing. Watch the dashboard update live.
 | Dependency                                                          | Purpose                                           |
 | ------------------------------------------------------------------- | ------------------------------------------------- |
 | [go-health](https://github.com/larsartmann/go-health)               | Health-check Response, Probe, CachedResponse      |
-| [templ-components](https://github.com/larsartmann/templ-components) | Alert, Table, Badge, StatCard, Card, PolledRegion |
-| [go-sse](https://github.com/larsartmann/go-sse)                     | SSE transport (push mode only)                    |
+| [templ-components](https://github.com/larsartmann/templ-components) | LiveRegion, SDKScript, Alert, Table, Badge, Card  |
+| [go-datastar](https://github.com/larsartmann/go-datastar)           | Datastar SSE patch protocol (ElementsFromTempl)   |
+| [go-sse](https://github.com/larsartmann/go-sse)                     | SSE transport (Broadcaster, Stream)               |
 
 ## License
 
