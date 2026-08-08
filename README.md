@@ -75,6 +75,7 @@ Open `http://localhost:8080/health` in a browser. Done.
 | ------------- | ------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `/health`     | GET    | text/html or application/json | HTML dashboard (default) or JSON health response (Accept: application/json). JSON returns 503 when critical services fail |
 | `/health/sse` | GET    | text/event-stream             | SSE endpoint (Datastar patch protocol)                                                                                    |
+| `/favicon.svg` | GET  | image/svg+xml                 | SVG favicon (embedded green-heart icon)                                                                                   |
 | `/healthz`    | GET    | application/json              | Liveness probe (always 200, no dependency checks)                                                                         |
 | `/readyz`     | GET    | application/json              | Readiness probe (503 when critical services fail)                                                                         |
 | `/startupz`   | GET    | application/json              | Startup probe (latched once all critical services pass)                                                                   |
@@ -87,7 +88,10 @@ dash := dashboard.New(probe,
     dashboard.WithPushInterval(5*time.Second),                 // SSE push interval
     dashboard.WithPushMode(dashboard.PushOnChange),            // Only push on change (default)
     // dashboard.WithPushMode(dashboard.PushAlways),            // Push on every tick
-    dashboard.WithNonce("abc123"),                             // CSP nonce
+    dashboard.WithNonce("abc123"),                             // CSP nonce for script tags
+    dashboard.WithCSSPath("/static/app.css"),                  // Compiled CSS (replaces Tailwind CDN)
+    dashboard.WithHeartbeatInterval(30*time.Second),           // SSE keepalive interval (default 15s)
+    dashboard.WithMaxSSEConnections(100),                      // Max concurrent SSE clients (0 = unlimited)
     dashboard.WithRoutes(dashboard.Routes{
         Dashboard: "/status",
         SSE:       "/status/sse",

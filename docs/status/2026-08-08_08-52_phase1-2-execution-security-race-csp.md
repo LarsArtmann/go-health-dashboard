@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-08 08:52
 **Session Goal:** Execute the Pareto plan from `docs/planning/2026-08-08_08-24_path-to-v0.1.0-release.md` — Phase 1 (1%→51%) and Phase 2 (4%→64%)
-**Status:** PHASE 1 COMPLETE, PHASE 2 ~90% COMPLETE, 2 FAILING TESTS IN NEW FILE
+**Status:** ~~PHASE 1 COMPLETE, PHASE 2 ~90% COMPLETE, 2 FAILING TESTS IN NEW FILE~~ FULLY RESOLVED — the 2 failing CSP tests (T7) were fixed in the session that followed (`docs/status/2026-08-08_09-25_v0.1.0-execution-features-hardening-ci.md`): view.templ now conditionally renders the nonce attribute. Phase 3 (T10-T15) was also fully executed in that session. 61 tests pass with `-race`.
 
 ---
 
@@ -127,19 +127,22 @@
 
 ### Phase 3: 20% → 80% (T10-T15)
 
-- T10: `WithCSSPath` option (swap Tailwind CDN for compiled CSS)
-- T11: Example port configurable + favicon endpoint
-- T12: Dark mode toggle button
-- T13: `WithHeartbeatInterval` + SSE connection limit
-- T14: Coverage report + `docs/DOMAIN_LANGUAGE.md`
-- T15: CI/CD GitHub Actions workflow
+All Phase 3 tasks were fully executed in the session that followed
+(`docs/status/2026-08-08_09-25_v0.1.0-execution-features-hardening-ci.md`):
+
+- ~~T10: `WithCSSPath` option (swap Tailwind CDN for compiled CSS)~~ ✅ DONE — `dashboard.go:77`
+- ~~T11: Example port configurable + favicon endpoint~~ ✅ DONE — `PORT` env var + `favicon.go:13`
+- ~~T12: Dark mode toggle button~~ ✅ DONE — `view.templ:36`, ThemeToggle
+- ~~T13: `WithHeartbeatInterval` + SSE connection limit~~ ✅ DONE — `dashboard.go:84,91`
+- ~~T14: Coverage report + `docs/DOMAIN_LANGUAGE.md`~~ ✅ DONE — 79.6% coverage, DOMAIN_LANGUAGE created
+- ~~T15: CI/CD GitHub Actions workflow~~ ✅ DONE — `.github/workflows/ci.yml`
 
 ### Phase 4: Remaining 20% → 100% (T16-T27)
 
-- T16: Release tooling (Dependabot, release docs, semver tags)
-- T17: README polish (screenshot, badges, OG metadata)
-- T18: Build-tag gating for SSE (blocked by D3 — GOEXPERIMENT decision)
-- T19-T27: Embeddable mode, auth, Prometheus, history, SSE reconnection, UI flexibility, fuzzing, WebSocket, federation
+- T16: Release tooling (Dependabot, release docs, semver tags) → 🟡 PARTIAL — Dependabot shipped, no git tags yet
+- T17: README polish (screenshot, badges, OG metadata) → 🟡 PARTIAL — badges added, screenshot missing
+- T18: Build-tag gating for SSE (blocked by D3 — GOEXPERIMENT decision) → 🔴 Still open — `ROADMAP.md`
+- T19-T27: Embeddable mode, auth, Prometheus, history, SSE reconnection, UI flexibility, fuzzing, WebSocket, federation → 🔴 All tracked in `ROADMAP.md`
 
 ---
 
@@ -178,6 +181,13 @@ The entire session showed 5 gopls errors and 23+ warnings about `d.sseConnection
 ---
 
 ## f) Up to 50 Things to Get Done Next
+
+> **Resolution summary:** Immediate items 1–5 (fix CSP tests, commit,
+> CHANGELOG, AGENTS.md) all DONE in the session that followed
+> (`docs/status/2026-08-08_09-25_v0.1.0-execution-features-hardening-ci.md`).
+> Phase 3 items 6–30 all DONE. Phase 4 items 31–50: Dependabot (31) DONE;
+> git tags (33), screenshot (35), coverage badge (36) tracked in `TODO_LIST.md`;
+> advanced items (39–50) tracked in `ROADMAP.md`.
 
 ### Immediate (fix the 2 failing tests + commit)
 
