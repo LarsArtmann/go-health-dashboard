@@ -34,6 +34,7 @@ type Config struct {
 	PushMode          PushMode
 	Routes            Routes
 	Nonce             string
+	NonceExtractor    func(*http.Request) string
 	CSSPath           string
 	HeartbeatInterval time.Duration
 	MaxSSEConnections int
@@ -60,10 +61,28 @@ func WithPushMode(mode PushMode) Option {
 	return func(c *Config) { c.PushMode = mode }
 }
 
-// WithNonce sets the CSP nonce used in script and style tags. Required when
-// the host application uses a strict Content-Security-Policy.
+// WithNonce sets a fixed CSP nonce used in script and style tags. Required
+// when the host application uses a strict Content-Security-Policy but cannot
+// provide per-request nonces (e.g. because the dashboard is constructed once
+// at startup). For stronger security, prefer WithNonceExtractor.
 func WithNonce(nonce string) Option {
 	return func(c *Config) { c.Nonce = nonce }
+}
+
+// WithNonceExtractor provides a function that extracts the CSP nonce from
+// each incoming request. This enables per-request nonces (more secure than
+// a fixed construction-time nonce) when the host application uses middleware
+// such as httputil.Nonce that stores a unique nonce in the request context.
+//
+// When set, the extractor takes precedence over WithNonce. If the extractor
+// returns an empty string for a given request, the dashboard falls back to
+// the fixed Nonce from WithNonce.
+//
+// Example wiring with httputil:
+//
+//	dashboard.New(probe, dashboard.WithNonceExtractor(httputil.NonceFromRequest))
+func WithNonceExtractor(fn func(*http.Request) string) Option {
+	return func(c *Config) { c.NonceExtractor = fn }
 }
 
 // WithRoutes overrides the default URL paths for dashboard and probe endpoints.
@@ -170,7 +189,7 @@ func (d *Dashboard) Handler() http.HandlerFunc {
 			return
 		}
 
-		data := d.buildData()
+		data := d.buildData(r)
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-cache")
@@ -275,11 +294,21 @@ func (d *Dashboard) SubscriberCount() int64 {
 }
 
 // buildData constructs the viewModel from the probe's cached response.
-func (d *Dashboard) buildData() viewModel {
+// When a NonceExtractor is configured, the nonce is read per-request;
+// otherwise the fixed construction-time Nonce is used.
+func (d *Dashboard) buildData(r *http.Request) viewModel {
 	resp := d.currentResponse()
 	vm := buildViewModel(resp, d.cfg.Title, d.cfg.Routes.SSE)
-	vm.DatastarNonce = d.cfg.Nonce
-	vm.TailwindNonce = d.cfg.Nonce
+
+	nonce := d.cfg.Nonce
+	if d.cfg.NonceExtractor != nil {
+		if extracted := d.cfg.NonceExtractor(r); extracted != "" {
+			nonce = extracted
+		}
+	}
+
+	vm.DatastarNonce = nonce
+	vm.TailwindNonce = nonce
 	vm.CSSPath = d.cfg.CSSPath
 	vm.FaviconURL = d.cfg.Routes.Favicon
 
