@@ -2,7 +2,9 @@ package dashboard
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	health "github.com/larsartmann/go-health"
@@ -64,9 +66,10 @@ func WithRoutes(routes Routes) Option {
 // Dashboard renders a browser-friendly health dashboard from a go-health
 // Probe using Datastar SSE for real-time updates.
 //
-// The dashboard lives at a dedicated HTML route (default /health). Kubernetes
-// probe endpoints (/healthz, /readyz, /startupz) are wired separately as
-// JSON-only — no content negotiation, no shared routes.
+// The dashboard lives at a dedicated HTML route (default /health). It serves
+// HTML by default but returns JSON when the client sends Accept:
+// application/json. Kubernetes probe endpoints (/healthz, /readyz,
+// /startupz) are wired separately as JSON-only.
 //
 // Dashboard is safe for concurrent use by multiple goroutines.
 type Dashboard struct {
@@ -121,11 +124,21 @@ func (d *Dashboard) currentResponse() health.Response {
 	return d.probe.CachedResponse()
 }
 
-// Handler returns an http.HandlerFunc that renders the full HTML dashboard
-// page. This is the main browser entry point — register it at your dashboard
-// route (e.g. /health).
+// Handler returns an http.HandlerFunc that serves the health dashboard with
+// content negotiation based on the Accept header:
+//
+//   - Accept: application/json → returns the probe's cached health response as
+//     JSON. HTTP status is 503 when any check is failing, 200 otherwise.
+//   - Any other Accept value (or none) → renders the full HTML dashboard page.
+//
+// Register it at your dashboard route (e.g. /health).
 func (d *Dashboard) Handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if wantsJSON(r) {
+			d.serveJSON(w)
+			return
+		}
+
 		data := d.buildData()
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -136,6 +149,35 @@ func (d *Dashboard) Handler() http.HandlerFunc {
 			return
 		}
 	}
+}
+
+// wantsJSON returns true when the request's Accept header indicates a
+// preference for JSON.
+func wantsJSON(r *http.Request) bool {
+	return strings.Contains(strings.ToLower(r.Header.Get("Accept")), "application/json")
+}
+
+// serveJSON writes the probe's cached health response as JSON. The HTTP
+// status code is 503 when the overall status is fail, 200 otherwise.
+func (d *Dashboard) serveJSON(w http.ResponseWriter) {
+	resp := d.currentResponse()
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-cache")
+
+	code := http.StatusOK
+	if resp.Status == health.StatusFail {
+		code = http.StatusServiceUnavailable
+	}
+
+	payload, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "dashboard: failed to encode health response", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(code)
+	_, _ = w.Write(payload)
 }
 
 // SSEHandler returns an http.HandlerFunc that upgrades to an SSE connection

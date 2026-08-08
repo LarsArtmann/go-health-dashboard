@@ -328,6 +328,124 @@ func TestLiveness_ReturnsJSON(t *testing.T) {
 	}
 }
 
+// --- Content negotiation tests ---.
+
+func doRequestWithAccept(
+	t *testing.T,
+	handler http.Handler,
+	target, accept string,
+) *httptest.ResponseRecorder {
+	t.Helper()
+
+	w := httptest.NewRecorder()
+
+	r, err := http.NewRequestWithContext(t.Context(), http.MethodGet, target, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.Header.Set("Accept", accept)
+
+	handler.ServeHTTP(w, r)
+
+	return w
+}
+
+func TestContentNegotiation_JSONAcceptReturnsJSON(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequestWithAccept(t, s.mux, "/health", "application/json")
+
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+		t.Errorf("content-type: want application/json, got %s", ct)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, `"status"`) {
+		t.Error("JSON response should contain status field")
+	}
+}
+
+func TestContentNegotiation_HTMLAcceptReturnsHTML(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequestWithAccept(t, s.mux, "/health", "text/html")
+
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Errorf("content-type: want text/html, got %s", ct)
+	}
+}
+
+func TestContentNegotiation_NoAcceptReturnsHTML(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Errorf("content-type: want text/html, got %s", ct)
+	}
+}
+
+func TestContentNegotiation_JSONHealthyReturns200(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequestWithAccept(t, s.mux, "/health", "application/json")
+
+	if w.Code != http.StatusOK {
+		t.Errorf("healthy JSON status: want 200, got %d", w.Code)
+	}
+}
+
+func TestContentNegotiation_JSONCriticalFailReturns503(t *testing.T) {
+	t.Parallel()
+
+	injector := do.New()
+	provideUnhealthy(injector, "database", "connection refused")
+	invoke[*unhealthyService](t, injector, "database")
+
+	probe := health.New(injector,
+		health.WithCriticalServices("database"),
+		health.WithRefreshInterval(100*time.Millisecond),
+	)
+
+	dash := dashboard.New(probe)
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
+
+	if err := probe.Start(t.Context()); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
+	if err := dash.Start(t.Context()); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+	defer func() {
+		dash.Shutdown()
+		probe.Shutdown()
+	}()
+
+	w := doRequestWithAccept(t, mux, "/health", "application/json")
+
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("critical failure JSON status: want 503, got %d", w.Code)
+	}
+
+	if !strings.Contains(w.Body.String(), `"fail"`) {
+		t.Error("JSON response should contain fail status")
+	}
+}
+
 // --- SSE endpoint tests ---.
 
 func TestSSE_EndpointRegisteredAndStreams(t *testing.T) {
