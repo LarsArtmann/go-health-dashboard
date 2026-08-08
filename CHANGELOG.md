@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-08
+
+First proper release. A real-time, browser-friendly health dashboard that
+composes [go-health](https://github.com/larsartmann/go-health),
+[templ-components](https://github.com/larsartmann/templ-components),
+[go-datastar](https://github.com/larsartmann/go-datastar), and
+[go-sse](https://github.com/larsartmann/go-sse). All module dependencies now
+resolve from published versions; the local `replace` directives used during
+development have been removed.
+
 ### Added
 
 - `WithCSSPath` option to use compiled CSS instead of the Tailwind Play CDN

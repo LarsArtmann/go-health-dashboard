@@ -254,6 +254,9 @@ linters:
       - path: \.go$
         linters:
           - contextcheck
+      - text: 'package has more than one godoc'
+        linters:
+          - godoclint
     paths:
       - \.gen\.go$
       - _templ\.go$
