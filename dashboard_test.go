@@ -75,6 +75,10 @@ func setupDashboard(t *testing.T, opts ...dashboard.Option) *probeSetup {
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
 
+	if err := probe.Start(t.Context()); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
+
 	return &probeSetup{
 		probe: probe,
 		dash:  dash,
@@ -105,6 +109,10 @@ func setupDashboardWithFailures(t *testing.T, opts ...dashboard.Option) *probeSe
 
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
+
+	if err := probe.Start(t.Context()); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
 
 	return &probeSetup{
 		probe: probe,
@@ -495,10 +503,26 @@ func TestSSEMode_RegisterSSEEndpoint(t *testing.T) {
 	}
 	defer dash.Shutdown()
 
-	// SSE endpoint should be registered
-	w := doRequest(t, mux, "/health/sse", "text/event-stream")
+	// SSE handler blocks; use a short-timeout context so it returns.
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	defer cancel()
+
+	w := httptest.NewRecorder()
+	r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/health/sse", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mux.ServeHTTP(w, r)
+
+	// Should not be 404 — the endpoint exists and started streaming
 	if w.Code == http.StatusNotFound {
 		t.Error("SSE endpoint should be registered in SSE mode")
+	}
+
+	// Should have received SSE content type and at least the initial event
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/event-stream") {
+		t.Errorf("SSE content-type: want text/event-stream, got %s", ct)
 	}
 }
 
