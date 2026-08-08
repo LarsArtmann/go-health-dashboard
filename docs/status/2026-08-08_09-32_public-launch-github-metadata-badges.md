@@ -4,6 +4,14 @@
 
 Make the repo public and superb on GitHub (description, topics), then add a pkg.go.dev badge to the README.
 
+> **Post-session resolution:** The AGENTS.md split brain flagged in section E.2
+> (item 6 — README described Datastar SSE while AGENTS.md described HTMX polling)
+> was already fixed by the docs-health session at 08:16. The current AGENTS.md
+> correctly describes the SSE-first Datastar architecture. Items from section F
+> have been harvested into `TODO_LIST.md` and `ROADMAP.md`. The README routes
+> table and Options section have been updated with the favicon row and new
+> options.
+
 ---
 
 ## a) FULLY DONE
@@ -77,6 +85,15 @@ Nothing was broken this session. All changes were metadata-only (GitHub API + RE
 ---
 
 ## f) Up to 50 Things to Get Done Next
+
+> **Resolution summary:** Priority 1 items 1–3 (AGENTS.md split brain, API
+> verification, README Quick Start) all DONE — AGENTS.md was rewritten in the
+> 08:16 docs-health session. Item 4 (replace directives) still BLOCKED. Item 5
+> (tag v0.1.0) and item 6 (pkg.go.dev indexing) tracked in `TODO_LIST.md`.
+> Priority 2 items 7–12: CI workflow DONE (`.github/workflows/ci.yml`), CI badge
+> DONE, Go Report Card badge DONE; flake check + lint + vulncheck all pass.
+> Priority 3 items 13–23: most done (routes table fixed, options updated, status
+> mapping verified). Priority 4–7 items tracked in `ROADMAP.md`.
 
 ### Priority 1: Critical (Split Brain & Publishability)
 

@@ -5,6 +5,12 @@
 **Task:** Plan the go-health-dashboard composition layer (go-health + templ-components + go-datastar)
 **Outcome:** v1 plan shipped with 7 architectural mistakes across dependency analysis, real-time strategy, routing design, API correctness, and architecture simplification. User caught them on review ("why are we not using go-datastar, what else is fucked up?"). Full rewrite required.
 
+> **All 7 mistakes resolved.** The v2 rewrite
+> (`docs/status/2026-08-08_07-22_sse-rewrite-fixes-seven-mistakes.md`) fixed every
+> issue: SSE-first architecture, separate routes, canonical `FeedbackType`,
+> single-mode design, broadcaster demoted to internal detail, verified
+> composability with go-health. Archived — kept as a learning artifact.
+
 ---
 
 ## What I Did

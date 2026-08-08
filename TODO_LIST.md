@@ -27,8 +27,6 @@
 | ------------------------------------------------- | --------- | ------ | ------ | ----------------------------------------- |
 | Add test for `SubscriberCount()`                  | 🔴 `TODO` | High   | 15min  | `dashboard.go:269` — method has no test   |
 | Add test for `WithHeartbeatInterval`              | 🔴 `TODO` | High   | 15min  | `dashboard.go:84` — option has no test    |
-| Fix README routes table (missing favicon row)     | 🔴 `TODO` | Med    | 5min   | README routes table has no `/favicon.svg` |
-| Update README Options section with new options    | 🔴 `TODO` | Med    | 10min  | Missing `WithCSSPath`, `WithHeartbeatInterval`, `WithMaxSSEConnections` |
 | Add screenshot to README                          | 🔴 `TODO` | Med    | 30min  | No visual preview in README               |
 
 ## Medium Impact
