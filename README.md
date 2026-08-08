@@ -1,5 +1,10 @@
 # go-health-dashboard
 
+<p align="center">
+<a href="https://pkg.go.dev/github.com/larsartmann/go-health-dashboard"><img src="https://pkg.go.dev/badge/github.com/larsartmann/go-health-dashboard.svg" alt="Go Reference"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+</p>
+
 A real-time health dashboard for [go-health](https://github.com/larsartmann/go-health),
 powered by [Datastar](https://data-star.dev) SSE. Drops into your mux with one
 call and gives you a live status page with green/yellow/red badges, severity
