@@ -51,7 +51,7 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    # - godoclint  # false positive on doc.go
+    - godoclint
     - godot
     - godox
     - goheader
@@ -83,7 +83,7 @@ linters:
     - nilerr
     - nilnesserr
     - nilnil
-    # - nlreturn    # too noisy, not standard Go style
+    - nlreturn
     - noctx
     - nolintlint
     - nonamedreturns
