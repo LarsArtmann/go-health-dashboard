@@ -264,6 +264,16 @@ func (d *Dashboard) SSEHandler() http.HandlerFunc {
 	return d.sseHandler
 }
 
+// SubscriberCount returns the number of active SSE connections. Returns 0
+// when the pusher has not been started.
+func (d *Dashboard) SubscriberCount() int64 {
+	if p := d.push.Load(); p != nil {
+		return p.connections.Load()
+	}
+
+	return 0
+}
+
 // buildData constructs the viewModel from the probe's cached response.
 func (d *Dashboard) buildData() viewModel {
 	resp := d.currentResponse()

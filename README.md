@@ -147,6 +147,12 @@ pass/fail every 15s), and one always failing. Watch the dashboard update live.
 | [go-datastar](https://github.com/larsartmann/go-datastar)           | Datastar SSE patch protocol (ElementsFromTempl)  |
 | [go-sse](https://github.com/larsartmann/go-sse)                     | SSE transport (Broadcaster, Stream)              |
 
+## Dark Mode
+
+The dashboard respects the user's OS dark-mode preference and includes a
+toggle button for manual switching. The preference is persisted in
+`localStorage`.
+
 ## License
 
 MIT

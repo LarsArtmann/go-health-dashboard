@@ -9,27 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- Content negotiation on `/health`: `Accept: application/json` returns the full
-  health response as JSON (200 for pass/warn, 503 for fail); all other Accept
-  values render the HTML dashboard (`dashboard.go:127-175`)
-- SSE change-detection via deterministic `fingerprintChecks` with sorted map keys
-  (`status.go:202-224`)
-- `PushMode` type with `PushOnChange` (default) and `PushAlways` modes
-  (`pusher.go:14-27`)
-- SSE heartbeat every 15s to prevent proxy timeouts (`pusher.go:31-34`)
-- Initial state push on SSE connect so clients don't wait for the next tick
-  (`pusher.go:147-153`)
-- Functional options: `WithTitle`, `WithPushInterval`, `WithPushMode`,
-  `WithNonce`, `WithRoutes` (`dashboard.go:36-62`)
-- `Version = "0.1.0"` exported constant (`dashboard.go:20`)
-- Example app with mock services: always-healthy, flapping (15s cycle),
-  always-failing (`example/main.go`)
-- Graceful shutdown state display: "Shutting Down — Draining Traffic"
-  (`status.go:94-97`)
-- flake.nix with full devShell: `GOWORK=off`, `GOEXPERIMENT=jsonv2`,
-  golangci-lint, govulncheck, gosec, templ CLI (`flake.nix`)
-- Nix apps: generate, test, test-race, build, vet, lint, coverage, vulncheck,
-  security, example, clean (`flake.nix:87-138`)
+- `WithCSSPath` option to use compiled CSS instead of the Tailwind Play CDN
+- `WithHeartbeatInterval` option for configurable SSE keepalive interval (default 15s)
+- `WithMaxSSEConnections` option to limit concurrent SSE clients (DoS prevention)
+- `SubscriberCount()` method for SSE connection observability
+- Favicon endpoint (`/favicon.svg`) with embedded SVG green-heart icon
+- Dark mode toggle button in dashboard header
+- `docs/DOMAIN_LANGUAGE.md` with ubiquitous language glossary
+- CI/CD GitHub Actions workflow: build, test with race detector, lint, vulncheck
+- Dependabot config for Go modules and GitHub Actions
+- Comprehensive `.golangci.yml` (80+ linters, pragmatic test/example exclusions)
+- SSE integration tests: change detection, resilience, connection limit
+- CSP nonce verification tests
+- Content negotiation q-value tests (RFC 7231 wildcards, equal-q-value defaults)
+- README badges: CI status, Go Reference, Go Report Card, License
+- Example app `PORT` environment variable support
+- MIT LICENSE (replaced PROPRIETARY)
+
+### Changed
+
+- **Breaking (internal):** `Dashboard.push` field changed from `*pusher` to
+  `atomic.Pointer[pusher]` to fix a production data race
+- Content negotiation rewritten with full RFC 7231 §5.3.2 q-value parsing,
+  replacing naive `strings.Contains` check
+- `RegisterRoutes` now conditionally registers favicon route (skips when empty)
+
+### Fixed
+
+- Production data race: concurrent `Shutdown()` writing `push = nil` while
+  `sseHandler` read `d.push` without synchronization — now uses atomic
+  pointer
+- CSP nonce rendering: script tags no longer render empty `nonce=""` attribute
+  when no nonce is configured (fixed in templ-components SDKScript,
+  ThemeScript, and ThemeToggle)
+- `godoclint` false positive on `doc.go` excluded from lint config
 
 ### Changed
 

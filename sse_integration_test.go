@@ -444,3 +444,59 @@ func TestSSE_MultipleClientsReceiveBroadcasts(t *testing.T) {
 	stream1.waitFor(t, isUnhealthyEvent, 2*time.Second)
 	stream2.waitFor(t, isUnhealthyEvent, 2*time.Second)
 }
+
+func TestSSE_ConnectionLimitRejectsExcessClients(t *testing.T) {
+	t.Parallel()
+
+	svc := &toggleService{}
+	svc.healthy.Store(true)
+
+	injector := do.New()
+	provideToggleService(injector, "db", svc)
+
+	probe := health.New(injector,
+		health.WithCriticalServices("db"),
+		health.WithRefreshInterval(50*time.Millisecond),
+	)
+
+	dash := dashboard.New(probe,
+		dashboard.WithPushInterval(50*time.Millisecond),
+		dashboard.WithMaxSSEConnections(1),
+	)
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	if err := probe.Start(ctx); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
+
+	if err := dash.Start(ctx); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+
+	defer func() { dash.Shutdown(); probe.Shutdown() }()
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// First client connects successfully.
+	resp1, stream1 := connectSSE(t, server)
+	defer func() { _ = resp1.Body.Close() }()
+	stream1.waitFor(t, func(string) bool { return true }, 2*time.Second)
+
+	// Second client should be rejected with 503.
+	resp2, err := http.Get(server.URL + "/health/sse")
+	if err != nil {
+		t.Fatalf("second connect attempt: %v", err)
+	}
+
+	defer func() { _ = resp2.Body.Close() }()
+
+	if resp2.StatusCode != http.StatusServiceUnavailable {
+		t.Errorf("excess client: want 503, got %d", resp2.StatusCode)
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	dstar "github.com/larsartmann/go-datastar"
@@ -35,13 +36,13 @@ const (
 // Datastar element patches to all connected SSE clients via a go-sse
 // Broadcaster. Only one pusher goroutine runs per Dashboard instance.
 type pusher struct {
-	broadcaster   *sse.Broadcaster[sse.Event]
-	dashboard     *Dashboard
-	interval      time.Duration
-	pushMode      PushMode
-	heartbeat     time.Duration
-	maxConns      int
-	connections   atomic.Int64
+	broadcaster *sse.Broadcaster[sse.Event]
+	dashboard   *Dashboard
+	interval    time.Duration
+	pushMode    PushMode
+	heartbeat   time.Duration
+	maxConns    int
+	connections atomic.Int64
 
 	mu              sync.Mutex
 	lastStatus      health.Status
