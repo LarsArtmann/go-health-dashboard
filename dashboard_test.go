@@ -446,6 +446,58 @@ func TestContentNegotiation_JSONCriticalFailReturns503(t *testing.T) {
 	}
 }
 
+func TestContentNegotiation_QValuePrefersJSON(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequestWithAccept(t, s.mux, "/health", "application/json;q=0.9, text/html;q=0.8")
+
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+		t.Errorf("higher q-value JSON: want application/json, got %s", ct)
+	}
+}
+
+func TestContentNegotiation_QValuePrefersHTML(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequestWithAccept(t, s.mux, "/health", "text/html;q=1.0, application/json;q=0.1")
+
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Errorf("higher q-value HTML: want text/html, got %s", ct)
+	}
+}
+
+func TestContentNegotiation_WildcardReturnsHTML(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequestWithAccept(t, s.mux, "/health", "*/*")
+
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Errorf("wildcard Accept: want text/html (default), got %s", ct)
+	}
+}
+
+func TestContentNegotiation_EqualQValuesReturnsHTML(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequestWithAccept(t, s.mux, "/health", "application/json, text/html")
+
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Errorf("equal q-values: want text/html (default), got %s", ct)
+	}
+}
+
 // --- SSE endpoint tests ---.
 
 func TestSSE_EndpointRegisteredAndStreams(t *testing.T) {

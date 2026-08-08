@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json/v2"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -151,10 +152,55 @@ func (d *Dashboard) Handler() http.HandlerFunc {
 	}
 }
 
-// wantsJSON returns true when the request's Accept header indicates a
-// preference for JSON.
+// wantsJSON reports whether the request prefers JSON over HTML based on
+// the Accept header's quality values (RFC 7231 §5.3.2). Returns false when
+// the header is empty, absent, or HTML is preferred. When both types have
+// equal q-values, HTML wins (the dashboard default).
 func wantsJSON(r *http.Request) bool {
-	return strings.Contains(strings.ToLower(r.Header.Get("Accept")), "application/json")
+	accept := r.Header.Get("Accept")
+	if accept == "" {
+		return false
+	}
+
+	var jsonQ, htmlQ, anyQ float64
+
+	for _, part := range strings.Split(accept, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		segments := strings.Split(part, ";")
+		mediaType := strings.TrimSpace(strings.ToLower(segments[0]))
+		q := 1.0
+
+		for _, seg := range segments[1:] {
+			seg = strings.TrimSpace(seg)
+			if strings.HasPrefix(strings.ToLower(seg), "q=") {
+				if v, err := strconv.ParseFloat(seg[2:], 64); err == nil {
+					q = v
+				}
+			}
+		}
+
+		switch {
+		case mediaType == "application/json":
+			jsonQ = max(jsonQ, q)
+		case mediaType == "text/html":
+			htmlQ = max(htmlQ, q)
+		case mediaType == "application/*":
+			jsonQ = max(jsonQ, q)
+		case mediaType == "text/*":
+			htmlQ = max(htmlQ, q)
+		case mediaType == "*/*":
+			anyQ = max(anyQ, q)
+		}
+	}
+
+	jsonQ = max(jsonQ, anyQ)
+	htmlQ = max(htmlQ, anyQ)
+
+	return jsonQ > htmlQ
 }
 
 // serveJSON writes the probe's cached health response as JSON. The HTTP
