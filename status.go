@@ -109,6 +109,12 @@ func buildViewModel(resp health.Response, title, sseURL string) viewModel {
 	}
 }
 
+const (
+	groupTitleFailing = "Critical Failures"
+	groupTitleWarning = "Non-Critical Issues"
+	groupTitleHealthy = "Healthy Services"
+)
+
 // groupChecks partitions checks into severity-ordered groups: failing,
 // warning, and healthy. Each group is sorted alphabetically by name.
 // Empty groups are omitted.
@@ -138,7 +144,7 @@ func groupChecks(checks map[string]health.Check) []checkGroup {
 
 	if len(failing) > 0 {
 		groups = append(groups, checkGroup{
-			Title:  "Critical Failures",
+			Title:  groupTitleFailing,
 			Status: health.StatusFail,
 			Rows:   failing,
 		})
@@ -146,7 +152,7 @@ func groupChecks(checks map[string]health.Check) []checkGroup {
 
 	if len(warning) > 0 {
 		groups = append(groups, checkGroup{
-			Title:  "Non-Critical Issues",
+			Title:  groupTitleWarning,
 			Status: health.StatusWarn,
 			Rows:   warning,
 		})
@@ -154,7 +160,7 @@ func groupChecks(checks map[string]health.Check) []checkGroup {
 
 	if len(healthy) > 0 {
 		groups = append(groups, checkGroup{
-			Title:  "Healthy Services",
+			Title:  groupTitleHealthy,
 			Status: health.StatusPass,
 			Rows:   healthy,
 		})
@@ -181,21 +187,21 @@ func badgeForStatus(s health.Status) display.BadgeProps {
 // rowsToTableRows converts check rows to templ-components TableRows with
 // badge components in the status column.
 func rowsToTableRows(rows []checkRow) []display.TableRow {
-	tableRows := make([]display.TableRow, len(rows))
+	tableRows := make([]display.TableRow, 0, len(rows))
 
-	for i, row := range rows {
+	for _, row := range rows {
 		errorText := row.Error
 		if errorText == "" {
 			errorText = "—"
 		}
 
-		tableRows[i] = display.TableRow{
+		tableRows = append(tableRows, display.TableRow{
 			Cells: []display.TableCell{
 				{Text: row.Name},
 				{Content: display.Badge(badgeForStatus(row.Status))},
 				{Text: errorText},
 			},
-		}
+		})
 	}
 
 	return tableRows

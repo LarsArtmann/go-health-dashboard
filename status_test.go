@@ -131,9 +131,9 @@ func TestGroupChecks_SortedAlphabetically(t *testing.T) {
 		t.Fatalf("want 1 group, got %d", len(groups))
 	}
 
-	names := make([]string, len(groups[0].Rows))
-	for i, row := range groups[0].Rows {
-		names[i] = row.Name
+	names := make([]string, 0, len(groups[0].Rows))
+	for _, row := range groups[0].Rows {
+		names = append(names, row.Name)
 	}
 
 	want := []string{"alpha", "mongo", "zebra"}

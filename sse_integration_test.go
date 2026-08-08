@@ -135,7 +135,7 @@ func setupSSEServer(
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	if err := probe.Start(ctx); err != nil {
 		t.Fatalf("probe.Start: %v", err)
@@ -222,7 +222,7 @@ func TestSSE_PushAlways_BroadcastsEveryTick(t *testing.T) {
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	if err := probe.Start(ctx); err != nil {
@@ -311,7 +311,7 @@ func TestSSE_ShutdownClosesConnections(t *testing.T) {
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	if err := probe.Start(ctx); err != nil {
@@ -359,7 +359,7 @@ func TestSSE_StartThenImmediateShutdownDoesNotPanic(t *testing.T) {
 	probe := health.New(injector, health.WithCriticalServices("db"))
 	defer probe.Shutdown()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	if err := probe.Start(ctx); err != nil {

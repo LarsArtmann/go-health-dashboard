@@ -165,7 +165,7 @@ func wantsJSON(r *http.Request) bool {
 
 	var jsonQ, htmlQ, anyQ float64
 
-	for _, part := range strings.SplitSeq(accept, ",") {
+	for part := range strings.SplitSeq(accept, ",") {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
@@ -184,16 +184,16 @@ func wantsJSON(r *http.Request) bool {
 			}
 		}
 
-		switch {
-		case mediaType == "application/json":
+		switch mediaType {
+		case "application/json":
 			jsonQ = max(jsonQ, q)
-		case mediaType == "text/html":
+		case "text/html":
 			htmlQ = max(htmlQ, q)
-		case mediaType == "application/*":
+		case "application/*":
 			jsonQ = max(jsonQ, q)
-		case mediaType == "text/*":
+		case "text/*":
 			htmlQ = max(htmlQ, q)
-		case mediaType == "*/*":
+		case "*/*":
 			anyQ = max(anyQ, q)
 		}
 	}

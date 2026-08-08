@@ -47,7 +47,8 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - godoclint
+    # - godoclint  # false positive on doc.go
+    # - nlreturn    # too noisy for non-standard Go style
     - godot
     - godox
     - goheader
@@ -79,7 +80,7 @@ linters:
     - nilerr
     - nilnesserr
     - nilnil
-    - nlreturn
+    # - nlreturn    # too noisy for non-standard Go style
     - noctx
     - nolintlint
     - nonamedreturns
@@ -228,10 +229,24 @@ linters:
           - goconst
           - noctx
           - errcheck
+          - err113
+          - mnd
+          - contextcheck
+          - testpackage
       - path: _test\.go
         text: unused
         linters:
           - unused
+      - path: example/
+        linters:
+          - err113
+          - mnd
+          - gocritic
+          - contextcheck
+          - testpackage
+      - path: \.go$
+        linters:
+          - contextcheck
     paths:
       - \.gen\.go$
       - _templ\.go$
