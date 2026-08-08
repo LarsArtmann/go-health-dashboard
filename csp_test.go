@@ -150,3 +150,18 @@ func TestCSP_WithoutCSSPathUsesTailwindCDN(t *testing.T) {
 		t.Error("Tailwind CDN script should be rendered when CSSPath is not set")
 	}
 }
+
+func TestDarkMode_ToggleButtonPresent(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+
+	body := w.Body.String()
+
+	if !strings.Contains(body, "data-theme-toggle") {
+		t.Error("HTML should contain dark mode toggle button with data-theme-toggle attribute")
+	}
+}

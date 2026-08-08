@@ -749,3 +749,24 @@ func BenchmarkHandler_HTMLRendering(b *testing.B) {
 		handler(w, r)
 	}
 }
+
+func TestFavicon_ReturnsSVG(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/favicon.svg")
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status: want 200, got %d", w.Code)
+	}
+
+	if ct := w.Header().Get("Content-Type"); ct != "image/svg+xml" {
+		t.Errorf("content-type: want image/svg+xml, got %s", ct)
+	}
+
+	if !strings.HasPrefix(w.Body.String(), "<svg") {
+		t.Error("favicon body should start with <svg")
+	}
+}
