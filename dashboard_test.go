@@ -68,6 +68,7 @@ func setupDashboard(t *testing.T, opts ...dashboard.Option) *probeSetup {
 	probe := health.New(injector,
 		health.WithVersion("1.0.0"),
 		health.WithCriticalServices("database"),
+		health.WithRefreshInterval(100*time.Millisecond),
 	)
 
 	dash := dashboard.New(probe, opts...)
@@ -79,11 +80,16 @@ func setupDashboard(t *testing.T, opts ...dashboard.Option) *probeSetup {
 		t.Fatalf("probe.Start: %v", err)
 	}
 
+	if err := dash.Start(t.Context()); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+
 	return &probeSetup{
 		probe: probe,
 		dash:  dash,
 		mux:   mux,
 		cleanup: func() {
+			dash.Shutdown()
 			probe.Shutdown()
 		},
 	}
@@ -103,6 +109,7 @@ func setupDashboardWithFailures(t *testing.T, opts ...dashboard.Option) *probeSe
 	probe := health.New(injector,
 		health.WithVersion("2.1.0"),
 		health.WithCriticalServices("database"),
+		health.WithRefreshInterval(100*time.Millisecond),
 	)
 
 	dash := dashboard.New(probe, opts...)
@@ -114,11 +121,16 @@ func setupDashboardWithFailures(t *testing.T, opts ...dashboard.Option) *probeSe
 		t.Fatalf("probe.Start: %v", err)
 	}
 
+	if err := dash.Start(t.Context()); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+
 	return &probeSetup{
 		probe: probe,
 		dash:  dash,
 		mux:   mux,
 		cleanup: func() {
+			dash.Shutdown()
 			probe.Shutdown()
 		},
 	}
@@ -127,7 +139,7 @@ func setupDashboardWithFailures(t *testing.T, opts ...dashboard.Option) *probeSe
 func doRequest(
 	t *testing.T,
 	handler http.Handler,
-	target, accept string,
+	target string,
 ) *httptest.ResponseRecorder {
 	t.Helper()
 
@@ -138,24 +150,20 @@ func doRequest(
 		t.Fatal(err)
 	}
 
-	if accept != "" {
-		r.Header.Set("Accept", accept)
-	}
-
 	handler.ServeHTTP(w, r)
 
 	return w
 }
 
-// --- Content negotiation tests ---.
+// --- HTML page rendering tests ---.
 
-func TestHandler_HTMLRequest_RendersDashboard(t *testing.T) {
+func TestHandler_RendersHTMLDashboard(t *testing.T) {
 	t.Parallel()
 
 	s := setupDashboard(t)
 	defer s.cleanup()
 
-	w := doRequest(t, s.mux, "/health", "text/html")
+	w := doRequest(t, s.mux, "/health")
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("status: want 200, got %d", w.Code)
@@ -171,79 +179,13 @@ func TestHandler_HTMLRequest_RendersDashboard(t *testing.T) {
 	}
 }
 
-func TestHandler_JSONRequest_DelegatesToProbe(t *testing.T) {
-	t.Parallel()
-
-	s := setupDashboard(t)
-	defer s.cleanup()
-
-	w := doRequest(t, s.mux, "/health", "application/json")
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("status: want 200, got %d", w.Code)
-	}
-
-	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
-		t.Errorf("content-type: want application/json, got %s", ct)
-	}
-
-	body := w.Body.String()
-	if !strings.Contains(body, `"status"`) {
-		t.Error("JSON response should contain health status")
-	}
-}
-
-func TestHandler_MissingAcceptHeader_DelegatesToJSON(t *testing.T) {
-	t.Parallel()
-
-	s := setupDashboard(t)
-	defer s.cleanup()
-
-	w := doRequest(t, s.mux, "/health", "")
-
-	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
-		t.Errorf("no Accept header: want JSON, got %s", ct)
-	}
-}
-
-func TestHandler_WildcardAccept_RendersHTML(t *testing.T) {
-	t.Parallel()
-
-	s := setupDashboard(t)
-	defer s.cleanup()
-
-	w := doRequest(t, s.mux, "/health", "*/*")
-
-	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
-		t.Errorf("*/* Accept: want HTML, got %s", ct)
-	}
-}
-
-func TestHandler_BrowserAcceptPattern_RendersHTML(t *testing.T) {
-	t.Parallel()
-
-	s := setupDashboard(t)
-	defer s.cleanup()
-
-	// Real browser Accept header
-	browserAccept := "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-
-	w := doRequest(t, s.mux, "/health", browserAccept)
-
-	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
-		t.Errorf("browser Accept: want HTML, got %s", ct)
-	}
-}
-
-// --- HTML output validation tests ---.
-
 func TestHTML_ContainsAlertBanner(t *testing.T) {
 	t.Parallel()
 
 	s := setupDashboard(t)
 	defer s.cleanup()
 
-	w := doRequest(t, s.mux, "/health", "text/html")
+	w := doRequest(t, s.mux, "/health")
 
 	body := w.Body.String()
 	if !strings.Contains(body, "All Systems Operational") {
@@ -257,7 +199,7 @@ func TestHTML_ContainsStatCards(t *testing.T) {
 	s := setupDashboard(t)
 	defer s.cleanup()
 
-	w := doRequest(t, s.mux, "/health", "text/html")
+	w := doRequest(t, s.mux, "/health")
 
 	body := w.Body.String()
 	if !strings.Contains(body, "1.0.0") {
@@ -275,7 +217,7 @@ func TestHTML_ContainsServiceNames(t *testing.T) {
 	s := setupDashboard(t)
 	defer s.cleanup()
 
-	w := doRequest(t, s.mux, "/health", "text/html")
+	w := doRequest(t, s.mux, "/health")
 
 	body := w.Body.String()
 	for _, name := range []string{"database", "redis"} {
@@ -285,32 +227,13 @@ func TestHTML_ContainsServiceNames(t *testing.T) {
 	}
 }
 
-func TestHTML_ContainsPolledRegion(t *testing.T) {
-	t.Parallel()
-
-	s := setupDashboard(t)
-	defer s.cleanup()
-
-	w := doRequest(t, s.mux, "/health", "text/html")
-
-	body := w.Body.String()
-	if !strings.Contains(body, "hx-get") {
-		t.Error("HTML should contain HTMX polling attributes")
-	}
-
-	if !strings.Contains(body, "/health/partial") {
-		t.Error("HTML should contain partial URL for polling")
-	}
-}
-
 func TestHTML_WithFailures_ShowsFailureContent(t *testing.T) {
 	t.Parallel()
 
 	s := setupDashboardWithFailures(t)
 	defer s.cleanup()
 
-	// The critical service (database) is healthy, but non-critical ones fail
-	w := doRequest(t, s.mux, "/health", "text/html")
+	w := doRequest(t, s.mux, "/health")
 
 	body := w.Body.String()
 	if !strings.Contains(body, "Degraded") {
@@ -322,27 +245,144 @@ func TestHTML_WithFailures_ShowsFailureContent(t *testing.T) {
 	}
 }
 
-// --- Partial handler tests ---.
+// --- Datastar integration tests ---.
 
-func TestPartialHandler_ReturnsHTMLFragment(t *testing.T) {
+func TestHTML_ContainsDatastarSDK(t *testing.T) {
 	t.Parallel()
 
 	s := setupDashboard(t)
 	defer s.cleanup()
 
-	w := doRequest(t, s.mux, "/health/partial", "text/html")
+	w := doRequest(t, s.mux, "/health")
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status: want 200, got %d", w.Code)
+	body := w.Body.String()
+	// Datastar SDK script loads from CDN with a type="module" attribute
+	if !strings.Contains(body, "datastar") {
+		t.Error("HTML should load the Datastar SDK script")
+	}
+}
+
+func TestHTML_ContainsLiveRegionWithSSEURL(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+
+	body := w.Body.String()
+	if !strings.Contains(body, "health-region") {
+		t.Error("HTML should contain the LiveRegion div with id=health-region")
 	}
 
-	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
-		t.Errorf("content-type: want text/html, got %s", ct)
+	if !strings.Contains(body, "/health/sse") {
+		t.Error("HTML should contain the SSE endpoint URL in the LiveRegion")
+	}
+}
+
+func TestHTML_DoesNotContainHTMX(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+
+	body := w.Body.String()
+	// No HTMX script tags or hx-* attributes
+	if strings.Contains(body, "htmx.org") || strings.Contains(body, "htmx.min.js") {
+		t.Error("HTML should not load HTMX — Datastar handles real-time")
+	}
+}
+
+// --- JSON probe endpoint tests ---.
+
+func TestReadiness_ReturnsJSON(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/readyz")
+
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+		t.Errorf("readiness content-type: want application/json, got %s", ct)
 	}
 
 	body := w.Body.String()
-	if !strings.Contains(body, "hx-get") {
-		t.Error("Partial should contain PolledRegion wrapper with hx-get")
+	if !strings.Contains(body, `"status"`) {
+		t.Error("JSON response should contain health status")
+	}
+}
+
+func TestLiveness_ReturnsJSON(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/healthz")
+
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+		t.Errorf("liveness content-type: want application/json, got %s", ct)
+	}
+}
+
+// --- SSE endpoint tests ---.
+
+func TestSSE_EndpointRegisteredAndStreams(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	// SSE handler blocks; use a short-timeout context so it returns.
+	ctx, cancel := context.WithTimeout(t.Context(), 200*time.Millisecond)
+	defer cancel()
+
+	w := httptest.NewRecorder()
+	r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/health/sse", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.mux.ServeHTTP(w, r)
+
+	if w.Code == http.StatusNotFound {
+		t.Error("SSE endpoint should be registered")
+	}
+
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/event-stream") {
+		t.Errorf("SSE content-type: want text/event-stream, got %s", ct)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "datastar-patch-elements") {
+		t.Error("SSE response should contain Datastar patch event type")
+	}
+}
+
+func TestSSE_SendsInitialState(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 200*time.Millisecond)
+	defer cancel()
+
+	w := httptest.NewRecorder()
+	r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/health/sse", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.mux.ServeHTTP(w, r)
+
+	body := w.Body.String()
+	// Initial state should contain the health-region selector for patching
+	if !strings.Contains(body, "#health-region") {
+		t.Error("SSE initial state should target #health-region element")
 	}
 }
 
@@ -354,41 +394,56 @@ func TestWithTitle_CustomTitle(t *testing.T) {
 	s := setupDashboard(t, dashboard.WithTitle("My Awesome Service"))
 	defer s.cleanup()
 
-	w := doRequest(t, s.mux, "/health", "text/html")
+	w := doRequest(t, s.mux, "/health")
 
 	if !strings.Contains(w.Body.String(), "My Awesome Service") {
 		t.Error("HTML should contain custom title")
 	}
 }
 
-func TestWithRefreshInterval_CustomPolling(t *testing.T) {
+func TestWithPushMode_AcceptsBothModes(t *testing.T) {
 	t.Parallel()
 
-	s := setupDashboard(t, dashboard.WithRefreshInterval(5*time.Second))
-	defer s.cleanup()
+	t.Run("on-change", func(t *testing.T) {
+		t.Parallel()
+		s := setupDashboard(t, dashboard.WithPushMode(dashboard.PushOnChange))
+		defer s.cleanup()
+		// Just verify it doesn't panic
+	})
 
-	w := doRequest(t, s.mux, "/health", "text/html")
-
-	body := w.Body.String()
-	if !strings.Contains(body, "every 5s") {
-		t.Errorf(
-			"HTML should contain 5s polling interval, got body snippet: %s",
-			body[strings.Index(body, "hx-trigger"):min(len(body), strings.Index(body, "hx-trigger")+40)],
-		)
-	}
+	t.Run("always", func(t *testing.T) {
+		t.Parallel()
+		s := setupDashboard(t, dashboard.WithPushMode(dashboard.PushAlways))
+		defer s.cleanup()
+		// Just verify it doesn't panic
+	})
 }
 
-func TestWithRefreshMode_Off_NoPolling(t *testing.T) {
+// --- Routes tests ---.
+
+func TestDefaultRoutes_ConventionalPaths(t *testing.T) {
 	t.Parallel()
 
-	s := setupDashboard(t, dashboard.WithRefreshMode(dashboard.RefreshModeOff))
-	defer s.cleanup()
+	routes := dashboard.DefaultRoutes()
 
-	w := doRequest(t, s.mux, "/health", "text/html")
+	if routes.Dashboard != "/health" {
+		t.Errorf("dashboard route: want /health, got %s", routes.Dashboard)
+	}
 
-	body := w.Body.String()
-	if strings.Contains(body, "hx-get") {
-		t.Error("RefreshModeOff should not render PolledRegion")
+	if routes.SSE != "/health/sse" {
+		t.Errorf("SSE route: want /health/sse, got %s", routes.SSE)
+	}
+
+	if routes.Liveness != "/healthz" {
+		t.Errorf("liveness route: want /healthz, got %s", routes.Liveness)
+	}
+
+	if routes.Readiness != "/readyz" {
+		t.Errorf("readiness route: want /readyz, got %s", routes.Readiness)
+	}
+
+	if routes.Startup != "/startupz" {
+		t.Errorf("startup route: want /startupz, got %s", routes.Startup)
 	}
 }
 
@@ -399,41 +454,43 @@ func TestWithRoutes_CustomPaths(t *testing.T) {
 	provideHealthy(injector, "db")
 	invoke[*healthyService](t, injector, "db")
 
-	probe := health.New(injector, health.WithCriticalServices("db"))
-	dash := dashboard.New(probe, dashboard.WithRoutes(dashboard.Routes{
+	customRoutes := dashboard.Routes{
 		Dashboard: "/status",
-		Partial:   "/status/partial",
 		SSE:       "/status/sse",
 		Liveness:  "/live",
 		Readiness: "/ready",
 		Startup:   "/started",
-	}))
+	}
+
+	probe := health.New(injector, health.WithCriticalServices("db"))
+	dash := dashboard.New(probe, dashboard.WithRoutes(customRoutes))
 
 	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux, dashboard.Routes{
-		Dashboard: "/status",
-		Partial:   "/status/partial",
-		SSE:       "/status/sse",
-		Liveness:  "/live",
-		Readiness: "/ready",
-		Startup:   "/started",
-	})
-	defer probe.Shutdown()
+	dash.RegisterRoutes(mux, customRoutes)
+
+	if err := probe.Start(t.Context()); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
+	if err := dash.Start(t.Context()); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+	defer func() {
+		dash.Shutdown()
+		probe.Shutdown()
+	}()
 
 	// Custom dashboard route should work
-	w := doRequest(t, mux, "/status", "text/html")
+	w := doRequest(t, mux, "/status")
 	if w.Code != http.StatusOK {
 		t.Errorf("custom dashboard route: want 200, got %d", w.Code)
 	}
 
 	// Default route should NOT be registered
-	w2 := doRequest(t, mux, "/health", "text/html")
+	w2 := doRequest(t, mux, "/health")
 	if w2.Code != http.StatusNotFound {
 		t.Errorf("default route should not exist: want 404, got %d", w2.Code)
 	}
 }
-
-// --- RegisterRoutes tests ---.
 
 func TestRegisterRoutes_AllRoutesRespond(t *testing.T) {
 	t.Parallel()
@@ -441,8 +498,8 @@ func TestRegisterRoutes_AllRoutesRespond(t *testing.T) {
 	s := setupDashboard(t)
 	defer s.cleanup()
 
-	for _, path := range []string{"/health", "/health/partial", "/healthz", "/readyz", "/startupz"} {
-		w := doRequest(t, s.mux, path, "application/json")
+	for _, path := range []string{"/health", "/healthz", "/readyz", "/startupz"} {
+		w := doRequest(t, s.mux, path)
 		if w.Code == http.StatusNotFound {
 			t.Errorf("route %s should be registered", path)
 		}
@@ -459,7 +516,7 @@ func TestShutdownState_ShowsShuttingDown(t *testing.T) {
 
 	s.probe.Shutdown()
 
-	w := doRequest(t, s.mux, "/health", "text/html")
+	w := doRequest(t, s.mux, "/health")
 
 	body := w.Body.String()
 	if !strings.Contains(body, "Shutting Down") {
@@ -475,164 +532,34 @@ func TestShutdownState_ReadinessReturns503(t *testing.T) {
 
 	s.probe.Shutdown()
 
-	w := doRequest(t, s.mux, "/readyz", "application/json")
+	w := doRequest(t, s.mux, "/readyz")
 	if w.Code != http.StatusServiceUnavailable {
 		t.Errorf("readiness after shutdown: want 503, got %d", w.Code)
 	}
 }
 
-// --- SSE mode tests ---.
+// --- Version constant test ---.
 
-func TestSSEMode_RegisterSSEEndpoint(t *testing.T) {
+func TestVersion_IsNotEmpty(t *testing.T) {
 	t.Parallel()
 
-	injector := do.New()
-	provideHealthy(injector, "db")
-	invoke[*healthyService](t, injector, "db")
-
-	probe := health.New(injector,
-		health.WithCriticalServices("db"),
-		health.WithRefreshInterval(50*time.Millisecond),
-	)
-	defer probe.Shutdown()
-
-	dash := dashboard.New(probe,
-		dashboard.WithRefreshMode(dashboard.RefreshModeSSE),
-		dashboard.WithRefreshInterval(50*time.Millisecond),
-	)
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("Start: %v", err)
-	}
-	defer dash.Shutdown()
-
-	// SSE handler blocks; use a short-timeout context so it returns.
-	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
-	defer cancel()
-
-	w := httptest.NewRecorder()
-	r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/health/sse", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	mux.ServeHTTP(w, r)
-
-	// Should not be 404 — the endpoint exists and started streaming
-	if w.Code == http.StatusNotFound {
-		t.Error("SSE endpoint should be registered in SSE mode")
-	}
-
-	// Should have received SSE content type and at least the initial event
-	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/event-stream") {
-		t.Errorf("SSE content-type: want text/event-stream, got %s", ct)
+	if dashboard.Version == "" {
+		t.Error("Version should be a non-empty semver string")
 	}
 }
 
-func TestSSEMode_HTMLContainsSSEScript(t *testing.T) {
-	t.Parallel()
-
-	injector := do.New()
-	provideHealthy(injector, "db")
-	invoke[*healthyService](t, injector, "db")
-
-	probe := health.New(injector, health.WithCriticalServices("db"))
-	defer probe.Shutdown()
-
-	dash := dashboard.New(probe,
-		dashboard.WithRefreshMode(dashboard.RefreshModeSSE),
-	)
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("Start: %v", err)
-	}
-	defer dash.Shutdown()
-
-	w := doRequest(t, mux, "/health", "text/html")
-
-	body := w.Body.String()
-	if !strings.Contains(body, "EventSource") {
-		t.Error("SSE mode HTML should contain EventSource script")
-	}
-
-	if !strings.Contains(body, "/health/sse") {
-		t.Error("SSE mode HTML should contain SSE endpoint URL")
-	}
-}
-
-func TestSSEMode_DoesNotContainHTMXPolling(t *testing.T) {
-	t.Parallel()
-
-	injector := do.New()
-	provideHealthy(injector, "db")
-	invoke[*healthyService](t, injector, "db")
-
-	probe := health.New(injector, health.WithCriticalServices("db"))
-	defer probe.Shutdown()
-
-	dash := dashboard.New(probe,
-		dashboard.WithRefreshMode(dashboard.RefreshModeSSE),
-	)
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("Start: %v", err)
-	}
-	defer dash.Shutdown()
-
-	w := doRequest(t, mux, "/health", "text/html")
-
-	body := w.Body.String()
-	// Should NOT have HTMX polling attributes in the health region
-	if strings.Contains(body, "data-sse-url") && strings.Contains(body, "hx-trigger") {
-		t.Error("SSE mode should not use HTMX polling for the health region")
-	}
-}
-
-// --- Default routes tests ---.
-
-func TestDefaultRoutes_ConventionalPaths(t *testing.T) {
-	t.Parallel()
-
-	routes := dashboard.DefaultRoutes()
-
-	if routes.Dashboard != "/health" {
-		t.Errorf("dashboard route: want /health, got %s", routes.Dashboard)
-	}
-
-	if routes.Partial != "/health/partial" {
-		t.Errorf("partial route: want /health/partial, got %s", routes.Partial)
-	}
-
-	if routes.Liveness != "/healthz" {
-		t.Errorf("liveness route: want /healthz, got %s", routes.Liveness)
-	}
-
-	if routes.Readiness != "/readyz" {
-		t.Errorf("readiness route: want /readyz, got %s", routes.Readiness)
-	}
-
-	if routes.Startup != "/startupz" {
-		t.Errorf("startup route: want /startupz, got %s", routes.Startup)
-	}
-}
-
-// --- Benchmark ---.
+// --- Benchmarks ---.
 
 func BenchmarkHandler_HTMLRendering(b *testing.B) {
 	injector := do.New()
-	provideHealthy(injector, "db")
-	provideHealthy(injector, "cache")
-	invoke[*healthyService](&testing.T{}, injector, "db")
-	invoke[*healthyService](&testing.T{}, injector, "cache")
+	do.ProvideNamed(injector, "db", func(_ do.Injector) (*healthyService, error) {
+		return &healthyService{}, nil
+	})
+	do.ProvideNamed(injector, "cache", func(_ do.Injector) (*healthyService, error) {
+		return &healthyService{}, nil
+	})
+	do.MustInvokeNamed[*healthyService](injector, "db")
+	do.MustInvokeNamed[*healthyService](injector, "cache")
 
 	probe := health.New(injector, health.WithCriticalServices("db"))
 	defer probe.Shutdown()
@@ -641,32 +568,8 @@ func BenchmarkHandler_HTMLRendering(b *testing.B) {
 
 	handler := dash.Handler()
 
-	r, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/health", nil)
-	r.Header.Set("Accept", "text/html")
-
-	b.ResetTimer()
-
-	for b.Loop() {
-		w := httptest.NewRecorder()
-		handler(w, r)
-	}
-}
-
-func BenchmarkPartialHandler_Rendering(b *testing.B) {
-	injector := do.New()
-	provideHealthy(injector, "db")
-	provideHealthy(injector, "cache")
-	invoke[*healthyService](&testing.T{}, injector, "db")
-	invoke[*healthyService](&testing.T{}, injector, "cache")
-
-	probe := health.New(injector, health.WithCriticalServices("db"))
-	defer probe.Shutdown()
-
-	dash := dashboard.New(probe)
-
-	handler := dash.PartialHandler()
-
-	r, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/health/partial", nil)
+	ctx := context.Background()
+	r, _ := http.NewRequestWithContext(ctx, http.MethodGet, "/health", nil)
 
 	b.ResetTimer()
 

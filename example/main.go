@@ -50,6 +50,11 @@ func main() {
 		dashboard.WithTitle("Demo Service"),
 	)
 
+	if err := dash.Start(ctx); err != nil {
+		log.Fatalf("dash.Start: %v", err)
+	}
+	defer dash.Shutdown()
+
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
 
