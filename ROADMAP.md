@@ -82,10 +82,6 @@ Things we are deliberately NOT pursuing and why:
 
 These require user decisions and cannot be resolved by reading code:
 
-- **Replace directives:** go.mod has 6 `replace` directives pointing to local
-  sibling repos. Should these stay (local-dev-only) or should upstream repos be
-  tagged on GitHub first? This blocks external `go get` and git tagging of
-  v0.1.0.
 - **GOEXPERIMENT=jsonv2:** Every Go command requires this env var because go-sse
   uses `encoding/json/v2`. Accept it (and document loudly), fork go-sse, or
   build-tag gate the SSE code?

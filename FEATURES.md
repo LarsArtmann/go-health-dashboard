@@ -84,9 +84,7 @@
 
 | Gap                              | Where documented                                                          |
 | -------------------------------- | ------------------------------------------------------------------------- |
-| Replace directives in go.mod     | 6 local `replace` directives; blocks `go get` for external consumers      |
 | GOEXPERIMENT=jsonv2 requirement  | All Go commands require this env var; go-sse uses `encoding/json/v2`      |
-| No git tags                      | v0.1.0 not tagged; pkg.go.dev has no version to display                   |
 | No screenshot in README          | No visual preview of the dashboard in README.md                           |
 | `SubscriberCount()` untested     | `dashboard.go:269` — method works but has no dedicated test               |
 | `WithHeartbeatInterval` untested | `dashboard.go:84` — option works but custom interval not verified by test |
