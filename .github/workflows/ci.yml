@@ -64,7 +64,7 @@ jobs:
       - name: Generate templ files
         run: templ generate ./...
 
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v9
         with:
           version: latest
           args: run ./...
