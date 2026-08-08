@@ -4,6 +4,7 @@ package dashboard
 type Routes struct {
 	Dashboard string // HTML dashboard page (default: /health)
 	SSE       string // SSE push endpoint for real-time updates (default: /health/sse)
+	Favicon   string // SVG favicon endpoint (default: /favicon.svg)
 	Liveness  string // Kubernetes liveness probe — JSON (default: /healthz)
 	Readiness string // Kubernetes readiness probe — JSON (default: /readyz)
 	Startup   string // Kubernetes startup probe — JSON (default: /startupz)
@@ -16,6 +17,7 @@ func DefaultRoutes() Routes {
 	return Routes{
 		Dashboard: "/health",
 		SSE:       "/health/sse",
+		Favicon:   "/favicon.svg",
 		Liveness:  "/healthz",
 		Readiness: "/readyz",
 		Startup:   "/startupz",

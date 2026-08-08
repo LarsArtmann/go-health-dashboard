@@ -1,7 +1,6 @@
 package dashboard_test
 
 import (
-	"net/http"
 	"strings"
 	"testing"
 
@@ -118,4 +117,36 @@ func TestCSP_NonceUsedConsistently(t *testing.T) {
 	}
 }
 
-var _ http.Handler = http.HandlerFunc(nil)
+func TestCSP_WithCSSPathSuppressesTailwindCDN(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t, dashboard.WithCSSPath("/static/app.css"))
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+
+	body := w.Body.String()
+
+	if strings.Contains(body, "cdn.tailwindcss.com") {
+		t.Error("Tailwind CDN script should not be rendered when CSSPath is set")
+	}
+
+	if !strings.Contains(body, `href="/static/app.css"`) {
+		t.Error("HTML should contain CSS link tag when CSSPath is set")
+	}
+}
+
+func TestCSP_WithoutCSSPathUsesTailwindCDN(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+
+	body := w.Body.String()
+
+	if !strings.Contains(body, "cdn.tailwindcss.com") {
+		t.Error("Tailwind CDN script should be rendered when CSSPath is not set")
+	}
+}
