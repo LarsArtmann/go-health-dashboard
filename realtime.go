@@ -43,9 +43,9 @@ type ssePusher struct {
 	interval    time.Duration
 	pushMode    PushMode
 
-	mu          sync.Mutex
-	lastStatus  health.Status
-	lastChecks  string
+	mu         sync.Mutex
+	lastStatus health.Status
+	lastChecks string
 }
 
 // newSSEPusher creates a pusher that broadcasts at the dashboard's configured

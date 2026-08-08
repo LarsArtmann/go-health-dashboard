@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/larsartmann/go-health-dashboard"
 	health "github.com/larsartmann/go-health"
+	dashboard "github.com/larsartmann/go-health-dashboard"
 	"github.com/samber/do/v2"
 )
 
@@ -124,7 +124,11 @@ func setupDashboardWithFailures(t *testing.T, opts ...dashboard.Option) *probeSe
 	}
 }
 
-func doRequest(t *testing.T, handler http.Handler, target, accept string) *httptest.ResponseRecorder {
+func doRequest(
+	t *testing.T,
+	handler http.Handler,
+	target, accept string,
+) *httptest.ResponseRecorder {
 	t.Helper()
 
 	w := httptest.NewRecorder()
@@ -367,8 +371,10 @@ func TestWithRefreshInterval_CustomPolling(t *testing.T) {
 
 	body := w.Body.String()
 	if !strings.Contains(body, "every 5s") {
-		t.Errorf("HTML should contain 5s polling interval, got body snippet: %s",
-			body[strings.Index(body, "hx-trigger"):min(len(body), strings.Index(body, "hx-trigger")+40)])
+		t.Errorf(
+			"HTML should contain 5s polling interval, got body snippet: %s",
+			body[strings.Index(body, "hx-trigger"):min(len(body), strings.Index(body, "hx-trigger")+40)],
+		)
 	}
 }
 

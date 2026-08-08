@@ -86,12 +86,12 @@ func TestGroupChecks_PartitionsBySeverity(t *testing.T) {
 	t.Parallel()
 
 	checks := map[string]health.Check{
-		"database":  {Status: health.StatusFail, Error: "connection refused"},
-		"redis":     {Status: health.StatusWarn, Error: "high latency"},
-		"api":       {Status: health.StatusPass},
-		"cache":     {Status: health.StatusPass},
-		"queue":     {Status: health.StatusFail, Error: "timeout"},
-		"exporter":  {Status: health.StatusWarn, Error: "slow"},
+		"database": {Status: health.StatusFail, Error: "connection refused"},
+		"redis":    {Status: health.StatusWarn, Error: "high latency"},
+		"api":      {Status: health.StatusPass},
+		"cache":    {Status: health.StatusPass},
+		"queue":    {Status: health.StatusFail, Error: "timeout"},
+		"exporter": {Status: health.StatusWarn, Error: "slow"},
 	}
 
 	groups := groupChecks(checks)
@@ -120,9 +120,9 @@ func TestGroupChecks_SortedAlphabetically(t *testing.T) {
 	t.Parallel()
 
 	checks := map[string]health.Check{
-		"zebra":  {Status: health.StatusFail},
-		"alpha":  {Status: health.StatusFail},
-		"mongo":  {Status: health.StatusFail},
+		"zebra": {Status: health.StatusFail},
+		"alpha": {Status: health.StatusFail},
+		"mongo": {Status: health.StatusFail},
 	}
 
 	groups := groupChecks(checks)
@@ -157,7 +157,7 @@ func TestGroupChecks_OnlyOneSeverity(t *testing.T) {
 	t.Parallel()
 
 	checks := map[string]health.Check{
-		"db":   {Status: health.StatusPass},
+		"db":    {Status: health.StatusPass},
 		"cache": {Status: health.StatusPass},
 	}
 
@@ -176,13 +176,13 @@ func TestBuildViewModel(t *testing.T) {
 	t.Parallel()
 
 	resp := health.Response{
-		Status:        health.StatusWarn,
-		Version:       "1.2.3",
-		Uptime:        "5m0s",
+		Status:         health.StatusWarn,
+		Version:        "1.2.3",
+		Uptime:         "5m0s",
 		TotalLatencyMs: 42,
 		Checks: map[string]health.Check{
-			"db":      {Status: health.StatusPass},
-			"cache":   {Status: health.StatusWarn, Error: "slow"},
+			"db":    {Status: health.StatusPass},
+			"cache": {Status: health.StatusWarn, Error: "slow"},
 		},
 	}
 

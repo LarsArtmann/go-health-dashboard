@@ -64,13 +64,13 @@ Open `http://localhost:8080/health` in a browser. Done.
 
 ## Routes
 
-| Path | Method | Content-Type | What It Does |
-|---|---|---|---|
-| `/health` | GET | HTML or JSON | Content-negotiated dashboard (Accept header) |
-| `/health/partial` | GET | HTML | HTMX polling partial (auto-refresh fragment) |
-| `/healthz` | GET | JSON | Liveness probe (always 200, no dependency checks) |
-| `/readyz` | GET | JSON | Readiness probe (503 when critical services fail) |
-| `/startupz` | GET | JSON | Startup probe (latched once all critical services pass) |
+| Path              | Method | Content-Type | What It Does                                            |
+| ----------------- | ------ | ------------ | ------------------------------------------------------- |
+| `/health`         | GET    | HTML or JSON | Content-negotiated dashboard (Accept header)            |
+| `/health/partial` | GET    | HTML         | HTMX polling partial (auto-refresh fragment)            |
+| `/healthz`        | GET    | JSON         | Liveness probe (always 200, no dependency checks)       |
+| `/readyz`         | GET    | JSON         | Readiness probe (503 when critical services fail)       |
+| `/startupz`       | GET    | JSON         | Startup probe (latched once all critical services pass) |
 
 ## Options
 
@@ -91,11 +91,11 @@ dash := dashboard.New(probe,
 
 ## Refresh Modes
 
-| Mode | Mechanism | Latency | Use Case |
-|---|---|---|---|
-| `RefreshModePoll` (default) | HTMX polling | 2-5s | Operators watching a dashboard |
-| `RefreshModeSSE` | Server-Sent Events push | Sub-second | NOC monitors, wall displays |
-| `RefreshModeOff` | None (manual reload) | N/A | Debugging, static snapshots |
+| Mode                        | Mechanism               | Latency    | Use Case                       |
+| --------------------------- | ----------------------- | ---------- | ------------------------------ |
+| `RefreshModePoll` (default) | HTMX polling            | 2-5s       | Operators watching a dashboard |
+| `RefreshModeSSE`            | Server-Sent Events push | Sub-second | NOC monitors, wall displays    |
+| `RefreshModeOff`            | None (manual reload)    | N/A        | Debugging, static snapshots    |
 
 ### SSE Push Mode
 
@@ -142,19 +142,19 @@ pass/fail every 15s), and one always failing. Watch the dashboard update live.
 
 ## Status Mapping
 
-| go-health Status | Badge Color | Alert Banner |
-|---|---|---|
-| `pass` | Green (success) | "All Systems Operational" |
-| `warn` | Yellow (warning) | "Degraded — Non-Critical Issues" |
-| `fail` | Red (error) | "Unhealthy — Critical Failures" |
+| go-health Status | Badge Color      | Alert Banner                     |
+| ---------------- | ---------------- | -------------------------------- |
+| `pass`           | Green (success)  | "All Systems Operational"        |
+| `warn`           | Yellow (warning) | "Degraded — Non-Critical Issues" |
+| `fail`           | Red (error)      | "Unhealthy — Critical Failures"  |
 
 ## Dependencies
 
-| Dependency | Purpose |
-|---|---|
-| [go-health](https://github.com/larsartmann/go-health) | Health-check Response, Probe, CachedResponse |
+| Dependency                                                          | Purpose                                           |
+| ------------------------------------------------------------------- | ------------------------------------------------- |
+| [go-health](https://github.com/larsartmann/go-health)               | Health-check Response, Probe, CachedResponse      |
 | [templ-components](https://github.com/larsartmann/templ-components) | Alert, Table, Badge, StatCard, Card, PolledRegion |
-| [go-sse](https://github.com/larsartmann/go-sse) | SSE transport (push mode only) |
+| [go-sse](https://github.com/larsartmann/go-sse)                     | SSE transport (push mode only)                    |
 
 ## License
 

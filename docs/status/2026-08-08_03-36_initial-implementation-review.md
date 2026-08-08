@@ -9,18 +9,21 @@
 ## A) FULLY DONE
 
 ### P1: go-health Accessors
+
 - `Probe.CachedResponse() Response` — reads atomic cache, overlays shutdown flag (including when no cache exists)
 - `Probe.RefreshInterval() time.Duration` — returns configured interval
 - 6 tests in go-health, all passing
 - AGENTS.md updated with new methods
 
 ### P2: Repo Scaffold
+
 - `go.mod` with module, dependencies, replace directives
 - `doc.go` with package comment and quick-start example
 - `.gitignore` (pre-existing, verified)
 - `example/` directory
 
 ### P3: Status Mapping Layer
+
 - `mapStatusToBadge` — pass→Success, warn→Warning, fail→Error, unknown→Neutral
 - `mapStatusToAlert` — pass→Success, warn→Warning, fail→Error, unknown→Info
 - `mapStatusToText` — human-readable status strings
@@ -30,6 +33,7 @@
 - 9 tests, all passing
 
 ### P4: Dashboard Templ Pages
+
 - `view.templ` — full HTML page with layout.Base, StatCards grid, PolledRegion, Card+Table per group
 - `partial.templ` — PolledRegion wrapper for HTMX polling
 - Both generated to `*_templ.go` via `templ generate`
@@ -37,50 +41,59 @@
 - Dark mode classes present (verified)
 
 ### P5: Content Negotiation Handler
-- `acceptsHTML(r)` — parses Accept header for text/html or */*
+
+- `acceptsHTML(r)` — parses Accept header for text/html or _/_
 - HTML request → render full page; JSON request → delegate to probe.ReadinessHandler()
-- Missing Accept header → JSON (kubelet default); */* → HTML (browser default)
+- Missing Accept header → JSON (kubelet default); _/_ → HTML (browser default)
 - Tested with 5 Accept header variants
 
 ### P6: Public API + Options
+
 - `Dashboard` struct, `Config`, `Option` type
 - `New(probe, opts...)` with defaults
 - `WithTitle`, `WithRefreshInterval`, `WithRefreshMode`, `WithRoutes`, `WithNonce`, `WithSSEPush`
 - `Handler()`, `PartialHandler()`, `SSEHandler()`, `RegisterRoutes()`, `Start()`, `Shutdown()`
 
 ### P7: HTMX Polling
+
 - PolledRegion wraps dashboard content with outerHTML swap
 - Partial endpoint returns fresh PolledRegion + content on each poll
 - Interval configurable, defaults to probe's RefreshInterval
 
 ### P8: StatCards + Card Grouping
+
 - 3 StatCards: Version, Uptime, Check Latency
 - Checks grouped into severity Cards: Critical Failures, Non-Critical Issues, Healthy Services
 - Each Card uses Flush table (no padding border)
 - Empty checks map shows "No registered services" empty state
 
 ### P9: Routes
+
 - `Routes` struct with 6 fields (Dashboard, Partial, SSE, Liveness, Readiness, Startup)
 - `DefaultRoutes()` — conventional paths
 - `RegisterRoutes` wires all endpoints including probe handlers
 
 ### P10: Comprehensive Tests
+
 - 31 tests total (9 status + 22 dashboard), all passing
 - Content negotiation dispatch, HTML output validation, options, routes, shutdown, SSE mode
 - 2 benchmarks (HTML rendering, partial rendering)
 
 ### P11: Example App
+
 - Mock services: always-healthy, flapping (15s cycle), always-failing
 - Critical (postgres, redis) and non-critical (metrics-exporter) classification
 - Full demo server with RegisterRoutes
 
 ### P12: flake.nix
+
 - flake-parts + treefmt-nix pattern matching go-health
 - Apps: generate, test, test-race, build, vet, lint, coverage, vulncheck, security, example, clean
 - devShell with templ CLI, GOEXPERIMENT=jsonv2 set
 - templ generate as pre-build step
 
 ### P13: Documentation
+
 - `README.md` — quick start, routes table, options, refresh modes, SSE, status mapping
 - `AGENTS.md` — architecture, design decisions, data flow, testing patterns, gotchas
 - `doc.go` — package comment with example
@@ -90,6 +103,7 @@
 ## B) PARTIALLY DONE
 
 ### P14: SSE Push Mode — 70% done
+
 - **Done:** ssePusher struct, start goroutine, broadcast loop, SSE connection handler, heartbeat, initial state push
 - **Missing:**
   - Does NOT use go-datastar (ElementsFromTempl) — uses hand-rolled EventSource + innerHTML replacement instead. The plan specified Datastar SDK integration. go-datastar is in replace directives but NEVER imported.
@@ -97,11 +111,13 @@
   - Client-side JavaScript is inline and manual, not Datastar-powered
 
 ### P15: Status Change Detection — 60% done
+
 - **Done:** `PushMode` type defined (PushOnChange, PushAlways), `shouldBroadcast` method, lastStatus tracking
 - **CRITICAL BUG:** `hashChecks()` iterates over a Go map (randomized iteration order) and concatenates into a string. The hash is **non-deterministic** — the same checks map produces different strings on different calls. This means PushOnChange mode ALWAYS detects "changes" and broadcasts every tick, defeating the purpose.
 - **Missing:** `WithPushMode(PushMode)` option function was planned (P15.3) but never implemented. The pusher hardcodes `PushOnChange` with no way to change it.
 
 ### P16: Polish — 70% done
+
 - **Done:** Build passes, vet passes, tests pass, dark mode classes verified present, responsive grid verified, Tailwind CDN loaded, badges render with correct colors
 - **Missing:**
   - golangci-lint never actually run (only `go vet`)
@@ -150,12 +166,14 @@ Go randomizes map iteration order. The same checks map produces a different hash
 ### D2: GOEXPERIMENT=jsonv2 requirement is a major friction point
 
 The go-sse dependency imports `encoding/json/v2` which requires `GOEXPERIMENT=jsonv2`. This means:
+
 - Every `go build`, `go test`, `go run` needs the env var
 - Every consumer of go-health-dashboard needs to set it
 - The flake.nix devShell sets it, but plain `go build` without Nix fails
 - This is an experimental Go feature that could change
 
 This should have been flagged as a design decision earlier. Options:
+
 - Make SSE mode a build-tag-gated separate package
 - Fork go-sse to remove json/v2 dependency
 - Accept the requirement and document loudly (current approach, but discovered late)
@@ -167,6 +185,7 @@ The plan designed SSE around go-datastar's `ElementsFromTempl`. I imported go-ss
 ### D4: flake.nix won't work for `nix build`
 
 Two problems:
+
 1. **No GOWORK=off** — The workspace `~/projects/go.work` includes replace directives pointing to local paths. `nix build` will try to use these local paths which don't exist in the Nix sandbox.
 2. **No flake.lock** — Never generated.
 3. **templ generate modifies source** — The build apps run `templ generate` before `go build`, but in a pure Nix build the source is read-only.
@@ -205,6 +224,7 @@ Two problems:
 ## F) Up to 50 Things to Do Next
 
 ### Critical (must fix before any release)
+
 1. **Fix `hashChecks` non-deterministic bug** — sort keys before hashing
 2. **Implement `WithPushMode(PushMode)` option**
 3. **Set `GOWORK=off` in flake.nix devShell**
@@ -217,6 +237,7 @@ Two problems:
 10. **Test the example app by actually running it**
 
 ### High Priority
+
 11. **Fix `acceptsHTML` to use proper Accept header parsing with q-values**
 12. **Add `WithCSSPath(string)` option for production CSS**
 13. **Add `.golangci.yml`**
@@ -229,6 +250,7 @@ Two problems:
 20. **Verify mobile responsive layout with actual viewport testing**
 
 ### Medium Priority
+
 21. **Add `WithNonce` support to templ HeadContent** (CSP compliance)
 22. **Add dark mode toggle button to dashboard**
 23. **Add auto-generated refresh timestamp display** (PolledRegion ShowTimestamp)
@@ -246,6 +268,7 @@ Two problems:
 35. **Add WebSocket alternative to SSE** (for environments where SSE is blocked)
 
 ### Low Priority / Polish
+
 36. **Add CONTRIBUTING.md**
 37. **Add CHANGELOG.md**
 38. **Add FEATURES.md**
@@ -275,6 +298,7 @@ The plan designed SSE around `datastar.ElementsFromTempl()` for patch protocol. 
 ### G2: Is the GOEXPERIMENT=jsonv2 requirement acceptable?
 
 go-sse depends on `encoding/json/v2` which requires `GOEXPERIMENT=jsonv2`. This propagates to every consumer. Options:
+
 - Accept it (document loudly, set in flake.nix)
 - Fork go-sse to remove json/v2 (maintenance burden)
 - Build-tag gate the entire SSE feature so non-SSE consumers don't need it

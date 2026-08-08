@@ -22,3 +22,54 @@ Thumbs.db
 *.dll
 *.so
 *.dylib
+
+# >>> buildflow-managed (.gitignore) >>>
+# Auto-managed by buildflow. Edit outside these markers; this block is regenerated on `buildflow --fix`.
+
+## Secrets and environment
+.env.local
+.env.*.local
+*.pem
+*.key
+
+## Databases
+*.db
+*.db-shm
+*.db-wal
+
+## Operating systems
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+## Editors and ides
+*~
+
+## Logs and temporaries
+*.log
+*.tmp
+*.temp
+
+## Buildflow artifacts
+audit-log.*
+workflow-audit-log.*
+.buildflow-workflow-baseline.json
+
+## Reports and coverage
+/coverage
+reports/
+
+## Go
+*.test
+*.out
+go.work
+go.work.sum
+/go-health-dashboard
+
+## Nix
+result
+result-*
+.envrc
+.direnv/
+# <<< buildflow-managed (.gitignore) <<<

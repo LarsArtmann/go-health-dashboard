@@ -16,8 +16,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/larsartmann/go-health-dashboard"
 	health "github.com/larsartmann/go-health"
+	dashboard "github.com/larsartmann/go-health-dashboard"
 	"github.com/samber/do/v2"
 )
 
@@ -29,7 +29,11 @@ func main() {
 
 	registerService(injector, "postgres", &alwaysHealthy{})
 	registerService(injector, "redis", &flappingService{failEvery: 15 * time.Second})
-	registerService(injector, "metrics-exporter", &alwaysFailing{reason: "exporter endpoint unreachable"})
+	registerService(
+		injector,
+		"metrics-exporter",
+		&alwaysFailing{reason: "exporter endpoint unreachable"},
+	)
 
 	probe := health.New(injector,
 		health.WithVersion("1.2.3"),
