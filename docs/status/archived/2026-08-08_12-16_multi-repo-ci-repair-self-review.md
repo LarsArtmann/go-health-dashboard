@@ -5,6 +5,14 @@
 **Scope:** go-health-dashboard + all 4 sibling repos (templ-components, go-health, go-datastar, go-sse)  
 **Trigger:** User said "FIX!" pointing at Dependabot PRs, then asked for brutal self-review
 
+> **RESOLVED (go-health-dashboard scope).** Dashboard CI verified 4/4 green;
+> pkg.go.dev indexed at `v0.1.0`; stale BLOCKED items removed (`25fcccf`). The
+> dashboard-specific TODOs this report surfaced (item f.9–10 SubscriberCount /
+> HeartbeatInterval tests; f.21 pin golangci version; f.22 screenshot) are tracked
+> in `TODO_LIST.md`. **All sibling-repo items (go-sse, go-datastar, templ-components,
+> go-health CI / CSS / visual regression / Dependabot alerts) are OUT OF SCOPE**
+> for go-health-dashboard.
+
 ---
 
 ## Executive Summary
@@ -132,6 +140,13 @@ I committed the `_sources` exclusion fix and pushed without running `go test ./.
 ---
 
 ## (f) Up to 50 Things We Should Get Done Next
+
+> **Resolution (go-health-dashboard scope):** 1–8, 11–20, 25–31, 41–45 = sibling
+> repos (go-sse, go-datastar, templ-components, go-health) → **OUT OF SCOPE**.
+> ~~2~~ **DONE** (`25fcccf` — stale BLOCKED items removed from `TODO_LIST.md`).
+> 9, 10 → `TODO_LIST.md` (SubscriberCount / HeartbeatInterval tests, still open).
+> 21 → low (pin golangci version). 22 → `TODO_LIST.md` (screenshot). 32–40 =
+> cross-repo standardisation → out of scope.
 
 ### Critical (CI still broken or missing)
 

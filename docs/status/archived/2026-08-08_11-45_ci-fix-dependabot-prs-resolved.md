@@ -4,6 +4,12 @@
 **Session scope:** Fix the 3 open Dependabot PRs on go-health-dashboard, get CI green.
 **Repo:** go-health-dashboard (primary), templ-components (observed), go-health (observed)
 
+> **RESOLVED — dashboard CI is green.** All 3 Dependabot PRs applied (`101ea3d`),
+> the duplicate-`run` bug fixed (`b9eacb8`); CI runs 4/4 green and `v0.1.0` is on
+> pkg.go.dev (verified in the `12-16` report). The stale `TODO_LIST.md` BLOCKED
+> items flagged in (c).1 were cleared in `25fcccf`. **Sibling-repo CI items
+> (templ-components, go-health) are OUT OF SCOPE** for go-health-dashboard.
+
 ---
 
 ## (a) FULLY DONE
@@ -118,6 +124,13 @@ This is a docs drift I introduced by not cleaning up after the release work.
 ---
 
 ## (f) Up to 50 things to do next
+
+> **Resolution (go-health-dashboard scope):** 1–5, 13–15, 18–20, 41–50 = sibling
+> repos / release-polish → **OUT OF SCOPE** (templ-components, go-health). ~~6, 7~~
+> **DONE** (`25fcccf` — stale BLOCKED items removed from `TODO_LIST.md`). 8 →
+> resolved (BLOCKED items already gone). 9, 10 → `TODO_LIST.md` (SubscriberCount /
+> HeartbeatInterval tests, still open). 11 → low (pin golangci version). 12 → low.
+> 22 → `TODO_LIST.md` (screenshot). 32 → `ROADMAP.md` (build-tag gating, BLOCKED).
 
 ### Critical (block release integrity)
 
