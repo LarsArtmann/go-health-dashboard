@@ -2,11 +2,17 @@ package dashboard_test
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 	"testing"
 
 	dashboard "github.com/larsartmann/go-health-dashboard"
 )
+
+// scriptOpenTagRE matches inline <script ...> opening tags (not self-closing
+// or external src-only tags differently). Used to verify every script carries
+// a CSP nonce.
+var scriptOpenTagRE = regexp.MustCompile(`<script[^>]*>`)
 
 func TestCSP_NonceAppliedToDatastarScript(t *testing.T) {
 	t.Parallel()
@@ -257,5 +263,55 @@ func TestNonceExtractor_DoesNotAffectJSONResponse(t *testing.T) {
 
 	if strings.Contains(body, "should-not-appear") {
 		t.Error("JSON response should not contain the nonce")
+	}
+}
+
+// --- Render cleanliness guarantees (CSP regression guards) ---.
+
+// TestRender_AllScriptsCarryNonce verifies that every inline <script> tag in
+// the dashboard output carries the per-request nonce. This is the library-level
+// guarantee that lets a consumer set script-src 'nonce-...' without
+// 'unsafe-inline'. If a new component or refactor emits an un-nonce'd script,
+// this test catches it.
+func TestRender_AllScriptsCarryNonce(t *testing.T) {
+	t.Parallel()
+
+	const nonce = "csp-guard-nonce"
+	s := setupDashboard(
+		t,
+		dashboard.WithNonceExtractor(func(*http.Request) string { return nonce }),
+	)
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+	body := w.Body.String()
+
+	for _, match := range scriptOpenTagRE.FindAllString(body, -1) {
+		if !strings.Contains(match, `nonce="`+nonce+`"`) {
+			t.Errorf("inline script tag lacks nonce %q:\n%s", nonce, match)
+		}
+	}
+}
+
+// TestRender_NoInlineStyles verifies the dashboard output contains no <style>
+// blocks and no inline style="" attributes. This documents that the dashboard
+// is compatible with a strict style-src policy (no 'unsafe-inline' needed for
+// the /health page itself). templ-components uses Tailwind classes exclusively;
+// if that ever changes, this test surfaces it.
+func TestRender_NoInlineStyles(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t, dashboard.WithNonceExtractor(func(*http.Request) string { return "x" }))
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+	body := w.Body.String()
+
+	if c := strings.Count(body, "<style"); c != 0 {
+		t.Errorf("dashboard output should contain no <style> blocks, found %d", c)
+	}
+
+	if c := strings.Count(body, `style="`); c != 0 {
+		t.Errorf("dashboard output should contain no inline style= attributes, found %d", c)
 	}
 }
