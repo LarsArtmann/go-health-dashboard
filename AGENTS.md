@@ -123,3 +123,11 @@ Lars's Datastar SDK built on go-sse. Provides `ElementsFromTempl(component, opts
 ### go-sse (`github.com/larsartmann/go-sse`)
 
 Provides `Broadcaster[sse.Event]` (fan-out hub) and `Stream` (single SSE connection). The broadcaster is used internally by the pusher — one goroutine renders patches and broadcasts, N SSE connections subscribe and forward.
+
+### samber/do v2 (`github.com/samber/do/v2`)
+
+The DI container that go-health uses to discover health-checkable services. The Dashboard integrates with it at two levels:
+
+- **Lifecycle interfaces** — `Dashboard` implements `do.HealthcheckerWithContext` (`HealthCheck(ctx) error`) and `do.Shutdowner` (`Shutdown()`), verified by compile-time assertions. When registered via `Register`, the Dashboard participates in container-wide `do.HealthCheck` and `do.Shutdown` cascades.
+- **`Register(injector, probe, opts...)`** — Convenience function that creates the Dashboard and calls `do.ProvideValue`. Consumers who already have a `do.Injector` (required by go-health's `Probe`) can register the dashboard with a single call instead of manually wiring Start/Shutdown.
+- **`injector.Shutdown()` returns `*do.ShutdownReport`** (not `error` directly, though it implements `error`). Always returns non-nil — check `report.Succeed` or `len(report.Errors)`, not `!= nil`.
