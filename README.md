@@ -61,7 +61,7 @@ func main() {
     defer dash.Shutdown()
 
     mux := http.NewServeMux()
-    dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
+    dash.RegisterRoutes(mux)
 
     http.ListenAndServe(":8080", mux)
 }
@@ -93,6 +93,8 @@ dash := dashboard.New(probe,
     dashboard.WithCSSPath("/static/app.css"),                  // Compiled CSS (replaces Tailwind CDN)
     dashboard.WithHeartbeatInterval(30*time.Second),           // SSE keepalive interval (default 15s)
     dashboard.WithMaxSSEConnections(100),                      // Max concurrent SSE clients (0 = unlimited)
+    dashboard.WithRetryInterval(2*time.Second),                // SSE reconnection delay (browser retry field)
+    dashboard.WithBasePath("/admin"),                          // Prefix all routes for sub-path mounting
     dashboard.WithRoutes(dashboard.Routes{
         Dashboard: "/status",
         SSE:       "/status/sse",

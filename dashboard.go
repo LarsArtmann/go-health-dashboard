@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 	"encoding/json/v2"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	health "github.com/larsartmann/go-health"
+	"github.com/samber/do/v2"
 )
 
 const (
@@ -38,6 +40,7 @@ type Config struct {
 	CSSPath           string
 	HeartbeatInterval time.Duration
 	MaxSSEConnections int
+	RetryInterval     time.Duration
 }
 
 // Option configures a Dashboard. Use the With* functions to create options.
@@ -111,6 +114,47 @@ func WithMaxSSEConnections(n int) Option {
 	return func(c *Config) { c.MaxSSEConnections = n }
 }
 
+// WithRetryInterval sets the SSE retry field (in milliseconds) that tells
+// the browser how long to wait before reconnecting after a disconnect. When
+// zero (the default), the browser's built-in default (~3s) is used.
+//
+// A shorter interval means faster recovery from transient network blips;
+// a longer interval reduces server load when many clients reconnect at once.
+// Negative values are treated as zero.
+func WithRetryInterval(d time.Duration) Option {
+	return func(c *Config) {
+		if d > 0 {
+			c.RetryInterval = d
+		}
+	}
+}
+
+// WithBasePath prefixes all dashboard and probe routes with the given path.
+// Use this when mounting the dashboard under a non-root path — for example
+// WithBasePath("/admin") produces "/admin/health", "/admin/health/sse", etc.
+//
+// The prefix is applied to whatever routes are currently configured. When
+// combined with WithRoutes, call WithBasePath last so it prefixes the custom
+// routes; calling WithRoutes after WithBasePath replaces the prefixed set.
+func WithBasePath(prefix string) Option {
+	return func(cfg *Config) {
+		prefix = strings.TrimSuffix(prefix, "/")
+		if prefix == "" {
+			return
+		}
+
+		r := cfg.Routes
+		cfg.Routes = Routes{
+			Dashboard: prefix + r.Dashboard,
+			SSE:       prefix + r.SSE,
+			Favicon:   prefix + r.Favicon,
+			Liveness:  prefix + r.Liveness,
+			Readiness: prefix + r.Readiness,
+			Startup:   prefix + r.Startup,
+		}
+	}
+}
+
 // Dashboard renders a browser-friendly health dashboard from a go-health
 // Probe using Datastar SSE for real-time updates.
 //
@@ -125,6 +169,14 @@ type Dashboard struct {
 	cfg   Config
 	push  atomic.Pointer[pusher]
 }
+
+// Compile-time assertions that Dashboard satisfies samber/do lifecycle interfaces.
+// These enable automatic participation in do.HealthCheck and do.Shutdown cascades
+// when the Dashboard is registered in a DI container via Register.
+var (
+	_ do.HealthcheckerWithContext = (*Dashboard)(nil)
+	_ do.Shutdowner               = (*Dashboard)(nil)
+)
 
 // New creates a Dashboard wired to the given Probe. The Probe provides
 // health data (via CachedResponse) and JSON handlers (via ReadinessHandler,
@@ -316,14 +368,17 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 }
 
 // RegisterRoutes registers all dashboard and probe endpoints on the given
-// mux using the provided routes. Pass DefaultRoutes for conventional paths.
+// mux using the dashboard's configured routes (set via WithRoutes or
+// WithBasePath, defaulting to DefaultRoutes).
 //
 // This wires up:
 //   - Dashboard route (HTML page with Datastar SSE)
 //   - SSE route (Datastar patch stream)
 //   - Favicon route (SVG favicon)
 //   - Liveness, Readiness, Startup probe endpoints (JSON)
-func (d *Dashboard) RegisterRoutes(mux *http.ServeMux, routes Routes) {
+func (d *Dashboard) RegisterRoutes(mux *http.ServeMux) {
+	routes := d.cfg.Routes
+
 	mux.HandleFunc(routes.Dashboard, d.Handler())
 	mux.HandleFunc(routes.SSE, d.SSEHandler())
 
@@ -356,4 +411,23 @@ func (d *Dashboard) Shutdown() {
 	if p := d.push.Swap(nil); p != nil {
 		p.broadcaster.Close()
 	}
+}
+
+// ErrPusherNotActive is returned by HealthCheck when the SSE pusher has not
+// been started or has been shut down.
+var ErrPusherNotActive = errors.New("dashboard: SSE pusher is not active")
+
+// HealthCheck reports whether the dashboard's real-time update mechanism is
+// healthy. Returns an error when the SSE pusher has not been started or has
+// been shut down.
+//
+// This method satisfies do.HealthcheckerWithContext, enabling the dashboard
+// to participate in container-wide health checks when registered in a
+// samber/do injector.
+func (d *Dashboard) HealthCheck(_ context.Context) error {
+	if d.push.Load() == nil {
+		return ErrPusherNotActive
+	}
+
+	return nil
 }

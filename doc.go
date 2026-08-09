@@ -21,7 +21,7 @@
 //	defer dash.Shutdown()
 //
 //	mux := http.NewServeMux()
-//	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
+//	dash.RegisterRoutes(mux)
 //	http.ListenAndServe(":8080", mux)
 //
 // Browser visits http://localhost:8080/health and sees a live status dashboard

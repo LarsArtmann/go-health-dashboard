@@ -43,7 +43,8 @@
 | SSE heartbeat                   | 🟢 `FULLY_FUNCTIONAL` | Configurable keepalive via `WithHeartbeatInterval` (default 15s)                   |
 | Initial state on connect        | 🟢 `FULLY_FUNCTIONAL` | `pusher.go:143` — sseHandler sends current state as first patch                    |
 | SSE connection limit            | 🟢 `FULLY_FUNCTIONAL` | `pusher.go:45` — atomic.Int64 counter, HTTP 503 when exceeded                      |
-| SubscriberCount() observability | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:288` — public accessor for active SSE connection count               |
+| SSE reconnection (retry)        | 🟢 `FULLY_FUNCTIONAL` | `pusher.go:105` — `WithRetryInterval` sets SSE retry field; initial state on connect handles missed updates |
+| SubscriberCount() observability | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:325` — public accessor for active SSE connection count, tested   |
 
 ## CSP & Security
 
@@ -59,8 +60,9 @@
 | -------------------------- | --------------------- | ------------------------------------------------------------------------------------ |
 | Configurable routes        | 🟢 `FULLY_FUNCTIONAL` | `routes.go:16` — Dashboard, SSE, Favicon, Liveness, Readiness, Startup               |
 | Default routes             | 🟢 `FULLY_FUNCTIONAL` | `routes.go` — /health, /health/sse, /favicon.svg, /healthz, /readyz, /startupz       |
-| Kubernetes probe endpoints | 🟢 `FULLY_FUNCTIONAL` | Wired from probe handlers in `dashboard.go:326`                                      |
-| JSON content on `/health`  | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:184` — RFC 7231 q-value Accept negotiation; 200 pass/warn, 503 fail    |
+| Embeddable sub-path mode   | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:132` — `WithBasePath("/admin")` prefixes all routes; SSE URL in HTML matches |
+| Kubernetes probe endpoints | 🟢 `FULLY_FUNCTIONAL` | Wired from probe handlers in `dashboard.go:364`                                      |
+| JSON content on `/health`  | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:221` — RFC 7231 q-value Accept negotiation; 200 pass/warn, 503 fail    |
 
 ## Configuration
 
@@ -73,8 +75,10 @@
 | WithNonceExtractor    | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:84` — per-request nonce; takes precedence over WithNonce |
 | WithRoutes            | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:89`                                                 |
 | WithCSSPath           | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:96` — swaps Tailwind CDN for compiled CSS `<link>`  |
-| WithHeartbeatInterval | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:103` — configurable SSE keepalive (default 15s)     |
-| WithMaxSSEConnections | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:110` — DoS prevention; 0 = unlimited                |
+| WithHeartbeatInterval | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:104` — configurable SSE keepalive (default 15s), tested |
+| WithMaxSSEConnections | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:111` — DoS prevention; 0 = unlimited                |
+| WithRetryInterval     | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:121` — SSE retry field for browser reconnection delay |
+| WithBasePath          | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:132` — prefix all routes for sub-path mounting      |
 
 ## Build and Tooling
 
@@ -83,7 +87,7 @@
 | flake.nix devShell      | 🟢 `FULLY_FUNCTIONAL` | GOWORK=off, GOEXPERIMENT=jsonv2, all tools                         |
 | templ generate workflow | 🟢 `FULLY_FUNCTIONAL` | Pre-build step in all Nix apps                                     |
 | `.golangci.yml` config  | 🟢 `FULLY_FUNCTIONAL` | 80+ linters, pragmatic test/example exclusions, **0 issues**       |
-| Test suite              | 🟢 `FULLY_FUNCTIONAL` | 67 tests across 4 files, all passing with `-race`, 80.0% coverage  |
+| Test suite              | 🟢 `FULLY_FUNCTIONAL` | 78 tests across 4 files, all passing with `-race`, 79.7% coverage  |
 | CI/CD                   | 🟢 `FULLY_FUNCTIONAL` | `.github/workflows/ci.yml` — build, test-race, lint, vulncheck (4/4 green) |
 | Dependabot              | 🟢 `FULLY_FUNCTIONAL` | `.github/dependabot.yml` — Go modules + GitHub Actions             |
 | Example app             | 🟢 `FULLY_FUNCTIONAL` | `example/main.go` — compiles, starts, `PORT` env var configurable  |
@@ -96,6 +100,4 @@
 | -------------------------------- | ------------------------------------------------------------------------- |
 | GOEXPERIMENT=jsonv2 requirement  | All Go commands require this env var; go-sse uses `encoding/json/v2`      |
 | No screenshot in README          | No visual preview of the dashboard in README.md                           |
-| `SubscriberCount()` untested     | `dashboard.go:288` — method works but has no dedicated test               |
-| `WithHeartbeatInterval` untested | `dashboard.go:103` — option works but custom interval not verified by test |
 | Browser CSP runtime unverified   | CLI tests prove nonce wiring; runtime JS (Datastar DOM patching) may inject `style=` attributes — unverifiable without a browser |

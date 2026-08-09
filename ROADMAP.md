@@ -12,7 +12,6 @@ monitoring walls, proxy environments, strict CSP, and high-connection scenarios.
 
 Raw ideas:
 
-- SSE reconnection support via `Last-Event-ID` header
 - Graceful shutdown: wait for in-flight SSE connections to drain
 - SSE connection timeout to prevent infinite-lived connections
 - Pusher health self-check (is the goroutine alive?)
@@ -60,7 +59,7 @@ Raw ideas:
 
 - WebSocket alternative transport (for environments where SSE is blocked)
 - Build-tag gating for SSE code (consumers who only want HTML pay no SSE cost)
-- Embeddable dashboard component (mount under a sub-path, not root)
+- Embeddable dashboard component (mount under a sub-path, not root) — **DONE** in v0.2.0 via `WithBasePath`
 - Authentication middleware integration
 - OG metadata and social preview for dashboard page
 - Screenshot or PDF export for incident reports

@@ -15,6 +15,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	health "github.com/larsartmann/go-health"
@@ -23,10 +25,11 @@ import (
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	injector := do.New()
+	defer func() { _ = injector.Shutdown() }()
 
 	registerService(injector, "postgres", &alwaysHealthy{})
 	registerService(injector, "redis", &flappingService{failEvery: 15 * time.Second})
@@ -47,17 +50,16 @@ func main() {
 	}
 	defer probe.Shutdown()
 
-	dash := dashboard.New(probe,
-		dashboard.WithTitle("Demo Service"),
-	)
+	// Register the dashboard in the injector so it participates in
+	// do.Shutdown and do.HealthCheck cascades automatically.
+	dash := dashboard.Register(injector, probe, dashboard.WithTitle("Demo Service"))
 
 	if err := dash.Start(ctx); err != nil {
 		log.Fatalf("dash.Start: %v", err)
 	}
-	defer dash.Shutdown()
 
 	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
+	dash.RegisterRoutes(mux)
 
 	addr := ":" + envOrDefault("PORT", "8080")
 	log.Printf("dashboard: http://localhost%s/health", addr)
@@ -69,8 +71,23 @@ func main() {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatalf("server: %v", err)
+	// Run the server until ctx is cancelled (SIGINT/SIGTERM), then shut down
+	// gracefully: stop accepting new connections, wait for in-flight requests,
+	// then let the deferred injector.Shutdown() cascade to all services.
+	go func() {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("server: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+	log.Println("shutting down...")
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("server.Shutdown: %v", err)
 	}
 }
 

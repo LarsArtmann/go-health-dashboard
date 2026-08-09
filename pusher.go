@@ -42,6 +42,7 @@ type pusher struct {
 	pushMode    PushMode
 	heartbeat   time.Duration
 	maxConns    int
+	retry       time.Duration
 	connections atomic.Int64
 
 	mu              sync.Mutex
@@ -59,6 +60,7 @@ func newPusher(d *Dashboard) *pusher {
 		pushMode:    d.cfg.PushMode,
 		heartbeat:   d.cfg.HeartbeatInterval,
 		maxConns:    d.cfg.MaxSSEConnections,
+		retry:       d.cfg.RetryInterval,
 	}
 }
 
@@ -112,7 +114,12 @@ func (p *pusher) renderPatch(resp health.Response) (sse.Event, bool) {
 		return sse.Event{}, false
 	}
 
-	return patch.Event(), true
+	evt := patch.Event()
+	if p.retry > 0 {
+		evt.Retry = uint(p.retry.Milliseconds())
+	}
+
+	return evt, true
 }
 
 // shouldBroadcast returns true when the pusher should send an update based

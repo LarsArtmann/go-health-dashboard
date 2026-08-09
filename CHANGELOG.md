@@ -7,10 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `WithRetryInterval(d time.Duration)` option and `Config.RetryInterval` field:
+  sets the SSE retry field so browsers know how long to wait before reconnecting
+  after a disconnect. Default zero uses the browser's built-in ~3s delay
+  (`dashboard.go:121`)
+- `WithBasePath(prefix string)` option: prefixes all dashboard and probe routes
+  for mounting under a non-root path (e.g. `/admin` produces `/admin/health`,
+  `/admin/health/sse`). Applied to whatever routes are currently configured
+  (`dashboard.go:132`)
+- SSE reconnection support: events carry the `retry` field when configured, and
+  the SSE handler always sends current state on connect, so reconnecting clients
+  immediately see the latest health status (`pusher.go:105`)
+- `SubscriberCount()` tracking test: verifies count increments/decrements with
+  connections and returns 0 when pusher not started (`sse_integration_test.go`)
+- `WithHeartbeatInterval` keepalive test: verifies custom heartbeat sends SSE
+  comment frames at the configured interval (`sse_integration_test.go`)
+- SSE CSP nonce flow test: verifies SSE patches contain no `<script>` tags,
+  confirming they are CSP-safe inner-HTML replacements (`sse_integration_test.go`)
+- Sub-path mounting tests: verify routes are prefixed, default routes not
+  registered, and HTML references the prefixed SSE URL (`dashboard_test.go`)
+- `WithBasePath` / `WithRoutes` ordering tests: verify that `WithBasePath`
+  after `WithRoutes` prefixes custom routes, and `WithRoutes` after
+  `WithBasePath` replaces the prefixed set entirely (`dashboard_test.go`)
+- `WithRetryInterval` default test: verifies that zero (the default) omits the
+  `retry:` field from SSE events (`sse_integration_test.go`)
+
+### Changed
+
+- **Breaking:** `RegisterRoutes` signature changed from
+  `(mux *http.ServeMux, routes Routes)` to `(mux *http.ServeMux)`. Routes are
+  now read from `Config` as the single source of truth (`dashboard.go:364`)
+- Test count: 67 → 78 top-level test functions; coverage 80.0% → 79.7%
+
 ### Fixed
 
 - `Version` constant updated from `"0.1.0"` to `"0.2.0"` to match the released
   tag — it was left stale when v0.2.0 was tagged (`dashboard.go:27`)
+- `RegisterRoutes` latent bug: the `routes` parameter could diverge from
+  `Config.Routes`, causing the HTML to reference an SSE URL that didn't match
+  the registered handler — now uses `Config.Routes` as single source of truth
+- `WithRetryInterval` negative-duration guard: negative values are now clamped
+  to zero instead of producing a nonsensical `uint` underflow
+- Reconnection test race condition: replaced fixed `time.Sleep(150ms)` with
+  deterministic event-driven waiting (keep stream open until state confirmed)
 
 ## [0.2.0] - 2026-08-09
 

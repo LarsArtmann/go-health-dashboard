@@ -75,7 +75,7 @@ func setupDashboard(t *testing.T, opts ...dashboard.Option) *probeSetup {
 	dash := dashboard.New(probe, opts...)
 
 	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
+	dash.RegisterRoutes(mux)
 
 	if err := probe.Start(t.Context()); err != nil {
 		t.Fatalf("probe.Start: %v", err)
@@ -116,7 +116,7 @@ func setupDashboardWithFailures(t *testing.T, opts ...dashboard.Option) *probeSe
 	dash := dashboard.New(probe, opts...)
 
 	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
+	dash.RegisterRoutes(mux)
 
 	if err := probe.Start(t.Context()); err != nil {
 		t.Fatalf("probe.Start: %v", err)
@@ -423,7 +423,7 @@ func TestContentNegotiation_JSONCriticalFailReturns503(t *testing.T) {
 	dash := dashboard.New(probe)
 
 	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux, dashboard.DefaultRoutes())
+	dash.RegisterRoutes(mux)
 
 	if err := probe.Start(t.Context()); err != nil {
 		t.Fatalf("probe.Start: %v", err)
@@ -637,7 +637,7 @@ func TestWithRoutes_CustomPaths(t *testing.T) {
 	dash := dashboard.New(probe, dashboard.WithRoutes(customRoutes))
 
 	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux, customRoutes)
+	dash.RegisterRoutes(mux)
 
 	if err := probe.Start(t.Context()); err != nil {
 		t.Fatalf("probe.Start: %v", err)
@@ -768,5 +768,139 @@ func TestFavicon_ReturnsSVG(t *testing.T) {
 
 	if !strings.HasPrefix(w.Body.String(), "<svg") {
 		t.Error("favicon body should start with <svg")
+	}
+}
+
+// --- SubscriberCount not-started test ---.
+
+func TestSubscriberCount_ZeroWhenNotStarted(t *testing.T) {
+	t.Parallel()
+
+	injector := do.New()
+	provideHealthy(injector, "db")
+	invoke[*healthyService](t, injector, "db")
+
+	probe := health.New(injector, health.WithCriticalServices("db"))
+	defer probe.Shutdown()
+
+	dash := dashboard.New(probe)
+
+	if count := dash.SubscriberCount(); count != 0 {
+		t.Errorf("SubscriberCount before Start: want 0, got %d", count)
+	}
+}
+
+// --- WithBasePath tests ---.
+
+func TestWithBasePath_PrefixesAllRoutes(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t, dashboard.WithBasePath("/admin"))
+	defer s.cleanup()
+
+	for _, path := range []string{
+		"/admin/health",
+		"/admin/healthz",
+		"/admin/readyz",
+		"/admin/startupz",
+		"/admin/favicon.svg",
+	} {
+		w := doRequest(t, s.mux, path)
+		if w.Code == http.StatusNotFound {
+			t.Errorf("prefixed route %s should be registered", path)
+		}
+	}
+
+	for _, path := range []string{"/health", "/healthz", "/readyz"} {
+		w := doRequest(t, s.mux, path)
+		if w.Code != http.StatusNotFound {
+			t.Errorf("unprefixed route %s should NOT be registered: want 404, got %d", path, w.Code)
+		}
+	}
+}
+
+func TestWithBasePath_SSEURLInHTML(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t, dashboard.WithBasePath("/admin"))
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/admin/health")
+
+	body := w.Body.String()
+	if !strings.Contains(body, "/admin/health/sse") {
+		t.Error("HTML should reference the prefixed SSE URL /admin/health/sse")
+	}
+
+	if strings.Contains(body, "\"/health/sse\"") {
+		t.Error("HTML should not reference the unprefixed SSE URL /health/sse")
+	}
+}
+
+// --- WithBasePath / WithRoutes ordering interaction tests ---.
+
+func TestWithBasePath_AfterWithRoutes(t *testing.T) {
+	t.Parallel()
+
+	custom := dashboard.Routes{
+		Dashboard: "/status",
+		SSE:       "/status/sse",
+		Favicon:   "/icon.svg",
+		Liveness:  "/live",
+		Readiness: "/ready",
+		Startup:   "/start",
+	}
+
+	s := setupDashboard(t,
+		dashboard.WithRoutes(custom),
+		dashboard.WithBasePath("/admin"),
+	)
+	defer s.cleanup()
+
+	for _, path := range []string{
+		"/admin/status",
+		"/admin/live",
+		"/admin/ready",
+		"/admin/start",
+		"/admin/icon.svg",
+	} {
+		w := doRequest(t, s.mux, path)
+		if w.Code == http.StatusNotFound {
+			t.Errorf("prefixed custom route %s should be registered", path)
+		}
+	}
+}
+
+func TestWithRoutes_AfterWithBasePath(t *testing.T) {
+	t.Parallel()
+
+	custom := dashboard.Routes{
+		Dashboard: "/status",
+		SSE:       "/status/sse",
+		Favicon:   "/icon.svg",
+		Liveness:  "/live",
+		Readiness: "/ready",
+		Startup:   "/start",
+	}
+
+	// WithRoutes is applied last — it replaces the prefixed set entirely.
+	s := setupDashboard(t,
+		dashboard.WithBasePath("/admin"),
+		dashboard.WithRoutes(custom),
+	)
+	defer s.cleanup()
+
+	for _, path := range []string{"/status", "/live", "/ready", "/start"} {
+		w := doRequest(t, s.mux, path)
+		if w.Code == http.StatusNotFound {
+			t.Errorf("unprefixed custom route %s should be registered (WithRoutes wins)", path)
+		}
+	}
+
+	for _, path := range []string{"/admin/status", "/admin/live"} {
+		w := doRequest(t, s.mux, path)
+		if w.Code != http.StatusNotFound {
+			t.Errorf("prefixed route %s should NOT be registered: want 404, got %d", path, w.Code)
+		}
 	}
 }
