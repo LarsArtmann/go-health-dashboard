@@ -24,7 +24,7 @@ const (
 )
 
 // Version is the current package version.
-const Version = "0.1.0"
+const Version = "0.2.0"
 
 // Config holds construction-only configuration for a Dashboard.
 // It is populated by Option functions and consumed by New.

@@ -21,13 +21,13 @@
 
 | Feature                              | Status                | Notes                                                                          |
 | ------------------------------------ | --------------------- | ------------------------------------------------------------------------------ |
-| HTML dashboard page                  | 🟢 `FULLY_FUNCTIONAL` | `view.templ:16` — layout.Base shell, no HTMX, Datastar SDK in head             |
-| Content negotiation on `/health`     | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:190` — full RFC 7231 §5.3.2 q-value parser with wildcard support |
+| HTML dashboard page                  | 🟢 `FULLY_FUNCTIONAL` | `view.templ:17` — layout.Base shell, no HTMX, Datastar SDK in head             |
+| Content negotiation on `/health`     | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:184` — full RFC 7231 §5.3.2 q-value parser with wildcard support |
 | Status banner (alert)                | 🟢 `FULLY_FUNCTIONAL` | `view.templ:97` — feedback.Alert with FeedbackType                             |
 | Severity-grouped service cards       | 🟢 `FULLY_FUNCTIONAL` | `status.go:123` — fail/warn/pass groups, alphabetically sorted                 |
 | Service tables with badges           | 🟢 `FULLY_FUNCTIONAL` | `status.go:191` — badge per row, error column                                  |
-| StatCards (version, uptime, latency) | 🟢 `FULLY_FUNCTIONAL` | `view.templ:39-50` — 3-card grid                                               |
-| Empty state                          | 🟢 `FULLY_FUNCTIONAL` | `view.templ:102-105` — "No registered services"                                |
+| StatCards (version, uptime, latency) | 🟢 `FULLY_FUNCTIONAL` | `view.templ:39-47` — 3-card grid                                               |
+| Empty state                          | 🟢 `FULLY_FUNCTIONAL` | `view.templ:104` — "No registered services"                                    |
 | Graceful shutdown state display      | 🟢 `FULLY_FUNCTIONAL` | `status.go:90` — buildViewModel overrides banner to "Shutting Down"            |
 | Dark mode toggle                     | 🟢 `FULLY_FUNCTIONAL` | `view.templ:36` — layout.ThemeToggle, nonce-aware, persisted in localStorage   |
 | Favicon endpoint                     | 🟢 `FULLY_FUNCTIONAL` | `favicon.go:13` — embedded SVG green-heart, served at `/favicon.svg`           |
@@ -41,44 +41,54 @@
 | PushOnChange mode               | 🟢 `FULLY_FUNCTIONAL` | `pusher.go:120` — deterministic fingerprint (sorted keys), 3 E2E integration tests |
 | PushAlways mode                 | 🟢 `FULLY_FUNCTIONAL` | Broadcasts on every tick; tested in `sse_integration_test.go`                      |
 | SSE heartbeat                   | 🟢 `FULLY_FUNCTIONAL` | Configurable keepalive via `WithHeartbeatInterval` (default 15s)                   |
-| Initial state on connect        | 🟢 `FULLY_FUNCTIONAL` | `pusher.go:143` — sends current state as first patch                               |
+| Initial state on connect        | 🟢 `FULLY_FUNCTIONAL` | `pusher.go:143` — sseHandler sends current state as first patch                    |
 | SSE connection limit            | 🟢 `FULLY_FUNCTIONAL` | `pusher.go:45` — atomic.Int64 counter, HTTP 503 when exceeded                      |
-| SubscriberCount() observability | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:269` — public accessor for active SSE connection count               |
+| SubscriberCount() observability | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:288` — public accessor for active SSE connection count               |
+
+## CSP & Security
+
+| Feature                        | Status                | Notes                                                                          |
+| ------------------------------ | --------------------- | ------------------------------------------------------------------------------ |
+| Fixed CSP nonce (`WithNonce`)  | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:68` — construction-time nonce applied to all inline scripts      |
+| Per-request nonce extraction   | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:84` — `WithNonceExtractor(fn)`, takes precedence, graceful fallback. Distinct nonce per request verified |
+| Render-cleanliness guarantees  | 🟢 `FULLY_FUNCTIONAL` | `csp_test.go` — every `<script>` carries nonce; zero `<style>` blocks; zero inline `style=` |
 
 ## Routing
 
 | Feature                    | Status                | Notes                                                                                |
 | -------------------------- | --------------------- | ------------------------------------------------------------------------------------ |
-| Configurable routes        | 🟢 `FULLY_FUNCTIONAL` | `routes.go:4-10` — Dashboard, SSE, Favicon, Liveness, Readiness, Startup             |
-| Default routes             | 🟢 `FULLY_FUNCTIONAL` | `routes.go:15-23` — /health, /health/sse, /favicon.svg, /healthz, /readyz, /startupz |
-| Kubernetes probe endpoints | 🟢 `FULLY_FUNCTIONAL` | Wired from probe handlers in `dashboard.go:301`                                      |
-| JSON content on `/health`  | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:190` — RFC 7231 q-value Accept negotiation; 200 pass/warn, 503 fail    |
+| Configurable routes        | 🟢 `FULLY_FUNCTIONAL` | `routes.go:16` — Dashboard, SSE, Favicon, Liveness, Readiness, Startup               |
+| Default routes             | 🟢 `FULLY_FUNCTIONAL` | `routes.go` — /health, /health/sse, /favicon.svg, /healthz, /readyz, /startupz       |
+| Kubernetes probe endpoints | 🟢 `FULLY_FUNCTIONAL` | Wired from probe handlers in `dashboard.go:326`                                      |
+| JSON content on `/health`  | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:184` — RFC 7231 q-value Accept negotiation; 200 pass/warn, 503 fail    |
 
 ## Configuration
 
 | Feature               | Status                | Notes                                                             |
 | --------------------- | --------------------- | ----------------------------------------------------------------- |
-| WithTitle             | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:36`                                                 |
-| WithPushInterval      | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:43` — falls back to probe interval, then 2s default |
-| WithPushMode          | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:49`                                                 |
-| WithNonce             | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:55` — CSP nonce for script tags                     |
-| WithRoutes            | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:61`                                                 |
-| WithCSSPath           | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:77` — swaps Tailwind CDN for compiled CSS `<link>`  |
-| WithHeartbeatInterval | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:84` — configurable SSE keepalive (default 15s)      |
-| WithMaxSSEConnections | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:91` — DoS prevention; 0 = unlimited                 |
+| WithTitle             | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:47`                                                 |
+| WithPushInterval      | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:54` — falls back to probe interval, then 2s default |
+| WithPushMode          | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:60`                                                 |
+| WithNonce             | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:68` — fixed construction-time CSP nonce             |
+| WithNonceExtractor    | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:84` — per-request nonce; takes precedence over WithNonce |
+| WithRoutes            | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:89`                                                 |
+| WithCSSPath           | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:96` — swaps Tailwind CDN for compiled CSS `<link>`  |
+| WithHeartbeatInterval | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:103` — configurable SSE keepalive (default 15s)     |
+| WithMaxSSEConnections | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:110` — DoS prevention; 0 = unlimited                |
 
 ## Build and Tooling
 
-| Feature                 | Status                | Notes                                                             |
-| ----------------------- | --------------------- | ----------------------------------------------------------------- |
-| flake.nix devShell      | 🟢 `FULLY_FUNCTIONAL` | GOWORK=off, GOEXPERIMENT=jsonv2, all tools                        |
-| templ generate workflow | 🟢 `FULLY_FUNCTIONAL` | Pre-build step in all Nix apps                                    |
-| `.golangci.yml` config  | 🟢 `FULLY_FUNCTIONAL` | 80+ linters, pragmatic test/example exclusions, 0 issues          |
-| Test suite              | 🟢 `FULLY_FUNCTIONAL` | 61 tests across 4 files, all passing with `-race`, 79.6% coverage |
-| CI/CD                   | 🟢 `FULLY_FUNCTIONAL` | `.github/workflows/ci.yml` — build, test-race, lint, vulncheck    |
-| Dependabot              | 🟢 `FULLY_FUNCTIONAL` | `.github/dependabot.yml` — Go modules + GitHub Actions            |
-| Example app             | 🟢 `FULLY_FUNCTIONAL` | `example/main.go` — compiles, starts, `PORT` env var configurable |
-| Domain language docs    | 🟢 `FULLY_FUNCTIONAL` | `docs/DOMAIN_LANGUAGE.md` — ubiquitous language glossary          |
+| Feature                 | Status                | Notes                                                              |
+| ----------------------- | --------------------- | ------------------------------------------------------------------ |
+| flake.nix devShell      | 🟢 `FULLY_FUNCTIONAL` | GOWORK=off, GOEXPERIMENT=jsonv2, all tools                         |
+| templ generate workflow | 🟢 `FULLY_FUNCTIONAL` | Pre-build step in all Nix apps                                     |
+| `.golangci.yml` config  | 🟢 `FULLY_FUNCTIONAL` | 80+ linters, pragmatic test/example exclusions, **0 issues**       |
+| Test suite              | 🟢 `FULLY_FUNCTIONAL` | 67 tests across 4 files, all passing with `-race`, 80.0% coverage  |
+| CI/CD                   | 🟢 `FULLY_FUNCTIONAL` | `.github/workflows/ci.yml` — build, test-race, lint, vulncheck (4/4 green) |
+| Dependabot              | 🟢 `FULLY_FUNCTIONAL` | `.github/dependabot.yml` — Go modules + GitHub Actions             |
+| Example app             | 🟢 `FULLY_FUNCTIONAL` | `example/main.go` — compiles, starts, `PORT` env var configurable  |
+| Domain language docs    | 🟢 `FULLY_FUNCTIONAL` | `docs/DOMAIN_LANGUAGE.md` — ubiquitous language glossary           |
+| Released (pkg.go.dev)   | 🟢 `FULLY_FUNCTIONAL` | Tagged v0.2.0; module indexed on pkg.go.dev; zero replace directives |
 
 ## Known Gaps
 
@@ -86,5 +96,6 @@
 | -------------------------------- | ------------------------------------------------------------------------- |
 | GOEXPERIMENT=jsonv2 requirement  | All Go commands require this env var; go-sse uses `encoding/json/v2`      |
 | No screenshot in README          | No visual preview of the dashboard in README.md                           |
-| `SubscriberCount()` untested     | `dashboard.go:269` — method works but has no dedicated test               |
-| `WithHeartbeatInterval` untested | `dashboard.go:84` — option works but custom interval not verified by test |
+| `SubscriberCount()` untested     | `dashboard.go:288` — method works but has no dedicated test               |
+| `WithHeartbeatInterval` untested | `dashboard.go:103` — option works but custom interval not verified by test |
+| Browser CSP runtime unverified   | CLI tests prove nonce wiring; runtime JS (Datastar DOM patching) may inject `style=` attributes — unverifiable without a browser |

@@ -18,6 +18,10 @@ Raw ideas:
 - Pusher health self-check (is the goroutine alive?)
 - Request logging middleware option
 - Rate limiting on dashboard HTML route
+- Headless-browser CSP test (chromedp/Playwright) to verify runtime JS does not
+  inject `style=` attributes — closes the loop CLI tests cannot
+- Per-route stricter CSP for `/health` alone (no `style-src 'unsafe-inline'`) if
+  a security audit demands it
 
 ### 2. Multi-Service and Federation
 
@@ -60,6 +64,7 @@ Raw ideas:
 - Authentication middleware integration
 - OG metadata and social preview for dashboard page
 - Screenshot or PDF export for incident reports
+- `RecommendedCSP()` helper so consumers get a correct CSP without hand-rolling
 
 ## Non-goals
 

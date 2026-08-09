@@ -21,26 +21,29 @@
 
 ## High Impact
 
-| Task                                 | Status    | Impact | Effort | Evidence                                |
-| ------------------------------------ | --------- | ------ | ------ | --------------------------------------- |
-| Add test for `SubscriberCount()`     | 🔴 `TODO` | High   | 15min  | `dashboard.go:269` — method has no test |
-| Add test for `WithHeartbeatInterval` | 🔴 `TODO` | High   | 15min  | `dashboard.go:84` — option has no test  |
-| Add screenshot to README             | 🔴 `TODO` | Med    | 30min  | No visual preview in README             |
+| Task                                          | Status    | Impact | Effort | Evidence                                        |
+| --------------------------------------------- | --------- | ------ | ------ | ----------------------------------------------- |
+| Add test for `SubscriberCount()`              | 🔴 `TODO` | High   | 15min  | `dashboard.go:288` — method has no dedicated test |
+| Add test for `WithHeartbeatInterval`          | 🔴 `TODO` | High   | 15min  | `dashboard.go:103` — custom interval unverified  |
+| Document `WithNonceExtractor` in README       | 🔴 `TODO` | High   | 10min  | `dashboard.go:84` — v0.2.0 feature absent from README options |
+| Add screenshot to README                      | 🔴 `TODO` | Med    | 30min  | No visual preview in README                      |
 
 ## Medium Impact
 
-| Task                                     | Status    | Impact | Effort | Notes                       |
-| ---------------------------------------- | --------- | ------ | ------ | --------------------------- |
-| SSE reconnection support (Last-Event-ID) | 🔴 `TODO` | Med    | 60min  | See ROADMAP.md for design   |
-| Embeddable dashboard mode (sub-path)     | 🔴 `TODO` | Med    | 60min  | Mount under non-root prefix |
-| Auth middleware integration              | 🔴 `TODO` | Med    | 60min  | Protect dashboard endpoint  |
+| Task                                     | Status    | Impact | Effort | Notes                                    |
+| ---------------------------------------- | --------- | ------ | ------ | ---------------------------------------- |
+| SSE reconnection support (Last-Event-ID) | 🔴 `TODO` | Med    | 60min  | See ROADMAP.md for design                |
+| Embeddable dashboard mode (sub-path)     | 🔴 `TODO` | Med    | 60min  | Mount under non-root prefix              |
+| Auth middleware integration              | 🔴 `TODO` | Med    | 60min  | Protect dashboard endpoint               |
+| SSE nonce flow integration test          | 🔴 `TODO` | Med    | 30min  | SSE patches should carry nonce if they contain scripts |
 
 ## Low Impact / Future Work
 
-| Task                                             | Status    | Impact | Effort | Notes              |
-| ------------------------------------------------ | --------- | ------ | ------ | ------------------ |
-| Fuzzing for Accept header parsing                | 🔴 `TODO` | Low    | 30min  | `dashboard.go:190` |
-| Fuzzing for health response serialization        | 🔴 `TODO` | Low    | 30min  |                    |
-| Prometheus metrics endpoint                      | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md     |
-| Health history / sparkline visualization         | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md     |
-| UI flexibility options (WithHideStatCards, etc.) | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md     |
+| Task                                             | Status    | Impact | Effort | Notes                       |
+| ------------------------------------------------ | --------- | ------ | ------ | --------------------------- |
+| Fuzzing for Accept header parsing                | 🔴 `TODO` | Low    | 30min  | `dashboard.go:184`          |
+| Fuzzing for health response serialization        | 🔴 `TODO` | Low    | 30min  |                             |
+| Prometheus metrics endpoint                      | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md              |
+| Health history / sparkline visualization         | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md              |
+| UI flexibility options (WithHideStatCards, etc.) | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md              |
+| Headless-browser CSP test (chromedp)             | 🔴 `TODO` | Low    | 90min  | Close the runtime-CSP verification loop |

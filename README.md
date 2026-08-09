@@ -89,6 +89,7 @@ dash := dashboard.New(probe,
     dashboard.WithPushMode(dashboard.PushOnChange),            // Only push on change (default)
     // dashboard.WithPushMode(dashboard.PushAlways),            // Push on every tick
     dashboard.WithNonce("abc123"),                             // CSP nonce for script tags
+    dashboard.WithNonceExtractor(httputil.NonceFromRequest),   // Per-request nonce (takes precedence; v0.2.0)
     dashboard.WithCSSPath("/static/app.css"),                  // Compiled CSS (replaces Tailwind CDN)
     dashboard.WithHeartbeatInterval(30*time.Second),           // SSE keepalive interval (default 15s)
     dashboard.WithMaxSSEConnections(100),                      // Max concurrent SSE clients (0 = unlimited)

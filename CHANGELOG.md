@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `Version` constant updated from `"0.1.0"` to `"0.2.0"` to match the released
+  tag — it was left stale when v0.2.0 was tagged (`dashboard.go:27`)
+
+## [0.2.0] - 2026-08-09
+
+Per-request CSP nonce extraction. A single construction-time nonce is
+incompatible with strict per-request CSP policies in long-running services;
+per-request nonces defend against nonce reuse. Backward compatible.
+
+### Added
+
+- `WithNonceExtractor(func(*http.Request) string)` option and
+  `Config.NonceExtractor` field: host applications supply a per-request CSP
+  nonce (e.g. `httputil.NonceFromRequest`) instead of a single
+  construction-time nonce. The extractor takes precedence over `WithNonce`,
+  with graceful fallback when it returns an empty string (`dashboard.go:84`)
+- Per-request nonce extractor tests: applies per-request nonce, distinct nonce
+  per request, falls back to fixed nonce, does not affect JSON response
+  (`csp_test.go`)
+- Render-cleanliness regression guards: `TestRender_AllScriptsCarryNonce`
+  (every inline `<script>` carries the nonce) and `TestRender_NoInlineStyles`
+  (zero `<style>` blocks, zero inline `style=` attributes) (`csp_test.go`)
+
+### Changed
+
+- **Breaking (internal):** `buildData` signature changed from no arguments to
+  `(r *http.Request)` so the nonce can be read per-request (`dashboard.go:299`)
+
 ## [0.1.0] - 2026-08-08
 
 First proper release. A real-time, browser-friendly health dashboard that
