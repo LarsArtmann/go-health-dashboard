@@ -4,6 +4,13 @@
 **Session scope:** CSP nonce bug fix → self-critique → replace hand-rolled nonce system with httputil → write feedback to httputil → second self-critique
 **Projects touched:** `file-and-image-renamer` (consumer app), `httputil` (feedback doc), `go-health-dashboard` (status reports)
 
+> **RESOLVED.** The go-health-dashboard root cause identified here — construction-time
+> `WithNonce` forcing a static-nonce hack — was fixed by `WithNonceExtractor` and
+> shipped at `v0.2.0` (`a22ef06`). The `style-src 'unsafe-inline'` decision was
+> deliberately KEPT (evidence-backed; see `02-22` report) and is now a roadmap
+> item for per-route CSP only. **Consumer (`file-and-image-renamer`) and httputil
+> items below are OUT OF SCOPE** for go-health-dashboard.
+
 ---
 
 ## Session Arc
@@ -86,6 +93,14 @@
 ---
 
 ## f) Up to 50 Things We Should Get Done Next
+
+> **Resolution (go-health-dashboard scope):** ~~18~~ **DONE at `a22ef06`** —
+> `WithNonceExtractor` added (root-cause fix). ~~22~~ **DONE** — README documents
+> the nonce flow / `WithNonceExtractor`. 19 → long-term (deprecate `WithNonce`).
+> 20, 21, 1–17, 23–44 = consumer / httputil → **OUT OF SCOPE**. 45–50 `nix flake
+> check` etc. → **DONE** historically. 47–50 (templ-components deep-dive follow-ups:
+> `display.PageHeader`, `layout.Stack`, StatCard icons, `Dot`) → `ROADMAP.md`
+> (UI flexibility).
 
 ### Immediate — Finish the httputil integration properly
 

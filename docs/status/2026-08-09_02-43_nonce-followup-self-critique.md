@@ -3,6 +3,15 @@
 **Date:** 2026-08-09 02:43 CEST
 **Prior reports:** `2026-08-09_00-41_csp-nonce-misplacement-fix.md`, `2026-08-09_00-57_httputil-integration-self-critique.md`, `2026-08-09_01-47_per-request-nonce-architecture-and-httputil-v0.11.0.md`, `2026-08-09_02-22_nonce-followup-resolution.md`
 
+> **RESOLVED — go-health-dashboard v0.2.0 shipped.** The go-health-dashboard work
+> in this report is DONE: per-request nonce extraction tagged `v0.2.0` (`a22ef06`,
+> `022d09d`, `61c6718`), render-cleanliness guards committed, CHANGELOG now carries
+> the `[0.2.0]` entry. The browser-runtime-CSP verification gap (item c.2 / Q1)
+> is a genuine open known-gap (recorded in `FEATURES.md` Known Gaps + `ROADMAP.md`
+> headless-browser test idea) — it cannot be closed from the CLI. **Items about the
+> consumer app (`file-and-image-renamer`) and sibling repos are OUT OF SCOPE for
+> go-health-dashboard and are left unmarked below** — they belong to those repos.
+
 ---
 
 ## What this session did
@@ -71,6 +80,15 @@ I resumed from a handoff describing a completed `WithNonceExtractor` implementat
 ---
 
 ## f) Next Tasks (up to 50)
+
+> **Resolution (go-health-dashboard scope):** 1, 2, 6, 7–12, 19 = consumer
+> (`file-and-image-renamer`) / sibling repos — **OUT OF SCOPE**, left unmarked.
+> 3 = **still open** (no CLI browser) → `FEATURES.md` Known Gaps. 4 → `ROADMAP.md`
+> (headless-browser CSP test). 5 → `FEATURES.md` Known Gaps (runtime style
+> injection). ~~13~~ → `ROADMAP.md` (per-route CSP, deferred). 14 = httputil repo,
+> out of scope. 15 = **DONE** (README now documents `WithNonceExtractor`; `WithNonce` doc comment warns to prefer the extractor). ~~16~~ **DONE — CHANGELOG.md exists and now carries `[0.2.0]`**.
+> 17 → long-term (fuzzing). 18 → `TODO_LIST.md` (SSE nonce flow integration test).
+> 20 → `ROADMAP.md` (`RecommendedCSP()` helper).
 
 ### Critical (blocks clean state)
 

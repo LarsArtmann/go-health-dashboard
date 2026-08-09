@@ -4,6 +4,12 @@
 **Session Scope:** go-health-dashboard + file-and-image-renamer + httputil
 **Trigger:** User asked three architecture questions about nonce/CSP separation
 
+> **RESOLVED — go-health-dashboard v0.2.0 shipped.** The `WithNonceExtractor`
+> feature and its tests landed at `a22ef06` / `022d09d`; the package was tagged
+> `v0.2.0` (`61c6718`) and the CHANGELOG now documents it. The three architecture
+> questions (Q1–Q3) are settled as recorded below. **Consumer (`file-and-image-renamer`)
+> and httputil items are OUT OF SCOPE** for this repo and are left unmarked.
+
 ---
 
 ## Context
@@ -94,6 +100,14 @@ Not worth a dependency. Server-Timing is a header string. Dashboard already disp
 ---
 
 ## f) Next Tasks (up to 50)
+
+> **Resolution (go-health-dashboard scope):** 1 Push dashboard → **DONE** (`v0.2.0`
+> pushed). 2–4, 6–7, 9–10, 12–18 consumer/httputil → **OUT OF SCOPE**. 5 Browser
+> verify → **open**, `FEATURES.md` Known Gaps. 8 Integration test → **DONE at
+> `61c6718`** (`TestRender_AllScriptsCarryNonce`). 11 Tag v0.2.0 → **DONE**.
+> ~~21~~ **DONE — README now documents `WithNonceExtractor`**. 20 → `TODO_LIST.md`
+> (example demo). 22 → long-term (deprecate `WithNonce`). 19, 23–30 → `ROADMAP.md`
+> (Server-Timing, benchmarks, CSP refinements).
 
 ### Critical (blocks shipping)
 

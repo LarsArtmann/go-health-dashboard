@@ -4,6 +4,14 @@
 **Session scope:** Fix CSP errors on `https://renamer.home.lan/health` (go-health-dashboard route in file-and-image-renamer)
 **Projects touched:** `file-and-image-renamer` (consumer app), analysis of `go-health-dashboard` (library)
 
+> **RESOLVED.** This report documents a CSP bug in the **consumer app** (`file-and-image-renamer`),
+> fixed there in the same session. The deeper go-health-dashboard root cause it
+> flagged (item c.1 / e.1 — construction-time `WithNonce`) was fixed by
+> `WithNonceExtractor` and shipped at `v0.2.0` (`a22ef06`). The templ-components
+> UI follow-ups (items 11–20) and templ-components deep-dive ideas (42–48) are
+> tracked in `ROADMAP.md` (UI flexibility). **Consumer items below are OUT OF SCOPE**
+> for go-health-dashboard.
+
 ---
 
 ## What Was Broken
@@ -113,6 +121,15 @@ This puts `'nonce-health-dashboard-static-nonce'` in `script-src` where it belon
 ---
 
 ## f) Up to 50 Things We Should Get Done Next
+
+> **Resolution (go-health-dashboard scope):** 1–10, 21–26, 31–41 = consumer / CSP
+> hardening → **OUT OF SCOPE** (consumer app). ~~6~~ **DONE at `a22ef06`** —
+> per-request nonce support shipped. 11–20 (templ-components UI follow-ups:
+> `display.PageHeader`, `layout.Stack`, `Dot`, icons, error pages) → `ROADMAP.md`.
+> 27–30 (nonce/SSE/CSP integration tests) → partly DONE (`csp_test.go` render
+> guards), rest in `TODO_LIST.md`. 42–48 (templ-components charts/heatmap) →
+> `ROADMAP.md`. 49 (gopls `json.Marshal` go1.27 warning) → **still present**
+> (`dashboard.go:269`), pre-existing, low priority.
 
 ### Immediate (verify the fix works)
 

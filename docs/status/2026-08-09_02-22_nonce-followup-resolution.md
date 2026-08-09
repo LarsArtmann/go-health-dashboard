@@ -3,6 +3,13 @@
 Follows up `2026-08-09_01-47_per-request-nonce-architecture-and-httputil-v0.11.0.md`.
 All critical blockers from that report are resolved except one pre-existing CQRS gap.
 
+> **RESOLVED — go-health-dashboard v0.2.0 is the final state.** The dashboard's
+> per-request nonce feature shipped at tag `v0.2.0` (`61c6718`); the CHANGELOG now
+> documents it. The one CLI-unverifiable item — live browser CSP runtime check
+> (final section) — is recorded as a known gap in `FEATURES.md` and a candidate
+> headless-browser test in `ROADMAP.md`. The CQRS / consumer (`file-and-image-renamer`)
+> items below are **OUT OF SCOPE** for go-health-dashboard.
+
 ## Done this session
 
 ### go-health-dashboard — published v0.2.0 (tag `v0.2.0`, rev `61c6718`)
