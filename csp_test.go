@@ -158,6 +158,44 @@ func TestCSP_WithoutCSSPathUsesTailwindCDN(t *testing.T) {
 	}
 }
 
+func TestCSP_WithDatastarSrcUsesSelfHostedScript(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t, dashboard.WithDatastarSrc("/static/datastar.js"))
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+
+	body := w.Body.String()
+
+	if !strings.Contains(body, `src="/static/datastar.js"`) {
+		t.Error("self-hosted Datastar script src should be rendered when DatastarSrc is set")
+	}
+
+	if strings.Contains(body, "cdn.jsdelivr.net") {
+		t.Error("jsdelivr CDN must not be referenced when DatastarSrc is set")
+	}
+}
+
+func TestCSP_WithoutDatastarSrcUsesCDN(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+
+	body := w.Body.String()
+
+	if !strings.Contains(body, "cdn.jsdelivr.net") {
+		t.Error("Datastar CDN script should be rendered when DatastarSrc is not set")
+	}
+
+	if !strings.Contains(body, "starfederation/datastar@1.0.2/bundles/datastar.js") {
+		t.Error("default Datastar CDN URL should point at the pinned Datastar bundle version")
+	}
+}
+
 func TestDarkMode_ToggleButtonPresent(t *testing.T) {
 	t.Parallel()
 

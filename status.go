@@ -80,6 +80,7 @@ type viewModel struct {
 	SSEURL        string
 	FaviconURL    string
 	CSSPath       string
+	DatastarSrc   string
 	DatastarNonce string
 	TailwindNonce string
 }

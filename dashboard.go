@@ -38,6 +38,7 @@ type Config struct {
 	Nonce             string
 	NonceExtractor    func(*http.Request) string
 	CSSPath           string
+	DatastarSrc       string
 	HeartbeatInterval time.Duration
 	MaxSSEConnections int
 	RetryInterval     time.Duration
@@ -98,6 +99,15 @@ func WithRoutes(routes Routes) Option {
 // Use this in production to avoid the runtime overhead of the CDN.
 func WithCSSPath(path string) Option {
 	return func(c *Config) { c.CSSPath = path }
+}
+
+// WithDatastarSrc sets a self-hosted URL for the Datastar SDK script. When
+// set, the dashboard renders <script src=...> pointing at this URL instead
+// of the default jsdelivr CDN. Use this when the host application's
+// Content-Security-Policy only allows 'self' scripts (e.g. the HTTP server
+// serves a local copy of datastar.js).
+func WithDatastarSrc(src string) Option {
+	return func(c *Config) { c.DatastarSrc = src }
 }
 
 // WithHeartbeatInterval sets how often the SSE handler sends a comment-line
@@ -362,6 +372,7 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 	vm.DatastarNonce = nonce
 	vm.TailwindNonce = nonce
 	vm.CSSPath = d.cfg.CSSPath
+	vm.DatastarSrc = d.cfg.DatastarSrc
 	vm.FaviconURL = d.cfg.Routes.Favicon
 
 	return vm

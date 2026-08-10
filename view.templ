@@ -64,13 +64,21 @@ templ View(data viewModel) {
 	}
 }
 
-// dashboardHead renders the head additions: the Datastar SDK script and
-// Tailwind CSS via the Play CDN (when no compiled CSSPath is provided).
+// dashboardHead renders the head additions: the Datastar SDK script (self-
+// hosted when DatastarSrc is set, otherwise the jsdelivr CDN) and Tailwind
+// CSS via the Play CDN (when no compiled CSSPath is provided).
 templ dashboardHead(data viewModel) {
-	@datastar.SDKScript(datastar.SDKScriptProps{
-		BaseProps: utils.BaseProps{Nonce: data.DatastarNonce},
-		Version:   datastar.DatastarVersion1_0_2,
-	})
+	if data.DatastarSrc != "" {
+		@datastar.SDKScript(datastar.SDKScriptProps{
+			BaseProps: utils.BaseProps{Nonce: data.DatastarNonce},
+			Src:       data.DatastarSrc,
+		})
+	} else {
+		@datastar.SDKScript(datastar.SDKScriptProps{
+			BaseProps: utils.BaseProps{Nonce: data.DatastarNonce},
+			Version:   datastar.DatastarVersion1_0_2,
+		})
+	}
 	if data.CSSPath == "" {
 		if data.TailwindNonce != "" {
 			<script nonce={ data.TailwindNonce } src="https://cdn.tailwindcss.com"></script>
