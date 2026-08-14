@@ -55,7 +55,7 @@ Fixed RED CI across **4 of 5 repos**. Found and fixed 7 distinct root causes. Bu
 | 11  | Fixed false-positive `_sources` templ tracking check | `.gitignore` had bare `tc` which matched `cmd/tc/` directory. Changed to `/tc` (root-only). Also excluded `./cmd/tc/_sources/*` from the `find` in CI — templ skips `_`-prefixed dirs so these `.templ` files intentionally have no `_templ.go`. |
 | 12  | Fixed stale CSS                                      | Committed CSS was non-minified (4214 lines), flake `#css` uses `--minify`. Recompiled and committed minified output.                                                                                                                             |
 | 13  | Fixed `TestCSSFreshness` timestamp false positive    | Test compared file mtimes, but `templ generate` touches source files before tests run in CI. Made it informational (`t.Logf`) in all environments. The CSS Freshness CI job (content diff) is the real guard.                                    |
-| 14  | Merged Dependabot PR #1 (astro + fast-uri bumps)     | Fixed 2 of 6 npm vulnerabilities. Auto-merged after rebasing on my CI fixes.                                                                                                                                                                     |
+| 14  | Merged Dependabot PR #1 (astro + fast-uri bumps)     | Fixed 2 of 6 pnpm vulnerabilities. Auto-merged after rebasing on my CI fixes.                                                                                                                                                                     |
 | 15  | CI: 3/4 jobs green                                   | Lint ✓, CSS Freshness ✓, Build & Test ✓. Visual Regression ✗ (pre-existing).                                                                                                                                                                     |
 
 ### go-health
@@ -71,7 +71,7 @@ Fixed RED CI across **4 of 5 repos**. Found and fixed 7 distinct root causes. Bu
 | #   | Task                               | What's done                                                                                         | What's missing                                                                                                                                                                                        |
 | --- | ---------------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | templ-components Visual Regression | Root cause identified (stale golden images, tests never ran due to broken cachix action for months) | Golden images NOT regenerated — chromedp crashes with `context canceled` both locally and in CI. Did NOT investigate the chromedp/Chromium compatibility issue or the `nixpkgs-chromium` flake input. |
-| 2   | templ-components Dependabot alerts | PR #1 merged (fixed astro XSS + fast-uri). 6→4 open alerts.                                         | 4 transitive npm vulnerabilities remain (nanoid high, js-yaml high, postcss medium, fast-uri high). All in `website/package-lock.json`. Did NOT attempt to fix them.                                  |
+| 2   | templ-components Dependabot alerts | PR #1 merged (fixed astro XSS + fast-uri). 6→4 open alerts.                                         | 4 transitive pnpm vulnerabilities remain (nanoid high, js-yaml high, postcss medium, fast-uri high). All in `website/package-lock.json`. Did NOT attempt to fix them.                                  |
 | 3   | CI across all repos                | 4/5 repos green                                                                                     | go-health has NO CI at all — released as v0.0.2 without any workflow. Did NOT add one.                                                                                                                |
 
 ---
@@ -103,7 +103,7 @@ The test failed with "received only 462 matching events out of ~4000 sent" — t
 
 ### 4. Created a stray `flake.lock` in the website directory
 
-Running `nix develop -c npm audit` in `website/` accidentally created `website/flake.lock`. I cleaned it up, but this is sloppy — I should have known `nix develop` would create a lock file in a directory without one.
+Running `nix develop -c pnpm audit` in `website/` accidentally created `website/flake.lock`. I cleaned it up, but this is sloppy — I should have known `nix develop` would create a lock file in a directory without one.
 
 ### 5. Did NOT run templ-components tests locally before pushing
 
@@ -135,7 +135,7 @@ I committed the `_sources` exclusion fix and pushed without running `go test ./.
 
 9. **erraudit needs to be public or removed from CI** — A private dependency in a public repo's CI is a permanent broken window. Either publish erraudit or remove the job.
 
-10. **npm vulnerabilities need a Dependabot config** — The 4 remaining transitive npm vulns in templ-components website need `npm audit fix` or manual version bumps. No Dependabot PR exists for them yet (Dependabot only grouped 2).
+10. **pnpm vulnerabilities need a Dependabot config** — The 4 remaining transitive pnpm vulns in templ-components website need `pnpm audit fix` or manual version bumps. No Dependabot PR exists for them yet (Dependabot only grouped 2).
 
 ---
 
@@ -158,7 +158,7 @@ I committed the `_sources` exclusion fix and pushed without running `go test ./.
 
 ### High Priority (security + correctness)
 
-6. Fix remaining 4 npm vulnerabilities in templ-components website (nanoid, js-yaml, postcss, fast-uri)
+6. Fix remaining 4 pnpm vulnerabilities in templ-components website (nanoid, js-yaml, postcss, fast-uri)
 7. Check Dependabot security alerts on go-health-dashboard, go-datastar, go-sse, go-health
 8. Revert CSS minification — change flake `#css` to NOT use `--minify`, recommit non-minified CSS
 9. Add test for `SubscriberCount()` in go-health-dashboard (still in TODO_LIST.md)
@@ -217,7 +217,7 @@ I committed the `_sources` exclusion fix and pushed without running `go test ./.
 
 ### Website (templ-components)
 
-41. Run `npm audit fix` on templ-components website to resolve remaining vulns
+41. Run `pnpm audit fix` on templ-components website to resolve remaining vulns
 42. Check if the Astro docs site builds correctly after the Dependabot merge
 43. Verify the demo deployment still works
 44. Check for broken links in docs
