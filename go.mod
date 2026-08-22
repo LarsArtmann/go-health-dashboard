@@ -9,7 +9,7 @@ require (
 	github.com/larsartmann/go-sse v0.5.0
 	github.com/larsartmann/templ-components v1.8.2
 	github.com/larsartmann/templ-components/datastar v1.8.2
-	github.com/larsartmann/templ-components/utils v1.8.2
+	github.com/larsartmann/templ-components/utils v1.8.4
 	github.com/samber/do/v2 v2.1.0
 )
 
