@@ -1,12 +1,12 @@
 module github.com/larsartmann/go-health-dashboard
 
-go 1.26.5
+go 1.26.6
 
 require (
 	github.com/a-h/templ v0.3.1020
 	github.com/larsartmann/go-datastar v0.2.0
 	github.com/larsartmann/go-health v0.0.2
-	github.com/larsartmann/go-sse v0.5.0
+	github.com/larsartmann/go-sse v0.5.1
 	github.com/larsartmann/templ-components v1.8.2
 	github.com/larsartmann/templ-components/datastar v1.8.2
 	github.com/larsartmann/templ-components/utils v1.8.2
