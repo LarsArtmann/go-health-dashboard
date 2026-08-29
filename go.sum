@@ -26,8 +26,8 @@ github.com/larsartmann/templ-components/htmx v1.8.2 h1:IGgrTJ4bBSzs8bTQIOY41CZPF
 github.com/larsartmann/templ-components/htmx v1.8.2/go.mod h1:NlhpqtS2pOZZhIRjTXVMjcFdhsjwNr1mKfT0o3lHrw8=
 github.com/larsartmann/templ-components/icons v1.8.2 h1:77BasZrA6c7dMhh/KQI7Mof87sF3MRHrPQihX/sY4lA=
 github.com/larsartmann/templ-components/icons v1.8.2/go.mod h1:LtJXgvY/5f7bXW9JsWlxRwu/t4dTHLnhwaod+cdxMWg=
-github.com/larsartmann/templ-components/utils v1.8.2 h1:I03nhji+P5rfKCyNs335slHcoXqu7O8yLLNHKyQy6FY=
-github.com/larsartmann/templ-components/utils v1.8.2/go.mod h1:vYC5Ysy6Gl3KSQGFu68e6xMXivRIMK5qExFtn3l02uk=
+github.com/larsartmann/templ-components/utils v1.11.0 h1:eC4lWuBca3b8uruwY61Q7+Uyjl5UiJWLWJhY571464M=
+github.com/larsartmann/templ-components/utils v1.11.0/go.mod h1:vYC5Ysy6Gl3KSQGFu68e6xMXivRIMK5qExFtn3l02uk=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/samber/do/v2 v2.1.0 h1:lqCHn05XvY3VqwxvZDQPSkH+jIGWSVHUrSVLEbPOopo=
