@@ -78,7 +78,9 @@ Open `http://localhost:8080/health` in a browser. Done.
 | `/health`         | GET    | text/html or application/json | HTML dashboard (default) or JSON health response (Accept: application/json). JSON returns 503 when critical services fail |
 | `/health/sse`     | GET    | text/event-stream             | SSE endpoint (Datastar patch protocol)                                                                                    |
 | `/favicon.svg`    | GET    | image/svg+xml                 | SVG favicon (embedded green-heart icon)                                                                                   |
-| `/health/metrics` | GET    | text/plain                    | Prometheus exposition (only when `WithMetrics(true)`)                                                                     |
+| `/health/metrics` | GET    | text/plain                    | Prometheus exposition with latency histogram (only when `WithMetrics(true)`)                                              |
+| `/health/trend`   | GET    | application/json              | Status history + transitions (only when `WithTrend`)                                                                       |
+| `/health/export`  | GET    | application/json or text/csv  | History export, `?format=csv` or `Accept: text/csv` (only when `WithTrend`)                                                |
 | `/healthz`        | GET    | application/json              | Liveness probe (always 200, no dependency checks)                                                                         |
 | `/readyz`         | GET    | application/json              | Readiness probe (503 when critical services fail)                                                                         |
 | `/startupz`       | GET    | application/json              | Startup probe (latched once all critical services pass)                                                                   |
