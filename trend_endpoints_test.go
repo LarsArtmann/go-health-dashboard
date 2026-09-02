@@ -9,6 +9,7 @@ import (
 
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	"github.com/samber/do/v2"
 )
 
 // setupTrendDashboard starts a dashboard with a toggleable service and the
@@ -20,10 +21,42 @@ func setupTrendDashboard(t *testing.T, opts ...dashboard.Option) (*probeSetup, *
 	svc := &toggleService{}
 	svc.healthy.Store(true)
 
-	s := setupDashboard(t, append([]dashboard.Option{
+	injector := do.New()
+	provideToggleService(injector, "database", svc)
+	provideHealthy(injector, "redis")
+	invoke[*healthyService](t, injector, "redis")
+
+	probe := health.New(injector,
+		health.WithVersion("2.1.0"),
+		health.WithCriticalServices("database"),
+		health.WithRefreshInterval(50*time.Millisecond),
+	)
+
+	dash := dashboard.New(probe, append([]dashboard.Option{
 		dashboard.WithPushInterval(30 * time.Millisecond),
 		dashboard.WithTrend(200),
 	}, opts...)...)
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	if err := probe.Start(t.Context()); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
+
+	if err := dash.Start(t.Context()); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+
+	s := &probeSetup{
+		probe: probe,
+		dash:  dash,
+		mux:   mux,
+		cleanup: func() {
+			dash.Shutdown()
+			probe.Shutdown()
+		},
+	}
 
 	return s, svc
 }
@@ -41,7 +74,11 @@ func waitForTrendSamples(t *testing.T, s *probeSetup, minSamples int) {
 					Status string `json:"status"`
 				} `json:"samples"`
 			}
-			if err := json.Unmarshal([]byte(w.Body.String()), &payload); err == nil && len(payload.Samples) >= minSamples {
+			if err := json.Unmarshal(
+				w.Body.Bytes(),
+				&payload,
+			); err == nil &&
+				len(payload.Samples) >= minSamples {
 				return
 			}
 		}
@@ -77,7 +114,7 @@ func TestTrendHandler_ServesSamplesAndTransitions(t *testing.T) {
 				To   string `json:"to"`
 			} `json:"transitions"`
 		}
-		if err := json.Unmarshal([]byte(w.Body.String()), &payload); err == nil {
+		if err := json.Unmarshal(w.Body.Bytes(), &payload); err == nil {
 			transitions = len(payload.Transitions)
 		}
 
@@ -109,7 +146,7 @@ func TestTrendHandler_ServesSamplesAndTransitions(t *testing.T) {
 			To   string `json:"to"`
 		} `json:"transitions"`
 	}
-	if err := json.Unmarshal([]byte(w.Body.String()), &payload); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &payload); err != nil {
 		t.Fatalf("decode trend payload: %v", err)
 	}
 
@@ -124,8 +161,8 @@ func TestTrendHandler_ServesSamplesAndTransitions(t *testing.T) {
 	}
 
 	last := payload.Transitions[len(payload.Transitions)-1]
-	if last.From != string(health.StatusPass) || last.To != string(health.StatusWarn) {
-		t.Errorf("transition: want pass->warn, got %s->%s", last.From, last.To)
+	if last.From != string(health.StatusPass) || last.To != string(health.StatusFail) {
+		t.Errorf("transition: want pass->fail, got %s->%s", last.From, last.To)
 	}
 }
 
@@ -146,7 +183,7 @@ func TestExportHandler_JSON(t *testing.T) {
 		At     string `json:"at"`
 		Status string `json:"status"`
 	}
-	if err := json.Unmarshal([]byte(w.Body.String()), &samples); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &samples); err != nil {
 		t.Fatalf("decode export: %v", err)
 	}
 
@@ -163,7 +200,7 @@ func TestExportHandler_CSV(t *testing.T) {
 
 	waitForTrendSamples(t, s, 2)
 
-	for _, tc := range []struct {
+	for _, testCase := range []struct {
 		name   string
 		accept string
 		query  string
@@ -171,22 +208,26 @@ func TestExportHandler_CSV(t *testing.T) {
 		{name: "query param", query: "?format=csv"},
 		{name: "accept header", accept: "text/csv"},
 	} {
-		w := doRequestWithAccept(t, s.mux, "/health/export"+tc.query, tc.accept)
+		w := doRequestWithAccept(t, s.mux, "/health/export"+testCase.query, testCase.accept)
 		if w.Code != http.StatusOK {
-			t.Fatalf("%s: status: want 200, got %d", tc.name, w.Code)
+			t.Fatalf("%s: status: want 200, got %d", testCase.name, w.Code)
 		}
 
 		if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/csv") {
-			t.Errorf("%s: content-type: want text/csv, got %s", tc.name, ct)
+			t.Errorf("%s: content-type: want text/csv, got %s", testCase.name, ct)
 		}
 
 		lines := strings.Split(strings.TrimSpace(w.Body.String()), "\n")
 		if len(lines) < 3 {
-			t.Errorf("%s: csv rows: want >= 3 (header + 2 samples), got %d", tc.name, len(lines))
+			t.Errorf(
+				"%s: csv rows: want >= 3 (header + 2 samples), got %d",
+				testCase.name,
+				len(lines),
+			)
 		}
 
 		if lines[0] != "timestamp,value,status" {
-			t.Errorf("%s: csv header: got %q", tc.name, lines[0])
+			t.Errorf("%s: csv header: got %q", testCase.name, lines[0])
 		}
 	}
 }

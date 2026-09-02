@@ -98,10 +98,10 @@ func TestMetrics_ChecksSortedForDeterministicOutput(t *testing.T) {
 	s := setupDashboard(t, dashboard.WithMetrics(true))
 	defer s.cleanup()
 
-	first := doRequest(t, s.mux, "/health/metrics").Body.String()
+	first := stripVaryingMetrics(doRequest(t, s.mux, "/health/metrics").Body.String())
 
 	for range 5 {
-		second := doRequest(t, s.mux, "/health/metrics").Body.String()
+		second := stripVaryingMetrics(doRequest(t, s.mux, "/health/metrics").Body.String())
 		if second != first {
 			t.Fatalf(
 				"exposition output changed between scrapes:\nfirst:\n%s\nsecond:\n%s",
@@ -389,4 +389,22 @@ func TestMetrics_PusherActiveFalseBeforeStart(t *testing.T) {
 	if !strings.Contains(w.Body.String(), "dashboard_pusher_active 0\n") {
 		t.Error("pusher_active should be 0 before Start")
 	}
+}
+
+// stripVaryingMetrics removes metric families whose values legitimately
+// change between scrapes (latency histogram observations) so the
+// determinism assertion focuses on the structure it guards: sorted,
+// stable check output.
+func stripVaryingMetrics(body string) string {
+	kept := make([]string, 0, 32)
+
+	for _, line := range strings.Split(body, "\n") {
+		if strings.Contains(line, "dashboard_health_check_duration_seconds") {
+			continue
+		}
+
+		kept = append(kept, line)
+	}
+
+	return strings.Join(kept, "\n")
 }

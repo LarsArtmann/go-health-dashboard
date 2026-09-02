@@ -184,16 +184,12 @@ func (h *latencyHistogram) renderPrometheus(b *strings.Builder) {
 	)
 	b.WriteString("# TYPE dashboard_health_check_duration_seconds histogram\n")
 
-	cumulative := uint64(0)
-
 	for i, bound := range latencyBucketBounds {
-		cumulative = h.buckets[i].Load()
-
 		fmt.Fprintf(
 			b,
 			"dashboard_health_check_duration_seconds_bucket{le=\"%g\"} %d\n",
 			bound,
-			cumulative,
+			h.buckets[i].Load(),
 		)
 	}
 

@@ -144,10 +144,3 @@ func (d *Dashboard) ExportHandler() http.HandlerFunc {
 		}
 	}
 }
-
-// historyEnabled reports whether the trend/export endpoints can serve data.
-func (d *Dashboard) historyEnabled() bool {
-	push := d.push.Load()
-
-	return push != nil && push.history != nil
-}
