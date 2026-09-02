@@ -2,12 +2,15 @@ package dashboard_test
 
 import (
 	"net/http"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
 
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"github.com/samber/do/v2"
 )
 
@@ -195,6 +198,139 @@ func TestMetrics_BasePathPrefixesMetricsRoute(t *testing.T) {
 
 	if body := w.Body.String(); !strings.Contains(body, "dashboard_health_up") {
 		t.Error("prefixed metrics route should serve exposition")
+	}
+}
+
+// TestMetrics_PrometheusParserConformance scrapes the exposition and parses
+// it with the official prometheus/common text-format parser — the same
+// parser Prometheus itself uses. Invariants: the payload parses cleanly
+// under legacy (strict) name validation, all seven metric families are
+// present, and label values containing quotes, backslashes, and newlines
+// survive the escape round-trip losslessly.
+func TestMetrics_PrometheusParserConformance(t *testing.T) {
+	t.Parallel()
+
+	injector := do.New()
+	provideHealthy(injector, "database")
+	provideUnhealthy(injector, `cache "weird"\name`, "err \\ \"quoted\"\nsecond line")
+	provideUnhealthy(injector, "queue", "timeout")
+	invoke[*healthyService](t, injector, "database")
+	invoke[*unhealthyService](t, injector, `cache "weird"\name`)
+	invoke[*unhealthyService](t, injector, "queue")
+
+	probe := health.New(injector,
+		health.WithVersion("2.1.0"),
+		health.WithRefreshInterval(100*time.Millisecond),
+	)
+	dash := dashboard.New(probe, dashboard.WithMetrics(true))
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	if err := probe.Start(t.Context()); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
+	defer probe.Shutdown()
+
+	w := doRequest(t, mux, "/health/metrics")
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status: want 200, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+
+	parser := expfmt.NewTextParser(model.LegacyValidation)
+	families, err := parser.TextToMetricFamilies(strings.NewReader(body))
+	if err != nil {
+		t.Fatalf("official Prometheus parser rejected the exposition: %v\npayload:\n%s", err, body)
+	}
+
+	wantFamilies := []string{
+		"dashboard_health_up",
+		"dashboard_health_status",
+		"dashboard_health_check",
+		"dashboard_health_latency_ms",
+		"dashboard_health_shutting_down",
+		"dashboard_sse_connections",
+		"dashboard_pusher_active",
+	}
+	for _, name := range wantFamilies {
+		if _, ok := families[name]; !ok {
+			t.Errorf("missing metric family %q in payload:\n%s", name, body)
+		}
+	}
+
+	checks := families["dashboard_health_check"]
+	if len(checks.GetMetric()) != 3 {
+		t.Errorf("dashboard_health_check: want 3 samples, got %d", len(checks.GetMetric()))
+	}
+
+	byCheck := map[string]float64{}
+	for _, m := range checks.GetMetric() {
+		var name, status string
+
+		for _, lp := range m.GetLabel() {
+			switch lp.GetName() {
+			case "check":
+				name = lp.GetValue()
+			case "status":
+				status = lp.GetValue()
+			}
+		}
+
+		if name == "" || status == "" {
+			t.Errorf("sample missing check/status labels: %v", m.GetLabel())
+			continue
+		}
+
+		byCheck[name+"\t"+status] = m.GetGauge().GetValue()
+	}
+
+	// The check name carries a quote and a backslash; the error message
+	// carries a newline. Both must survive escaping and parsing unchanged.
+	const weirdName = `cache "weird"\name`
+
+	// Escaped label values must round-trip through the official parser.
+	if v, ok := byCheck["database\tpass"]; !ok || v != 1 {
+		t.Errorf("database sample: want (pass, 1), got %v", byCheck)
+	}
+	if v, ok := byCheck[weirdName+"\twarn"]; !ok || v != 0 {
+		t.Errorf("escaped check name %q lost in round-trip; got %v", weirdName, byCheck)
+	}
+	if v, ok := byCheck["queue\twarn"]; !ok || v != 0 {
+		t.Errorf("queue sample: want (warn, 0), got %v", byCheck)
+	}
+
+	if len(checks.GetHelp()) == 0 {
+		t.Error("dashboard_health_check missing HELP text")
+	}
+}
+
+// TestMetrics_PromtoolCheckWhenAvailable runs the official promtool linter
+// against the exposition when a promtool binary is on PATH. The parser
+// conformance test above always runs; this adds the scrape lint rules
+// (help-text presence, naming conventions) where the tool is installed.
+func TestMetrics_PromtoolCheckWhenAvailable(t *testing.T) {
+	t.Parallel()
+
+	promtool, err := exec.LookPath("promtool")
+	if err != nil {
+		t.Skip(
+			"promtool not on PATH; install with: go install github.com/prometheus/prometheus/cmd/promtool@latest",
+		)
+	}
+
+	s := setupDashboardWithFailures(t, dashboard.WithMetrics(true))
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health/metrics")
+
+	cmd := exec.Command(promtool, "check", "metrics")
+	cmd.Stdin = strings.NewReader(w.Body.String())
+
+	if out, checkErr := cmd.CombinedOutput(); checkErr != nil {
+		t.Errorf("promtool check metrics rejected the exposition: %v\n%s", checkErr, out)
 	}
 }
 
