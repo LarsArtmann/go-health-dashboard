@@ -12,15 +12,14 @@ monitoring walls, proxy environments, strict CSP, and high-connection scenarios.
 
 Raw ideas:
 
-- Graceful shutdown: wait for in-flight SSE connections to drain
-- SSE connection timeout to prevent infinite-lived connections
-- Pusher health self-check (is the goroutine alive?)
-- Request logging middleware option
-- Rate limiting on dashboard HTML route
-- Headless-browser CSP test (chromedp/Playwright) to verify runtime JS does not
-  inject `style=` attributes — closes the loop CLI tests cannot
 - Per-route stricter CSP for `/health` alone (no `style-src 'unsafe-inline'`) if
   a security audit demands it
+- Latency histogram (prometheus buckets) — session 2026-09 plan M8
+- Metrics endpoint security headers / `noindex` — plan M27
+- Rate limiting on dashboard HTML route (per-IP token bucket) — plan M12
+- SSE connection max-lifetime option — plan M10
+- Pusher watchdog (last-tick recency surfaced via `HealthCheck`) — plan M11
+- Graceful shutdown: wait for in-flight SSE connections to drain — plan M9
 
 ### 2. Multi-Service and Federation
 
@@ -42,13 +41,17 @@ and what's trending.
 
 Raw ideas:
 
-- Health check history with retention window
-- Trend visualization (templ-components has Sparkline)
-- Status change timeline (when did each service flip?)
-- Incident tracking (annotate status changes with context)
-- Auto-generated refresh timestamp display
-- Prometheus-compatible metrics endpoint for the dashboard itself
-- Export health data as JSON/CSV
+- Health check history with retention window — partially shipped as `WithTrend`
+  (in-memory ring); retention/export extensions are plan M23/M25
+- Trend visualization (templ-components has Sparkline) — **shipped** as
+  `WithTrend` in v0.3.0; markers/timeline extensions are plan M22/M29
+- Status change timeline (when did each service flip?) — plan M29
+- Auto-generated refresh timestamp display — plan M26
+- Prometheus-compatible metrics endpoint for the dashboard itself — **shipped**
+  as `WithMetrics` in v0.3.0
+- Export health data as JSON/CSV — plan M25
+- Public-facing status page mode (no internal details exposed) — plan M28
+- axe-core accessibility verification in the browser test — plan M21
 
 ### 4. Deployment Flexibility
 
@@ -60,10 +63,16 @@ Raw ideas:
 - WebSocket alternative transport (for environments where SSE is blocked)
 - Build-tag gating for SSE code (consumers who only want HTML pay no SSE cost)
 - Embeddable dashboard component (mount under a sub-path, not root) — **DONE** in v0.2.0 via `WithBasePath`
-- Authentication middleware integration
-- OG metadata and social preview for dashboard page
-- Screenshot or PDF export for incident reports
+- Authentication middleware integration — **shipped** as `WithMiddleware` in
+  v0.3.0
+- OG metadata and social preview for dashboard page — plan M27 (og:description)
 - `RecommendedCSP()` helper so consumers get a correct CSP without hand-rolling
+  — plan M3
+- Screenshot or PDF export for incident reports — partially covered by
+  `screenshot_test.go`; PDF out of scope
+- Request logging middleware option (slog) — candidate, not scheduled
+- Incident tracking (annotate status changes with context) — deferred; needs
+  product thought beyond the M29 timeline
 
 ## Non-goals
 

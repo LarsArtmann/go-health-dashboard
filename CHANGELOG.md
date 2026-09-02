@@ -5,7 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.3.0] - 2026-09-02
+
+Protect, measure, trend. The dashboard gains consumer-supplied auth middleware,
+an opt-in zero-dependency Prometheus metrics endpoint, a live health trend
+sparkline, and runtime CSP verification in a headless browser — plus fuzzing
+for the Accept parser and JSON serialization.
 
 ### Added
 
