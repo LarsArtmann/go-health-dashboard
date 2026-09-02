@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"net"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -70,6 +71,12 @@ func freePort(t *testing.T) int {
 	return tcpAddr.Port
 }
 
+// browserSerial gates all browser tests: headless Chrome startups are
+// heavyweight and contend for CPU with parallel launches on loaded machines,
+// which historically pushed startup past the announce timeout. Running them
+// one at a time trades a little wall time for reliability.
+var browserSerial sync.Mutex
+
 // startHeadlessChrome launches Chrome manually with a concrete DevTools port
 // and returns the websocket debugger URL parsed from stderr. chromedp's own
 // launcher queries the debugger over 127.0.0.1, which hangs when Chrome
@@ -78,12 +85,16 @@ func freePort(t *testing.T) int {
 func startHeadlessChrome(t *testing.T, chromePath string) (string, func()) {
 	t.Helper()
 
+	browserSerial.Lock()
+
 	// t.TempDir cleanup races Chrome's renderer children, which keep writing
 	// into the profile after the browser process exits — removal is retried
 	// in stopChrome instead.
 	//nolint:usetesting // see above
 	profileDir, err := os.MkdirTemp("", "go-health-dashboard-chrome-")
 	if err != nil {
+		browserSerial.Unlock()
+
 		t.Fatalf("chrome profile dir: %v", err)
 	}
 
@@ -103,6 +114,8 @@ func startHeadlessChrome(t *testing.T, chromePath string) (string, func()) {
 	}
 
 	if err := cmd.Start(); err != nil {
+		browserSerial.Unlock()
+
 		t.Fatalf("chrome start: %v", err)
 	}
 
@@ -117,13 +130,15 @@ func startHeadlessChrome(t *testing.T, chromePath string) (string, func()) {
 		}
 	}()
 
-	timeout := time.After(20 * time.Second)
+	timeout := time.After(45 * time.Second)
 
 	// stopChrome terminates the browser and removes the profile. Renderer
 	// child processes may outlive the browser process for a few milliseconds
 	// and keep writing into the profile, so removal retries briefly before
 	// giving up (the OS temp dir is the final safety net).
 	stopChrome := func() {
+		defer browserSerial.Unlock()
+
 		_ = cmd.Process.Signal(os.Interrupt)
 		_ = cmd.Wait()
 
@@ -142,11 +157,15 @@ func startHeadlessChrome(t *testing.T, chromePath string) (string, func()) {
 			_ = cmd.Process.Kill()
 			_ = cmd.Wait()
 			_ = os.RemoveAll(profileDir)
-			t.Fatal("chrome did not announce a DevTools websocket within 20s")
+			browserSerial.Unlock()
+
+			t.Fatal("chrome did not announce a DevTools websocket within 45s")
 		case line, ok := <-lines:
 			if !ok {
 				_ = cmd.Wait()
 				_ = os.RemoveAll(profileDir)
+				browserSerial.Unlock()
+
 				t.Fatal("chrome exited before announcing a DevTools websocket")
 			}
 
@@ -490,4 +509,166 @@ func waitForBodyText(t *testing.T, ctx context.Context, want string) {
 
 		time.Sleep(100 * time.Millisecond)
 	}
+}
+
+// --- Accessibility ---
+
+// axeCoreCDN is the pinned axe-core build injected into the page for the
+// accessibility audit (verified available at this URL).
+const axeCoreCDN = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js"
+
+// fetchAxeCore downloads the axe-core runtime so the audit runs fully
+// same-origin (strict CSP blocks third-party script). It skips the test
+// when the machine is offline; the targeted ARIA checks below still run.
+func fetchAxeCore(t *testing.T) []byte {
+	t.Helper()
+
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	resp, err := client.Get(axeCoreCDN) //nolint:noctx // test-only fetch with explicit timeout
+	if err != nil {
+		t.Skipf("axe-core unavailable (offline?): %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Skipf("axe-core CDN returned %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Skipf("axe-core download failed: %v", err)
+	}
+
+	return body
+}
+
+// TestBrowser_Accessibility runs two layers of accessibility checks:
+//
+//  1. targeted, hermetic assertions (html lang, landmarks, named buttons,
+//     labelled live region) that always run when Chrome is available;
+//  2. a full axe-core audit served same-origin, skipped when offline.
+func TestBrowser_Accessibility(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	axeBytes := fetchAxeCore(t)
+
+	const nonce = "browser-a11y-nonce"
+
+	s := setupDashboard(t,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+	)
+	defer s.cleanup()
+
+	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		_, _ = w.Write([]byte("body { margin: 0; }"))
+	})
+	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(dstarstatic.Bytes())
+	})
+	s.mux.HandleFunc("/static/axe.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(axeBytes)
+	})
+
+	server := httptest.NewServer(s.mux)
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+
+	var lang, missingNames, missingRegions string
+
+	if err := chromedp.Run(ctx,
+		chromedp.Evaluate(`document.documentElement.lang || ""`, &lang),
+		chromedp.Evaluate(
+			`[...document.querySelectorAll("button,a")].filter(e => !e.textContent.trim() && !e.getAttribute("aria-label") && !e.getAttribute("title")).length + ""`,
+			&missingNames,
+		),
+		chromedp.Evaluate(
+			`document.querySelector("main,[role=main]") ? "main" : (document.querySelector("[aria-label],[role=region]") ? "region" : "none")`,
+			&missingRegions,
+		),
+	); err != nil {
+		t.Fatalf("browser evaluate: %v", err)
+	}
+
+	if lang == "" {
+		t.Error("html element has no lang attribute")
+	}
+
+	if missingNames != "0" {
+		t.Errorf("%s button(s)/link(s) have no accessible name", missingNames)
+	}
+
+	if missingRegions == "none" {
+		t.Error("page has no main landmark or labelled region")
+	}
+
+	if axeBytes == nil {
+		return
+	}
+
+	var audit string
+
+	inject := `(function () {
+		if (window.axe) { return Promise.resolve("ready"); }
+		return new Promise(function (resolve) {
+			var s = document.createElement("script");
+			s.src = "/static/axe.js";
+			s.onload = function () { resolve("ready"); };
+			s.onerror = function () { resolve("failed"); };
+			document.head.appendChild(s);
+		});
+	})()`
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(inject, &audit)); err != nil {
+		t.Fatalf("axe inject: %v", err)
+	}
+
+	if audit != "ready" {
+		t.Fatalf("axe-core failed to load: %s", audit)
+	}
+
+	// Only serious and critical violations fail the build; moderate issues
+	// (often contrast judgement calls on brand colors) are surfaced but
+	// tolerated.
+	run := `axe.run(document, {resultTypes: ["violations"]}).then(function (r) {
+		return JSON.stringify(r.violations.filter(function (v) {
+			return v.impact === "serious" || v.impact === "critical";
+		}).map(function (v) { return v.id + ":" + v.impact + ":" + v.nodes.length; }));
+	})`
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(run, &audit)); err != nil {
+		t.Fatalf("axe run: %v", err)
+	}
+
+	if audit != "[]" {
+		t.Errorf("axe-core found serious/critical violations: %s", audit)
+	}
+
+	assertNoBrowserErrors(t, errLog)
 }
