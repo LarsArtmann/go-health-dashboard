@@ -144,9 +144,9 @@ func TestStatusValue_MapsTrendScale(t *testing.T) {
 }
 
 func samplesToValues(samples []sample) []float64 {
-	values := make([]float64, len(samples))
-	for i, s := range samples {
-		values[i] = s.Value
+	values := make([]float64, 0, len(samples))
+	for _, s := range samples {
+		values = append(values, s.Value)
 	}
 
 	return values

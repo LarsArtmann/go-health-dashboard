@@ -398,7 +398,7 @@ func TestMetrics_PusherActiveFalseBeforeStart(t *testing.T) {
 func stripVaryingMetrics(body string) string {
 	kept := make([]string, 0, 32)
 
-	for _, line := range strings.Split(body, "\n") {
+	for line := range strings.SplitSeq(body, "\n") {
 		if strings.Contains(line, "dashboard_health_check_duration_seconds") {
 			continue
 		}

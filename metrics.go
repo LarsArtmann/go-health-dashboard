@@ -149,11 +149,16 @@ func escapeLabelValue(v string) string {
 
 // latencyBucketBounds are the cumulative histogram bucket upper bounds in
 // seconds, chosen to span fast local checks through slow timeouts.
+//
+//nolint:gochecknoglobals // immutable bucket bounds; a global keeps the\n// histogram zero-alloc and the exposition deterministic
 var latencyBucketBounds = []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10}
 
 // latencyHistogram is a fixed-bucket cumulative histogram of health-check
 // batch durations, hand-rolled to keep the module dependency-free. The
 // pusher observes once per tick; scrapes read the counters.
+// microsPerSecond scales atomic-int64 accumulation of fractional seconds.
+const microsPerSecond = int64(1e6)
+
 type latencyHistogram struct {
 	buckets []atomic.Uint64 // per-bucket cumulative counts
 	sum     atomic.Int64    // observed seconds, scaled by 1e6 for atomicity
@@ -173,7 +178,7 @@ func (h *latencyHistogram) observe(seconds float64) {
 	}
 
 	h.count.Add(1)
-	h.sum.Add(int64(seconds * 1e6))
+	h.sum.Add(int64(seconds * float64(microsPerSecond)))
 }
 
 // renderPrometheus writes the exposition lines for the histogram, including
@@ -198,6 +203,10 @@ func (h *latencyHistogram) renderPrometheus(b *strings.Builder) {
 		"dashboard_health_check_duration_seconds_bucket{le=\"+Inf\"} %d\n",
 		h.count.Load(),
 	)
-	fmt.Fprintf(b, "dashboard_health_check_duration_seconds_sum %g\n", float64(h.sum.Load())/1e6)
+	fmt.Fprintf(
+		b,
+		"dashboard_health_check_duration_seconds_sum %g\n",
+		float64(h.sum.Load())/float64(microsPerSecond),
+	)
 	fmt.Fprintf(b, "dashboard_health_check_duration_seconds_count %d\n", h.count.Load())
 }

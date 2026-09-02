@@ -199,7 +199,7 @@ func (p *pusher) broadcast() {
 	}
 
 	if p.dashboard.latency != nil {
-		p.dashboard.latency.observe(float64(resp.TotalLatencyMs) / 1000)
+		p.dashboard.latency.observe(msToSeconds(resp.TotalLatencyMs))
 	}
 
 	if !p.shouldBroadcast(resp) {
@@ -341,4 +341,11 @@ func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+}
+
+// msToSeconds converts milliseconds to seconds.
+func msToSeconds(ms int64) float64 {
+	const millisPerSecond = 1000
+
+	return float64(ms) / millisPerSecond
 }

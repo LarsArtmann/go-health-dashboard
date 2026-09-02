@@ -558,19 +558,21 @@ func (d *Dashboard) RegisterRoutes(mux *http.ServeMux) {
 // populateHistory fills the sparkline values and the recent status-change
 // timeline from the trend history. Shared by the initial HTML render and
 // the SSE patches so both always agree.
+const maxTimelineEntries = 5
+
 func populateHistory(vm *viewModel, buffer *historyBuffer) {
 	samples := buffer.snapshot()
 
-	values := make([]float64, len(samples))
-	for i, s := range samples {
-		values[i] = s.Value
+	values := make([]float64, 0, len(samples))
+	for _, s := range samples {
+		values = append(values, s.Value)
 	}
 
 	vm.History = values
 
 	transitions := buffer.transitions()
-	if len(transitions) > 5 {
-		transitions = transitions[len(transitions)-5:]
+	if len(transitions) > maxTimelineEntries {
+		transitions = transitions[len(transitions)-maxTimelineEntries:]
 	}
 
 	for _, tr := range transitions {

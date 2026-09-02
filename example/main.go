@@ -90,11 +90,18 @@ func main() {
 	if spec := os.Getenv("DEMO_RATELIMIT"); spec != "" {
 		maxReqs, window, err := parseRateLimit(spec)
 		if err != nil {
-			log.Fatalf("DEMO_RATELIMIT: %v", err)
+			log.Fatalf(
+				"DEMO_RATELIMIT: %v",
+				err,
+			) //nolint:gosec // G706: echoing operator env config
 		}
 
 		opts = append(opts, dashboard.WithRateLimit(maxReqs, window))
-		log.Printf("rate limit: %d requests per %s on dashboard routes", maxReqs, window)
+		log.Printf(
+			"rate limit: %d requests per %s on dashboard routes",
+			maxReqs,
+			window,
+		) //nolint:gosec // G706: echoing operator env config
 	}
 
 	// Register the dashboard in the injector so it participates in
@@ -222,7 +229,11 @@ func parseDuration(key string) time.Duration {
 
 	d, err := time.ParseDuration(spec)
 	if err != nil || d < 0 {
-		log.Fatalf("%s: invalid duration %q", key, spec)
+		log.Fatalf(
+			"%s: invalid duration %q",
+			key,
+			spec,
+		) //nolint:gosec // G706: echoing operator env config
 	}
 
 	return d
