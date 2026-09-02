@@ -88,7 +88,7 @@ func TestHistoryBuffer_SnapshotReturnsCopy(t *testing.T) {
 func TestHistoryBuffer_ConcurrentRecordAndSnapshot(t *testing.T) {
 	t.Parallel()
 
-	h := newHistoryBuffer(8)
+	buf := newHistoryBuffer(8)
 
 	var wg sync.WaitGroup
 
@@ -97,18 +97,18 @@ func TestHistoryBuffer_ConcurrentRecordAndSnapshot(t *testing.T) {
 
 		go func() {
 			defer wg.Done()
-			h.record(float64(i % 2))
+			buf.record(float64(i % 2))
 		}()
 
 		go func() {
 			defer wg.Done()
-			_ = h.snapshot()
+			_ = buf.snapshot()
 		}()
 	}
 
 	wg.Wait()
 
-	if got := h.snapshot(); len(got) != 8 {
+	if got := buf.snapshot(); len(got) != 8 {
 		t.Errorf("final snapshot length: want 8, got %d", len(got))
 	}
 }

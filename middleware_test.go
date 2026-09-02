@@ -3,6 +3,7 @@ package dashboard_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 
@@ -157,8 +158,8 @@ func TestMiddleware_ComposedChain(t *testing.T) {
 	// last one listed runs closest to the handler.
 	compose := func(mws ...func(http.Handler) http.Handler) func(http.Handler) http.Handler {
 		return func(next http.Handler) http.Handler {
-			for i := len(mws) - 1; i >= 0; i-- {
-				next = mws[i](next)
+			for _, mw := range slices.Backward(mws) {
+				next = mw(next)
 			}
 
 			return next
