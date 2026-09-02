@@ -3,6 +3,7 @@ package dashboard
 import (
 	"fmt"
 	"sort"
+	"strconv"
 
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/display"
@@ -243,7 +244,9 @@ func rowsToTableRows(rows []checkRow) []display.TableRow {
 
 // fingerprintChecks creates a deterministic string fingerprint of the checks
 // map for change detection. Keys are sorted to ensure the same input always
-// produces the same output (Go map iteration order is randomized).
+// produces the same output (Go map iteration order is randomized). Each
+// field is length-prefixed so names containing delimiter characters can
+// never collide with a different split across name, status, and error.
 func fingerprintChecks(checks map[string]health.Check) string {
 	keys := make([]string, 0, len(checks))
 
@@ -257,13 +260,19 @@ func fingerprintChecks(checks map[string]health.Check) string {
 
 	for _, name := range keys {
 		check := checks[name]
-		buf = append(buf, name...)
-		buf = append(buf, ':')
-		buf = append(buf, check.Status...)
-		buf = append(buf, ':')
-		buf = append(buf, check.Error...)
-		buf = append(buf, ';')
+		buf = appendField(buf, name)
+		buf = appendField(buf, check.Status)
+		buf = appendField(buf, check.Error)
 	}
 
 	return string(buf)
+}
+
+// appendField appends "<length>:<value>;" so field boundaries are explicit
+// regardless of the value's content.
+func appendField(buf []byte, value string) []byte {
+	buf = strconv.AppendInt(buf, int64(len(value)), 10)
+	buf = append(buf, ':')
+	buf = append(buf, value...)
+	return append(buf, ';')
 }

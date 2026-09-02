@@ -276,3 +276,21 @@ func TestFingerprintChecks_EmptyMap(t *testing.T) {
 		t.Errorf("empty checks fingerprint: want empty string, got %q", fp)
 	}
 }
+
+func TestFingerprintChecks_NoDelimiterCollision(t *testing.T) {
+	t.Parallel()
+
+	// A check name containing delimiter characters must not alias a
+	// different split of the same bytes across name/status/error. The
+	// historical ":...;" separator encoding collided on exactly this pair.
+	aliased := map[string]health.Check{
+		"a:b": {Status: health.StatusPass, Error: "c"},
+	}
+	separate := map[string]health.Check{
+		"a": {Status: health.StatusPass, Error: "b:c"},
+	}
+
+	if fingerprintChecks(aliased) == fingerprintChecks(separate) {
+		t.Error("fingerprint collision: delimiter-bearing name aliases a different field split")
+	}
+}
