@@ -1,10 +1,10 @@
 package dashboard
 
 import (
-	"fmt"
 	"context"
 	"encoding/json/v2"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -607,7 +607,9 @@ func (d *Dashboard) HealthCheck(_ context.Context) error {
 	}
 
 	if last := push.lastBroadcast.Load(); last != 0 && push.interval > 0 {
-		staleAfter := 3 * push.interval
+		const stalenessFactor = 3
+
+		staleAfter := stalenessFactor * push.interval
 
 		if elapsed := time.Since(time.Unix(0, last)); elapsed > staleAfter {
 			return fmt.Errorf("%w: last broadcast %s ago, stale after %s",
