@@ -32,6 +32,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   audit (downloaded same-origin, skipped offline) enforces serious/critical
   accessibility violations plus targeted ARIA/landmark checks
   (`TestBrowser_Accessibility`)
+- SSE hardening options: `WithShutdownDrain(d)` (Shutdown rejects new
+  connections immediately and waits up to d for existing clients before
+  closing the broadcaster), `WithMaxConnectionLifetime(d)` (server closes
+  streams past the cap; browsers reconnect and receive fresh state),
+  `WithRateLimit(max, window)` (shared hand-rolled token bucket across
+  dashboard-owned routes with 429 + Retry-After; probes exempt), and a
+  report-only pusher watchdog in `HealthCheck` returning
+  `ErrPusherStale` when the push loop stops ticking for three intervals
+  (`ratelimit.go`, `hardening_test.go`, `watchdog_test.go`)
 - Metrics conformance test: the exposition is parsed with the official
   `prometheus/common` text-format parser under strict legacy name
   validation, covering all seven metric families and label values with

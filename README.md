@@ -101,6 +101,10 @@ dash := dashboard.New(probe,
     dashboard.WithHideStatCards(),                             // Hide version/uptime/latency cards
     dashboard.WithMetrics(true),                               // Prometheus metrics at /health/metrics
     dashboard.WithMiddleware(myAuthMiddleware),                // Protect dashboard routes (see below)
+    dashboard.WithShutdownDrain(5*time.Second),                // Wait for SSE clients on Shutdown
+    dashboard.WithMaxConnectionLifetime(10*time.Minute),       // Recycle long-lived SSE streams
+    dashboard.WithRateLimit(100, time.Minute),                 // Token bucket on dashboard routes (429 beyond)
+    dashboard.WithDatastarSrc("/static/datastar.js"),          // Self-hosted Datastar SDK (CSP 'self')
     dashboard.WithBasePath("/admin"),                          // Prefix all routes for sub-path mounting
     dashboard.WithRoutes(dashboard.Routes{
         Dashboard: "/status",

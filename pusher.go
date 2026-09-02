@@ -219,6 +219,18 @@ func (p *pusher) shouldBroadcast(resp health.Response) bool {
 	return false
 }
 
+// atCapacity reports (and writes) the 503 shown when the SSE connection
+// limit is configured and already reached.
+func (p *pusher) atCapacity(w http.ResponseWriter) bool {
+	if p.maxConns <= 0 || p.connections.Load() < int64(p.maxConns) {
+		return false
+	}
+
+	http.Error(w, "dashboard: too many SSE connections", http.StatusServiceUnavailable)
+
+	return true
+}
+
 // sseHandler upgrades to an SSE connection, sends the initial state as a
 // Datastar patch, then forwards broadcaster events to the client. Blocks
 // until the client disconnects or the pusher shuts down.
@@ -230,9 +242,7 @@ func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if push.maxConns > 0 && push.connections.Load() >= int64(push.maxConns) {
-		http.Error(w, "dashboard: too many SSE connections", http.StatusServiceUnavailable)
-
+	if push.atCapacity(w) {
 		return
 	}
 
