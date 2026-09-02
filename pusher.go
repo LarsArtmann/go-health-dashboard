@@ -36,15 +36,17 @@ const (
 // Datastar element patches to all connected SSE clients via a go-sse
 // Broadcaster. Only one pusher goroutine runs per Dashboard instance.
 type pusher struct {
-	broadcaster *sse.Broadcaster[sse.Event]
-	dashboard   *Dashboard
-	interval    time.Duration
-	pushMode    PushMode
-	heartbeat   time.Duration
-	maxConns    int
-	retry       time.Duration
-	connections atomic.Int64
-	history     *historyBuffer
+	broadcaster   *sse.Broadcaster[sse.Event]
+	dashboard     *Dashboard
+	interval      time.Duration
+	pushMode      PushMode
+	heartbeat     time.Duration
+	maxConns      int
+	retry         time.Duration
+	maxLifetime   time.Duration
+	connections   atomic.Int64
+	lastBroadcast atomic.Int64
+	history       *historyBuffer
 
 	mu              sync.Mutex
 	lastStatus      health.Status
@@ -68,6 +70,7 @@ func newPusher(d *Dashboard) *pusher {
 		heartbeat:   d.cfg.HeartbeatInterval,
 		maxConns:    d.cfg.MaxSSEConnections,
 		retry:       d.cfg.RetryInterval,
+		maxLifetime: d.cfg.MaxConnectionLifetime,
 		history:     history,
 	}
 }
@@ -144,6 +147,8 @@ func (p *pusher) start(ctx context.Context) {
 // sends it to all subscribers. Respects PushMode for change detection. Every
 // tick records a trend sample, regardless of whether a patch is broadcast.
 func (p *pusher) broadcast() {
+	p.lastBroadcast.Store(time.Now().UnixNano())
+
 	resp := p.dashboard.currentResponse()
 
 	if p.history != nil {
@@ -251,9 +256,23 @@ func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
 	// Heartbeat goroutine prevents proxy timeouts on long-lived connections.
 	go stream.Heartbeat(r.Context(), push.heartbeat)
 
+	var lifetime <-chan time.Time
+
+	if push.maxLifetime > 0 {
+		timer := time.NewTimer(push.maxLifetime)
+		defer timer.Stop()
+
+		lifetime = timer.C
+	}
+
 	for {
 		select {
 		case <-stream.Context().Done():
+			return
+		case <-lifetime:
+			// Connection lifetime cap: close the stream; the browser
+			// reconnects automatically (SSE semantics) and receives fresh
+			// state on connect.
 			return
 		case evt, ok := <-ch:
 			if !ok {

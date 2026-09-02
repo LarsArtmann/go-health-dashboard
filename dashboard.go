@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"fmt"
 	"context"
 	"encoding/json/v2"
 	"errors"
@@ -46,6 +47,22 @@ type Config struct {
 	MetricsEnabled    bool
 	TrendSamples      int
 	HideStatCards     bool
+
+	// ShutdownDrain bounds how long Shutdown waits for connected SSE
+	// clients to disconnect before closing the broadcaster. Zero closes
+	// immediately (default).
+	ShutdownDrain time.Duration
+
+	// MaxConnectionLifetime caps how long a single SSE connection may stay
+	// open. Zero means unlimited (default). Clients reconnect automatically
+	// via the SSE retry field.
+	MaxConnectionLifetime time.Duration
+
+	// RateLimitRequests and RateLimitWindow configure a shared token
+	// bucket across all dashboard-owned routes. Zero disables rate
+	// limiting (default). Probe endpoints are never limited.
+	RateLimitRequests int
+	RateLimitWindow   time.Duration
 }
 
 // WithMiddleware wraps every dashboard-owned handler (dashboard HTML, SSE,
@@ -97,6 +114,39 @@ func WithTrend(samples int) Option {
 // tables matter.
 func WithHideStatCards() Option {
 	return func(c *Config) { c.HideStatCards = true }
+}
+
+// WithShutdownDrain makes Shutdown wait up to d for connected SSE clients
+// to disconnect before closing the broadcaster. New connections are rejected
+// immediately during the drain window, so load balancers draining traffic
+// see fast 503s while existing browsers keep their streams. Zero (default)
+// closes all streams immediately.
+func WithShutdownDrain(d time.Duration) Option {
+	return func(c *Config) {
+		c.ShutdownDrain = d
+	}
+}
+
+// WithMaxConnectionLifetime caps how long a single SSE connection may stay
+// open. When the cap hits, the server closes the stream; the browser
+// reconnects automatically (SSE semantics, optionally tuned via
+// WithRetryInterval). Useful behind load balancers that recycle
+// long-lived connections.
+func WithMaxConnectionLifetime(d time.Duration) Option {
+	return func(c *Config) {
+		c.MaxConnectionLifetime = d
+	}
+}
+
+// WithRateLimit caps dashboard-owned routes (dashboard HTML, SSE, favicon,
+// metrics) with a shared token bucket: bursts up to maxRequests, refilling
+// continuously at maxRequests per window. Excess requests receive 429 with
+// a Retry-After header. Kubernetes probe endpoints are never limited.
+func WithRateLimit(maxRequests int, window time.Duration) Option {
+	return func(c *Config) {
+		c.RateLimitRequests = maxRequests
+		c.RateLimitWindow = window
+	}
 }
 
 // Option configures a Dashboard. Use the With* functions to create options.
@@ -238,9 +288,10 @@ func WithBasePath(prefix string) Option {
 //
 // Dashboard is safe for concurrent use by multiple goroutines.
 type Dashboard struct {
-	probe *health.Probe
-	cfg   Config
-	push  atomic.Pointer[pusher]
+	probe   *health.Probe
+	cfg     Config
+	push    atomic.Pointer[pusher]
+	limiter *rateLimiter
 }
 
 // Compile-time assertions that Dashboard satisfies samber/do lifecycle interfaces.
@@ -274,7 +325,13 @@ func New(probe *health.Probe, opts ...Option) *Dashboard {
 
 	cfg.PushInterval = resolvePushInterval(cfg.PushInterval, probe)
 
-	return &Dashboard{probe: probe, cfg: cfg}
+	d := &Dashboard{probe: probe, cfg: cfg}
+
+	if cfg.RateLimitRequests > 0 && cfg.RateLimitWindow > 0 {
+		d.limiter = newRateLimiter(cfg.RateLimitRequests, cfg.RateLimitWindow)
+	}
+
+	return d
 }
 
 // resolvePushInterval determines the effective push interval. When the
@@ -463,15 +520,15 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 func (d *Dashboard) RegisterRoutes(mux *http.ServeMux) {
 	routes := d.cfg.Routes
 
-	mux.Handle(routes.Dashboard, d.wrap(d.Handler()))
-	mux.Handle(routes.SSE, d.wrap(d.SSEHandler()))
+	mux.Handle(routes.Dashboard, d.wrap(d.applyRateLimit(d.Handler())))
+	mux.Handle(routes.SSE, d.wrap(d.applyRateLimit(d.SSEHandler())))
 
 	if routes.Favicon != "" {
-		mux.Handle(routes.Favicon, d.wrap(d.FaviconHandler()))
+		mux.Handle(routes.Favicon, d.wrap(d.applyRateLimit(d.FaviconHandler())))
 	}
 
 	if d.cfg.MetricsEnabled && routes.Metrics != "" {
-		mux.Handle(routes.Metrics, d.wrap(d.MetricsHandler()))
+		mux.Handle(routes.Metrics, d.wrap(d.applyRateLimit(d.MetricsHandler())))
 	}
 
 	mux.HandleFunc(routes.Liveness, d.probe.LivenessHandler())
@@ -505,27 +562,57 @@ func (d *Dashboard) Start(ctx context.Context) error {
 }
 
 // Shutdown stops the SSE pusher and closes all broadcaster connections.
-// Safe to call multiple times.
+// When WithShutdownDrain is configured, new connections are rejected
+// immediately and existing clients get up to the configured window to
+// disconnect before the broadcaster closes. Safe to call multiple times.
 func (d *Dashboard) Shutdown() {
-	if p := d.push.Swap(nil); p != nil {
-		p.broadcaster.Close()
+	p := d.push.Swap(nil)
+	if p == nil {
+		return
 	}
+
+	if drain := d.cfg.ShutdownDrain; drain > 0 {
+		deadline := time.Now().Add(drain)
+
+		for p.connections.Load() > 0 && time.Now().Before(deadline) {
+			time.Sleep(2 * time.Millisecond)
+		}
+	}
+
+	p.broadcaster.Close()
 }
 
 // ErrPusherNotActive is returned by HealthCheck when the SSE pusher has not
 // been started or has been shut down.
 var ErrPusherNotActive = errors.New("dashboard: SSE pusher is not active")
 
+// ErrPusherStale is returned by HealthCheck when the pusher goroutine has
+// not completed a broadcast tick recently (more than three push intervals).
+// The watchdog is report-only: a wedged pusher is surfaced to container
+// health checks, not restarted, so operators see the underlying problem.
+var ErrPusherStale = errors.New("dashboard: SSE pusher stopped ticking")
+
 // HealthCheck reports whether the dashboard's real-time update mechanism is
 // healthy. Returns an error when the SSE pusher has not been started or has
-// been shut down.
+// been shut down, and reports staleness when the push loop stopped ticking
+// (watchdog; report-only, never restarts the goroutine).
 //
 // This method satisfies do.HealthcheckerWithContext, enabling the dashboard
 // to participate in container-wide health checks when registered in a
 // samber/do injector.
 func (d *Dashboard) HealthCheck(_ context.Context) error {
-	if d.push.Load() == nil {
+	push := d.push.Load()
+	if push == nil {
 		return ErrPusherNotActive
+	}
+
+	if last := push.lastBroadcast.Load(); last != 0 && push.interval > 0 {
+		staleAfter := 3 * push.interval
+
+		if elapsed := time.Since(time.Unix(0, last)); elapsed > staleAfter {
+			return fmt.Errorf("%w: last broadcast %s ago, stale after %s",
+				ErrPusherStale, elapsed.Round(time.Millisecond), staleAfter)
+		}
 	}
 
 	return nil
