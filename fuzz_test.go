@@ -1,9 +1,11 @@
 package dashboard
 
 import (
+	"bytes"
 	"encoding/json/v2"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -96,22 +98,18 @@ func FuzzHealthResponseSerialization(
 		checkName, checkStatus, checkErr string,
 	) {
 		// Replace invalid UTF-8, which JSON transcoding legitimately rewrites
-		// to U+FFFD, so strict field equality stays a meaningful invariant.
-		status = strings.ToValidUTF8(status, "\uFFFD")
-		version = strings.ToValidUTF8(version, "\uFFFD")
-		uptime = strings.ToValidUTF8(uptime, "\uFFFD")
-		checkName = strings.ToValidUTF8(checkName, "\uFFFD")
-		checkStatus = strings.ToValidUTF8(checkStatus, "\uFFFD")
-		checkErr = strings.ToValidUTF8(checkErr, "\uFFFD")
-
+		// to U+FFFD, so strict equality stays a meaningful invariant.
 		resp := health.Response{
-			Status:         health.Status(status),
-			Version:        version,
-			Uptime:         uptime,
+			Status:         health.Status(strings.ToValidUTF8(status, "\uFFFD")),
+			Version:        strings.ToValidUTF8(version, "\uFFFD"),
+			Uptime:         strings.ToValidUTF8(uptime, "\uFFFD"),
 			ShuttingDown:   shuttingDown,
 			TotalLatencyMs: latency,
 			Checks: map[string]health.Check{
-				checkName: {Status: health.Status(checkStatus), Error: checkErr},
+				strings.ToValidUTF8(checkName, "\uFFFD"): {
+					Status: health.Status(strings.ToValidUTF8(checkStatus, "\uFFFD")),
+					Error:  strings.ToValidUTF8(checkErr, "\uFFFD"),
+				},
 			},
 		}
 
@@ -125,41 +123,8 @@ func FuzzHealthResponseSerialization(
 			t.Fatalf("Unmarshal failed for payload %q: %v", data, err)
 		}
 
-		if decoded.Status != resp.Status {
-			t.Errorf("status: want %q, got %q", resp.Status, decoded.Status)
-		}
-
-		if decoded.Version != resp.Version {
-			t.Errorf("version: want %q, got %q", resp.Version, decoded.Version)
-		}
-
-		if decoded.Uptime != resp.Uptime {
-			t.Errorf("uptime: want %q, got %q", resp.Uptime, decoded.Uptime)
-		}
-
-		if decoded.ShuttingDown != resp.ShuttingDown {
-			t.Errorf("shuttingDown: want %v, got %v", resp.ShuttingDown, decoded.ShuttingDown)
-		}
-
-		if decoded.TotalLatencyMs != resp.TotalLatencyMs {
-			t.Errorf("latency: want %d, got %d", resp.TotalLatencyMs, decoded.TotalLatencyMs)
-		}
-
-		if len(decoded.Checks) != 1 {
-			t.Fatalf("checks: want 1 entry, got %d", len(decoded.Checks))
-		}
-
-		gotCheck, ok := decoded.Checks[checkName]
-		if !ok {
-			t.Fatalf("checks: key %q missing from decoded payload", checkName)
-		}
-
-		if gotCheck.Status != health.Status(checkStatus) {
-			t.Errorf("check status: want %q, got %q", checkStatus, gotCheck.Status)
-		}
-
-		if gotCheck.Error != checkErr {
-			t.Errorf("check error: want %q, got %q", checkErr, gotCheck.Error)
+		if !reflect.DeepEqual(decoded, resp) {
+			t.Fatalf("round-trip lost data:\nwant %+v\ngot  %+v\npayload %s", resp, decoded, data)
 		}
 
 		reencoded, err := json.Marshal(decoded)
@@ -167,7 +132,7 @@ func FuzzHealthResponseSerialization(
 			t.Fatalf("re-Marshal failed: %v", err)
 		}
 
-		if string(reencoded) != string(data) {
+		if !bytes.Equal(reencoded, data) {
 			t.Errorf("encoding not idempotent:\nfirst:  %s\nsecond: %s", data, reencoded)
 		}
 	})
