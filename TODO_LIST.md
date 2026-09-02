@@ -21,14 +21,15 @@ Full breakdown: `docs/planning/2026-09-02_21-21_pareto-execution-plan-v03-cycle.
 | Task                                             | Status     | Impact | Effort | Notes                                                                    |
 | ------------------------------------------------ | ---------- | ------ | ------ | ------------------------------------------------------------------------ |
 | Release v0.3.1 (bump Version, date CHANGELOG, tag) | 🟢 `DONE` | High   | 45min  | v0.3.0 was a stray early tag (cached by the Go module proxy); real release retargeted to v0.3.1 |
-| HARVEST plan items into this list + ROADMAP      | 🔴 `TODO` | High   | 30min  | docs-health HARVEST over the plan's section (f)                          |
-| CI: browser-test job (chromium + env)            | 🔴 `TODO` | High   | 60min  | Strongest test currently never runs in CI                                |
-| `RecommendedCSP(nonce)` helper + tests + README  | 🔴 `TODO` | High   | 45min  | Verified policy from browser_test as an API                              |
-| promtool conformance check for metrics           | 🔴 `TODO` | Medium | 45min  | Machine-check the exposition promise                                     |
+| CI: browser-test job (chromium + env)            | 🟢 `DONE` | High   | 60min  | Plus nightly fuzz workflow and coverage totals in the test job           |
+| `RecommendedCSP(nonce)` helper + tests + README  | 🟢 `DONE` | High   | 45min  | `csp.go`; invalid nonce tokens omitted so the header can never be malformed |
+| Browser-test hardening (console asserts, live patch DOM check) | 🟢 `DONE` | High | 72min  | Plus axe-core a11y audit and serialized Chrome launches                  |
+| Fix gopls go1.27 stdversion warning noise        | 🟢 `DONE` | Medium | 30min  | Committed `.vscode/settings.json` sets gopls build env                   |
+| Fuzz targets (escape, fingerprint) + nightly fuzz | 🟢 `DONE` | Medium | 60min  | Found + fixed a real fingerprint delimiter collision                     |
+| promtool conformance check for metrics           | 🟢 `DONE` | Medium | 45min  | Official prometheus/common parser test always runs; promtool lint when on PATH |
+| SSE hardening (drain, lifetime, watchdog, rate limit) | 🟢 `DONE` | High | 120min | `WithShutdownDrain`, `WithMaxConnectionLifetime`, `WithRateLimit`, `ErrPusherStale` watchdog |
 | Example app v2 (auth/metrics/trend env toggles)  | 🔴 `TODO` | Medium | 60min  | Onboarding for v0.3.1 features                                           |
-| Browser-test hardening (console asserts, live patch DOM check) | 🔴 `TODO` | High | 72min  | Close verification gaps found in planning                                |
-| Fix gopls go1.27 stdversion warning noise        | 🔴 `TODO` | Medium | 30min  | Dev experience                                                           |
-| Fuzz targets (escape, fingerprint) + nightly fuzz | 🔴 `TODO` | Medium | 60min  | Cheap insurance                                                          |
+| HARVEST plan items into this list + ROADMAP      | 🔴 `TODO` | High   | 30min  | docs-health HARVEST over the plan's section (f)                          |
 
 Everything beyond this shortlist is triaged in the plan file (hardening, observability, polish, spikes).
 
@@ -53,5 +54,11 @@ Completed in the current cycle, logged in `CHANGELOG.md`:
   runtime-CSP verification loop; found the Datastar `unsafe-eval` requirement
 - Screenshot in README (`docs/screenshot.png`, captured by
   `screenshot_test.go`)
+- SSE hardening options: `WithShutdownDrain`, `WithMaxConnectionLifetime`,
+  `WithRateLimit` (hand-rolled token bucket), pusher staleness watchdog
+  (`ErrPusherStale`)
+- `RecommendedCSP(nonce)` helper, metrics conformance tests (official
+  parser + promtool), browser console/CSP/live-patch/a11y verification,
+  fuzz targets with nightly workflow, CI browser job, gopls env fix
 
 Everything else worth doing is in `ROADMAP.md` as raw ideas.

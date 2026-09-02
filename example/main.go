@@ -6,6 +6,15 @@
 //
 // Then open http://localhost:8080/health in a browser to see the live dashboard.
 // Kubelet-style JSON is available at http://localhost:8080/readyz.
+//
+// Optional environment toggles showcase the v0.3.x features:
+//
+//	DEMO_TREND=1                 enable the health trend sparkline (WithTrend)
+//	DEMO_METRICS=1               enable the Prometheus endpoint (/health/metrics)
+//	DEMO_AUTH=<token>            require "Authorization: Bearer <token>" on dashboard routes
+//	DEMO_RATELIMIT=<n>/<window>  e.g. 30/1m — token-bucket limit on dashboard routes
+//	DEMO_DRAIN=5s                graceful SSE drain window on shutdown
+//	PORT=8080                    listen address
 package main
 
 import (
@@ -13,8 +22,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"crypto/subtle"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"os/signal"
 	"syscall"
 	"time"
@@ -50,9 +62,41 @@ func main() {
 	}
 	defer probe.Shutdown()
 
+	// Assemble the option set from environment toggles so every feature can
+	// be demonstrated without code changes.
+	opts := []dashboard.Option{
+		dashboard.WithTitle("Demo Service"),
+		dashboard.WithShutdownDrain(parseDuration("DEMO_DRAIN")),
+	}
+
+	if os.Getenv("DEMO_TREND") != "" {
+		opts = append(opts, dashboard.WithTrend(120))
+		log.Println("trend: enabled (health trend sparkline)")
+	}
+
+	if os.Getenv("DEMO_METRICS") != "" {
+		opts = append(opts, dashboard.WithMetrics(true))
+		log.Printf("metrics: http://localhost%s/health/metrics", ":"+envOrDefault("PORT", "8080"))
+	}
+
+	if token := os.Getenv("DEMO_AUTH"); token != "" {
+		opts = append(opts, dashboard.WithMiddleware(bearerAuth(token)))
+		log.Printf("auth: bearer token required on dashboard routes (DEMO_AUTH set, %d chars)", len(token))
+	}
+
+	if spec := os.Getenv("DEMO_RATELIMIT"); spec != "" {
+		maxReqs, window, err := parseRateLimit(spec)
+		if err != nil {
+			log.Fatalf("DEMO_RATELIMIT: %v", err)
+		}
+
+		opts = append(opts, dashboard.WithRateLimit(maxReqs, window))
+		log.Printf("rate limit: %d requests per %s on dashboard routes", maxReqs, window)
+	}
+
 	// Register the dashboard in the injector so it participates in
 	// do.Shutdown and do.HealthCheck cascades automatically.
-	dash := dashboard.Register(injector, probe, dashboard.WithTitle("Demo Service"))
+	dash := dashboard.Register(injector, probe, opts...)
 
 	if err := dash.Start(ctx); err != nil {
 		log.Fatalf("dash.Start: %v", err)
@@ -146,3 +190,59 @@ func (s *flappingService) HealthCheck(_ context.Context) error {
 
 	return nil
 }
+
+// bearerAuth returns middleware enforcing "Authorization: Bearer <token>".
+// This is demo scaffolding; production services should use their existing
+// auth middleware.
+func bearerAuth(token string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			got, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+			if !ok || subtle.ConstantTimeCompare([]byte(got), []byte(token)) != 1 {
+				w.Header().Set("WWW-Authenticate", `Bearer realm="demo"`)
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// parseDuration reads an env var as a time.Duration, returning 0 when unset.
+func parseDuration(key string) time.Duration {
+	spec := os.Getenv(key)
+	if spec == "" {
+		return 0
+	}
+
+	d, err := time.ParseDuration(spec)
+	if err != nil || d < 0 {
+		log.Fatalf("%s: invalid duration %q", key, spec)
+	}
+
+	return d
+}
+
+// parseRateLimit parses "30/1m", "5/s", "100/1h" style specifications.
+func parseRateLimit(spec string) (int, time.Duration, error) {
+	countStr, windowStr, found := strings.Cut(spec, "/")
+	if !found {
+		return 0, 0, fmt.Errorf("want <requests>/<window> (e.g. 30/1m), got %q", spec)
+	}
+
+	maxReqs, err := strconv.Atoi(countStr)
+	if err != nil || maxRequestsInvalid(maxReqs) {
+		return 0, 0, fmt.Errorf("invalid request count %q", countStr)
+	}
+
+	window, err := time.ParseDuration(windowStr)
+	if err != nil || window <= 0 {
+		return 0, 0, fmt.Errorf("invalid window %q", windowStr)
+	}
+
+	return maxReqs, window, nil
+}
+
+func maxRequestsInvalid(n int) bool { return n < 1 }

@@ -197,6 +197,23 @@ with `GO_HEALTH_DASHBOARD_CHROME=/path/to/chromium`.
 
 ## Run the Example
 
+The demo server exposes every feature behind environment toggles:
+
+```bash
+GOEXPERIMENT=jsonv2 DEMO_TREND=1 DEMO_METRICS=1 DEMO_AUTH=my-token   DEMO_RATELIMIT=30/1m DEMO_DRAIN=5s go run ./example
+```
+
+| Variable             | Effect                                                        |
+| -------------------- | ------------------------------------------------------------- |
+| `DEMO_TREND=1`       | Health trend sparkline (`WithTrend`)                          |
+| `DEMO_METRICS=1`     | Prometheus endpoint at `/health/metrics` (`WithMetrics`)      |
+| `DEMO_AUTH=<token>`  | Bearer-token middleware on dashboard routes (`WithMiddleware`) |
+| `DEMO_RATELIMIT=n/w` | Token-bucket rate limit, e.g. `30/1m` (`WithRateLimit`)        |
+| `DEMO_DRAIN=5s`      | Graceful SSE drain window on shutdown (`WithShutdownDrain`)    |
+| `PORT`               | Listen port (default 8080)                                     |
+
+## Run the Example (legacy)
+
 ```bash
 GOEXPERIMENT=jsonv2 go run ./example
 # Open http://localhost:8080/health
