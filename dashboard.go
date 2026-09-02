@@ -508,14 +508,7 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 	vm.ShowStatCards = !d.cfg.HideStatCards
 
 	if p := d.push.Load(); p != nil && p.history != nil {
-		samples := p.history.snapshot()
-
-		values := make([]float64, len(samples))
-		for i, s := range samples {
-			values[i] = s.Value
-		}
-
-		vm.History = values
+		populateHistory(&vm, p.history)
 	}
 
 	return vm
@@ -560,6 +553,33 @@ func (d *Dashboard) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc(routes.Liveness, d.probe.LivenessHandler())
 	mux.HandleFunc(routes.Readiness, d.probe.ReadinessHandler())
 	mux.HandleFunc(routes.Startup, d.probe.StartupHandler())
+}
+
+// populateHistory fills the sparkline values and the recent status-change
+// timeline from the trend history. Shared by the initial HTML render and
+// the SSE patches so both always agree.
+func populateHistory(vm *viewModel, h *historyBuffer) {
+	samples := h.snapshot()
+
+	values := make([]float64, len(samples))
+	for i, s := range samples {
+		values[i] = s.Value
+	}
+
+	vm.History = values
+
+	transitions := h.transitions()
+	if len(transitions) > 5 {
+		transitions = transitions[len(transitions)-5:]
+	}
+
+	for _, tr := range transitions {
+		vm.Timeline = append(vm.Timeline, TimelineEntry{
+			At:       tr.At.Format("15:04:05"),
+			Status:   tr.To,
+			Degraded: tr.To != string(health.StatusPass),
+		})
+	}
 }
 
 // wrap applies the configured middleware (WithMiddleware) to a

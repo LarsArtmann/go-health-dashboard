@@ -171,7 +171,7 @@ func TestExportHandler_CSV(t *testing.T) {
 		{name: "query param", query: "?format=csv"},
 		{name: "accept header", accept: "text/csv"},
 	} {
-		w := doRequest(t, s.mux, "/health/export"+tc.query)
+		w := doRequestWithAccept(t, s.mux, "/health/export"+tc.query, tc.accept)
 		if w.Code != http.StatusOK {
 			t.Fatalf("%s: status: want 200, got %d", tc.name, w.Code)
 		}

@@ -223,28 +223,7 @@ func (p *pusher) renderPatch(resp health.Response) (sse.Event, bool) {
 	vm.ShowStatCards = !p.dashboard.cfg.HideStatCards
 
 	if p.history != nil {
-		samples := p.history.snapshot()
-
-		values := make([]float64, len(samples))
-		for i, s := range samples {
-			values[i] = s.Value
-		}
-
-		vm.History = values
-
-		transitions := p.history.transitions()
-
-		if len(transitions) > 5 {
-			transitions = transitions[len(transitions)-5:]
-		}
-
-		for _, tr := range transitions {
-			vm.Timeline = append(vm.Timeline, TimelineEntry{
-				At:       tr.At.Format("15:04:05"),
-				Status:   tr.To,
-				Degraded: tr.To != string(health.StatusPass),
-			})
-		}
+		populateHistory(&vm, p.history)
 	}
 
 	content := dashboardContent(vm)
