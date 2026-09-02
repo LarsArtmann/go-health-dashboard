@@ -8,6 +8,7 @@ type Routes struct {
 	Liveness  string // Kubernetes liveness probe — JSON (default: /healthz)
 	Readiness string // Kubernetes readiness probe — JSON (default: /readyz)
 	Startup   string // Kubernetes startup probe — JSON (default: /startupz)
+	Metrics   string // Prometheus exposition endpoint (default: /health/metrics; leave empty to disable)
 }
 
 // DefaultRoutes returns conventional paths for the dashboard and Kubernetes
@@ -21,5 +22,6 @@ func DefaultRoutes() Routes {
 		Liveness:  "/healthz",
 		Readiness: "/readyz",
 		Startup:   "/startupz",
+		Metrics:   "/health/metrics",
 	}
 }

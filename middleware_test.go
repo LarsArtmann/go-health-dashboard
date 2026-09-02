@@ -149,10 +149,12 @@ func TestMiddleware_HandlerReceivesUntouchedRequest(t *testing.T) {
 func TestMiddleware_ComposedChain(t *testing.T) {
 	t.Parallel()
 
+	// compose wraps so that the first middleware listed runs first — the
+	// last one listed runs closest to the handler.
 	compose := func(mws ...func(http.Handler) http.Handler) func(http.Handler) http.Handler {
 		return func(next http.Handler) http.Handler {
-			for _, mw := range mws {
-				next = mw(next)
+			for i := len(mws) - 1; i >= 0; i-- {
+				next = mws[i](next)
 			}
 
 			return next
@@ -191,7 +193,11 @@ func TestMiddleware_WithoutMiddlewareRoutesStayOpen(t *testing.T) {
 	s := setupDashboard(t)
 	defer s.cleanup()
 
-	for _, route := range []string{"/health", "/health/sse", "/favicon.svg"} {
+	// /health/sse is deliberately absent: its streaming handler blocks until
+	// the client disconnects, which a ResponseRecorder never does. SSE
+	// rejection is covered by TestMiddleware_ProtectsSSERoute; the dashboard
+	// and favicon handlers below prove middleware-free routes stay open.
+	for _, route := range []string{"/health", "/favicon.svg"} {
 		w := doRequest(t, s.mux, route)
 		if w.Code != http.StatusOK {
 			t.Errorf("%s: want 200 without middleware, got %d", route, w.Code)
