@@ -21,18 +21,18 @@
 
 ## Medium Impact
 
-| Task                         | Status    | Impact | Effort | Notes                          |
-| ---------------------------- | --------- | ------ | ------ | ------------------------------ |
-| Auth middleware integration   | 🔴 `TODO` | Med    | 60min  | Protect dashboard endpoint     |
-| Add screenshot to README      | 🔴 `TODO` | Med    | 30min  | No visual preview in README    |
+| Task                        | Status    | Impact | Effort | Notes                       |
+| --------------------------- | --------- | ------ | ------ | --------------------------- |
+| Auth middleware integration | 🔴 `TODO` | Med    | 60min  | Protect dashboard endpoint  |
+| Add screenshot to README    | 🔴 `TODO` | Med    | 30min  | No visual preview in README |
 
 ## Low Impact / Future Work
 
-| Task                                             | Status    | Impact | Effort | Notes                       |
-| ------------------------------------------------ | --------- | ------ | ------ | --------------------------- |
-| Fuzzing for Accept header parsing                | 🔴 `TODO` | Low    | 30min  | `dashboard.go:221`          |
-| Fuzzing for health response serialization        | 🔴 `TODO` | Low    | 30min  |                             |
-| Prometheus metrics endpoint                      | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md              |
-| Health history / sparkline visualization         | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md              |
-| UI flexibility options (WithHideStatCards, etc.) | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md              |
+| Task                                             | Status    | Impact | Effort | Notes                                   |
+| ------------------------------------------------ | --------- | ------ | ------ | --------------------------------------- |
+| Fuzzing for Accept header parsing                | 🔴 `TODO` | Low    | 30min  | `dashboard.go:221`                      |
+| Fuzzing for health response serialization        | 🔴 `TODO` | Low    | 30min  |                                         |
+| Prometheus metrics endpoint                      | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md                          |
+| Health history / sparkline visualization         | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md                          |
+| UI flexibility options (WithHideStatCards, etc.) | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md                          |
 | Headless-browser CSP test (chromedp)             | 🔴 `TODO` | Low    | 90min  | Close the runtime-CSP verification loop |

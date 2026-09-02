@@ -16,11 +16,11 @@
 
 ### Dependabot PRs resolved (all 3)
 
-| PR  | Title                                          | Resolution                                         |
-| --- | ---------------------------------------------- | -------------------------------------------------- |
-| #1  | bump actions/setup-go from 5 to 7              | Applied in `101ea3d`, PR auto-closed by Dependabot |
-| #2  | bump actions/checkout from 4 to 7              | Applied in `101ea3d`, PR auto-closed by Dependabot |
-| #3  | bump golangci/golangci-lint-action from 6 to 9 | Applied in `101ea3d`, PR auto-closed by Dependabot |
+| PR | Title                                          | Resolution                                         |
+| -- | ---------------------------------------------- | -------------------------------------------------- |
+| #1 | bump actions/setup-go from 5 to 7              | Applied in `101ea3d`, PR auto-closed by Dependabot |
+| #2 | bump actions/checkout from 4 to 7              | Applied in `101ea3d`, PR auto-closed by Dependabot |
+| #3 | bump golangci/golangci-lint-action from 6 to 9 | Applied in `101ea3d`, PR auto-closed by Dependabot |
 
 All three modified the same file (`.github/workflows/ci.yml`), so I combined them into a single commit rather than merging sequentially.
 

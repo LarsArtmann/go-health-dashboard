@@ -148,93 +148,93 @@ The `[Unreleased]` section has substantial content (7 new features, data race fi
 
 ### Immediate (fix the lies and gaps from this session)
 
-| #   | Task                                                                         | Impact | Effort |
-| --- | ---------------------------------------------------------------------------- | ------ | ------ |
-| 1   | **Fix godoclint issue in doc.go** — package has more than one godoc          | High   | 5min   |
-| 2   | **OR: disable godoclint in .golangci.yml** — it's a false positive           | High   | 2min   |
-| 3   | **Update FEATURES.md** — change "0 issues" to accurate count after fixing #1 | High   | 2min   |
-| 4   | **Add godoclint issue to FEATURES.md Known Gaps** if not resolved            | Med    | 2min   |
-| 5   | **Verify remaining ~24 line citations in FEATURES.md** — read each line      | Med    | 15min  |
+| # | Task                                                                         | Impact | Effort |
+| - | ---------------------------------------------------------------------------- | ------ | ------ |
+| 1 | **Fix godoclint issue in doc.go** — package has more than one godoc          | High   | 5min   |
+| 2 | **OR: disable godoclint in .golangci.yml** — it's a false positive           | High   | 2min   |
+| 3 | **Update FEATURES.md** — change "0 issues" to accurate count after fixing #1 | High   | 2min   |
+| 4 | **Add godoclint issue to FEATURES.md Known Gaps** if not resolved            | Med    | 2min   |
+| 5 | **Verify remaining ~24 line citations in FEATURES.md** — read each line      | Med    | 15min  |
 
 ### Testing gaps (harvested from this + prior sessions)
 
-| #   | Task                                                                              | Impact | Effort |
-| --- | --------------------------------------------------------------------------------- | ------ | ------ |
-| 6   | Add test for `SubscriberCount()` — increments/decrements on connect/disconnect    | High   | 15min  |
-| 7   | Add test for `WithHeartbeatInterval` — verify custom interval is used             | High   | 15min  |
-| 8   | Add test for `WithCSSPath` rendering `<link>` in `<head>` (not just CDN suppress) | Med    | 10min  |
-| 9   | Add fuzz test for `wantsJSON` Accept header q-value parsing                       | Low    | 30min  |
-| 10  | Add fuzz test for `fingerprintChecks` with pathological inputs                    | Low    | 30min  |
-| 11  | Add benchmark for `buildViewModel` with many checks                               | Low    | 15min  |
-| 12  | Add benchmark for `wantsJSON` q-value parser                                      | Low    | 15min  |
-| 13  | Run SSE tests 10x to verify no flakiness                                          | Med    | 10min  |
+| #  | Task                                                                              | Impact | Effort |
+| -- | --------------------------------------------------------------------------------- | ------ | ------ |
+| 6  | Add test for `SubscriberCount()` — increments/decrements on connect/disconnect    | High   | 15min  |
+| 7  | Add test for `WithHeartbeatInterval` — verify custom interval is used             | High   | 15min  |
+| 8  | Add test for `WithCSSPath` rendering `<link>` in `<head>` (not just CDN suppress) | Med    | 10min  |
+| 9  | Add fuzz test for `wantsJSON` Accept header q-value parsing                       | Low    | 30min  |
+| 10 | Add fuzz test for `fingerprintChecks` with pathological inputs                    | Low    | 30min  |
+| 11 | Add benchmark for `buildViewModel` with many checks                               | Low    | 15min  |
+| 12 | Add benchmark for `wantsJSON` q-value parser                                      | Low    | 15min  |
+| 13 | Run SSE tests 10x to verify no flakiness                                          | Med    | 10min  |
 
 ### Documentation polish
 
-| #   | Task                                                                       | Impact | Effort |
-| --- | -------------------------------------------------------------------------- | ------ | ------ |
-| 14  | Add screenshot to README — run example, capture browser                    | Med    | 30min  |
-| 15  | Add coverage badge to README (79.6%)                                       | Low    | 10min  |
-| 16  | Update CONTRIBUTING.md with new options, CI workflow, test patterns        | Low    | 15min  |
-| 17  | Verify all README internal links resolve (badge URLs, pkg.go.dev, etc.)    | Low    | 10min  |
-| 18  | Consider consolidating docs/status/ — 10 files in one day is unsustainable | Low    | 30min  |
+| #  | Task                                                                       | Impact | Effort |
+| -- | -------------------------------------------------------------------------- | ------ | ------ |
+| 14 | Add screenshot to README — run example, capture browser                    | Med    | 30min  |
+| 15 | Add coverage badge to README (79.6%)                                       | Low    | 10min  |
+| 16 | Update CONTRIBUTING.md with new options, CI workflow, test patterns        | Low    | 15min  |
+| 17 | Verify all README internal links resolve (badge URLs, pkg.go.dev, etc.)    | Low    | 10min  |
+| 18 | Consider consolidating docs/status/ — 10 files in one day is unsustainable | Low    | 30min  |
 
 ### Release readiness (BLOCKED — needs upstream decisions)
 
-| #   | Task                                                                            | Impact   | Effort |
-| --- | ------------------------------------------------------------------------------- | -------- | ------ |
-| 19  | Tag upstream repos (go-health, templ-components, go-datastar, go-sse) on GitHub | Critical | 30min  |
-| 20  | Remove replace directives from go.mod once upstream tagged                      | Critical | 10min  |
-| 21  | Verify `go get github.com/larsartmann/go-health-dashboard@v0.1.0` works         | Critical | 10min  |
-| 22  | Tag v0.1.0 in git                                                               | Critical | 5min   |
-| 23  | Create GitHub release with release notes from CHANGELOG                         | High     | 15min  |
-| 24  | Promote CHANGELOG `[Unreleased]` → `[0.1.0]` with date                          | High     | 5min   |
-| 25  | Trigger pkg.go.dev indexing — visit pkg.go.dev URL                              | Med      | 2min   |
+| #  | Task                                                                            | Impact   | Effort |
+| -- | ------------------------------------------------------------------------------- | -------- | ------ |
+| 19 | Tag upstream repos (go-health, templ-components, go-datastar, go-sse) on GitHub | Critical | 30min  |
+| 20 | Remove replace directives from go.mod once upstream tagged                      | Critical | 10min  |
+| 21 | Verify `go get github.com/larsartmann/go-health-dashboard@v0.1.0` works         | Critical | 10min  |
+| 22 | Tag v0.1.0 in git                                                               | Critical | 5min   |
+| 23 | Create GitHub release with release notes from CHANGELOG                         | High     | 15min  |
+| 24 | Promote CHANGELOG `[Unreleased]` → `[0.1.0]` with date                          | High     | 5min   |
+| 25 | Trigger pkg.go.dev indexing — visit pkg.go.dev URL                              | Med      | 2min   |
 
 ### Production hardening (from ROADMAP.md)
 
-| #   | Task                                                           | Impact | Effort |
-| --- | -------------------------------------------------------------- | ------ | ------ |
-| 26  | SSE reconnection support (Last-Event-ID header)                | Med    | 60min  |
-| 27  | Graceful shutdown: wait for in-flight SSE connections to drain | Med    | 60min  |
-| 28  | SSE connection timeout (max lifetime per connection)           | Low    | 30min  |
-| 29  | Pusher health self-check (is the goroutine alive?)             | Low    | 30min  |
-| 30  | Request logging middleware option                              | Low    | 30min  |
-| 31  | Rate limiting on dashboard HTML route                          | Low    | 30min  |
+| #  | Task                                                           | Impact | Effort |
+| -- | -------------------------------------------------------------- | ------ | ------ |
+| 26 | SSE reconnection support (Last-Event-ID header)                | Med    | 60min  |
+| 27 | Graceful shutdown: wait for in-flight SSE connections to drain | Med    | 60min  |
+| 28 | SSE connection timeout (max lifetime per connection)           | Low    | 30min  |
+| 29 | Pusher health self-check (is the goroutine alive?)             | Low    | 30min  |
+| 30 | Request logging middleware option                              | Low    | 30min  |
+| 31 | Rate limiting on dashboard HTML route                          | Low    | 30min  |
 
 ### UI/UX improvements (from ROADMAP.md)
 
-| #   | Task                                                   | Impact | Effort |
-| --- | ------------------------------------------------------ | ------ | ------ |
-| 32  | `WithHideStatCards` option (minimal mode)              | Low    | 30min  |
-| 33  | `WithHideService` option (filter specific services)    | Low    | 30min  |
-| 34  | Service grouping by custom tags (not just severity)    | Low    | 60min  |
-| 35  | Health history sparkline visualization                 | Low    | 90min  |
-| 36  | Status change timeline                                 | Low    | 60min  |
-| 37  | Auto-refresh timestamp display                         | Low    | 30min  |
-| 38  | OG metadata for social sharing                         | Low    | 15min  |
-| 39  | PDF/print stylesheet                                   | Low    | 30min  |
-| 40  | Public-facing status page mode (hide internal details) | Low    | 90min  |
+| #  | Task                                                   | Impact | Effort |
+| -- | ------------------------------------------------------ | ------ | ------ |
+| 32 | `WithHideStatCards` option (minimal mode)              | Low    | 30min  |
+| 33 | `WithHideService` option (filter specific services)    | Low    | 30min  |
+| 34 | Service grouping by custom tags (not just severity)    | Low    | 60min  |
+| 35 | Health history sparkline visualization                 | Low    | 90min  |
+| 36 | Status change timeline                                 | Low    | 60min  |
+| 37 | Auto-refresh timestamp display                         | Low    | 30min  |
+| 38 | OG metadata for social sharing                         | Low    | 15min  |
+| 39 | PDF/print stylesheet                                   | Low    | 30min  |
+| 40 | Public-facing status page mode (hide internal details) | Low    | 90min  |
 
 ### Deployment flexibility (from ROADMAP.md)
 
-| #   | Task                                                     | Impact | Effort |
-| --- | -------------------------------------------------------- | ------ | ------ |
-| 41  | Build-tag gating for SSE code                            | Med    | 90min  |
-| 42  | Embeddable dashboard mode (sub-path mounting)            | Med    | 60min  |
-| 43  | Auth middleware integration                              | Med    | 60min  |
-| 44  | WebSocket alternative transport                          | Low    | 90min  |
-| 45  | Multi-probe support (dashboard for multiple services)    | Low    | 90min  |
-| 46  | Federation (pull health from remote go-health instances) | Low    | 90min  |
-| 47  | Export health data as JSON/CSV                           | Low    | 30min  |
-| 48  | Prometheus-compatible metrics endpoint                   | Low    | 90min  |
+| #  | Task                                                     | Impact | Effort |
+| -- | -------------------------------------------------------- | ------ | ------ |
+| 41 | Build-tag gating for SSE code                            | Med    | 90min  |
+| 42 | Embeddable dashboard mode (sub-path mounting)            | Med    | 60min  |
+| 43 | Auth middleware integration                              | Med    | 60min  |
+| 44 | WebSocket alternative transport                          | Low    | 90min  |
+| 45 | Multi-probe support (dashboard for multiple services)    | Low    | 90min  |
+| 46 | Federation (pull health from remote go-health instances) | Low    | 90min  |
+| 47 | Export health data as JSON/CSV                           | Low    | 30min  |
+| 48 | Prometheus-compatible metrics endpoint                   | Low    | 90min  |
 
 ### Meta
 
-| #   | Task                                                                 | Impact | Effort |
-| --- | -------------------------------------------------------------------- | ------ | ------ |
-| 49  | Add `.editorconfig` for consistent formatting across editors         | Low    | 5min   |
-| 50  | Add pre-commit hook to run `nix flake check` before allowing commits | Low    | 15min  |
+| #  | Task                                                                 | Impact | Effort |
+| -- | -------------------------------------------------------------------- | ------ | ------ |
+| 49 | Add `.editorconfig` for consistent formatting across editors         | Low    | 5min   |
+| 50 | Add pre-commit hook to run `nix flake check` before allowing commits | Low    | 15min  |
 
 ---
 

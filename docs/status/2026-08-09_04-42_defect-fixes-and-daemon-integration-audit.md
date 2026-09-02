@@ -54,6 +54,7 @@ comment to say "Negative values are treated as zero."
 ### 5. WithBasePath / WithRoutes ordering tests — ADDED
 
 Two new tests verify option-ordering semantics:
+
 - `TestWithBasePath_AfterWithRoutes`: `WithRoutes(custom)` then
   `WithBasePath("/admin")` → custom routes get prefixed (`dashboard_test.go`)
 - `TestWithRoutes_AfterWithBasePath`: `WithBasePath("/admin")` then
@@ -63,6 +64,7 @@ Two new tests verify option-ordering semantics:
 ### 6. Daemon lint issues — PARTIALLY FIXED
 
 The daemon's code had 2 lint failures I caught and fixed:
+
 - `err113`: `errors.New(...)` in `HealthCheck` → extracted to exported
   sentinel `ErrPusherNotActive` (`dashboard.go:418`)
 - `errcheck`: unchecked `injector.Shutdown()` in `example/main.go` → wrapped
@@ -78,13 +80,13 @@ I updated CHANGELOG.md and FEATURES.md with test count 78 and coverage
 79.7%. **Both are now wrong** — the daemon's `lifecycle_test.go` (11 tests,
 208 lines) was committed into the same commit, bringing the actual totals to:
 
-| Metric | CHANGELOG says | Actual |
-|--------|---------------|--------|
-| Test count | 78 | **89** |
-| Coverage | 79.7% | **80.0%** (varies by run) |
+| Metric     | CHANGELOG says              | Actual                                  |
+| ---------- | --------------------------- | --------------------------------------- |
+| Test count | 78                          | **89**                                  |
+| Coverage   | 79.7%                       | **80.0%** (varies by run)               |
 | Test files | "across 4 files" (FEATURES) | **5 files** (`lifecycle_test.go` added) |
 
-I wrote these numbers *before* the daemon committed lifecycle_test.go. I did
+I wrote these numbers _before_ the daemon committed lifecycle_test.go. I did
 not re-verify after the commit. The docs are stale.
 
 ### 2. Status report annotated but not committed
@@ -120,6 +122,7 @@ in living docs:
   `_ do.Shutdowner = (*Dashboard)(nil)`
 
 **None of these appear in:**
+
 - CHANGELOG.md `[Unreleased]` — no mention
 - FEATURES.md — no `Register`, `HealthCheck`, or lifecycle rows
 - README.md — quick-start still shows `dashboard.New()`, not `Register()`
@@ -143,6 +146,7 @@ sub-path mounting, DI integration), this should be v0.3.0. Not started.
 ### 1. lifecycle_test.go has a meaningless errors.Is test
 
 `lifecycle_test.go:205`:
+
 ```go
 if !errors.Is(err, err) {
     t.Fatal("errors.Is should return true for the same error")
@@ -154,6 +158,7 @@ on the HealthCheck error for consumers who want to distinguish
 dashboard-push-down from other health check failures." But `errors.Is(err, err)`
 tests **identity against itself** — it's always true for any non-nil error.
 It should be:
+
 ```go
 if !errors.Is(err, dashboard.ErrPusherNotActive) {
 ```
@@ -168,6 +173,7 @@ test proving it works.
 
 When I discovered `di.go`, `HealthCheck`, `Register`, and
 `lifecycle_test.go` existed (mid-session when fixing lint issues), I:
+
 - Fixed the 2 lint issues mechanically
 - Did NOT read `di.go` critically
 - Did NOT read `lifecycle_test.go` critically
@@ -191,6 +197,7 @@ with the standard I set in the example.
 ### 4. SubscriberCount test still has time.Sleep(100ms)
 
 `sse_integration_test.go:560`:
+
 ```go
 _ = resp1.Body.Close()
 time.Sleep(100 * time.Millisecond)
@@ -389,6 +396,7 @@ The auto-git daemon committed `di.go`, `lifecycle_test.go`, `HealthCheck`,
 `Register`, and significant `example/main.go` changes. These contain a
 meaningless test (`errors.Is(err, err)`), unchecked Shutdown calls, and are
 undocumented in living docs. I didn't write this code. Should I:
+
 - **(a)** Treat it as mine now — fix the test bug, document the API, clean
   up the Shutdown calls, take full ownership?
 - **(b)** Leave the daemon's code untouched, only document what exists?
@@ -411,6 +419,7 @@ The working tree has: a breaking API change (`RegisterRoutes` signature),
 3 new features (SSE reconnection, sub-path mounting, DI integration), and
 89 tests. This is clearly v0.3.0 territory. But the DI integration is
 undocumented and has a test bug. Should I:
+
 - **(a)** Fix + document everything first, then tag v0.3.0?
 - **(b)** Tag v0.3.0 now and fix docs in a follow-up?
 - **(c)** Batch more features before tagging?

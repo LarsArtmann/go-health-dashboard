@@ -1,7 +1,7 @@
 # Status Report: samber/do v2 Integration Improvement
 
-**Date:** 2026-08-09 04:41  
-**Session Goal:** "How can we better leverage samber/do v2?"  
+**Date:** 2026-08-09 04:41\
+**Session Goal:** "How can we better leverage samber/do v2?"\
 **Verifier:** Self-review (brutal)
 
 ---
@@ -14,13 +14,13 @@ The dashboard library depended on `samber/do/v2` (required by go-health for serv
 
 ### Changes Made (5 files touched, 2 new)
 
-| File | Change | Lines |
-|------|--------|-------|
-| `dashboard.go` | Added `HealthCheck(ctx) error` method, compile-time `do.HealthcheckerWithContext` + `do.Shutdowner` assertions, imported `errors` + `do/v2` | +22 |
-| `di.go` (new) | `Register(injector, probe, opts...)` — creates Dashboard + `do.ProvideValue` | +35 |
-| `example/main.go` | Fixed DO-2, switched to `Register`, added SIGINT/SIGTERM graceful shutdown | ~30 changed |
-| `lifecycle_test.go` (new) | 9 tests: HealthCheck states, Register cascades, idempotent shutdown, interface satisfaction | +140 |
-| `AGENTS.md` | Updated file listing, design decisions, data flow, testing patterns, dependency notes | ~40 changed |
+| File                      | Change                                                                                                                                      | Lines       |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `dashboard.go`            | Added `HealthCheck(ctx) error` method, compile-time `do.HealthcheckerWithContext` + `do.Shutdowner` assertions, imported `errors` + `do/v2` | +22         |
+| `di.go` (new)             | `Register(injector, probe, opts...)` — creates Dashboard + `do.ProvideValue`                                                                | +35         |
+| `example/main.go`         | Fixed DO-2, switched to `Register`, added SIGINT/SIGTERM graceful shutdown                                                                  | ~30 changed |
+| `lifecycle_test.go` (new) | 9 tests: HealthCheck states, Register cascades, idempotent shutdown, interface satisfaction                                                 | +140        |
+| `AGENTS.md`               | Updated file listing, design decisions, data flow, testing patterns, dependency notes                                                       | ~40 changed |
 
 ### Test Results
 
@@ -190,7 +190,7 @@ if !errors.Is(err, err) {
 
 ## g) QUESTIONS I CANNOT ANSWER MYSELF
 
-1. **Should the Dashboard appear in its own health table?** When registered via `do.ProvideValue`, go-health's Probe iterates the injector and may discover the Dashboard as a health-checkable service. This would make the dashboard monitor its own SSE pusher health — which is either a cool self-monitoring feature or a confusing recursive display. I cannot determine the intended UX without your input. (I can test this empirically, but the *design decision* is yours.)
+1. **Should the Dashboard appear in its own health table?** When registered via `do.ProvideValue`, go-health's Probe iterates the injector and may discover the Dashboard as a health-checkable service. This would make the dashboard monitor its own SSE pusher health — which is either a cool self-monitoring feature or a confusing recursive display. I cannot determine the intended UX without your input. (I can test this empirically, but the _design decision_ is yours.)
 
 2. **Should `Shutdown()` expose graceful drain?** The broadcaster has both `Close()` (instant, current) and `Shutdown(ctx) error` (graceful drain). Switching to graceful drain would require either changing `Shutdown()` to `Shutdown(ctx) error` (breaking API change) or adding a new method. I cannot decide this without knowing your API stability constraints for v0.2.x vs v0.3.0.
 

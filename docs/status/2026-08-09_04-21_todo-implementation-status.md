@@ -250,6 +250,7 @@ I cited `dashboard.go:121`, `dashboard.go:132`, `dashboard.go:364`, `pusher.go:1
 ### Q1: Should `RegisterRoutes` be a breaking change now, or should we add a deprecated compatibility shim?
 
 The `RegisterRoutes(mux, routes)` → `RegisterRoutes(mux)` change is a breaking API change. Since this is a v0.x module (no stability guarantee per semver), breaking changes are allowed in minor versions. But if any external consumers depend on it, their code will fail to compile. Should I:
+
 - (a) Ship as-is (clean break, semver-legal at v0.x), or
 - (b) Add a `RegisterRoutesWithRoutes(mux, routes)` deprecated shim that calls `RegisterRoutes(mux)` after setting `Config.Routes`?
 
@@ -267,15 +268,15 @@ Currently `WithRetryInterval(0)` means "let the browser decide" (typically ~3s).
 
 ## Session metrics
 
-| Metric | Before | After |
-|---|---|---|
-| Top-level test functions | 67 | 75 (+8) |
-| Coverage | 80.0% | 81.4% (+1.4pp) |
-| Source files changed | — | 4 (dashboard.go, pusher.go, doc.go, example/main.go) |
-| Test files changed | — | 2 (dashboard_test.go, sse_integration_test.go) |
-| Doc files updated | — | 6 (CHANGELOG, FEATURES, TODO_LIST, ROADMAP, README, AGENTS) |
-| New options | — | 2 (WithRetryInterval, WithBasePath) |
-| New tests | — | 8 |
-| Breaking API changes | — | 1 (RegisterRoutes signature) |
-| Lint issues | 0 | 0 |
-| Race detector | PASS | PASS |
+| Metric                   | Before | After                                                       |
+| ------------------------ | ------ | ----------------------------------------------------------- |
+| Top-level test functions | 67     | 75 (+8)                                                     |
+| Coverage                 | 80.0%  | 81.4% (+1.4pp)                                              |
+| Source files changed     | —      | 4 (dashboard.go, pusher.go, doc.go, example/main.go)        |
+| Test files changed       | —      | 2 (dashboard_test.go, sse_integration_test.go)              |
+| Doc files updated        | —      | 6 (CHANGELOG, FEATURES, TODO_LIST, ROADMAP, README, AGENTS) |
+| New options              | —      | 2 (WithRetryInterval, WithBasePath)                         |
+| New tests                | —      | 8                                                           |
+| Breaking API changes     | —      | 1 (RegisterRoutes signature)                                |
+| Lint issues              | 0      | 0                                                           |
+| Race detector            | PASS   | PASS                                                        |

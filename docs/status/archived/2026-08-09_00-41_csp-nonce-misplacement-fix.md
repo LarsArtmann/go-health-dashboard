@@ -18,13 +18,13 @@
 
 The user reported 5 Content-Security-Policy console errors on the `/health` dashboard page:
 
-| # | Error | Cause |
-|---|-------|-------|
-| 1 | `frame-ancestors` does not support the source expression `'nonce-health-dashboard-static-nonce'` | Nonce appended to end of CSP string, landed in `frame-ancestors` |
-| 2 | `frame-ancestors` contains `'none'` alongside other source expressions | Same — `'none'` must be alone, so the browser **ignored the entire directive** (clickjacking protection silently disabled) |
-| 3 | Executing inline script violates `script-src 'self' 'nonce-<random>'` | ThemeScript (FOUC prevention) blocked — nonce in wrong directive |
-| 4 | Loading script from `cdn.jsdelivr.net/gh/starfederation/datastar@1.0.2/bundles/datastar.js` violates CSP | Datastar SDK external script blocked — nonce in wrong directive |
-| 5 | Executing inline script violates CSP | ThemeToggle click handler blocked — nonce in wrong directive |
+| # | Error                                                                                                    | Cause                                                                                                                      |
+| - | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 1 | `frame-ancestors` does not support the source expression `'nonce-health-dashboard-static-nonce'`         | Nonce appended to end of CSP string, landed in `frame-ancestors`                                                           |
+| 2 | `frame-ancestors` contains `'none'` alongside other source expressions                                   | Same — `'none'` must be alone, so the browser **ignored the entire directive** (clickjacking protection silently disabled) |
+| 3 | Executing inline script violates `script-src 'self' 'nonce-<random>'`                                    | ThemeScript (FOUC prevention) blocked — nonce in wrong directive                                                           |
+| 4 | Loading script from `cdn.jsdelivr.net/gh/starfederation/datastar@1.0.2/bundles/datastar.js` violates CSP | Datastar SDK external script blocked — nonce in wrong directive                                                            |
+| 5 | Executing inline script violates CSP                                                                     | ThemeToggle click handler blocked — nonce in wrong directive                                                               |
 
 ### Root Cause
 
@@ -48,10 +48,10 @@ This puts `'nonce-health-dashboard-static-nonce'` in `script-src` where it belon
 
 **Files changed:**
 
-| File | Change |
-|---|---|
-| `pkg/healthd/middleware.go:82-97` | Replaced broken append with `cspHeader(HealthDashboardNonce)` call |
-| `pkg/healthd/nonce_test.go` | Added `TestDashboardCSPMiddleware_NonceInScriptSrc` — verifies nonce in `script-src`, NOT `frame-ancestors`; non-health routes unaffected |
+| File                              | Change                                                                                                                                    |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `pkg/healthd/middleware.go:82-97` | Replaced broken append with `cspHeader(HealthDashboardNonce)` call                                                                        |
+| `pkg/healthd/nonce_test.go`       | Added `TestDashboardCSPMiddleware_NonceInScriptSrc` — verifies nonce in `script-src`, NOT `frame-ancestors`; non-health routes unaffected |
 
 **Tests:** All `pkg/healthd` tests pass (`nix run .#test-pkg -- healthd`).
 

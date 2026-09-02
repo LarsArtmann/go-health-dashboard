@@ -931,21 +931,22 @@
             generated <code>view_templ.go</code>). The core SSE-first
             architecture is done right: <code>datastar.LiveRegion</code>,
             <code>datastar.SDKScript</code>, and explicit
-            <code>HTMXVersion: ""</code> on <code>layout.Base</code> show a
-            team that understood the library's Datastar philosophy. The
-            feedback and badge type mappings correctly use the non-deprecated
+            <code>HTMXVersion: ""</code> on <code>layout.Base</code> show a team
+            that understood the library's Datastar philosophy. The feedback and
+            badge type mappings correctly use the non-deprecated
             <code>FeedbackType</code> over <code>AlertType</code>.
           </p>
           <p>
             However, the dashboard only scratches the surface of what
-            templ-components offers for a status dashboard. It hand-rolls a
-            page header instead of using <code>display.PageHeader</code>, uses
-            raw Tailwind <code>space-y-6</code> divs instead of
-            <code>layout.Stack</code>, ignores the entire <code>icons</code>
-            package (102 icons), and leaves StatCard's <code>Trend</code>,
-            <code>Icon</code>, and <code>Change</code> fields empty. There are
-            no loading skeletons, no collapsible groups for healthy services,
-            no "last updated" timestamp, and no branded error pages.
+            templ-components offers for a status dashboard. It hand-rolls a page
+            header instead of using <code>display.PageHeader</code>, uses raw
+            Tailwind <code>space-y-6</code> divs instead of
+            <code>layout.Stack</code>, ignores the entire
+            <code>icons</code> package (102 icons), and leaves StatCard's
+            <code>Trend</code>, <code>Icon</code>, and
+            <code>Change</code> fields empty. There are no loading skeletons, no
+            collapsible groups for healthy services, no "last updated"
+            timestamp, and no branded error pages.
           </p>
           <div class="callout callout-amber">
             <strong>The bottom line</strong>
@@ -955,9 +956,9 @@
             <em>design system</em>. Adopting <code>display.PageHeader</code>,
             <code>layout.Stack</code>, StatCard enrichment (Trend/Icon), Badge
             <code>Dot</code> indicators, <code>icons.Icon</code>, loading
-            skeletons, and <code>display.CollapsibleSection</code> would
-            elevate it from "works" to "superb" &mdash; all are drop-in or
-            near-drop-in changes with zero new dependencies.
+            skeletons, and <code>display.CollapsibleSection</code> would elevate
+            it from "works" to "superb" &mdash; all are drop-in or near-drop-in
+            changes with zero new dependencies.
           </div>
         </section>
 
@@ -971,32 +972,37 @@
             components:
           </p>
 
-          <div class="dep-tree"><span class="root">dashboard</span>
-├── <span class="ok">layout.Base</span> + PageProps
-├── <span class="ok">layout.Container</span> + DefaultContainerProps()
-├── <span class="ok">layout.ThemeToggle</span>
-├── <span class="ok">datastar.SDKScript</span> + SDKScriptProps
-├── <span class="ok">datastar.LiveRegion</span> + LiveRegionProps
-├── <span class="ok">display.Grid</span> + GridProps (GridCols3)
-├── <span class="ok">display.StatCard</span> + StatCardProps (Value/Label only)
-├── <span class="ok">display.Card</span> + CardProps (Title/Padding)
-├── <span class="ok">display.Table</span> + TableProps
-├── <span class="ok">display.Badge</span> + BadgeProps
-├── <span class="ok">display.SimpleEmptyState</span>
-├── <span class="ok">feedback.Alert</span> + AlertProps (Title only)
-└── <span class="ok">utils.BaseProps</span> (embedded in all props)</div>
+          <div class="dep-tree">
+            <span class="root">dashboard</span> ├──
+            <span class="ok">layout.Base</span> + PageProps ├──
+            <span class="ok">layout.Container</span> + DefaultContainerProps()
+            ├── <span class="ok">layout.ThemeToggle</span> ├──
+            <span class="ok">datastar.SDKScript</span> + SDKScriptProps ├──
+            <span class="ok">datastar.LiveRegion</span> + LiveRegionProps ├──
+            <span class="ok">display.Grid</span> + GridProps (GridCols3) ├──
+            <span class="ok">display.StatCard</span> + StatCardProps
+            (Value/Label only) ├── <span class="ok">display.Card</span> +
+            CardProps (Title/Padding) ├──
+            <span class="ok">display.Table</span> + TableProps ├──
+            <span class="ok">display.Badge</span> + BadgeProps ├──
+            <span class="ok">display.SimpleEmptyState</span> ├──
+            <span class="ok">feedback.Alert</span> + AlertProps (Title only) └──
+            <span class="ok">utils.BaseProps</span> (embedded in all props)
+          </div>
 
           <p>
-            The architecture is sound: <code>layout.Base</code> renders the
-            HTML shell with CSP nonce and no HTMX. <code>datastar.SDKScript</code>
-            injects the Datastar runtime. <code>datastar.LiveRegion</code>
-            wraps the health content with <code>data-init="@get('/health/sse')"</code>
+            The architecture is sound: <code>layout.Base</code> renders the HTML
+            shell with CSP nonce and no HTMX.
+            <code>datastar.SDKScript</code> injects the Datastar runtime.
+            <code>datastar.LiveRegion</code> wraps the health content with
+            <code>data-init="@get('/health/sse')"</code>
             for real-time SSE updates. The pusher goroutine renders
-            <code>dashboardContent</code> as a Datastar <code>ElementsPatch</code>
-            and broadcasts via <code>sse.Broadcaster</code>. Health status maps
-            to <code>FeedbackType</code> (non-deprecated) and
-            <code>BadgeType</code> constants through explicit switch
-            statements in <code>status.go</code>.
+            <code>dashboardContent</code> as a Datastar
+            <code>ElementsPatch</code> and broadcasts via
+            <code>sse.Broadcaster</code>. Health status maps to
+            <code>FeedbackType</code> (non-deprecated) and
+            <code>BadgeType</code> constants through explicit switch statements
+            in <code>status.go</code>.
           </p>
         </section>
 
@@ -1013,49 +1019,89 @@
               <div class="check">+</div>
               <div class="text">
                 <strong>SSE-first Datastar architecture</strong>
-                <span><code>datastar.LiveRegion</code> + <code>datastar.SDKScript</code> + explicit <code>HTMXVersion: ""</code> on <code>layout.Base</code>. The dashboard correctly chose Datastar over HTMX and uses the library's Datastar components as designed (<code>view.templ:17-24, 53-61, 70-73</code>).</span>
+                <span
+                  ><code>datastar.LiveRegion</code> +
+                  <code>datastar.SDKScript</code> + explicit
+                  <code>HTMXVersion: ""</code> on <code>layout.Base</code>. The
+                  dashboard correctly chose Datastar over HTMX and uses the
+                  library's Datastar components as designed (<code
+                    >view.templ:17-24, 53-61, 70-73</code
+                  >).</span
+                >
               </div>
             </div>
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
                 <strong>Non-deprecated FeedbackType</strong>
-                <span>Uses <code>feedback.FeedbackType</code> with <code>FeedbackSuccess/Warning/Error/Info</code>, not the deprecated <code>AlertType</code> alias (<code>status.go:29-39</code>).</span>
+                <span
+                  >Uses <code>feedback.FeedbackType</code> with
+                  <code>FeedbackSuccess/Warning/Error/Info</code>, not the
+                  deprecated <code>AlertType</code> alias
+                  (<code>status.go:29-39</code>).</span
+                >
               </div>
             </div>
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
                 <strong>Explicit Badge type mapping (not StatusBadge)</strong>
-                <span>Correctly uses <code>display.Badge</code> with explicit <code>Type</code> mapping rather than <code>display.StatusBadge()</code>. StatusBadge's lookup table maps "passed"/"warning"/"failed" but NOT "pass"/"warn"/"fail" (go-health's exact strings). The explicit mapping is the right call (<code>status.go:14-25, 182-187</code>).</span>
+                <span
+                  >Correctly uses <code>display.Badge</code> with explicit
+                  <code>Type</code> mapping rather than
+                  <code>display.StatusBadge()</code>. StatusBadge's lookup table
+                  maps "passed"/"warning"/"failed" but NOT "pass"/"warn"/"fail"
+                  (go-health's exact strings). The explicit mapping is the right
+                  call (<code>status.go:14-25, 182-187</code>).</span
+                >
               </div>
             </div>
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
                 <strong>Table with templ Component cells</strong>
-                <span>Uses <code>display.TableCell{Content: display.Badge(...)}</code> to embed live Badge components inside table cells &mdash; the correct pattern for rich table content (<code>status.go:200-206</code>).</span>
+                <span
+                  >Uses
+                  <code>display.TableCell{Content: display.Badge(...)}</code> to
+                  embed live Badge components inside table cells &mdash; the
+                  correct pattern for rich table content
+                  (<code>status.go:200-206</code>).</span
+                >
               </div>
             </div>
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
                 <strong>CSP nonce propagation</strong>
-                <span>Nonce flows through <code>utils.BaseProps</code> to all script-injecting components (SDKScript, ThemeToggle). CSP-safe by design (<code>view.templ:21, 36, 71</code>).</span>
+                <span
+                  >Nonce flows through <code>utils.BaseProps</code> to all
+                  script-injecting components (SDKScript, ThemeToggle). CSP-safe
+                  by design (<code>view.templ:21, 36, 71</code>).</span
+                >
               </div>
             </div>
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
                 <strong>Version currency</strong>
-                <span><code>go.mod</code> pins <code>v1.8.0</code> &mdash; the latest tag. Zero version gap. No features missed due to staleness.</span>
+                <span
+                  ><code>go.mod</code> pins <code>v1.8.0</code> &mdash; the
+                  latest tag. Zero version gap. No features missed due to
+                  staleness.</span
+                >
               </div>
             </div>
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
                 <strong>layout.Base + Container + ThemeToggle trio</strong>
-                <span>Correctly uses the library's page shell, centered wrapper, and dark-mode toggle as designed. These are the foundational layout primitives and they are used idiomatically (<code>view.templ:17-25, 36</code>).</span>
+                <span
+                  >Correctly uses the library's page shell, centered wrapper,
+                  and dark-mode toggle as designed. These are the foundational
+                  layout primitives and they are used idiomatically (<code
+                    >view.templ:17-25, 36</code
+                  >).</span
+                >
               </div>
             </div>
           </div>
@@ -1071,17 +1117,25 @@
 
           <!-- Finding 1: PageHeader -->
           <div class="issue issue-critical" id="missed-pageheader">
-            <span class="severity severity-critical">Missed Opportunity &middot; High impact</span>
+            <span class="severity severity-critical"
+              >Missed Opportunity &middot; High impact</span
+            >
             <h3>display.PageHeader &mdash; hand-rolled duplicate</h3>
             <div class="where">
-              view.templ:28-36 &middot; <code>display.PageHeader</code> available but unused
+              view.templ:28-36 &middot;
+              <code>display.PageHeader</code> available but unused
             </div>
             <p>
               The dashboard hand-rolls a header with
-              <code>&lt;h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100"&gt;</code>,
-              a subtitle paragraph, and a flex layout to position the
+              <code
+                >&lt;h1 class="text-2xl font-bold tracking-tight text-gray-900
+                dark:text-gray-100"&gt;</code
+              >, a subtitle paragraph, and a flex layout to position the
               ThemeToggle. templ-components ships
-              <code>display.PageHeader(PageHeaderProps{Title, Subtitle, Action})</code>
+              <code
+                >display.PageHeader(PageHeaderProps{Title, Subtitle,
+                Action})</code
+              >
               which renders <em>exactly</em> this pattern: title in the same
               classes, muted subtitle, and an <code>Action</code> slot on the
               right. The ThemeToggle would go in the <code>Action</code> slot.
@@ -1090,7 +1144,8 @@
             </p>
             <div class="callout callout-teal">
               <strong>Recommendation</strong>
-              Replace the 10-line manual header with <code>display.PageHeader</code>.
+              Replace the 10-line manual header with
+              <code>display.PageHeader</code>.
             </div>
             <pre><code><span class="tok-comment">// Before: 10 lines of manual header (view.templ:28-37)</span>
 <span class="tok-punct">&lt;</span><span class="tok-keyword">div</span> <span class="tok-attr">class</span><span class="tok-punct">=</span><span class="tok-string">"mb-6 flex items-center justify-between"</span><span class="tok-punct">&gt;</span>
@@ -1111,13 +1166,18 @@
 
           <!-- Finding 2: Stack -->
           <div class="issue issue-critical" id="missed-stack">
-            <span class="severity severity-critical">Missed Opportunity &middot; High impact</span>
+            <span class="severity severity-critical"
+              >Missed Opportunity &middot; High impact</span
+            >
             <h3>layout.Stack &mdash; manual space-y divs</h3>
             <div class="where">
-              view.templ:52, 101 &middot; <code>&lt;div class="mt-6 space-y-6"&gt;</code> instead of <code>layout.Stack</code>
+              view.templ:52, 101 &middot;
+              <code>&lt;div class="mt-6 space-y-6"&gt;</code> instead of
+              <code>layout.Stack</code>
             </div>
             <p>
-              The dashboard uses raw <code>&lt;div class="mt-6 space-y-6"&gt;</code>
+              The dashboard uses raw
+              <code>&lt;div class="mt-6 space-y-6"&gt;</code>
               for vertical layout. templ-components ships
               <code>layout.Stack(StackProps{Gap})</code> explicitly as "the
               single source of truth for vertical rhythm &mdash; replacing the
@@ -1129,7 +1189,9 @@
             <div class="callout callout-teal">
               <strong>Recommendation</strong>
               Replace <code>&lt;div class="mt-6 space-y-6"&gt;</code> with
-              <code>layout.Stack(layout.StackProps{Gap: layout.StackGapLG})</code>.
+              <code
+                >layout.Stack(layout.StackProps{Gap: layout.StackGapLG})</code
+              >.
             </div>
             <pre><code><span class="tok-comment">// Before: raw Tailwind classes</span>
 &lt;div class=<span class="tok-string">"mt-6 space-y-6"</span>&gt;
@@ -1146,22 +1208,26 @@
 
           <!-- Finding 3: StatCard enrichment -->
           <div class="issue issue-important" id="missed-statcard-trend">
-            <span class="severity severity-important">Missed Opportunity &middot; Medium-High impact</span>
+            <span class="severity severity-important"
+              >Missed Opportunity &middot; Medium-High impact</span
+            >
             <h3>StatCard Trend, Icon, and Change fields unused</h3>
             <div class="where">
-              view.templ:39-50 &middot; only <code>Value</code> and <code>Label</code> set on all 3 StatCards
+              view.templ:39-50 &middot; only <code>Value</code> and
+              <code>Label</code> set on all 3 StatCards
             </div>
             <p>
               <code>StatCardProps</code> has 4 unused fields:
               <code>Trend</code> (TrendUp/Down/Warn/None with arrow indicator),
-              <code>Change</code> (delta text like "+12ms"), <code>Icon</code>
-              (leading icon tile, e.g. <code>icons.Clock</code>), and
-              <code>Href</code> (clickable drill-down). For a health dashboard,
-              these fields are high-value: the Latency card could show
-              <code>TrendUp</code> when latency is rising, the Uptime card
-              could use <code>icons.Clock</code>, and the Version card could
-              use <code>icons.Tag</code>. The trend indicator gives operators
-              at-a-glance direction without reading numbers.
+              <code>Change</code> (delta text like "+12ms"),
+              <code>Icon</code> (leading icon tile, e.g.
+              <code>icons.Clock</code>), and <code>Href</code> (clickable
+              drill-down). For a health dashboard, these fields are high-value:
+              the Latency card could show <code>TrendUp</code> when latency is
+              rising, the Uptime card could use <code>icons.Clock</code>, and
+              the Version card could use <code>icons.Tag</code>. The trend
+              indicator gives operators at-a-glance direction without reading
+              numbers.
             </p>
             <div class="callout callout-teal">
               <strong>Recommendation</strong>
@@ -1187,21 +1253,23 @@
 
           <!-- Finding 4: CollapsibleSection -->
           <div class="issue issue-important" id="missed-collapsible">
-            <span class="severity severity-important">Missed Opportunity &middot; Medium impact</span>
+            <span class="severity severity-important"
+              >Missed Opportunity &middot; Medium impact</span
+            >
             <h3>display.CollapsibleSection for healthy service groups</h3>
             <div class="where">
               view.templ:107-118 &middot; all groups rendered as flat Cards
             </div>
             <p>
               Systems with 20+ healthy services clutter the dashboard with a
-              long "Healthy Services" table. <code>display.CollapsibleSection</code>
-              (native <code>&lt;details&gt;/&lt;summary&gt;</code>) could
-              collapse the healthy group by default, keeping only failing and
-              warning groups expanded. This is a standard status-page UX
-              pattern &mdash; operators care about what's broken, not what's
-              healthy. The component supports <code>Open</code> (default
-              expanded/collapsed) and <code>StorageKey</code> (persists
-              preference in localStorage).
+              long "Healthy Services" table.
+              <code>display.CollapsibleSection</code> (native
+              <code>&lt;details&gt;/&lt;summary&gt;</code>) could collapse the
+              healthy group by default, keeping only failing and warning groups
+              expanded. This is a standard status-page UX pattern &mdash;
+              operators care about what's broken, not what's healthy. The
+              component supports <code>Open</code> (default expanded/collapsed)
+              and <code>StorageKey</code> (persists preference in localStorage).
             </p>
             <div class="callout callout-teal">
               <strong>Recommendation</strong>
@@ -1213,39 +1281,51 @@
 
           <!-- Finding 5: icons package -->
           <div class="issue issue-important" id="missed-icons">
-            <span class="severity severity-important">Missed Opportunity &middot; Medium impact</span>
+            <span class="severity severity-important"
+              >Missed Opportunity &middot; Medium impact</span
+            >
             <h3>icons package &mdash; 102 icons, zero used</h3>
             <div class="where">
-              Not imported anywhere &middot; <code>icons.Icon</code>, <code>icons.Name</code> available
+              Not imported anywhere &middot; <code>icons.Icon</code>,
+              <code>icons.Name</code> available
             </div>
             <p>
               The <code>icons</code> package (102 SVG icons, currentColor
-              themed) is never imported. Icons would enhance: StatCards (via
-              the <code>Icon</code> field), EmptyState (via the <code>Icon</code>
+              themed) is never imported. Icons would enhance: StatCards (via the
+              <code>Icon</code> field), EmptyState (via the <code>Icon</code>
               field), and could replace text labels in the status table.
               Relevant icons for a health dashboard:
               <code>icons.CheckCircle</code> (pass),
               <code>icons.ExclamationTriangle</code> (warn),
-              <code>icons.XCircle</code> (fail), <code>icons.Clock</code>
-              (uptime/latency), <code>icons.Tag</code> (version),
-              <code>icons.Server</code> (services), <code>icons.Heart</code>
-              (health). The <code>feedback.Alert</code> component already uses
-              icons internally &mdash; this is about adding icons to the
-              dashboard's own components.
+              <code>icons.XCircle</code> (fail),
+              <code>icons.Clock</code> (uptime/latency),
+              <code>icons.Tag</code> (version),
+              <code>icons.Server</code> (services),
+              <code>icons.Heart</code> (health). The
+              <code>feedback.Alert</code> component already uses icons
+              internally &mdash; this is about adding icons to the dashboard's
+              own components.
             </p>
             <div class="callout callout-teal">
               <strong>Recommendation</strong>
-              Import <code>github.com/larsartmann/templ-components/icons</code>
-              and populate <code>Icon</code> fields on StatCards and EmptyState.
+              Import
+              <code>github.com/larsartmann/templ-components/icons</code> and
+              populate <code>Icon</code> fields on StatCards and EmptyState.
             </div>
           </div>
 
           <!-- Finding 6: Loading state -->
           <div class="issue issue-important" id="missed-loading">
-            <span class="severity severity-important">Missed Opportunity &middot; Medium impact</span>
-            <h3>No loading state &mdash; SkeletonCardGrid, Spinner, datastar.Indicator</h3>
+            <span class="severity severity-important"
+              >Missed Opportunity &middot; Medium impact</span
+            >
+            <h3>
+              No loading state &mdash; SkeletonCardGrid, Spinner,
+              datastar.Indicator
+            </h3>
             <div class="where">
-              view.templ &middot; health region empty until first SSE patch arrives
+              view.templ &middot; health region empty until first SSE patch
+              arrives
             </div>
             <p>
               On initial page load, the health region renders real data
@@ -1253,37 +1333,44 @@
               hasn't run yet or the SSE connection is reconnecting, the user
               sees a bare "No registered services" empty state or stale data
               with no loading indicator. templ-components offers three
-              loading-state components: <code>feedback.SkeletonCardGrid</code>
-              (pulsing placeholder cards), <code>feedback.Spinner</code>
-              (animated SVG), and <code>datastar.Indicator</code>
+              loading-state components:
+              <code>feedback.SkeletonCardGrid</code> (pulsing placeholder
+              cards), <code>feedback.Spinner</code> (animated SVG), and
+              <code>datastar.Indicator</code>
               (signal-based show/hide during Datastar requests). The initial
-              <code>dashboardContent</code> could show a skeleton grid that
-              gets replaced by real data on the first SSE patch.
+              <code>dashboardContent</code> could show a skeleton grid that gets
+              replaced by real data on the first SSE patch.
             </p>
             <div class="callout callout-teal">
               <strong>Recommendation</strong>
               Add a <code>datastar.Indicator</code> inside the LiveRegion that
               shows a Spinner during SSE reconnection, and consider a
-              <code>feedback.SkeletonCardGrid</code> for the initial render
-              when the probe has no cached data.
+              <code>feedback.SkeletonCardGrid</code> for the initial render when
+              the probe has no cached data.
             </div>
           </div>
 
           <!-- Finding 7: RelativeTime -->
           <div class="issue issue-important" id="missed-relativetime">
-            <span class="severity severity-important">Missed Opportunity &middot; Medium impact</span>
+            <span class="severity severity-important"
+              >Missed Opportunity &middot; Medium impact</span
+            >
             <h3>display.RelativeTime &mdash; no "last updated" timestamp</h3>
             <div class="where">
-              Not used &middot; <code>display.RelativeTime(RelativeTimeProps{Time, AutoRefresh})</code> available
+              Not used &middot;
+              <code
+                >display.RelativeTime(RelativeTimeProps{Time,
+                AutoRefresh})</code
+              >
+              available
             </div>
             <p>
               The dashboard updates in real-time but never tells the operator
-              <em>when</em> the last check ran. On a monitoring wall display,
-              a stale "Last updated: 5 minutes ago" is the #1 signal that SSE
-              has silently disconnected. <code>display.RelativeTime</code>
-              renders a <code>&lt;time&gt;</code> element with a
-              server-rendered relative string ("2 seconds ago") that
-              auto-refreshes every 30 seconds via
+              <em>when</em> the last check ran. On a monitoring wall display, a
+              stale "Last updated: 5 minutes ago" is the #1 signal that SSE has
+              silently disconnected. <code>display.RelativeTime</code> renders a
+              <code>&lt;time&gt;</code> element with a server-rendered relative
+              string ("2 seconds ago") that auto-refreshes every 30 seconds via
               <code>Intl.RelativeTimeFormat</code>. This requires tracking a
               timestamp in the viewModel (the health <code>Response</code>
               doesn't include one, but the dashboard can stamp
@@ -1301,14 +1388,21 @@
 
           <!-- Finding 8: errorpage -->
           <div class="issue issue-important" id="missed-errorpage">
-            <span class="severity severity-important">Missed Opportunity &middot; Low-Medium impact</span>
-            <h3>errorpage package &mdash; plain-text error on render failure</h3>
+            <span class="severity severity-important"
+              >Missed Opportunity &middot; Low-Medium impact</span
+            >
+            <h3>
+              errorpage package &mdash; plain-text error on render failure
+            </h3>
             <div class="where">
-              dashboard.go:179 &middot; <code>http.Error(w, "dashboard: failed to render page", 500)</code>
+              dashboard.go:179 &middot;
+              <code
+                >http.Error(w, "dashboard: failed to render page", 500)</code
+              >
             </div>
             <p>
-              When <code>View(data).Render()</code> fails, the dashboard
-              returns a plain-text HTTP error. templ-components ships a full
+              When <code>View(data).Render()</code> fails, the dashboard returns
+              a plain-text HTTP error. templ-components ships a full
               <code>errorpage</code> package with <code>ErrorPage</code>
               (branded full-page error with What/Why/Fix/WayOut),
               <code>NotFound404</code>, <code>ErrorHandler</code> (HTTP
@@ -1340,17 +1434,21 @@
 
           <!-- Partial 1: Badge Dot -->
           <div class="issue issue-important" id="partial-badge-dot">
-            <span class="severity severity-important">Partially Used &middot; Medium impact</span>
+            <span class="severity severity-important"
+              >Partially Used &middot; Medium impact</span
+            >
             <h3>Badge Dot indicator not set</h3>
             <div class="where">
-              status.go:182-187 &middot; <code>BadgeProps{Text, Type}</code> &mdash; <code>Dot</code> field omitted
+              status.go:182-187 &middot;
+              <code>BadgeProps{Text, Type}</code> &mdash; <code>Dot</code> field
+              omitted
             </div>
             <p>
-              <code>BadgeProps.Dot</code> renders a small colored dot before
-              the badge text (e.g. <span style="color: green;">&bull;</span>
-              pass, <span style="color: red;">&bull;</span> fail). This is the
-              standard visual pattern for status indicators &mdash; the colored
-              dot is instantly scannable even before reading the text.
+              <code>BadgeProps.Dot</code> renders a small colored dot before the
+              badge text (e.g. <span style="color: green">&bull;</span> pass,
+              <span style="color: red">&bull;</span> fail). This is the standard
+              visual pattern for status indicators &mdash; the colored dot is
+              instantly scannable even before reading the text.
               <code>StatusBadge</code> (which the library uses internally)
               always sets <code>Dot: true</code>. The dashboard's explicit
               <code>Badge</code> usage omits it. Adding <code>Dot: true</code>
@@ -1381,46 +1479,52 @@
 
           <!-- Partial 2: Alert Message -->
           <div class="issue issue-important" id="partial-alert-message">
-            <span class="severity severity-important">Partially Used &middot; Low-Medium impact</span>
+            <span class="severity severity-important"
+              >Partially Used &middot; Low-Medium impact</span
+            >
             <h3>feedback.Alert Message field unused</h3>
             <div class="where">
-              view.templ:97-100 &middot; only <code>Title</code> set, <code>Message</code> empty
+              view.templ:97-100 &middot; only <code>Title</code> set,
+              <code>Message</code> empty
             </div>
             <p>
               <code>AlertProps</code> has a <code>Message</code> field for
-              secondary detail text rendered below the title. The dashboard
-              only sets <code>Title</code> (e.g. "Unhealthy &mdash; Critical
-              Failures"). The health Response has rich data that could
-              populate <code>Message</code>: a count of failing services ("3
-              of 12 services failing"), the names of failing services, or the
-              shutdown drain message. This makes the status banner more
-              actionable without requiring operators to scan the table.
+              secondary detail text rendered below the title. The dashboard only
+              sets <code>Title</code> (e.g. "Unhealthy &mdash; Critical
+              Failures"). The health Response has rich data that could populate
+              <code>Message</code>: a count of failing services ("3 of 12
+              services failing"), the names of failing services, or the shutdown
+              drain message. This makes the status banner more actionable
+              without requiring operators to scan the table.
             </p>
             <div class="callout callout-teal">
               <strong>Recommendation</strong>
-              Build a summary message in <code>buildViewModel</code> (e.g.
-              "3 of 12 services failing") and pass it as
-              <code>Message</code> on the Alert.
+              Build a summary message in <code>buildViewModel</code> (e.g. "3 of
+              12 services failing") and pass it as <code>Message</code> on the
+              Alert.
             </div>
           </div>
 
           <!-- Partial 3: Alert Dismissible -->
           <div class="issue issue-important" id="partial-alert-dismissible">
-            <span class="severity severity-important">Partially Used &middot; Low impact</span>
+            <span class="severity severity-important"
+              >Partially Used &middot; Low impact</span
+            >
             <h3>feedback.Alert Dismissible not offered</h3>
             <div class="where">
-              view.templ:97-100 &middot; <code>Dismissible</code> defaults to false
+              view.templ:97-100 &middot; <code>Dismissible</code> defaults to
+              false
             </div>
             <p>
               <code>AlertProps.Dismissible</code> adds a close button that
               dismisses the banner via <code>utils.DismissScript()</code>
-              (CSP-safe, nonce-gated). On a monitoring dashboard, operators
-              may want to dismiss the overall status banner to focus on
-              individual check tables &mdash; especially when the status is
-              "Degraded" and they've already acknowledged it. Currently not
-              offered. Note: the banner is inside the LiveRegion, so SSE
-              patches would re-render it; dismissibility works best when the
-              Alert is outside the patched region.
+              (CSP-safe, nonce-gated). On a monitoring dashboard, operators may
+              want to dismiss the overall status banner to focus on individual
+              check tables &mdash; especially when the status is "Degraded" and
+              they've already acknowledged it. Currently not offered. Note: the
+              banner is inside the LiveRegion, so SSE patches would re-render
+              it; dismissibility works best when the Alert is outside the
+              patched region.
             </p>
             <div class="callout callout-teal">
               <strong>Recommendation</strong>
@@ -1432,21 +1536,24 @@
 
           <!-- Partial 4: EmptyState -->
           <div class="issue issue-important" id="partial-emptystate">
-            <span class="severity severity-important">Partially Used &middot; Low impact</span>
+            <span class="severity severity-important"
+              >Partially Used &middot; Low impact</span
+            >
             <h3>SimpleEmptyState instead of full EmptyState</h3>
             <div class="where">
-              view.templ:104 &middot; <code>display.SimpleEmptyState("No registered services")</code>
+              view.templ:104 &middot;
+              <code>display.SimpleEmptyState("No registered services")</code>
             </div>
             <p>
               The dashboard uses <code>SimpleEmptyState</code> (text-only) for
-              the "no services" case. The full <code>display.EmptyState</code>
-              supports <code>Icon</code> (e.g.
-              <code>icons.ServerStack</code>), <code>Description</code>
-              (longer help text), and <code>ActionText</code>/<code>ActionHref</code>
+              the "no services" case. The full
+              <code>display.EmptyState</code> supports <code>Icon</code> (e.g.
+              <code>icons.ServerStack</code>), <code>Description</code> (longer
+              help text), and <code>ActionText</code>/<code>ActionHref</code>
               (a "Add a service" link). For a dashboard, an icon + description
               ("No health checks have been registered. Add services to your
-              Probe to see them here.") would be more polished and helpful
-              than bare text.
+              Probe to see them here.") would be more polished and helpful than
+              bare text.
             </p>
             <div class="callout callout-teal">
               <strong>Recommendation</strong>
@@ -1457,18 +1564,21 @@
 
           <!-- Partial 5: Card Footer -->
           <div class="issue issue-important" id="partial-card-footer">
-            <span class="severity severity-important">Partially Used &middot; Low impact</span>
+            <span class="severity severity-important"
+              >Partially Used &middot; Low impact</span
+            >
             <h3>Card Footer slot unused for group counts</h3>
             <div class="where">
-              view.templ:108-117 &middot; only Title and Padding set on check group Cards
+              view.templ:108-117 &middot; only Title and Padding set on check
+              group Cards
             </div>
             <p>
               <code>CardProps</code> has a <code>Footer</code> slot (renders
               below the card body) and a <code>Subtitle</code> field. The check
-              group cards only set <code>Title</code> (e.g. "Critical
-              Failures") and <code>Padding</code>. The <code>Subtitle</code>
-              could show the severity, and the <code>Footer</code> could show
-              "N of M services in this group" or a link to filter the table.
+              group cards only set <code>Title</code> (e.g. "Critical Failures")
+              and <code>Padding</code>. The <code>Subtitle</code> could show the
+              severity, and the <code>Footer</code> could show "N of M services
+              in this group" or a link to filter the table.
             </p>
             <div class="callout callout-teal">
               <strong>Recommendation</strong>
@@ -1482,9 +1592,9 @@
         <section id="notapplicable">
           <h2><span class="num">04</span>Not Applicable</h2>
           <p>
-            Features that exist in templ-components but genuinely don't apply
-            to a read-only health dashboard. Documented so the reader knows
-            they were considered, not missed.
+            Features that exist in templ-components but genuinely don't apply to
+            a read-only health dashboard. Documented so the reader knows they
+            were considered, not missed.
           </p>
 
           <table>
@@ -1497,55 +1607,105 @@
             <tbody>
               <tr>
                 <td><code>forms</code> (21 components)</td>
-                <td>Read-only dashboard. No user input, no forms, no validation.</td>
+                <td>
+                  Read-only dashboard. No user input, no forms, no validation.
+                </td>
               </tr>
               <tr>
                 <td><code>navigation</code> (12 components)</td>
-                <td>Single page. No nav bar, breadcrumbs, pagination, or sidebar.</td>
+                <td>
+                  Single page. No nav bar, breadcrumbs, pagination, or sidebar.
+                </td>
               </tr>
               <tr>
                 <td><code>htmx</code> (8 components)</td>
-                <td>HTMX explicitly disabled (<code>HTMXVersion: ""</code>). Datastar handles all real-time.</td>
+                <td>
+                  HTMX explicitly disabled (<code>HTMXVersion: ""</code>).
+                  Datastar handles all real-time.
+                </td>
               </tr>
               <tr>
-                <td><code>display.Modal/Drawer/Dropdown/Carousel/ContextMenu/HoverCard/Popover/Tooltip/Tabs</code></td>
-                <td>Interactive overlay components. A status dashboard has no user interaction beyond theme toggle.</td>
+                <td>
+                  <code
+                    >display.Modal/Drawer/Dropdown/Carousel/ContextMenu/HoverCard/Popover/Tooltip/Tabs</code
+                  >
+                </td>
+                <td>
+                  Interactive overlay components. A status dashboard has no user
+                  interaction beyond theme toggle.
+                </td>
               </tr>
               <tr>
                 <td><code>feedback.Toast/ToastContainer</code></td>
-                <td>No transient notifications needed. Status changes are shown via the Alert banner and table updates.</td>
+                <td>
+                  No transient notifications needed. Status changes are shown
+                  via the Alert banner and table updates.
+                </td>
               </tr>
               <tr>
-                <td><code>display.Avatar/Image/ExternalLink/CopyButton/Breadcrumbs</code></td>
-                <td>No user profiles, media, off-site links, or clipboard actions.</td>
+                <td>
+                  <code
+                    >display.Avatar/Image/ExternalLink/CopyButton/Breadcrumbs</code
+                  >
+                </td>
+                <td>
+                  No user profiles, media, off-site links, or clipboard actions.
+                </td>
               </tr>
               <tr>
                 <td><code>layout.AppShell</code></td>
-                <td>Admin dashboard shell with sidebar. The health dashboard is a standalone page.</td>
+                <td>
+                  Admin dashboard shell with sidebar. The health dashboard is a
+                  standalone page.
+                </td>
               </tr>
               <tr>
-                <td><code>recipes</code> (Dashboard, Settings, Login, AuthLayout)</td>
-                <td>Pre-composed full screens for typical CRUD apps. The health dashboard has its own simple layout.</td>
+                <td>
+                  <code>recipes</code> (Dashboard, Settings, Login, AuthLayout)
+                </td>
+                <td>
+                  Pre-composed full screens for typical CRUD apps. The health
+                  dashboard has its own simple layout.
+                </td>
               </tr>
               <tr>
                 <td><code>charts/echarts</code></td>
-                <td>Heavy charting adapter. Future roadmap item (Sparkline for latency trends) but not current scope.</td>
+                <td>
+                  Heavy charting adapter. Future roadmap item (Sparkline for
+                  latency trends) but not current scope.
+                </td>
               </tr>
               <tr>
                 <td><code>display.DataTable</code></td>
-                <td>Table with sort + paging. The health table is small enough that sorting/paging isn't needed yet.</td>
+                <td>
+                  Table with sort + paging. The health table is small enough
+                  that sorting/paging isn't needed yet.
+                </td>
               </tr>
               <tr>
-                <td><code>display.AreaChart/BarChart/PieChart/LineChart/Heatmap</code></td>
-                <td>Data visualization charts. No time-series or distribution data available from go-health currently.</td>
+                <td>
+                  <code
+                    >display.AreaChart/BarChart/PieChart/LineChart/Heatmap</code
+                  >
+                </td>
+                <td>
+                  Data visualization charts. No time-series or distribution data
+                  available from go-health currently.
+                </td>
               </tr>
               <tr>
                 <td><code>display.Sparkline</code></td>
-                <td>Inline trend chart. Listed in ROADMAP.md for latency trend visualization &mdash; a future enhancement, not a current gap.</td>
+                <td>
+                  Inline trend chart. Listed in ROADMAP.md for latency trend
+                  visualization &mdash; a future enhancement, not a current gap.
+                </td>
               </tr>
               <tr>
                 <td><code>display.PageHeader Breadcrumb slot</code></td>
-                <td>PageHeader is recommended above, but its Breadcrumb slot is N/A (single page, no hierarchy).</td>
+                <td>
+                  PageHeader is recommended above, but its Breadcrumb slot is
+                  N/A (single page, no hierarchy).
+                </td>
               </tr>
             </tbody>
           </table>
@@ -1556,9 +1716,9 @@
           <h2><span class="num">05</span>Version Currency</h2>
           <div class="callout callout-teal">
             <strong>On the latest version</strong>
-            <code>go.mod</code> pins <code>templ-components v1.8.0</code>,
-            which is the latest tag (released 2026-08-08). Zero version gap.
-            No features are missed due to staleness. The <code>[Unreleased]</code>
+            <code>go.mod</code> pins <code>templ-components v1.8.0</code>, which
+            is the latest tag (released 2026-08-08). Zero version gap. No
+            features are missed due to staleness. The <code>[Unreleased]</code>
             section in the CHANGELOG is empty &mdash; nothing to upgrade to.
           </div>
           <p>
@@ -1625,7 +1785,9 @@
               </tr>
               <tr>
                 <td>2</td>
-                <td><strong>display.PageHeader</strong> replaces manual header</td>
+                <td>
+                  <strong>display.PageHeader</strong> replaces manual header
+                </td>
                 <td class="yes">5</td>
                 <td class="yes">5</td>
                 <td><strong>25</strong></td>
@@ -1639,7 +1801,9 @@
               </tr>
               <tr>
                 <td>4</td>
-                <td><strong>Alert Message</strong> with service count summary</td>
+                <td>
+                  <strong>Alert Message</strong> with service count summary
+                </td>
                 <td class="yes">3</td>
                 <td class="yes">5</td>
                 <td><strong>15</strong></td>
@@ -1653,7 +1817,9 @@
               </tr>
               <tr>
                 <td>6</td>
-                <td><strong>StatCard Icon</strong> fields (Clock, Tag, Server)</td>
+                <td>
+                  <strong>StatCard Icon</strong> fields (Clock, Tag, Server)
+                </td>
                 <td class="yes">4</td>
                 <td class="yes">4</td>
                 <td><strong>16</strong></td>
@@ -1667,21 +1833,27 @@
               </tr>
               <tr>
                 <td>8</td>
-                <td><strong>display.CollapsibleSection</strong> for healthy groups</td>
+                <td>
+                  <strong>display.CollapsibleSection</strong> for healthy groups
+                </td>
                 <td class="yes">4</td>
                 <td class="yes">4</td>
                 <td><strong>16</strong></td>
               </tr>
               <tr>
                 <td>9</td>
-                <td><strong>datastar.Indicator</strong> for SSE loading state</td>
+                <td>
+                  <strong>datastar.Indicator</strong> for SSE loading state
+                </td>
                 <td class="yes">3</td>
                 <td class="yes">3</td>
                 <td><strong>9</strong></td>
               </tr>
               <tr>
                 <td>10</td>
-                <td><strong>display.RelativeTime</strong> for "last updated"</td>
+                <td>
+                  <strong>display.RelativeTime</strong> for "last updated"
+                </td>
                 <td class="yes">3</td>
                 <td class="yes">3</td>
                 <td><strong>9</strong></td>
@@ -1702,7 +1874,9 @@
               </tr>
               <tr>
                 <td>13</td>
-                <td><strong>Alert Dismissible</strong> (if moved outside patch)</td>
+                <td>
+                  <strong>Alert Dismissible</strong> (if moved outside patch)
+                </td>
                 <td class="yes">2</td>
                 <td class="yes">4</td>
                 <td><strong>8</strong></td>

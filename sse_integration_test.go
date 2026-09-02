@@ -121,7 +121,8 @@ func setupSSEServer(
 	t *testing.T,
 	pushInterval time.Duration,
 	svc *toggleService,
-) (*httptest.Server, *toggleService, func()) {
+	dashOpts ...dashboard.Option,
+) (*httptest.Server, *dashboard.Dashboard, func()) {
 	t.Helper()
 
 	injector := do.New()
@@ -133,7 +134,8 @@ func setupSSEServer(
 		health.WithRefreshInterval(pushInterval),
 	)
 
-	dash := dashboard.New(probe, dashboard.WithPushInterval(pushInterval))
+	dash := dashboard.New(probe,
+		append([]dashboard.Option{dashboard.WithPushInterval(pushInterval)}, dashOpts...)...)
 
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux)
@@ -156,7 +158,7 @@ func setupSSEServer(
 		probe.Shutdown()
 	}
 
-	return server, svc, cleanup
+	return server, dash, cleanup
 }
 
 func connectSSE(t *testing.T, server *httptest.Server) (*http.Response, *sseStream) {
@@ -186,7 +188,7 @@ func TestSSE_PushOnChange_DetectsStatusChange(t *testing.T) {
 	svc := &toggleService{}
 	svc.healthy.Store(true)
 
-	server, svc, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
+	server, _, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
 	defer cleanup()
 
 	resp, stream := connectSSE(t, server)
@@ -209,35 +211,13 @@ func TestSSE_PushAlways_BroadcastsEveryTick(t *testing.T) {
 	svc := &toggleService{}
 	svc.healthy.Store(true)
 
-	injector := do.New()
-	provideToggleService(injector, "db", svc)
-
-	probe := health.New(injector,
-		health.WithCriticalServices("db"),
-		health.WithRefreshInterval(50*time.Millisecond),
-	)
-
-	dash := dashboard.New(probe,
-		dashboard.WithPushInterval(50*time.Millisecond),
+	server, _, cleanup := setupSSEServer(
+		t,
+		50*time.Millisecond,
+		svc,
 		dashboard.WithPushMode(dashboard.PushAlways),
 	)
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
-	if err := probe.Start(ctx); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-	if err := dash.Start(ctx); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-	defer func() { dash.Shutdown(); probe.Shutdown() }()
-
-	server := httptest.NewServer(mux)
-	defer server.Close()
+	defer cleanup()
 
 	resp, stream := connectSSE(t, server)
 	defer func() { _ = resp.Body.Close() }()
@@ -254,7 +234,7 @@ func TestSSE_PushOnChange_DetectsRecovery(t *testing.T) {
 	svc := &toggleService{}
 	svc.healthy.Store(false)
 
-	server, svc, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
+	server, _, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
 	defer cleanup()
 
 	resp, stream := connectSSE(t, server)
@@ -427,7 +407,7 @@ func TestSSE_MultipleClientsReceiveBroadcasts(t *testing.T) {
 	svc := &toggleService{}
 	svc.healthy.Store(true)
 
-	server, svc, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
+	server, _, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
 	defer cleanup()
 
 	resp1, stream1 := connectSSE(t, server)
@@ -451,37 +431,13 @@ func TestSSE_ConnectionLimitRejectsExcessClients(t *testing.T) {
 	svc := &toggleService{}
 	svc.healthy.Store(true)
 
-	injector := do.New()
-	provideToggleService(injector, "db", svc)
-
-	probe := health.New(injector,
-		health.WithCriticalServices("db"),
-		health.WithRefreshInterval(50*time.Millisecond),
-	)
-
-	dash := dashboard.New(probe,
-		dashboard.WithPushInterval(50*time.Millisecond),
+	server, _, cleanup := setupSSEServer(
+		t,
+		50*time.Millisecond,
+		svc,
 		dashboard.WithMaxSSEConnections(1),
 	)
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
-	if err := probe.Start(ctx); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-
-	if err := dash.Start(ctx); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-
-	defer func() { dash.Shutdown(); probe.Shutdown() }()
-
-	server := httptest.NewServer(mux)
-	defer server.Close()
+	defer cleanup()
 
 	// First client connects successfully.
 	resp1, stream1 := connectSSE(t, server)
@@ -509,32 +465,8 @@ func TestSSE_SubscriberCount_TracksConnections(t *testing.T) {
 	svc := &toggleService{}
 	svc.healthy.Store(true)
 
-	injector := do.New()
-	provideToggleService(injector, "db", svc)
-
-	probe := health.New(injector,
-		health.WithCriticalServices("db"),
-		health.WithRefreshInterval(50*time.Millisecond),
-	)
-
-	dash := dashboard.New(probe, dashboard.WithPushInterval(50*time.Millisecond))
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
-	if err := probe.Start(ctx); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-	if err := dash.Start(ctx); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-	defer func() { dash.Shutdown(); probe.Shutdown() }()
-
-	server := httptest.NewServer(mux)
-	defer server.Close()
+	server, dash, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
+	defer cleanup()
 
 	if count := dash.SubscriberCount(); count != 0 {
 		t.Fatalf("initial SubscriberCount: want 0, got %d", count)
@@ -572,35 +504,13 @@ func TestSSE_HeartbeatInterval_SendsKeepalive(t *testing.T) {
 	svc := &toggleService{}
 	svc.healthy.Store(true)
 
-	injector := do.New()
-	provideToggleService(injector, "db", svc)
-
-	probe := health.New(injector,
-		health.WithCriticalServices("db"),
-		health.WithRefreshInterval(50*time.Millisecond),
-	)
-
-	dash := dashboard.New(probe,
-		dashboard.WithPushInterval(50*time.Millisecond),
+	server, _, cleanup := setupSSEServer(
+		t,
+		50*time.Millisecond,
+		svc,
 		dashboard.WithHeartbeatInterval(100*time.Millisecond),
 	)
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
-	if err := probe.Start(ctx); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-	if err := dash.Start(ctx); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-	defer func() { dash.Shutdown(); probe.Shutdown() }()
-
-	server := httptest.NewServer(mux)
-	defer server.Close()
+	defer cleanup()
 
 	resp, stream := connectSSE(t, server)
 	defer func() { _ = resp.Body.Close() }()
@@ -666,35 +576,9 @@ func TestWithRetryInterval_DefaultOmitsRetryField(t *testing.T) {
 	svc := &toggleService{}
 	svc.healthy.Store(true)
 
-	injector := do.New()
-	provideToggleService(injector, "db", svc)
-
-	probe := health.New(injector,
-		health.WithCriticalServices("db"),
-		health.WithRefreshInterval(50*time.Millisecond),
-	)
-
-	dash := dashboard.New(probe,
-		dashboard.WithPushInterval(50*time.Millisecond),
-		// No WithRetryInterval — should default to zero (browser default).
-	)
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
-	if err := probe.Start(ctx); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-	if err := dash.Start(ctx); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-	defer func() { dash.Shutdown(); probe.Shutdown() }()
-
-	server := httptest.NewServer(mux)
-	defer server.Close()
+	// No WithRetryInterval — should default to zero (browser default).
+	server, _, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
+	defer cleanup()
 
 	resp, stream := connectSSE(t, server)
 	defer func() { _ = resp.Body.Close() }()
@@ -717,7 +601,7 @@ func TestSSE_Reconnect_ReceivesCurrentState(t *testing.T) {
 	svc := &toggleService{}
 	svc.healthy.Store(true)
 
-	server, svc, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
+	server, _, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
 	defer cleanup()
 
 	resp1, stream1 := connectSSE(t, server)

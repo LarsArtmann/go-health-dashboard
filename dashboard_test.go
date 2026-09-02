@@ -351,7 +351,39 @@ func doRequestWithAccept(
 	return w
 }
 
-func TestContentNegotiation_JSONAcceptReturnsJSON(t *testing.T) {
+func TestContentNegotiation_AcceptHeaderSelectsContentType(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		accept string
+		wantCT string
+	}{
+		{name: "json accept returns json", accept: "application/json", wantCT: "application/json"},
+		{name: "html accept returns html", accept: "text/html", wantCT: "text/html"},
+		{name: "q-value prefers json", accept: "application/json;q=0.9, text/html;q=0.8", wantCT: "application/json"},
+		{name: "q-value prefers html", accept: "text/html;q=1.0, application/json;q=0.1", wantCT: "text/html"},
+		{name: "wildcard returns html default", accept: "*/*", wantCT: "text/html"},
+		{name: "equal q-values return html default", accept: "application/json, text/html", wantCT: "text/html"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			s := setupDashboard(t)
+			defer s.cleanup()
+
+			w := doRequestWithAccept(t, s.mux, "/health", tt.accept)
+
+			if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, tt.wantCT) {
+				t.Errorf("content-type: want %s, got %s", tt.wantCT, ct)
+			}
+		})
+	}
+}
+
+func TestContentNegotiation_JSONAcceptReturnsJSONBody(t *testing.T) {
 	t.Parallel()
 
 	s := setupDashboard(t)
@@ -366,19 +398,6 @@ func TestContentNegotiation_JSONAcceptReturnsJSON(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, `"status"`) {
 		t.Error("JSON response should contain status field")
-	}
-}
-
-func TestContentNegotiation_HTMLAcceptReturnsHTML(t *testing.T) {
-	t.Parallel()
-
-	s := setupDashboard(t)
-	defer s.cleanup()
-
-	w := doRequestWithAccept(t, s.mux, "/health", "text/html")
-
-	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
-		t.Errorf("content-type: want text/html, got %s", ct)
 	}
 }
 
@@ -444,58 +463,6 @@ func TestContentNegotiation_JSONCriticalFailReturns503(t *testing.T) {
 
 	if !strings.Contains(w.Body.String(), `"fail"`) {
 		t.Error("JSON response should contain fail status")
-	}
-}
-
-func TestContentNegotiation_QValuePrefersJSON(t *testing.T) {
-	t.Parallel()
-
-	s := setupDashboard(t)
-	defer s.cleanup()
-
-	w := doRequestWithAccept(t, s.mux, "/health", "application/json;q=0.9, text/html;q=0.8")
-
-	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
-		t.Errorf("higher q-value JSON: want application/json, got %s", ct)
-	}
-}
-
-func TestContentNegotiation_QValuePrefersHTML(t *testing.T) {
-	t.Parallel()
-
-	s := setupDashboard(t)
-	defer s.cleanup()
-
-	w := doRequestWithAccept(t, s.mux, "/health", "text/html;q=1.0, application/json;q=0.1")
-
-	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
-		t.Errorf("higher q-value HTML: want text/html, got %s", ct)
-	}
-}
-
-func TestContentNegotiation_WildcardReturnsHTML(t *testing.T) {
-	t.Parallel()
-
-	s := setupDashboard(t)
-	defer s.cleanup()
-
-	w := doRequestWithAccept(t, s.mux, "/health", "*/*")
-
-	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
-		t.Errorf("wildcard Accept: want text/html (default), got %s", ct)
-	}
-}
-
-func TestContentNegotiation_EqualQValuesReturnsHTML(t *testing.T) {
-	t.Parallel()
-
-	s := setupDashboard(t)
-	defer s.cleanup()
-
-	w := doRequestWithAccept(t, s.mux, "/health", "application/json, text/html")
-
-	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
-		t.Errorf("equal q-values: want text/html (default), got %s", ct)
 	}
 }
 
