@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `RecommendedCSP(nonce string) string` helper: returns the exact
+  Content-Security-Policy value the headless-browser test verifies — strict,
+  self-hosted, no `unsafe-inline`, with the `'unsafe-eval'` the Datastar SDK
+  requires. Invalid nonce tokens (outside the CSP base64 alphabet) are
+  omitted so the header can never be malformed (`csp.go`,
+  `csp_policy_test.go`)
+
 ## [0.3.1] - 2026-09-02
 
 Protect, measure, trend. The dashboard gains consumer-supplied auth middleware,

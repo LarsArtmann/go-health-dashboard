@@ -233,7 +233,18 @@ nonce, and there are no `<style>` blocks or inline `style=` attributes. With
 test under a strict policy.
 
 The Datastar SDK compiles its `data-*` expressions with the `Function`
-constructor, so `script-src` needs `'unsafe-eval'` alongside the nonce:
+constructor, so `script-src` needs `'unsafe-eval'` alongside the nonce.
+Rather than hand-rolling the header, use the built-in helper, which returns
+the exact policy the runtime test verifies:
+
+```go
+mux.Handle("GET /health", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Security-Policy", dashboard.RecommendedCSP(nonce))
+    dash.Handler().ServeHTTP(w, r)
+}))
+```
+
+which produces:
 
 ```
 default-src 'self';
