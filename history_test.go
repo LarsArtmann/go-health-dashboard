@@ -3,15 +3,22 @@ package dashboard
 import (
 	"sync"
 	"testing"
+	"time"
 
 	health "github.com/larsartmann/go-health"
 )
+
+// sampleWith builds a sample at a fixed time with the given status value.
+func sampleWith(v float64) sample {
+	return sample{At: time.Unix(0, 0), Value: v}
+}
 
 func TestHistoryBuffer_SnapshotEmpty(t *testing.T) {
 	t.Parallel()
 
 	h := newHistoryBuffer(10)
-	if got := h.snapshot(); got != nil {
+	got := h.snapshot()
+	if got != nil {
 		t.Errorf("empty buffer snapshot: want nil, got %v", got)
 	}
 }
@@ -21,10 +28,11 @@ func TestHistoryBuffer_PreservesChronologicalOrder(t *testing.T) {
 
 	h := newHistoryBuffer(4)
 	for _, v := range []float64{1, 0.5, 0, 1} {
-		h.record(v)
+		h.record(sampleWith(v))
 	}
 
 	got := h.snapshot()
+	values := samplesToValues(got)
 	want := []float64{1, 0.5, 0, 1}
 
 	if len(got) != len(want) {
@@ -32,8 +40,8 @@ func TestHistoryBuffer_PreservesChronologicalOrder(t *testing.T) {
 	}
 
 	for i := range want {
-		if got[i] != want[i] {
-			t.Errorf("snapshot[%d]: want %v, got %v", i, want[i], got[i])
+		if values[i] != want[i] {
+			t.Errorf("snapshot[%d]: want %v, got %v", i, want[i], values[i])
 		}
 	}
 }
@@ -43,10 +51,11 @@ func TestHistoryBuffer_WrapsAtCapacity(t *testing.T) {
 
 	h := newHistoryBuffer(3)
 	for _, v := range []float64{1, 1, 1, 0.5, 0} {
-		h.record(v)
+		h.record(sampleWith(v))
 	}
 
 	got := h.snapshot()
+	values := samplesToValues(got)
 	want := []float64{1, 0.5, 0}
 
 	if len(got) != len(want) {
@@ -54,8 +63,8 @@ func TestHistoryBuffer_WrapsAtCapacity(t *testing.T) {
 	}
 
 	for i := range want {
-		if got[i] != want[i] {
-			t.Errorf("snapshot[%d]: want %v, got %v", i, want[i], got[i])
+		if values[i] != want[i] {
+			t.Errorf("snapshot[%d]: want %v, got %v", i, want[i], values[i])
 		}
 	}
 }
@@ -64,9 +73,9 @@ func TestHistoryBuffer_MinCapacityOne(t *testing.T) {
 	t.Parallel()
 
 	buf := newHistoryBuffer(0)
-	buf.record(1)
+	buf.record(sampleWith(1))
 
-	if got := buf.snapshot(); len(got) != 1 || got[0] != 1 {
+	if got := buf.snapshot(); len(got) != 1 || got[0].Value != 1 {
 		t.Errorf("capacity-0 buffer: want [1], got %v", got)
 	}
 }
@@ -75,13 +84,13 @@ func TestHistoryBuffer_SnapshotReturnsCopy(t *testing.T) {
 	t.Parallel()
 
 	buf := newHistoryBuffer(2)
-	buf.record(1)
+	buf.record(sampleWith(1))
 
 	first := buf.snapshot()
-	first[0] = 99
+	first[0].Value = 99
 
-	if got := buf.snapshot(); got[0] != 1 {
-		t.Errorf("snapshot not isolated from mutations: want 1, got %v", got[0])
+	if got := buf.snapshot(); got[0].Value != 1 {
+		t.Errorf("snapshot not isolated from mutations: want 1, got %v", got[0].Value)
 	}
 }
 
@@ -97,7 +106,7 @@ func TestHistoryBuffer_ConcurrentRecordAndSnapshot(t *testing.T) {
 
 		go func() {
 			defer wg.Done()
-			buf.record(float64(i % 2))
+			buf.record(sampleWith(float64(i % 2)))
 		}()
 
 		go func() {
@@ -132,4 +141,13 @@ func TestStatusValue_MapsTrendScale(t *testing.T) {
 			t.Errorf("statusValue(%q): want %v, got %v", tt.status, tt.want, got)
 		}
 	}
+}
+
+func samplesToValues(samples []sample) []float64 {
+	values := make([]float64, len(samples))
+	for i, s := range samples {
+		values[i] = s.Value
+	}
+
+	return values
 }
