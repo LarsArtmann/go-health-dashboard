@@ -15,24 +15,24 @@
 
 ## Blocked (needs user decision)
 
-| Task                     | Status       | Why blocked                                                                                                       | Evidence                    |
-| ------------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| Task                     | Status       | Why blocked                                                                                                      | Evidence                    |
+| ------------------------ | ------------ | ---------------------------------------------------------------------------------------------------------------- | --------------------------- |
 | Build-tag gating for SSE | 🔵 `BLOCKED` | Consumers who only want HTML shouldn't need GOEXPERIMENT=jsonv2. Requires decision: accept, fork go-sse, or gate. | `ROADMAP.md` Open Questions |
 
-## Medium Impact
+## Done (recent)
 
-| Task                        | Status    | Impact | Effort | Notes                       |
-| --------------------------- | --------- | ------ | ------ | --------------------------- |
-| Auth middleware integration | 🔴 `TODO` | Med    | 60min  | Protect dashboard endpoint  |
-| Add screenshot to README    | 🔴 `TODO` | Med    | 30min  | No visual preview in README |
+Completed in the current cycle, logged in `CHANGELOG.md`:
 
-## Low Impact / Future Work
+- Auth middleware integration (`WithMiddleware`) — protects dashboard-owned
+  routes, kubelet probes stay open
+- Prometheus metrics endpoint (`WithMetrics` + `MetricsHandler`)
+- Health history / trend sparkline (`WithTrend`) + UI flexibility
+  (`WithHideStatCards`)
+- Fuzzing for Accept header parsing and health response serialization
+  (`fuzz_test.go`)
+- Headless-browser CSP test (`browser_test.go`, chromedp) — closes the
+  runtime-CSP verification loop; found the Datastar `unsafe-eval` requirement
+- Screenshot in README (`docs/screenshot.png`, captured by
+  `screenshot_test.go`)
 
-| Task                                             | Status    | Impact | Effort | Notes                                   |
-| ------------------------------------------------ | --------- | ------ | ------ | --------------------------------------- |
-| Fuzzing for Accept header parsing                | 🔴 `TODO` | Low    | 30min  | `dashboard.go:221`                      |
-| Fuzzing for health response serialization        | 🔴 `TODO` | Low    | 30min  |                                         |
-| Prometheus metrics endpoint                      | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md                          |
-| Health history / sparkline visualization         | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md                          |
-| UI flexibility options (WithHideStatCards, etc.) | 🔴 `TODO` | Low    | 90min  | See ROADMAP.md                          |
-| Headless-browser CSP test (chromedp)             | 🔴 `TODO` | Low    | 90min  | Close the runtime-CSP verification loop |
+Everything else worth doing is in `ROADMAP.md` as raw ideas.

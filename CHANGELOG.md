@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `WithMiddleware(fn)` option: wraps every dashboard-owned route (dashboard
+  HTML, SSE, favicon, metrics) with consumer-supplied middleware for auth
+  integration. Kubernetes probe endpoints are deliberately not wrapped —
+  the kubelet cannot authenticate (`dashboard.go`, `middleware_test.go`)
+- `WithMetrics(enabled)` option and `Dashboard.MetricsHandler()`: opt-in
+  Prometheus metrics endpoint at `Routes.Metrics` (default `/health/metrics`)
+  serving hand-rolled text exposition 0.0.4 — zero new runtime dependencies,
+  deterministic sorted output, proper label escaping (`metrics.go`,
+  `metrics_test.go`)
+- `WithTrend(n)` option: health trend sparkline card driven by a mutex-guarded
+  ring buffer of status samples in the pusher (pass=1, warn=0.5, fail=0),
+  rendered with `display.Sparkline` and updated via the normal SSE stream
+  (`pusher.go`, `view.templ`, `trend_test.go`)
+- `WithHideStatCards()` option: hides the version/uptime/latency stat card
+  grid for compact dashboards (`dashboard.go`, `trend_test.go`)
+- Fuzz targets `FuzzWantsJSON` (Accept-header parser) and
+  `FuzzHealthResponseSerialization` (JSON round-trip + idempotence invariants)
+  in `fuzz_test.go`
+- Headless-browser runtime CSP test (`browser_test.go`): loads the dashboard
+  under a strict CSP in Chromium via chromedp, proves the Datastar SDK
+  connects via SSE, and asserts the runtime DOM stays free of CSP-relevant
+  inline styles. Skips automatically when no Chrome is available; point it at
+  a binary with `GO_HEALTH_DASHBOARD_CHROME`
+- Screenshot capture test (`screenshot_test.go`): env-guarded
+  (`SCREENSHOT_OUTPUT`) chromedp capture used to generate `docs/screenshot.png`
+- README: embedded dashboard screenshot, "Protecting the Dashboard",
+  "Prometheus Metrics", "Health Trend", and "Content-Security-Policy" sections
 - `WithRetryInterval(d time.Duration)` option and `Config.RetryInterval` field:
   sets the SSE retry field so browsers know how long to wait before reconnecting
   after a disconnect. Default zero uses the browser's built-in ~3s delay
@@ -36,13 +63,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **Documented CSP requirement:** the Datastar SDK compiles its `data-*`
+  expressions with the `Function` constructor, so `script-src` needs
+  `'unsafe-eval'` next to the nonce; without it the bundle throws
+  `GenerateExpression` during init and SSE never connects (found by the
+  headless-browser test)
+- Test dependencies: chromedp and `go-datastar/static` (embedded SDK bundle
+  for hermetic browser tests) added to `go.mod`
 - **Breaking:** `RegisterRoutes` signature changed from
   `(mux *http.ServeMux, routes Routes)` to `(mux *http.ServeMux)`. Routes are
   now read from `Config` as the single source of truth (`dashboard.go:364`)
-- Test count: 67 → 78 top-level test functions; coverage 80.0% → 79.7%
+- Test count: 67 → 120+ top-level test functions across 11 test files
 
 ### Fixed
 
+- `WithBasePath` no longer converts an intentionally empty `Routes.Metrics`
+  into the bare prefix
 - `Version` constant updated from `"0.1.0"` to `"0.2.0"` to match the released
   tag — it was left stale when v0.2.0 was tagged (`dashboard.go:27`)
 - `RegisterRoutes` latent bug: the `routes` parameter could diverge from
