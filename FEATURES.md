@@ -27,6 +27,8 @@
 | Severity-grouped service cards       | 🟢 `FULLY_FUNCTIONAL` | `status.go:123` — fail/warn/pass groups, alphabetically sorted                 |
 | Service tables with badges           | 🟢 `FULLY_FUNCTIONAL` | `status.go:191` — badge per row, error column                                  |
 | StatCards (version, uptime, latency) | 🟢 `FULLY_FUNCTIONAL` | `view.templ:39-47` — 3-card grid                                               |
+| StatCards hiding (`WithHideStatCards`) | 🟢 `FULLY_FUNCTIONAL` | Compact mode; banner and tables always render                                  |
+| Health trend sparkline (`WithTrend`) | 🟢 `FULLY_FUNCTIONAL` | `pusher.go` ring buffer + `view.templ` — `display.Sparkline`, pass=1/warn=0.5/fail=0 |
 | Empty state                          | 🟢 `FULLY_FUNCTIONAL` | `view.templ:104` — "No registered services"                                    |
 | Graceful shutdown state display      | 🟢 `FULLY_FUNCTIONAL` | `status.go:90` — buildViewModel overrides banner to "Shutting Down"            |
 | Dark mode toggle                     | 🟢 `FULLY_FUNCTIONAL` | `view.templ:36` — layout.ThemeToggle, nonce-aware, persisted in localStorage   |
@@ -53,6 +55,8 @@
 | Fixed CSP nonce (`WithNonce`) | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:68` — construction-time nonce applied to all inline scripts                                              |
 | Per-request nonce extraction  | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:84` — `WithNonceExtractor(fn)`, takes precedence, graceful fallback. Distinct nonce per request verified |
 | Render-cleanliness guarantees | 🟢 `FULLY_FUNCTIONAL` | `csp_test.go` — every `<script>` carries nonce; zero `<style>` blocks; zero inline `style=`                            |
+| Runtime CSP verification (headless Chromium) | 🟢 `FULLY_FUNCTIONAL` | `browser_test.go` — chromedp, strict CSP, SSE connects, DOM stays style-clean; skips without Chrome |
+| Auth middleware (`WithMiddleware`) | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` — wraps dashboard-owned routes; kubelet probes stay open; `middleware_test.go`                     |
 
 ## Routing
 
@@ -78,7 +82,20 @@
 | WithHeartbeatInterval | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:104` — configurable SSE keepalive (default 15s), tested  |
 | WithMaxSSEConnections | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:111` — DoS prevention; 0 = unlimited                     |
 | WithRetryInterval     | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:121` — SSE retry field for browser reconnection delay    |
+| WithRetryInterval     | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:121` — SSE retry field for browser reconnection delay    |
+| WithMiddleware        | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` — auth middleware on dashboard-owned routes; probes bypass |
+| WithMetrics           | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` + `metrics.go` — opt-in Prometheus exposition route     |
+| WithTrend             | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` + `pusher.go` — trend samples ring buffer + sparkline   |
+| WithHideStatCards     | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` — compact mode without the stat card grid               |
 | WithBasePath          | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:132` — prefix all routes for sub-path mounting           |
+
+## Observability
+
+| Feature                        | Status                | Notes                                                                          |
+| ------------------------------ | --------------------- | ------------------------------------------------------------------------------ |
+| Prometheus metrics endpoint    | 🟢 `FULLY_FUNCTIONAL` | `metrics.go` — hand-rolled text exposition 0.0.4, zero extra deps, deterministic sorted output, label escaping |
+| Fuzz testing                   | 🟢 `FULLY_FUNCTIONAL` | `fuzz_test.go` — `FuzzWantsJSON`, `FuzzHealthResponseSerialization`             |
+| README screenshot capture      | 🟢 `FULLY_FUNCTIONAL` | `screenshot_test.go` — env-guarded (`SCREENSHOT_OUTPUT`), chromedp capture     |
 
 ## Build and Tooling
 
@@ -87,7 +104,7 @@
 | flake.nix devShell      | 🟢 `FULLY_FUNCTIONAL` | GOWORK=off, GOEXPERIMENT=jsonv2, all tools                                 |
 | templ generate workflow | 🟢 `FULLY_FUNCTIONAL` | Pre-build step in all Nix apps                                             |
 | `.golangci.yml` config  | 🟢 `FULLY_FUNCTIONAL` | 80+ linters, pragmatic test/example exclusions, **0 issues**               |
-| Test suite              | 🟢 `FULLY_FUNCTIONAL` | 78 tests across 4 files, all passing with `-race`, 79.7% coverage          |
+| Test suite              | 🟢 `FULLY_FUNCTIONAL` | 120+ tests across 11 files, all passing with `-race`; fuzz targets included  |
 | CI/CD                   | 🟢 `FULLY_FUNCTIONAL` | `.github/workflows/ci.yml` — build, test-race, lint, vulncheck (4/4 green) |
 | Dependabot              | 🟢 `FULLY_FUNCTIONAL` | `.github/dependabot.yml` — Go modules + GitHub Actions                     |
 | Example app             | 🟢 `FULLY_FUNCTIONAL` | `example/main.go` — compiles, starts, `PORT` env var configurable          |
@@ -99,5 +116,4 @@
 | Gap                             | Where documented                                                                                                                 |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | GOEXPERIMENT=jsonv2 requirement | All Go commands require this env var; go-sse uses `encoding/json/v2`                                                             |
-| No screenshot in README         | No visual preview of the dashboard in README.md                                                                                  |
-| Browser CSP runtime unverified  | CLI tests prove nonce wiring; runtime JS (Datastar DOM patching) may inject `style=` attributes — unverifiable without a browser |
+| Datastar needs `unsafe-eval`    | The SDK compiles expressions via `Function`; strict CSPs must allow it — documented in README, verified by `browser_test.go`      |

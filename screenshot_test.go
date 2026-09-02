@@ -9,10 +9,9 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
+	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
 	"github.com/samber/do/v2"
-
-	health "github.com/larsartmann/go-health"
 )
 
 // TestCaptureREADME_Screenshot renders the dashboard in headless Chrome and
@@ -24,6 +23,8 @@ import (
 //
 // The Tailwind Play CDN is used on purpose so the capture needs no CSS build.
 func TestCaptureREADME_Screenshot(t *testing.T) {
+	t.Parallel()
+
 	out := os.Getenv("SCREENSHOT_OUTPUT")
 	if out == "" {
 		t.Skip("SCREENSHOT_OUTPUT not set; screenshot capture is manual")
@@ -115,7 +116,7 @@ func TestCaptureREADME_Screenshot(t *testing.T) {
 		t.Fatalf("screenshot: %v", err)
 	}
 
-	if err := os.WriteFile(out, png, 0o644); err != nil {
+	if err := os.WriteFile(out, png, 0o600); err != nil {
 		t.Fatalf("write screenshot: %v", err)
 	}
 

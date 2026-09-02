@@ -10,6 +10,8 @@ powered by [Datastar](https://data-star.dev) SSE. Drops into your mux with one
 call and gives you a live status page with green/yellow/red badges, severity
 grouping, and sub-second updates.
 
+![Health dashboard screenshot showing status banner, trend sparkline, and severity-grouped service tables](docs/screenshot.png)
+
 ## What It Does
 
 - **Browser visits `/health`**: sees a rich dashboard with status banners, service
@@ -71,14 +73,15 @@ Open `http://localhost:8080/health` in a browser. Done.
 
 ## Routes
 
-| Path           | Method | Content-Type                  | What It Does                                                                                                              |
-| -------------- | ------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `/health`      | GET    | text/html or application/json | HTML dashboard (default) or JSON health response (Accept: application/json). JSON returns 503 when critical services fail |
-| `/health/sse`  | GET    | text/event-stream             | SSE endpoint (Datastar patch protocol)                                                                                    |
-| `/favicon.svg` | GET    | image/svg+xml                 | SVG favicon (embedded green-heart icon)                                                                                   |
-| `/healthz`     | GET    | application/json              | Liveness probe (always 200, no dependency checks)                                                                         |
-| `/readyz`      | GET    | application/json              | Readiness probe (503 when critical services fail)                                                                         |
-| `/startupz`    | GET    | application/json              | Startup probe (latched once all critical services pass)                                                                   |
+| Path              | Method | Content-Type                  | What It Does                                                                                                              |
+| ----------------- | ------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `/health`         | GET    | text/html or application/json | HTML dashboard (default) or JSON health response (Accept: application/json). JSON returns 503 when critical services fail |
+| `/health/sse`     | GET    | text/event-stream             | SSE endpoint (Datastar patch protocol)                                                                                    |
+| `/favicon.svg`    | GET    | image/svg+xml                 | SVG favicon (embedded green-heart icon)                                                                                   |
+| `/health/metrics` | GET    | text/plain                    | Prometheus exposition (only when `WithMetrics(true)`)                                                                     |
+| `/healthz`        | GET    | application/json              | Liveness probe (always 200, no dependency checks)                                                                         |
+| `/readyz`         | GET    | application/json              | Readiness probe (503 when critical services fail)                                                                         |
+| `/startupz`       | GET    | application/json              | Startup probe (latched once all critical services pass)                                                                   |
 
 ## Options
 
@@ -94,6 +97,10 @@ dash := dashboard.New(probe,
     dashboard.WithHeartbeatInterval(30*time.Second),           // SSE keepalive interval (default 15s)
     dashboard.WithMaxSSEConnections(100),                      // Max concurrent SSE clients (0 = unlimited)
     dashboard.WithRetryInterval(2*time.Second),                // SSE reconnection delay (browser retry field)
+    dashboard.WithTrend(60),                                   // Health trend sparkline (samples retained)
+    dashboard.WithHideStatCards(),                             // Hide version/uptime/latency cards
+    dashboard.WithMetrics(true),                               // Prometheus metrics at /health/metrics
+    dashboard.WithMiddleware(myAuthMiddleware),                // Protect dashboard routes (see below)
     dashboard.WithBasePath("/admin"),                          // Prefix all routes for sub-path mounting
     dashboard.WithRoutes(dashboard.Routes{
         Dashboard: "/status",
@@ -103,6 +110,54 @@ dash := dashboard.New(probe,
     }),
 )
 ```
+
+## Protecting the Dashboard
+
+`WithMiddleware` wraps every dashboard-owned route (dashboard HTML, SSE,
+favicon, metrics) with your auth middleware — bring your own (Basic Auth,
+bearer tokens, sessions) or use your framework's:
+
+```go
+func bearerAuth(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        if r.Header.Get("Authorization") != "Bearer "+os.Getenv("DASH_TOKEN") {
+            http.Error(w, "unauthorized", http.StatusUnauthorized)
+            return
+        }
+        next.ServeHTTP(w, r)
+    })
+}
+
+dash := dashboard.New(probe, dashboard.WithMiddleware(bearerAuth))
+```
+
+The Kubernetes probe endpoints (`/healthz`, `/readyz`, `/startupz`) are
+deliberately NOT wrapped — the kubelet cannot authenticate, and gating them
+breaks liveness and readiness gates.
+
+## Prometheus Metrics
+
+Enable `WithMetrics(true)` and scrape `/health/metrics` (text exposition
+format 0.0.4, zero extra dependencies):
+
+```
+dashboard_health_up 1                           # 1 when overall status is pass
+dashboard_health_status 2                       # 2 pass, 1 warn, 0 fail, -1 unknown
+dashboard_health_check{check="postgres",status="pass"} 1
+dashboard_health_latency_ms 12                  # last check batch duration
+dashboard_health_shutting_down 0
+dashboard_sse_connections 3                     # live dashboard viewers
+dashboard_pusher_active 1                       # SSE pusher goroutine health
+```
+
+The metrics route is middleware-protected when `WithMiddleware` is set.
+
+## Health Trend
+
+`WithTrend(n)` retains the last n status samples (one per push interval,
+pass=1 / warn=0.5 / fail=0) and renders a sparkline card above the service
+tables. The card appears once two samples exist and updates live via the
+same SSE stream.
 
 ## How Real-Time Works
 
@@ -131,6 +186,10 @@ nix run .#lint
 GOEXPERIMENT=jsonv2 go build ./...
 GOEXPERIMENT=jsonv2 go test ./...
 ```
+
+The headless-browser tests (runtime CSP verification, screenshot capture)
+skip automatically when no Chrome/Chromium is available. Point them at one
+with `GO_HEALTH_DASHBOARD_CHROME=/path/to/chromium`.
 
 ## Run the Example
 
@@ -164,6 +223,31 @@ pass/fail every 15s), and one always failing. Watch the dashboard update live.
 The dashboard respects the user's OS dark-mode preference and includes a
 toggle button for manual switching. The preference is persisted in
 `localStorage`.
+
+## Content-Security-Policy
+
+The served HTML is CSP-clean: every inline script carries the configured
+nonce, and there are no `<style>` blocks or inline `style=` attributes. With
+`WithCSSPath` (compiled CSS, no Tailwind Play CDN) the page needs **no
+`style-src 'unsafe-inline'`** — verified at runtime by a headless-Chromium
+test under a strict policy.
+
+The Datastar SDK compiles its `data-*` expressions with the `Function`
+constructor, so `script-src` needs `'unsafe-eval'` alongside the nonce:
+
+```
+default-src 'self';
+script-src 'self' 'nonce-<nonce>' 'unsafe-eval';
+style-src 'self';
+connect-src 'self';
+img-src 'self' data:;
+object-src 'none';
+base-uri 'self';
+```
+
+If you keep the Tailwind Play CDN (no `WithCSSPath`), that script injects a
+generated `<style>` element at runtime and therefore additionally requires
+`style-src 'unsafe-inline'`.
 
 ## License
 
