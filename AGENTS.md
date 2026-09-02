@@ -57,6 +57,20 @@ Test files: `dashboard_test.go` (helpers + rendering), `csp_test.go`, `sse_integ
 - **CachedResponse for zero-cost reads** — Dashboard reads `probe.CachedResponse()` which reads the atomic `p.latest` pointer. Lock-free.
 - **No HTMX loaded** — `layout.Base` is called with `HTMXVersion: ""` to disable HTMX injection. Datastar handles all real-time.
 - **`atomic.Pointer[pusher]` for safe concurrent access** — The `Dashboard.push` field is an `atomic.Pointer[pusher]`, not a bare `*pusher`. `Start()` calls `Store(p)`, `Shutdown()` calls `Swap(nil)`, and `sseHandler()` calls `Load()`. This prevents the data race that would occur when `Shutdown()` nils the pointer while `sseHandler()` reads it.
+- **SSE hardening options are all opt-in** — `WithShutdownDrain` (Swap
+  pusher to nil first so new conns 503, bounded wait, then broadcaster
+  close), `WithMaxConnectionLifetime` (server-side close; browser
+  reconnects), `WithRateLimit` (hand-rolled token bucket in
+  `ratelimit.go`; golang.org/x/time/rate deliberately not used — zero
+  runtime deps), and the pusher watchdog in `HealthCheck` (`ErrPusherStale`
+  after 3 silent intervals; report-only, never restarts).
+- **History samples carry timestamps** — `sample{At,Value,Status}` in the
+  pusher ring buffer powers `/health/trend` (samples + transitions),
+  `/health/export` (JSON/CSV), the Status Changes timeline card, and the
+  `Updated <time>` stamp. Transitions are derived on demand, not stored.
+- **Public mode anonymizes presentation only** — `WithPublicMode` masks
+  check names/errors in the HTML and metrics labels; the `/health` JSON
+  response and kubelet probes intentionally stay verbatim.
 - **SSE connection limit** — When `WithMaxSSEConnections(n)` is set, the pusher tracks active connections via `atomic.Int64` and returns HTTP 503 when the limit is exceeded. Default is 0 (unlimited).
 - **Dark mode toggle** — The dashboard header includes a `layout.ThemeToggle` button that toggles the `dark` class on `<html>`. The preference is persisted in `localStorage` and respects the OS `prefers-color-scheme` on first visit.
 - **Per-request nonce extraction** — `WithNonceExtractor(func(*http.Request) string)` enables per-request CSP nonces instead of a fixed construction-time nonce. When set, `Handler()` calls the extractor on each request; the result takes precedence over `WithNonce`. Falls back to `WithNonce` when the extractor returns empty. The SSE pusher doesn't use nonces (patches are inner-HTML replacements with no scripts).
@@ -102,6 +116,10 @@ Test files: `dashboard_test.go` (helpers + rendering), `csp_test.go`, `sse_integ
 ## Gotchas
 
 - **GOEXPERIMENT=jsonv2 is required** — The go-sse dependency uses `encoding/json/v2`. Set `GOEXPERIMENT=jsonv2` for all Go commands. The flake.nix devShell does this automatically.
+- **Metrics output is not byte-frozen anymore** — the latency histogram
+  `_sum`/counts change per pusher tick; `TestMetrics_ChecksSortedForDeterministicOutput`
+  strips `dashboard_health_check_duration_seconds*` lines before comparing.
+  Sorted check names remain the guaranteed-stable part.
 - **Browser tests serialize via `browserSerial` mutex** — headless-Chrome startups are heavyweight; parallel launches on loaded machines pushed startup past the announce timeout (now 45s). New browser tests must go through `startHeadlessChrome`, which takes the lock. The axe audit downloads axe-core from cdnjs at test setup and skips when offline.
 - **gopls needs the same env** — Without it, gopls shows stale `json.Marshal requires go1.27` diagnostics that the real linter does not. `.vscode/settings.json` (committed) sets `gopls.build.env` to `GOEXPERIMENT=jsonv2` + `GOWORK=off`; trust `nix run .#lint` over editor squiggles when they disagree.
 - **GOWORK=off in devShell** — The parent `~/projects/go.work` includes all sibling repos. The flake.nix sets `GOWORK=off` to prevent workspace interference.

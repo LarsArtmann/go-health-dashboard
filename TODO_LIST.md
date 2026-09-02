@@ -28,10 +28,10 @@ Full breakdown: `docs/planning/2026-09-02_21-21_pareto-execution-plan-v03-cycle.
 | Fuzz targets (escape, fingerprint) + nightly fuzz | 🟢 `DONE` | Medium | 60min  | Found + fixed a real fingerprint delimiter collision                     |
 | promtool conformance check for metrics           | 🟢 `DONE` | Medium | 45min  | Official prometheus/common parser test always runs; promtool lint when on PATH |
 | SSE hardening (drain, lifetime, watchdog, rate limit) | 🟢 `DONE` | High | 120min | `WithShutdownDrain`, `WithMaxConnectionLifetime`, `WithRateLimit`, `ErrPusherStale` watchdog |
-| Example app v2 (auth/metrics/trend env toggles)  | 🔴 `TODO` | Medium | 60min  | Onboarding for v0.3.1 features                                           |
-| HARVEST plan items into this list + ROADMAP      | 🔴 `TODO` | High   | 30min  | docs-health HARVEST over the plan's section (f)                          |
+| Example app v2 (auth/metrics/trend env toggles)  | 🟢 `DONE` | Medium | 60min  | `DEMO_TREND/DEMO_METRICS/DEMO_AUTH/DEMO_RATELIMIT/DEMO_DRAIN` env toggles |
+| HARVEST plan items into this list + ROADMAP      | 🟢 `DONE` | High   | 30min  | FEATURES/ROADMAP/AGENTS swept for the v0.3.x cycle                       |
 
-Everything beyond this shortlist is triaged in the plan file (hardening, observability, polish, spikes).
+Everything beyond this shortlist shipped this cycle or lives in `ROADMAP.md` as raw ideas. Cycle execution report: `docs/status/` (see v0.3.x completion entry).
 
 ## Blocked (needs user decision)
 
@@ -60,5 +60,11 @@ Completed in the current cycle, logged in `CHANGELOG.md`:
 - `RecommendedCSP(nonce)` helper, metrics conformance tests (official
   parser + promtool), browser console/CSP/live-patch/a11y verification,
   fuzz targets with nightly workflow, CI browser job, gopls env fix
+- SSE hardening follow-through: history JSON/CSV export endpoints,
+  status-change timeline UI, refresh timestamp, latency histogram,
+  `WithPublicMode`, `WithDescription`, benchmarks, docker-compose
+  Prometheus demo, dark-mode screenshot
+- Upstream: axe `definition-list` violation in templ-components StatCard
+  verified at source and filed (templ-components#6)
 
 Everything else worth doing is in `ROADMAP.md` as raw ideas.

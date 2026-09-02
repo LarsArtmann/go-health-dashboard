@@ -45,12 +45,12 @@ Raw ideas:
   (in-memory ring); retention/export extensions are plan M23/M25
 - Trend visualization (templ-components has Sparkline) — **shipped** as
   `WithTrend` in v0.3.1; markers/timeline extensions are plan M22/M29
-- Status change timeline (when did each service flip?) — plan M29
-- Auto-generated refresh timestamp display — plan M26
+- Status change timeline (when did each service flip?) — **shipped** in v0.3.x cycle: rendered card + `/health/trend` transitions
+- Auto-generated refresh timestamp display — **shipped** in v0.3.x cycle (`Updated <time>` under the banner)
 - Prometheus-compatible metrics endpoint for the dashboard itself — **shipped**
   as `WithMetrics` in v0.3.1
-- Export health data as JSON/CSV — plan M25
-- Public-facing status page mode (no internal details exposed) — plan M28
+- Export health data as JSON/CSV — **shipped** in v0.3.x cycle (`/health/export`)
+- Public-facing status page mode — **shipped** as `WithPublicMode` in v0.3.x cycle
 - axe-core accessibility verification in the browser test — plan M21
 
 ### 4. Deployment Flexibility
@@ -65,8 +65,8 @@ Raw ideas:
 - Embeddable dashboard component (mount under a sub-path, not root) — **DONE** in v0.2.0 via `WithBasePath`
 - Authentication middleware integration — **shipped** as `WithMiddleware` in
   v0.3.1
-- OG metadata and social preview for dashboard page — plan M27 (og:description)
-- `RecommendedCSP()` helper so consumers get a correct CSP without hand-rolling
+- OG metadata for dashboard page — **shipped** as `WithDescription` in v0.3.x cycle
+- `RecommendedCSP()` helper — **shipped** as `RecommendedCSP(nonce)` in v0.3.x cycle
   — plan M3
 - Screenshot or PDF export for incident reports — partially covered by
   `screenshot_test.go`; PDF out of scope
@@ -98,3 +98,15 @@ These require user decisions and cannot be resolved by reading code:
 - **GOEXPERIMENT=jsonv2:** Every Go command requires this env var because go-sse
   uses `encoding/json/v2`. Accept it (and document loudly), fork go-sse, or
   build-tag gate the SSE code?
+
+## Design Spikes (v0.3.x cycle, not implemented)
+
+Summaries in `docs/planning/2026-09-03_v03-cycle-decisions-notes.md`.
+
+- **Federation spike** — expose one instance's health to another as a
+  synthetic check. Preferred home: go-health (`FederatedProber` option),
+  not the dashboard; the dashboard renders, it does not source.
+- **WebSocket transport spike** — rejected for now: SSE already covers
+  one-way push with browser-managed reconnection; WebSocket would add a
+  second protocol surface (auth, proxies, reconnect logic) with no
+  dashboard use case for bidirectional traffic.
