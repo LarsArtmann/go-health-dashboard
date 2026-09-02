@@ -65,8 +65,8 @@ func newBenchMux(b *testing.B, opts ...dashboard.Option) *benchMux {
 }
 
 func BenchmarkMetrics_Exposition(b *testing.B) {
-	bm := newBenchMux(b, dashboard.WithMetrics(true))
-	defer bm.cleanup()
+	bench := newBenchMux(b, dashboard.WithMetrics(true))
+	defer bench.cleanup()
 
 	r := httptest.NewRequest(http.MethodGet, "/health/metrics", nil)
 
@@ -75,13 +75,13 @@ func BenchmarkMetrics_Exposition(b *testing.B) {
 
 	for b.Loop() {
 		w := httptest.NewRecorder()
-		bm.serve.ServeHTTP(w, r)
+		bench.serve.ServeHTTP(w, r)
 	}
 }
 
 func BenchmarkDashboard_PatchRender(b *testing.B) {
-	bm := newBenchMux(b, dashboard.WithTrend(120))
-	defer bm.cleanup()
+	bench := newBenchMux(b, dashboard.WithTrend(120))
+	defer bench.cleanup()
 
 	r := httptest.NewRequest(http.MethodGet, "/health", nil)
 
@@ -90,13 +90,13 @@ func BenchmarkDashboard_PatchRender(b *testing.B) {
 
 	for b.Loop() {
 		w := httptest.NewRecorder()
-		bm.serve.ServeHTTP(w, r)
+		bench.serve.ServeHTTP(w, r)
 	}
 }
 
 func BenchmarkDashboard_FullHTMLWithTrend(b *testing.B) {
-	bm := newBenchMux(b, dashboard.WithTrend(120), dashboard.WithMetrics(true))
-	defer bm.cleanup()
+	bench := newBenchMux(b, dashboard.WithTrend(120), dashboard.WithMetrics(true))
+	defer bench.cleanup()
 
 	r := httptest.NewRequest(http.MethodGet, "/health", nil)
 
@@ -105,6 +105,6 @@ func BenchmarkDashboard_FullHTMLWithTrend(b *testing.B) {
 
 	for b.Loop() {
 		w := httptest.NewRecorder()
-		bm.serve.ServeHTTP(w, r)
+		bench.serve.ServeHTTP(w, r)
 	}
 }
