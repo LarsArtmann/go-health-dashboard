@@ -102,6 +102,7 @@ Test files: `dashboard_test.go` (helpers + rendering), `csp_test.go`, `sse_integ
 ## Gotchas
 
 - **GOEXPERIMENT=jsonv2 is required** — The go-sse dependency uses `encoding/json/v2`. Set `GOEXPERIMENT=jsonv2` for all Go commands. The flake.nix devShell does this automatically.
+- **Browser tests serialize via `browserSerial` mutex** — headless-Chrome startups are heavyweight; parallel launches on loaded machines pushed startup past the announce timeout (now 45s). New browser tests must go through `startHeadlessChrome`, which takes the lock. The axe audit downloads axe-core from cdnjs at test setup and skips when offline.
 - **gopls needs the same env** — Without it, gopls shows stale `json.Marshal requires go1.27` diagnostics that the real linter does not. `.vscode/settings.json` (committed) sets `gopls.build.env` to `GOEXPERIMENT=jsonv2` + `GOWORK=off`; trust `nix run .#lint` over editor squiggles when they disagree.
 - **GOWORK=off in devShell** — The parent `~/projects/go.work` includes all sibling repos. The flake.nix sets `GOWORK=off` to prevent workspace interference.
 - **templ generate before build** — `*_templ.go` files must be regenerated when `.templ` sources change. The flake.nix runs `templ generate` as a pre-build step.

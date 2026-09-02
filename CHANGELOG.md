@@ -24,6 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - CI browser job: the runtime CSP test now runs on every push/PR against a
   real Chrome (`GO_HEALTH_DASHBOARD_CHROME`), and the test job reports
   coverage totals (`.github/workflows/ci.yml`)
+- Browser hardening: every headless-browser test now captures
+  `console.error` calls and uncaught exceptions and fails on them (this
+  catches CSP violations at runtime), a live-patch test proves a real
+  service failure reaches the rendered DOM through the SSE stream without a
+  reload under strict CSP (`TestBrowser_LiveSSEPatch`), and an axe-core
+  audit (downloaded same-origin, skipped offline) enforces serious/critical
+  accessibility violations plus targeted ARIA/landmark checks
+  (`TestBrowser_Accessibility`)
 - Metrics conformance test: the exposition is parsed with the official
   `prometheus/common` text-format parser under strict legacy name
   validation, covering all seven metric families and label values with
