@@ -28,5 +28,6 @@ require (
 	github.com/larsartmann/templ-components/htmx v1.11.0 // indirect
 	github.com/larsartmann/templ-components/icons v1.11.0 // indirect
 	github.com/samber/go-type-to-string v1.8.0 // indirect
+	github.com/stretchr/testify v1.12.1 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 )
