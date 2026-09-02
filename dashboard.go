@@ -42,6 +42,30 @@ type Config struct {
 	HeartbeatInterval time.Duration
 	MaxSSEConnections int
 	RetryInterval     time.Duration
+	Middleware        func(http.Handler) http.Handler
+}
+
+// WithMiddleware wraps every dashboard-owned handler (dashboard HTML, SSE,
+// favicon, and the metrics endpoint when enabled) with the given middleware.
+// Use it to protect the dashboard with authentication — for example Basic
+// Auth, a bearer token check, or a session middleware from the host
+// application:
+//
+//	dash := dashboard.New(probe,
+//		dashboard.WithMiddleware(myAuthMiddleware),
+//	)
+//
+// Kubernetes probe endpoints (/healthz, /readyz, /startupz) are deliberately
+// NOT wrapped: the kubelet cannot authenticate, and gating them breaks
+// liveness and readiness gates. Register probe handlers separately on a
+// middleware-free mux if your environment requires protecting them too.
+//
+// When multiple middlewares are needed, compose them explicitly — the
+// last one registered runs closest to the handler:
+//
+//	dashboard.WithMiddleware(chain(mwOne, mwTwo))
+func WithMiddleware(mw func(http.Handler) http.Handler) Option {
+	return func(c *Config) { c.Middleware = mw }
 }
 
 // Option configures a Dashboard. Use the With* functions to create options.
@@ -390,16 +414,27 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 func (d *Dashboard) RegisterRoutes(mux *http.ServeMux) {
 	routes := d.cfg.Routes
 
-	mux.HandleFunc(routes.Dashboard, d.Handler())
-	mux.HandleFunc(routes.SSE, d.SSEHandler())
+	mux.Handle(routes.Dashboard, d.wrap(d.Handler()))
+	mux.Handle(routes.SSE, d.wrap(d.SSEHandler()))
 
 	if routes.Favicon != "" {
-		mux.HandleFunc(routes.Favicon, d.FaviconHandler())
+		mux.Handle(routes.Favicon, d.wrap(d.FaviconHandler()))
 	}
 
 	mux.HandleFunc(routes.Liveness, d.probe.LivenessHandler())
 	mux.HandleFunc(routes.Readiness, d.probe.ReadinessHandler())
 	mux.HandleFunc(routes.Startup, d.probe.StartupHandler())
+}
+
+// wrap applies the configured middleware (WithMiddleware) to a
+// dashboard-owned handler. Probe endpoints bypass it so kubelet probes
+// keep working without credentials.
+func (d *Dashboard) wrap(h http.Handler) http.Handler {
+	if d.cfg.Middleware == nil {
+		return h
+	}
+
+	return d.cfg.Middleware(h)
 }
 
 // Start launches the SSE pusher goroutine that broadcasts health updates to
