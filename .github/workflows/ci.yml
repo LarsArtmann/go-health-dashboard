@@ -45,8 +45,37 @@ jobs:
       - name: Generate templ files
         run: templ generate ./...
 
-      - name: Test with race detector
-        run: go test ./... -count=1 -race -timeout=60s
+      - name: Test with race detector and coverage
+        run: go test ./... -count=1 -race -timeout=60s -covermode=atomic -coverprofile=coverage.out
+
+      - name: Coverage summary
+        run: go tool cover -func=coverage.out | tail -1
+
+  browser:
+    name: Browser (runtime CSP)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      - name: Install templ CLI
+        run: go install github.com/a-h/templ/cmd/templ@latest
+
+      - name: Generate templ files
+        run: templ generate ./...
+
+      - name: Install Chrome
+        run: |
+          wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo dpkg -i /tmp/chrome.deb || sudo apt-get -f install -y
+
+      - name: Run headless-browser CSP test
+        run: go test ./... -count=1 -run TestBrowser -timeout=120s -v
+        env:
+          GO_HEALTH_DASHBOARD_CHROME: /usr/bin/google-chrome-stable
 
   lint:
     name: Lint

@@ -261,7 +261,7 @@ func fingerprintChecks(checks map[string]health.Check) string {
 	for _, name := range keys {
 		check := checks[name]
 		buf = appendField(buf, name)
-		buf = appendField(buf, check.Status)
+		buf = appendField(buf, string(check.Status))
 		buf = appendField(buf, check.Error)
 	}
 

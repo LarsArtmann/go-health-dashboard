@@ -3,6 +3,7 @@ package dashboard
 import (
 	"bytes"
 	"encoding/json/v2"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -143,6 +144,119 @@ func FuzzHealthResponseSerialization(
 
 		if !bytes.Equal(reencoded, data) {
 			t.Errorf("encoding not idempotent:\nfirst:  %s\nsecond: %s", data, reencoded)
+		}
+	})
+}
+
+// unescapeLabelValue reverses escapeLabelValue in a single left-to-right
+// pass, mirroring how a Prometheus exposition parser decodes escapes.
+func unescapeLabelValue(v string) string {
+	return strings.NewReplacer(`\\`, `\`, `\"`, `"`, `\n`, "\n").Replace(v)
+}
+
+// FuzzEscapeLabelValue exercises the Prometheus label-value escaper with
+// arbitrary input. Invariants: escaping never panics, is deterministic,
+// never emits a raw newline, and round-trips — unescaping the output
+// yields the original input, so scrape parsers see lossless values.
+func FuzzEscapeLabelValue(f *testing.F) {
+	for _, seed := range []string{
+		"",
+		"plain",
+		`\`,
+		`"`,
+		"\n",
+		`\n`,
+		`\"`,
+		`\\`,
+		`\"`,
+		"line1\nline2",
+		`back\slash"quote`,
+		`\"`,
+		"🚀 \"quoted\" \\ path\nnext",
+		"\r\t\x00",
+		strings.Repeat(`\"\n`, 50),
+	} {
+		f.Add(seed)
+	}
+
+	f.Fuzz(func(t *testing.T, value string) {
+		escaped := escapeLabelValue(value)
+
+		if again := escapeLabelValue(value); escaped != again {
+			t.Fatalf("escapeLabelValue not deterministic for %q: %q then %q", value, escaped, again)
+		}
+
+		if strings.Contains(escaped, "\n") {
+			t.Errorf("escaped value still contains a raw newline: %q -> %q", value, escaped)
+		}
+
+		if restored := unescapeLabelValue(escaped); restored != value {
+			t.Errorf("round-trip lost data: %q -> %q -> %q", value, escaped, restored)
+		}
+	})
+}
+
+// FuzzFingerprintChecks exercises the change-detection fingerprint with
+// arbitrary field values. Invariants: never panics, is deterministic,
+// distinguishes any single-field mutation, and never aliases a name
+// containing delimiter characters with a different field split.
+func FuzzFingerprintChecks(
+	f *testing.F,
+) {
+	for _, s := range []struct{ n1, s1, e1, n2, s2, e2 string }{
+		{"db", "pass", "", "cache", "warn", "slow"},
+		{"a", "b:c", "", "a:b", "c", ""},
+		{"", "", "", "", "", ""},
+		{"svc:1", "pass", "e:1;x", "svc:1", "fail", "e:1;x"},
+		{"", "pass", "", "pass", "", ""},
+		{"🚀", "pass", "\n", "🚀", "pass", "\n"},
+		{strings.Repeat("k", 300), "pass", "", "k", "pass", ""},
+	} {
+		f.Add(s.n1, s.s1, s.e1, s.n2, s.s2, s.e2)
+	}
+
+	//nolint:lll // long parameter list is inherent to fuzz corpus tuples
+	f.Fuzz(func(t *testing.T, n1, s1, e1, n2, s2, e2 string) {
+		na, sa, ea := strings.ToValidUTF8(n1, "\uFFFD"), strings.ToValidUTF8(s1, "\uFFFD"), strings.ToValidUTF8(e1, "\uFFFD")
+		nb, sb, eb := strings.ToValidUTF8(n2, "\uFFFD"), strings.ToValidUTF8(s2, "\uFFFD"), strings.ToValidUTF8(e2, "\uFFFD")
+
+		checks := map[string]health.Check{
+			na: {Status: health.Status(sa), Error: ea},
+			nb: {Status: health.Status(sb), Error: eb},
+		}
+
+		fp := fingerprintChecks(checks)
+
+		if again := fingerprintChecks(checks); fp != again {
+			t.Fatalf("fingerprintChecks not deterministic:\n  fp1=%q\n  fp2=%q", fp, again)
+		}
+
+		mutatedStatus := maps.Clone(checks)
+
+		mc := mutatedStatus[na]
+		mc.Status = health.Status(string(mc.Status) + "x")
+		mutatedStatus[na] = mc
+
+		if fingerprintChecks(mutatedStatus) == fp {
+			t.Errorf("fingerprint unchanged after status mutation of %q", na)
+		}
+
+		mutatedError := maps.Clone(checks)
+
+		me := mutatedError[na]
+		me.Error += "x"
+		mutatedError[na] = me
+
+		if fingerprintChecks(mutatedError) == fp {
+			t.Errorf("fingerprint unchanged after error mutation of %q", na)
+		}
+
+		mutatedName := maps.Clone(checks)
+		mutatedName[na+"x"] = mutatedName[na]
+		delete(mutatedName, na)
+
+		if fingerprintChecks(mutatedName) == fp {
+			t.Errorf("fingerprint unchanged after name mutation of %q", na)
 		}
 	})
 }
