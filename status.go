@@ -271,8 +271,9 @@ func fingerprintChecks(checks map[string]health.Check) string {
 // appendField appends "<length>:<value>;" so field boundaries are explicit
 // regardless of the value's content.
 func appendField(buf []byte, value string) []byte {
-	buf = strconv.AppendInt(buf, int64(len(value)), 10)
+	buf = append(buf, strconv.Itoa(len(value))...)
 	buf = append(buf, ':')
 	buf = append(buf, value...)
+
 	return append(buf, ';')
 }

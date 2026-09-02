@@ -9,6 +9,7 @@ import (
 
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	"github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/model"
 	"github.com/samber/do/v2"
@@ -261,31 +262,16 @@ func TestMetrics_PrometheusParserConformance(t *testing.T) {
 		}
 	}
 
-	checks := families["dashboard_health_check"]
-	if len(checks.GetMetric()) != 3 {
-		t.Errorf("dashboard_health_check: want 3 samples, got %d", len(checks.GetMetric()))
+	checkFamily, ok := families["dashboard_health_check"]
+	if !ok {
+		t.Fatalf("dashboard_health_check family missing in payload:\n%s", body)
 	}
 
-	byCheck := map[string]float64{}
-	for _, m := range checks.GetMetric() {
-		var name, status string
-
-		for _, lp := range m.GetLabel() {
-			switch lp.GetName() {
-			case "check":
-				name = lp.GetValue()
-			case "status":
-				status = lp.GetValue()
-			}
-		}
-
-		if name == "" || status == "" {
-			t.Errorf("sample missing check/status labels: %v", m.GetLabel())
-			continue
-		}
-
-		byCheck[name+"\t"+status] = m.GetGauge().GetValue()
+	if len(checkFamily.GetMetric()) != 3 {
+		t.Errorf("dashboard_health_check: want 3 samples, got %d", len(checkFamily.GetMetric()))
 	}
+
+	byCheck := checkSampleIndex(t, checkFamily)
 
 	// The check name carries a quote and a backslash; the error message
 	// carries a newline. Both must survive escaping and parsing unchanged.
@@ -302,9 +288,40 @@ func TestMetrics_PrometheusParserConformance(t *testing.T) {
 		t.Errorf("queue sample: want (warn, 0), got %v", byCheck)
 	}
 
-	if len(checks.GetHelp()) == 0 {
+	if len(checkFamily.GetHelp()) == 0 {
 		t.Error("dashboard_health_check missing HELP text")
 	}
+}
+
+// checkSampleIndex maps "<check>\t<status>" to the sample value, failing
+// the test when a sample lacks either label.
+func checkSampleIndex(t *testing.T, family *dto.MetricFamily) map[string]float64 {
+	t.Helper()
+
+	index := make(map[string]float64)
+
+	for _, sample := range family.GetMetric() {
+		var name, status string
+
+		for _, lp := range sample.GetLabel() {
+			switch lp.GetName() {
+			case "check":
+				name = lp.GetValue()
+			case "status":
+				status = lp.GetValue()
+			}
+		}
+
+		if name == "" || status == "" {
+			t.Errorf("sample missing check/status labels: %v", sample.GetLabel())
+
+			continue
+		}
+
+		index[name+"\t"+status] = sample.GetGauge().GetValue()
+	}
+
+	return index
 }
 
 // TestMetrics_PromtoolCheckWhenAvailable runs the official promtool linter
@@ -326,7 +343,7 @@ func TestMetrics_PromtoolCheckWhenAvailable(t *testing.T) {
 
 	w := doRequest(t, s.mux, "/health/metrics")
 
-	cmd := exec.Command(promtool, "check", "metrics")
+	cmd := exec.Command(promtool, "check", "metrics") //nolint:gosec // path resolved via exec.LookPath, not user input
 	cmd.Stdin = strings.NewReader(w.Body.String())
 
 	if out, checkErr := cmd.CombinedOutput(); checkErr != nil {

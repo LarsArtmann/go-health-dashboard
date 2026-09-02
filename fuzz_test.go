@@ -217,30 +217,12 @@ func FuzzFingerprintChecks(
 
 	//nolint:lll // long parameter list is inherent to fuzz corpus tuples
 	f.Fuzz(func(t *testing.T, n1, s1, e1, n2, s2, e2 string) {
-		na, sa, ea := strings.ToValidUTF8(
-			n1,
-			"\uFFFD",
-		), strings.ToValidUTF8(
-			s1,
-			"\uFFFD",
-		), strings.ToValidUTF8(
-			e1,
-			"\uFFFD",
-		)
-		nb, sb, eb := strings.ToValidUTF8(
-			n2,
-			"\uFFFD",
-		), strings.ToValidUTF8(
-			s2,
-			"\uFFFD",
-		), strings.ToValidUTF8(
-			e2,
-			"\uFFFD",
-		)
+		nameA, statusA, errA := validUTF8(n1), validUTF8(s1), validUTF8(e1)
+		nameB, statusB, errB := validUTF8(n2), validUTF8(s2), validUTF8(e2)
 
 		checks := map[string]health.Check{
-			na: {Status: health.Status(sa), Error: ea},
-			nb: {Status: health.Status(sb), Error: eb},
+			nameA: {Status: health.Status(statusA), Error: errA},
+			nameB: {Status: health.Status(statusB), Error: errB},
 		}
 
 		fp := fingerprintChecks(checks)
@@ -251,30 +233,36 @@ func FuzzFingerprintChecks(
 
 		mutatedStatus := maps.Clone(checks)
 
-		mc := mutatedStatus[na]
-		mc.Status = health.Status(string(mc.Status) + "x")
-		mutatedStatus[na] = mc
+		mutated := mutatedStatus[nameA]
+		mutated.Status = health.Status(string(mutated.Status) + "x")
+		mutatedStatus[nameA] = mutated
 
 		if fingerprintChecks(mutatedStatus) == fp {
-			t.Errorf("fingerprint unchanged after status mutation of %q", na)
+			t.Errorf("fingerprint unchanged after status mutation of %q", nameA)
 		}
 
 		mutatedError := maps.Clone(checks)
 
-		me := mutatedError[na]
-		me.Error += "x"
-		mutatedError[na] = me
+		mutated = mutatedError[nameA]
+		mutated.Error += "x"
+		mutatedError[nameA] = mutated
 
 		if fingerprintChecks(mutatedError) == fp {
-			t.Errorf("fingerprint unchanged after error mutation of %q", na)
+			t.Errorf("fingerprint unchanged after error mutation of %q", nameA)
 		}
 
 		mutatedName := maps.Clone(checks)
-		mutatedName[na+"x"] = mutatedName[na]
-		delete(mutatedName, na)
+		mutatedName[nameA+"x"] = mutatedName[nameA]
+		delete(mutatedName, nameA)
 
 		if fingerprintChecks(mutatedName) == fp {
-			t.Errorf("fingerprint unchanged after name mutation of %q", na)
+			t.Errorf("fingerprint unchanged after name mutation of %q", nameA)
 		}
 	})
+}
+
+// validUTF8 rewrites invalid UTF-8 to U+FFFD so equality invariants stay
+// meaningful across encoders that legitimately transcode invalid bytes.
+func validUTF8(s string) string {
+	return strings.ToValidUTF8(s, "\uFFFD")
 }
