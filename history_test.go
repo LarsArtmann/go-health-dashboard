@@ -63,10 +63,10 @@ func TestHistoryBuffer_WrapsAtCapacity(t *testing.T) {
 func TestHistoryBuffer_MinCapacityOne(t *testing.T) {
 	t.Parallel()
 
-	h := newHistoryBuffer(0)
-	h.record(1)
+	buf := newHistoryBuffer(0)
+	buf.record(1)
 
-	if got := h.snapshot(); len(got) != 1 || got[0] != 1 {
+	if got := buf.snapshot(); len(got) != 1 || got[0] != 1 {
 		t.Errorf("capacity-0 buffer: want [1], got %v", got)
 	}
 }
@@ -74,13 +74,13 @@ func TestHistoryBuffer_MinCapacityOne(t *testing.T) {
 func TestHistoryBuffer_SnapshotReturnsCopy(t *testing.T) {
 	t.Parallel()
 
-	h := newHistoryBuffer(2)
-	h.record(1)
+	buf := newHistoryBuffer(2)
+	buf.record(1)
 
-	first := h.snapshot()
+	first := buf.snapshot()
 	first[0] = 99
 
-	if got := h.snapshot(); got[0] != 1 {
+	if got := buf.snapshot(); got[0] != 1 {
 		t.Errorf("snapshot not isolated from mutations: want 1, got %v", got[0])
 	}
 }

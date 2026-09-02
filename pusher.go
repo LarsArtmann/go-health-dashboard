@@ -98,6 +98,7 @@ func (h *historyBuffer) record(v float64) {
 
 	h.samples[h.next] = v
 	h.next = (h.next + 1) % len(h.samples)
+
 	if h.next == 0 {
 		h.full = true
 	}
@@ -168,9 +169,11 @@ func (p *pusher) renderPatch(resp health.Response) (sse.Event, bool) {
 	vm.CSSPath = p.dashboard.cfg.CSSPath
 	vm.DatastarSrc = p.dashboard.cfg.DatastarSrc
 	vm.ShowStatCards = !p.dashboard.cfg.HideStatCards
+
 	if p.history != nil {
 		vm.History = p.history.snapshot()
 	}
+
 	content := dashboardContent(vm)
 
 	patch, err := dstar.ElementsFromTempl(content,

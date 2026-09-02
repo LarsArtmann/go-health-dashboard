@@ -120,17 +120,26 @@ func buildViewModel(resp health.Response, title, sseURL string) viewModel {
 	}
 }
 
+// Trend scale values for the sparkline.
+const (
+	trendPassValue = 1
+	trendWarnValue = 0.5
+	trendFailValue = 0
+)
+
 // statusValue maps a status to the 0..1 trend scale used by the sparkline:
 // pass=1, warn=0.5, fail=0. Unknown statuses plot as fail — the trend line
 // dips on anything that is not provably healthy.
 func statusValue(s health.Status) float64 {
 	switch s {
 	case health.StatusPass:
-		return 1
+		return trendPassValue
 	case health.StatusWarn:
-		return 0.5
+		return trendWarnValue
+	case health.StatusFail:
+		return trendFailValue
 	default:
-		return 0
+		return trendFailValue
 	}
 }
 
