@@ -29,7 +29,6 @@ require (
 	github.com/larsartmann/templ-components/htmx v1.11.0 // indirect
 	github.com/larsartmann/templ-components/icons v1.11.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/prometheus/client_golang v1.24.1 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/samber/go-type-to-string v1.8.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect

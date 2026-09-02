@@ -24,6 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - CI browser job: the runtime CSP test now runs on every push/PR against a
   real Chrome (`GO_HEALTH_DASHBOARD_CHROME`), and the test job reports
   coverage totals (`.github/workflows/ci.yml`)
+- Metrics conformance test: the exposition is parsed with the official
+  `prometheus/common` text-format parser under strict legacy name
+  validation, covering all seven metric families and label values with
+  quotes/backslashes/newlines; a second test pipes a scrape through
+  `promtool check metrics` when a promtool binary is on PATH
+  (`metrics_test.go`). Note: nixpkgs' prometheus 3.x package no longer
+  ships promtool, so the lint pass is opt-in via PATH while the parser
+  check always runs
 
 ### Fixed
 
