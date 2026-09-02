@@ -14,20 +14,18 @@ import (
 	"github.com/samber/do/v2"
 )
 
-// TestCaptureREADME_Screenshot renders the dashboard in headless Chrome and
-// writes a PNG to SCREENSHOT_OUTPUT. Skipped unless SCREENSHOT_OUTPUT is set:
+// captureThemeScreenshot renders the dashboard in the requested theme and
+// writes a PNG to out. Skipped when envVar is unset: screenshot capture is
+// a manual documentation tool.
 //
-//	SCREENSHOT_OUTPUT=docs/screenshot.png \
-//	GO_HEALTH_DASHBOARD_CHROME=/path/to/chromium \
-//	go test -run TestCaptureREADME_Screenshot -v .
-//
-// The Tailwind Play CDN is used on purpose so the capture needs no CSS build.
-func TestCaptureREADME_Screenshot(t *testing.T) {
-	t.Parallel()
+// The Tailwind Play CDN is used on purpose so the capture needs no CSS
+// build. The theme is pinned via same-origin localStorage before the
+// dashboard loads, mirroring the UI's own persistence.
+func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
+	t.Helper()
 
-	out := os.Getenv("SCREENSHOT_OUTPUT")
-	if out == "" {
-		t.Skip("SCREENSHOT_OUTPUT not set; screenshot capture is manual")
+	if os.Getenv(envVar) == "" {
+		t.Skipf("%s not set; screenshot capture is manual", envVar)
 	}
 
 	chromePath := findChrome(t)
@@ -84,17 +82,18 @@ func TestCaptureREADME_Screenshot(t *testing.T) {
 	ctx, cancel := chromedp.NewContext(allocCtx)
 	defer cancel()
 
-	// Pin the light theme before the dashboard loads: same-origin
-	// localStorage survives across navigations.
+	pin := `localStorage.setItem('theme', '` + theme + `')`
+
 	if err := chromedp.Run(ctx,
 		chromedp.Navigate(server.URL+"/healthz"),
-		chromedp.Evaluate(`localStorage.setItem('theme', 'light')`, nil),
+		chromedp.Evaluate(pin, nil),
 		chromedp.Navigate(server.URL+"/health"),
 	); err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
 
 	deadline := time.Now().Add(15 * time.Second)
+
 	for dash.SubscriberCount() == 0 {
 		if time.Now().After(deadline) {
 			t.Fatal("SSE never connected during screenshot capture")
@@ -103,8 +102,6 @@ func TestCaptureREADME_Screenshot(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 	}
 
-	// Let the trend sparkline accumulate samples and a patch cycle run so
-	// the captured page shows live data, not just the initial render.
 	time.Sleep(600 * time.Millisecond)
 
 	var png []byte
@@ -116,10 +113,22 @@ func TestCaptureREADME_Screenshot(t *testing.T) {
 		t.Fatalf("screenshot: %v", err)
 	}
 
-	//nolint:gosec // output path is the operator-provided SCREENSHOT_OUTPUT
+	//nolint:gosec // output path is the operator-provided environment variable
 	if err := os.WriteFile(out, png, 0o600); err != nil {
 		t.Fatalf("write screenshot: %v", err)
 	}
 
 	t.Logf("screenshot written to %s (%d bytes)", out, len(png))
+}
+
+// TestCaptureREADME_Screenshot renders the dashboard in light mode for the
+// README:
+//
+//	SCREENSHOT_OUTPUT=docs/screenshot.png \
+//	GO_HEALTH_DASHBOARD_CHROME=/path/to/chromium \
+//	go test -run TestCaptureREADME_Screenshot -v .
+func TestCaptureREADME_Screenshot(t *testing.T) {
+	t.Parallel()
+
+	captureThemeScreenshot(t, "SCREENSHOT_OUTPUT", "light", os.Getenv("SCREENSHOT_OUTPUT"))
 }
