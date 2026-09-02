@@ -67,12 +67,17 @@ func freePort(t *testing.T) int {
 func startHeadlessChrome(t *testing.T, chromePath string) (wsURL string, stop func()) {
 	t.Helper()
 
+	profileDir, err := os.MkdirTemp("", "go-health-dashboard-chrome-")
+	if err != nil {
+		t.Fatalf("chrome profile dir: %v", err)
+	}
+
 	cmd := exec.Command(chromePath,
 		"--headless",
 		"--no-sandbox",
 		"--disable-gpu",
 		"--remote-debugging-port="+strconv.Itoa(freePort(t)),
-		"--user-data-dir="+t.TempDir(),
+		"--user-data-dir="+profileDir,
 		"about:blank",
 	)
 
@@ -98,23 +103,39 @@ func startHeadlessChrome(t *testing.T, chromePath string) (wsURL string, stop fu
 
 	timeout := time.After(20 * time.Second)
 
+	// stopChrome terminates the browser and removes the profile. Renderer
+	// child processes may outlive the browser process for a few milliseconds
+	// and keep writing into the profile, so removal retries briefly before
+	// giving up (the OS temp dir is the final safety net).
+	stopChrome := func() {
+		_ = cmd.Process.Signal(os.Interrupt)
+		_ = cmd.Wait()
+
+		for range 3 {
+			if err := os.RemoveAll(profileDir); err == nil {
+				return
+			}
+
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+
 	for {
 		select {
 		case <-timeout:
 			_ = cmd.Process.Kill()
 			_ = cmd.Wait()
+			_ = os.RemoveAll(profileDir)
 			t.Fatal("chrome did not announce a DevTools websocket within 20s")
 		case line, ok := <-lines:
 			if !ok {
 				_ = cmd.Wait()
+				_ = os.RemoveAll(profileDir)
 				t.Fatal("chrome exited before announcing a DevTools websocket")
 			}
 
 			if url, found := strings.CutPrefix(line, "DevTools listening on "); found {
-				return url, func() {
-					_ = cmd.Process.Kill()
-					_ = cmd.Wait()
-				}
+				return url, stopChrome
 			}
 		}
 	}
@@ -204,20 +225,38 @@ func TestBrowser_CSPCleanRuntime(t *testing.T) {
 
 	time.Sleep(250 * time.Millisecond) // allow at least one SSE patch to apply
 
-	var styleAttrs, styleTags int64
+	var styleViolations, styleTags int64
 
 	var bodyText string
 
+	// The dark-mode pre-paint script sets `color-scheme` on <html> via the
+	// CSSOM (el.style.*), which CSP does not restrict — only style markup in
+	// the served HTML is. So <html> is the one allowed carrier of a style
+	// attribute; any other styled element is a real leak that would break a
+	// style-src policy without 'unsafe-inline'.
 	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(`document.querySelectorAll('[style]').length`, &styleAttrs),
+		chromedp.Evaluate(
+			`[...document.querySelectorAll('[style]')].filter(e => e !== document.documentElement).length`,
+			&styleViolations),
 		chromedp.Evaluate(`document.querySelectorAll('style').length`, &styleTags),
 		chromedp.Evaluate(`document.body.innerText`, &bodyText),
 	); err != nil {
 		t.Fatalf("browser evaluate: %v", err)
 	}
 
-	if styleAttrs != 0 {
-		t.Errorf("runtime DOM contains %d elements with inline style attributes; want 0", styleAttrs)
+	if styleViolations != 0 {
+		var styledHTML string
+
+		if err := chromedp.Run(ctx,
+			chromedp.Evaluate(
+				`[...document.querySelectorAll('[style]')].map(e => e.outerHTML).join("\n---\n")`,
+				&styledHTML,
+			)); err != nil {
+			styledHTML = "could not fetch styled elements: " + err.Error()
+		}
+
+		t.Errorf("runtime DOM contains %d CSP-relevant elements with inline style attributes; want 0:\n%s",
+			styleViolations, styledHTML)
 	}
 
 	if styleTags != 0 {
