@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.3.0] - 2026-09-02
+## [0.3.1] - 2026-09-02
 
 Protect, measure, trend. The dashboard gains consumer-supplied auth middleware,
 an opt-in zero-dependency Prometheus metrics endpoint, a live health trend
@@ -41,6 +41,41 @@ for the Accept parser and JSON serialization.
   (`SCREENSHOT_OUTPUT`) chromedp capture used to generate `docs/screenshot.png`
 - README: embedded dashboard screenshot, "Protecting the Dashboard",
   "Prometheus Metrics", "Health Trend", and "Content-Security-Policy" sections
+
+### Changed
+
+- **Documented CSP requirement:** the Datastar SDK compiles its `data-*`
+  expressions with the `Function` constructor, so `script-src` needs
+  `'unsafe-eval'` next to the nonce; without it the bundle throws
+  `GenerateExpression` during init and SSE never connects (found by the
+  headless-browser test)
+- Test dependencies: chromedp and `go-datastar/static` (embedded SDK bundle
+  for hermetic browser tests) added to `go.mod`
+- Test count: 78 → 120 top-level test functions across 12 test files
+
+### Fixed
+
+- `WithBasePath` no longer converts an intentionally empty `Routes.Metrics`
+  into the bare prefix
+
+## [0.3.0] - 2026-08-10
+
+Self-hosted Datastar SDK, SSE reconnection, sub-path mounting, and samber/do
+lifecycle integration. Note: this release was tagged on 2026-08-10 while the
+CHANGELOG still read `[Unreleased]` and the Version constant still said
+`0.2.0`; this section was written afterwards to document what the tag
+actually contains.
+
+### Added
+
+- `WithDatastarSrc(src string)` option: serve a local copy of the Datastar
+  runtime instead of the pinned jsdelivr CDN URL, keeping the dashboard fully
+  offline and CSP-compliant under `script-src 'self'`. Falls back to the CDN
+  URL when unset (`dashboard.go`, `csp_test.go`)
+- samber/do lifecycle integration: `Register(injector, probe, opts...)` plus
+  `do.HealthcheckerWithContext` / `do.Shutdowner` assertions, so the Dashboard
+  participates in container-wide `do.HealthCheck` and `do.Shutdown` cascades
+  (`di.go`, `lifecycle_test.go`)
 - `WithRetryInterval(d time.Duration)` option and `Config.RetryInterval` field:
   sets the SSE retry field so browsers know how long to wait before reconnecting
   after a disconnect. Default zero uses the browser's built-in ~3s delay
@@ -68,22 +103,13 @@ for the Accept parser and JSON serialization.
 
 ### Changed
 
-- **Documented CSP requirement:** the Datastar SDK compiles its `data-*`
-  expressions with the `Function` constructor, so `script-src` needs
-  `'unsafe-eval'` next to the nonce; without it the bundle throws
-  `GenerateExpression` during init and SSE never connects (found by the
-  headless-browser test)
-- Test dependencies: chromedp and `go-datastar/static` (embedded SDK bundle
-  for hermetic browser tests) added to `go.mod`
 - **Breaking:** `RegisterRoutes` signature changed from
   `(mux *http.ServeMux, routes Routes)` to `(mux *http.ServeMux)`. Routes are
   now read from `Config` as the single source of truth (`dashboard.go:364`)
-- Test count: 67 → 120+ top-level test functions across 11 test files
+- Test count: 67 → 78 top-level test functions; coverage 80.0% → 79.7%
 
 ### Fixed
 
-- `WithBasePath` no longer converts an intentionally empty `Routes.Metrics`
-  into the bare prefix
 - `Version` constant updated from `"0.1.0"` to `"0.2.0"` to match the released
   tag — it was left stale when v0.2.0 was tagged (`dashboard.go:27`)
 - `RegisterRoutes` latent bug: the `routes` parameter could diverge from

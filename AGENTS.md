@@ -2,7 +2,7 @@
 
 Real-time health dashboard that composes [go-health](https://github.com/larsartmann/go-health) (health-checking SDK), [templ-components](https://github.com/larsartmann/templ-components) (UI rendering), [go-datastar](https://github.com/larsartmann/go-datastar) (Datastar SSE patch protocol), and [go-sse](https://github.com/larsartmann/go-sse) (SSE transport). The dashboard lives at a dedicated route (`/health`) and uses Datastar SSE for real-time updates. `/health` serves HTML by default but returns JSON when the client sends `Accept: application/json`. Kubernetes probe endpoints (`/healthz`, `/readyz`, `/startupz`) are JSON-only.
 
-**Module**: `github.com/larsartmann/go-health-dashboard` · **Package**: `dashboard` · **Go**: 1.26.5 · **Status**: v0.3.0
+**Module**: `github.com/larsartmann/go-health-dashboard` · **Package**: `dashboard` · **Go**: 1.26.5 · **Status**: v0.3.1
 
 ---
 

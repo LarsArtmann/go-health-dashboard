@@ -44,11 +44,11 @@ Raw ideas:
 - Health check history with retention window — partially shipped as `WithTrend`
   (in-memory ring); retention/export extensions are plan M23/M25
 - Trend visualization (templ-components has Sparkline) — **shipped** as
-  `WithTrend` in v0.3.0; markers/timeline extensions are plan M22/M29
+  `WithTrend` in v0.3.1; markers/timeline extensions are plan M22/M29
 - Status change timeline (when did each service flip?) — plan M29
 - Auto-generated refresh timestamp display — plan M26
 - Prometheus-compatible metrics endpoint for the dashboard itself — **shipped**
-  as `WithMetrics` in v0.3.0
+  as `WithMetrics` in v0.3.1
 - Export health data as JSON/CSV — plan M25
 - Public-facing status page mode (no internal details exposed) — plan M28
 - axe-core accessibility verification in the browser test — plan M21
@@ -64,7 +64,7 @@ Raw ideas:
 - Build-tag gating for SSE code (consumers who only want HTML pay no SSE cost)
 - Embeddable dashboard component (mount under a sub-path, not root) — **DONE** in v0.2.0 via `WithBasePath`
 - Authentication middleware integration — **shipped** as `WithMiddleware` in
-  v0.3.0
+  v0.3.1
 - OG metadata and social preview for dashboard page — plan M27 (og:description)
 - `RecommendedCSP()` helper so consumers get a correct CSP without hand-rolling
   — plan M3
