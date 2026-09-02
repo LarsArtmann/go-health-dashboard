@@ -1,0 +1,10 @@
+# Scrapes the demo dashboard's metrics endpoint every 5 seconds so the
+# histogram and gauges are visible in Prometheus immediately.
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: go-health-dashboard
+    metrics_path: /health/metrics
+    static_configs:
+      - targets: ["dashboard:8080"]

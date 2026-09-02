@@ -1,0 +1,25 @@
+# Prometheus demo: runs the example dashboard plus Prometheus scraping its
+# metrics endpoint. Start with:
+#
+#   docker compose -f deploy/docker-compose.yml up --build
+#
+# Dashboard:  http://localhost:8080/health
+# Metrics:    http://localhost:8080/health/metrics
+# Prometheus: http://localhost:9090
+services:
+  dashboard:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    environment:
+      DEMO_TREND: "1"
+      DEMO_METRICS: "1"
+    ports:
+      - "8080:8080"
+
+  prometheus:
+    image: prom/prometheus:v3.4.2
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"

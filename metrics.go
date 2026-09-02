@@ -61,11 +61,16 @@ func (d *Dashboard) renderMetrics() string {
 	)
 	b.WriteString("# TYPE dashboard_health_check gauge\n")
 
-	for _, name := range sortedCheckNames(resp.Checks) {
+	for i, name := range sortedCheckNames(resp.Checks) {
 		check := resp.Checks[name]
 
+		label := name
+		if d.cfg.PublicMode {
+			label = fmt.Sprintf("check-%d", i+1)
+		}
+
 		fmt.Fprintf(&b, "dashboard_health_check{check=\"%s\",status=\"%s\"} %d\n",
-			escapeLabelValue(name),
+			escapeLabelValue(label),
 			escapeLabelValue(string(check.Status)),
 			boolGauge(check.Status == health.StatusPass),
 		)
