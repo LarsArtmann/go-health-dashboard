@@ -19,15 +19,15 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
 	"errors"
 	"fmt"
 	"log"
-	"crypto/subtle"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
-	"os/signal"
 	"syscall"
 	"time"
 
@@ -81,7 +81,10 @@ func main() {
 
 	if token := os.Getenv("DEMO_AUTH"); token != "" {
 		opts = append(opts, dashboard.WithMiddleware(bearerAuth(token)))
-		log.Printf("auth: bearer token required on dashboard routes (DEMO_AUTH set, %d chars)", len(token))
+		log.Printf(
+			"auth: bearer token required on dashboard routes (DEMO_AUTH set, %d chars)",
+			len(token),
+		)
 	}
 
 	if spec := os.Getenv("DEMO_RATELIMIT"); spec != "" {

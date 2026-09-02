@@ -200,8 +200,11 @@ with `GO_HEALTH_DASHBOARD_CHROME=/path/to/chromium`.
 The demo server exposes every feature behind environment toggles:
 
 ```bash
-GOEXPERIMENT=jsonv2 DEMO_TREND=1 DEMO_METRICS=1 DEMO_AUTH=my-token   DEMO_RATELIMIT=30/1m DEMO_DRAIN=5s go run ./example
+GOEXPERIMENT=jsonv2 DEMO_TREND=1 DEMO_METRICS=1 DEMO_AUTH=my-token DEMO_RATELIMIT=30/1m DEMO_DRAIN=5s go run ./example
+# Open http://localhost:8080/health (bearer token: my-token)
 ```
+
+All toggles are optional — plain `go run ./example` works too.
 
 | Variable             | Effect                                                        |
 | -------------------- | ------------------------------------------------------------- |
@@ -211,13 +214,6 @@ GOEXPERIMENT=jsonv2 DEMO_TREND=1 DEMO_METRICS=1 DEMO_AUTH=my-token   DEMO_RATELI
 | `DEMO_RATELIMIT=n/w` | Token-bucket rate limit, e.g. `30/1m` (`WithRateLimit`)        |
 | `DEMO_DRAIN=5s`      | Graceful SSE drain window on shutdown (`WithShutdownDrain`)    |
 | `PORT`               | Listen port (default 8080)                                     |
-
-## Run the Example (legacy)
-
-```bash
-GOEXPERIMENT=jsonv2 go run ./example
-# Open http://localhost:8080/health
-```
 
 The example includes mock services: one always healthy, one flapping (alternates
 pass/fail every 15s), and one always failing. Watch the dashboard update live.
