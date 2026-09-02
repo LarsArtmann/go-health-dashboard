@@ -18,9 +18,6 @@ import (
 	dashboard "github.com/larsartmann/go-health-dashboard"
 )
 
-// itoa is a tiny helper keeping the exec.Command argument list readable.
-func itoa(n int) string { return strconv.Itoa(n) }
-
 // findChrome returns a usable Chrome/Chromium executable or skips the test.
 // Resolution order: GO_HEALTH_DASHBOARD_CHROME env var, then well-known
 // binary names on PATH.
@@ -74,7 +71,7 @@ func startHeadlessChrome(t *testing.T, chromePath string) (wsURL string, stop fu
 		"--headless",
 		"--no-sandbox",
 		"--disable-gpu",
-		"--remote-debugging-port="+itoa(freePort(t)),
+		"--remote-debugging-port="+strconv.Itoa(freePort(t)),
 		"--user-data-dir="+t.TempDir(),
 		"about:blank",
 	)
@@ -124,12 +121,15 @@ func startHeadlessChrome(t *testing.T, chromePath string) (wsURL string, stop fu
 }
 
 // strictCSPMiddleware serves a locked-down CSP: no unsafe-inline for scripts
-// or styles, everything self-hosted, only the given nonce may inline scripts.
+// or styles, everything self-hosted. 'unsafe-eval' is required because the
+// Datastar SDK compiles its data-* expressions with the Function
+// constructor — without it the bundle throws "GenerateExpression" during
+// init and the SSE connection never opens.
 func strictCSPMiddleware(nonce string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Security-Policy",
 			"default-src 'self'; "+
-				"script-src 'self' 'nonce-"+nonce+"'; "+
+				"script-src 'self' 'nonce-"+nonce+"' 'unsafe-eval'; "+
 				"style-src 'self'; "+
 				"img-src 'self' data:; "+
 				"connect-src 'self'; "+
