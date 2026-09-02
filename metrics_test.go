@@ -9,7 +9,7 @@ import (
 
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
-	"github.com/prometheus/client_model/go"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/model"
 	"github.com/samber/do/v2"
@@ -247,7 +247,10 @@ func TestMetrics_PrometheusParserConformance(t *testing.T) {
 		t.Fatalf("official Prometheus parser rejected the exposition: %v\npayload:\n%s", err, body)
 	}
 
-	wantFamilies := []string{
+	requireMetricFamilies(
+		t,
+		families,
+		body,
 		"dashboard_health_up",
 		"dashboard_health_status",
 		"dashboard_health_check",
@@ -255,12 +258,7 @@ func TestMetrics_PrometheusParserConformance(t *testing.T) {
 		"dashboard_health_shutting_down",
 		"dashboard_sse_connections",
 		"dashboard_pusher_active",
-	}
-	for _, name := range wantFamilies {
-		if _, ok := families[name]; !ok {
-			t.Errorf("missing metric family %q in payload:\n%s", name, body)
-		}
-	}
+	)
 
 	checkFamily, ok := families["dashboard_health_check"]
 	if !ok {
@@ -278,18 +276,39 @@ func TestMetrics_PrometheusParserConformance(t *testing.T) {
 	const weirdName = `cache "weird"\name`
 
 	// Escaped label values must round-trip through the official parser.
-	if v, ok := byCheck["database\tpass"]; !ok || v != 1 {
-		t.Errorf("database sample: want (pass, 1), got %v", byCheck)
-	}
-	if v, ok := byCheck[weirdName+"\twarn"]; !ok || v != 0 {
-		t.Errorf("escaped check name %q lost in round-trip; got %v", weirdName, byCheck)
-	}
-	if v, ok := byCheck["queue\twarn"]; !ok || v != 0 {
-		t.Errorf("queue sample: want (warn, 0), got %v", byCheck)
-	}
+	requireSample(t, byCheck, "database\tpass", 1)
+	requireSample(t, byCheck, weirdName+"\twarn", 0)
+	requireSample(t, byCheck, "queue\twarn", 0)
 
 	if len(checkFamily.GetHelp()) == 0 {
 		t.Error("dashboard_health_check missing HELP text")
+	}
+}
+
+// requireMetricFamilies fails the test when any expected family is absent.
+func requireMetricFamilies(
+	t *testing.T,
+	families map[string]*dto.MetricFamily,
+	body string,
+	names ...string,
+) {
+	t.Helper()
+
+	for _, name := range names {
+		if _, ok := families[name]; !ok {
+			t.Errorf("missing metric family %q in payload:\n%s", name, body)
+		}
+	}
+}
+
+// requireSample fails the test when an indexed sample is absent or has a
+// different value.
+func requireSample(t *testing.T, index map[string]float64, key string, want float64) {
+	t.Helper()
+
+	got, ok := index[key]
+	if !ok || got != want {
+		t.Errorf("sample %q: want %v, got %v", key, want, index)
 	}
 }
 
@@ -343,7 +362,8 @@ func TestMetrics_PromtoolCheckWhenAvailable(t *testing.T) {
 
 	w := doRequest(t, s.mux, "/health/metrics")
 
-	cmd := exec.Command(promtool, "check", "metrics") //nolint:gosec // path resolved via exec.LookPath, not user input
+	//nolint:gosec // path resolved via exec.LookPath, not user input
+	cmd := exec.Command(promtool, "check", "metrics")
 	cmd.Stdin = strings.NewReader(w.Body.String())
 
 	if out, checkErr := cmd.CombinedOutput(); checkErr != nil {
