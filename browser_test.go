@@ -10,12 +10,16 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
+	health "github.com/larsartmann/go-health"
 	dstarstatic "github.com/larsartmann/go-datastar/static"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	"github.com/samber/do/v2"
 )
 
 // findChrome returns a usable Chrome/Chromium executable or skips the test.
@@ -224,6 +228,8 @@ func TestBrowser_CSPCleanRuntime(t *testing.T) {
 	ctx, cancel := chromedp.NewContext(allocCtx)
 	defer cancel()
 
+	errLog := watchBrowserErrors(ctx)
+
 	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
 		t.Fatalf("browser navigate: %v", err)
 	}
@@ -285,5 +291,203 @@ func TestBrowser_CSPCleanRuntime(t *testing.T) {
 
 	if !strings.Contains(bodyText, "All Systems Operational") {
 		t.Errorf("health content missing from live DOM; got: %.200s", bodyText)
+	}
+
+	assertNoBrowserErrors(t, errLog)
+}
+
+// --- Console / CSP-violation observation ---
+
+// browserErrorLog records console.error calls and uncaught exceptions from
+// the page. CSP violations surface as console errors ("Refused to ..."),
+// so watching this channel catches both broken scripts and policy breaches.
+type browserErrorLog struct {
+	mu      sync.Mutex
+	entries []string
+}
+
+// watchBrowserErrors attaches a target-event listener that collects page
+// errors. It must be called before the first navigation.
+func watchBrowserErrors(ctx context.Context) *browserErrorLog {
+	log := &browserErrorLog{}
+
+	chromedp.ListenTarget(ctx, func(ev interface{}) {
+		switch e := ev.(type) {
+		case *runtime.EventConsoleAPICalled:
+			if e.Type != "error" {
+				return
+			}
+
+			var parts []string
+
+			for _, arg := range e.Args {
+				parts = append(parts, arg.Description)
+			}
+
+			log.mu.Lock()
+			log.entries = append(log.entries, "console.error: "+strings.Join(parts, " "))
+			log.mu.Unlock()
+		case *runtime.EventExceptionThrown:
+			if e.ExceptionDetails == nil {
+				return
+			}
+
+			text := e.ExceptionDetails.Text
+
+			if e.ExceptionDetails.Exception != nil {
+				text += ": " + e.ExceptionDetails.Exception.Description
+			}
+
+			log.mu.Lock()
+			log.entries = append(log.entries, "uncaught exception: "+text)
+			log.mu.Unlock()
+		}
+	})
+
+	return log
+}
+
+// all returns the collected entries so far.
+func (l *browserErrorLog) all() []string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	return append([]string(nil), l.entries...)
+}
+
+// assertNoBrowserErrors fails the test when the page logged errors or threw.
+func assertNoBrowserErrors(t *testing.T, log *browserErrorLog) {
+	t.Helper()
+
+	if entries := log.all(); len(entries) != 0 {
+		t.Errorf("browser logged %d error(s); want 0:\n%s", len(entries), strings.Join(entries, "\n"))
+	}
+}
+
+// --- Live SSE patch verification ---
+
+// TestBrowser_LiveSSEPatch proves the dashboard's headline behavior
+// end-to-end in a real browser: the page starts green, a service actually
+// breaks, and the DOM updates to the degraded banner through the normal
+// Datastar SSE patch stream — no reload, under a strict CSP, with a clean
+// console throughout.
+func TestBrowser_LiveSSEPatch(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-live-nonce"
+
+	toggle := &toggleService{}
+	toggle.healthy.Store(true)
+
+	injector := do.New()
+	provideToggleService(injector, "database", toggle)
+	provideHealthy(injector, "redis")
+	invoke[*healthyService](t, injector, "redis")
+
+	probe := health.New(injector,
+		health.WithVersion("2.1.0"),
+		health.WithRefreshInterval(100*time.Millisecond),
+	)
+	dash := dashboard.New(probe,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+	)
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		_, _ = w.Write([]byte("body { margin: 0; }"))
+	})
+	mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(dstarstatic.Bytes())
+	})
+
+	if err := probe.Start(t.Context()); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
+	defer probe.Shutdown()
+
+	if err := dash.Start(t.Context()); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+	defer dash.Shutdown()
+
+	server := httptest.NewServer(strictCSPMiddleware(nonce, mux))
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, dash)
+
+	waitForBodyText(t, ctx, "All Systems Operational")
+
+	toggle.healthy.Store(false)
+
+	waitForBodyText(t, ctx, "Degraded")
+
+	assertNoBrowserErrors(t, errLog)
+}
+
+// waitForSubscriber blocks until an SSE client connects or the test times out.
+func waitForSubscriber(t *testing.T, dash *dashboard.Dashboard) {
+	t.Helper()
+
+	deadline := time.Now().Add(15 * time.Second)
+
+	for dash.SubscriberCount() == 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("Datastar SDK never connected via SSE")
+		}
+
+		time.Sleep(50 * time.Millisecond)
+	}
+}
+
+// waitForBodyText polls the live DOM until it contains the given text.
+func waitForBodyText(t *testing.T, ctx context.Context, want string) {
+	t.Helper()
+
+	const query = `document.body.innerText`
+
+	deadline := time.Now().Add(15 * time.Second)
+
+	for {
+		var bodyText string
+
+		if err := chromedp.Run(ctx, chromedp.Evaluate(query, &bodyText)); err != nil {
+			t.Fatalf("browser evaluate: %v", err)
+		}
+
+		if strings.Contains(bodyText, want) {
+			return
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatalf("live DOM never showed %q; got: %.300s", want, bodyText)
+		}
+
+		time.Sleep(100 * time.Millisecond)
 	}
 }
