@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"fmt"
+	"time"
 	"sort"
 	"strconv"
 
@@ -87,7 +88,9 @@ type viewModel struct {
 	// History holds recent overall-status samples for the trend sparkline
 	// (pass=1, warn=0.5, fail=0, oldest first). Nil when the trend is
 	// disabled (default) or no samples recorded yet.
-	History []float64
+	History   []float64
+	Timeline []TimelineEntry
+	LastUpdated string
 	// ShowStatCards renders the version/uptime/latency card grid.
 	// Enabled by default; disabled via WithHideStatCards.
 	ShowStatCards bool
@@ -108,6 +111,7 @@ func buildViewModel(resp health.Response, title, sseURL string) viewModel {
 	}
 
 	return viewModel{
+		LastUpdated: time.Now().UTC().Format("15:04:05 MST"),
 		Title:         title,
 		Status:        resp.Status,
 		FeedbackType:  feedbackType,
@@ -276,4 +280,12 @@ func appendField(buf []byte, value string) []byte {
 	buf = append(buf, value...)
 
 	return append(buf, ';')
+}
+
+// TimelineEntry is one recent status flip rendered in the dashboard's
+// status-change timeline.
+type TimelineEntry struct {
+	At       string // HH:MM:SS render timestamp
+	Status   string
+	Degraded bool
 }

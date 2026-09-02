@@ -292,6 +292,7 @@ type Dashboard struct {
 	cfg     Config
 	push    atomic.Pointer[pusher]
 	limiter *rateLimiter
+	latency *latencyHistogram
 }
 
 // Compile-time assertions that Dashboard satisfies samber/do lifecycle interfaces.
@@ -325,7 +326,7 @@ func New(probe *health.Probe, opts ...Option) *Dashboard {
 
 	cfg.PushInterval = resolvePushInterval(cfg.PushInterval, probe)
 
-	d := &Dashboard{probe: probe, cfg: cfg}
+	d := &Dashboard{probe: probe, cfg: cfg, latency: newLatencyHistogram()}
 
 	if cfg.RateLimitRequests > 0 && cfg.RateLimitWindow > 0 {
 		d.limiter = newRateLimiter(cfg.RateLimitRequests, cfg.RateLimitWindow)

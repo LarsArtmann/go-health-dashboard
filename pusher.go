@@ -75,13 +75,22 @@ func newPusher(d *Dashboard) *pusher {
 	}
 }
 
+// sample is one recorded health observation: the numeric value the
+// sparkline plots plus the raw status and the observation time. Timestamps
+// power the status timeline, the trend JSON endpoint, and the CSV export.
+type sample struct {
+	At     time.Time
+	Value  float64
+	Status string
+}
+
 // historyBuffer is a fixed-capacity ring buffer of status samples in
 // chronological order. The pusher goroutine records on every tick; the SSE
 // handler snapshots from other goroutines when rendering initial state, so
 // all access is mutex-guarded.
 type historyBuffer struct {
 	mu      sync.Mutex
-	samples []float64
+	samples []sample
 	next    int
 	full    bool
 }
@@ -91,15 +100,15 @@ func newHistoryBuffer(capacity int) *historyBuffer {
 		capacity = 1
 	}
 
-	return &historyBuffer{samples: make([]float64, capacity)}
+	return &historyBuffer{samples: make([]sample, capacity)}
 }
 
 // record appends a sample, overwriting the oldest once at capacity.
-func (h *historyBuffer) record(v float64) {
+func (h *historyBuffer) record(s sample) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	h.samples[h.next] = v
+	h.samples[h.next] = s
 	h.next = (h.next + 1) % len(h.samples)
 
 	if h.next == 0 {
@@ -108,7 +117,7 @@ func (h *historyBuffer) record(v float64) {
 }
 
 // snapshot returns the recorded samples oldest-first, or nil when empty.
-func (h *historyBuffer) snapshot() []float64 {
+func (h *historyBuffer) snapshot() []sample {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -116,12 +125,40 @@ func (h *historyBuffer) snapshot() []float64 {
 		return nil
 	}
 
-	out := make([]float64, 0, len(h.samples))
+	out := make([]sample, 0, len(h.samples))
 	if h.full {
 		out = append(out, h.samples[h.next:]...)
 	}
 
 	return append(out, h.samples[:h.next]...)
+}
+
+// statusTransition is one flip in the recorded status history.
+type statusTransition struct {
+	At   time.Time
+	From string
+	To   string
+}
+
+// transitions derives the status changes from the recorded samples,
+// oldest-first. The first sample has no predecessor and never produces a
+// transition.
+func (h *historyBuffer) transitions() []statusTransition {
+	samples := h.snapshot()
+
+	var out []statusTransition
+
+	for i := 1; i < len(samples); i++ {
+		if samples[i].Status != samples[i-1].Status {
+			out = append(out, statusTransition{
+				At:   samples[i].At,
+				From: samples[i-1].Status,
+				To:   samples[i].Status,
+			})
+		}
+	}
+
+	return out
 }
 
 // start runs the push loop until ctx is cancelled, then closes the broadcaster.
@@ -152,7 +189,17 @@ func (p *pusher) broadcast() {
 	resp := p.dashboard.currentResponse()
 
 	if p.history != nil {
-		p.history.record(statusValue(resp.Status))
+		now := time.Now()
+
+		p.history.record(sample{
+			At:     now,
+			Value:  statusValue(resp.Status),
+			Status: string(resp.Status),
+		})
+	}
+
+	if p.dashboard.latency != nil {
+		p.dashboard.latency.observe(float64(resp.TotalLatencyMs) / 1000)
 	}
 
 	if !p.shouldBroadcast(resp) {
@@ -176,7 +223,28 @@ func (p *pusher) renderPatch(resp health.Response) (sse.Event, bool) {
 	vm.ShowStatCards = !p.dashboard.cfg.HideStatCards
 
 	if p.history != nil {
-		vm.History = p.history.snapshot()
+		samples := p.history.snapshot()
+
+		values := make([]float64, len(samples))
+		for i, s := range samples {
+			values[i] = s.Value
+		}
+
+		vm.History = values
+
+		transitions := p.history.transitions()
+
+		if len(transitions) > 5 {
+			transitions = transitions[len(transitions)-5:]
+		}
+
+		for _, tr := range transitions {
+			vm.Timeline = append(vm.Timeline, TimelineEntry{
+				At:       tr.At.Format("15:04:05"),
+				Status:   tr.To,
+				Degraded: tr.To != string(health.StatusPass),
+			})
+		}
 	}
 
 	content := dashboardContent(vm)

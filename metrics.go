@@ -141,3 +141,51 @@ func escapeLabelValue(v string) string {
 		"\n", `\n`,
 	).Replace(v)
 }
+
+// latencyBucketBounds are the cumulative histogram bucket upper bounds in
+// seconds, chosen to span fast local checks through slow timeouts.
+var latencyBucketBounds = []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10}
+
+// latencyHistogram is a fixed-bucket cumulative histogram of health-check
+// batch durations, hand-rolled to keep the module dependency-free. The
+// pusher observes once per tick; scrapes read the counters.
+type latencyHistogram struct {
+	buckets []atomic.Uint64 // per-bucket cumulative counts
+	sum     atomic.Int64    // observed seconds, scaled by 1e6 for atomicity
+	count   atomic.Uint64
+}
+
+func newLatencyHistogram() *latencyHistogram {
+	return &latencyHistogram{buckets: make([]atomic.Uint64, len(latencyBucketBounds))}
+}
+
+// observe records one duration in seconds.
+func (h *latencyHistogram) observe(seconds float64) {
+	for i, bound := range latencyBucketBounds {
+		if seconds <= bound {
+			h.buckets[i].Add(1)
+		}
+	}
+
+	h.count.Add(1)
+	h.sum.Add(int64(seconds * 1e6))
+}
+
+// renderPrometheus writes the exposition lines for the histogram, including
+// the +Inf bucket, _sum, and _count.
+func (h *latencyHistogram) renderPrometheus(b *strings.Builder) {
+	b.WriteString("# HELP dashboard_health_check_duration_seconds Wall-clock duration of health-check batches.\n")
+	b.WriteString("# TYPE dashboard_health_check_duration_seconds histogram\n")
+
+	cumulative := uint64(0)
+
+	for i, bound := range latencyBucketBounds {
+		cumulative = h.buckets[i].Load()
+
+		fmt.Fprintf(b, "dashboard_health_check_duration_seconds_bucket{le=\"%g\"} %d\n", bound, cumulative)
+	}
+
+	fmt.Fprintf(b, "dashboard_health_check_duration_seconds_bucket{le=\"+Inf\"} %d\n", h.count.Load())
+	fmt.Fprintf(b, "dashboard_health_check_duration_seconds_sum %g\n", float64(h.sum.Load())/1e6)
+	fmt.Fprintf(b, "dashboard_health_check_duration_seconds_count %d\n", h.count.Load())
+}
