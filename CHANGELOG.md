@@ -32,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   audit (downloaded same-origin, skipped offline) enforces serious/critical
   accessibility violations plus targeted ARIA/landmark checks
   (`TestBrowser_Accessibility`)
+- Dashboard presentation options: `WithDescription(description)` renders
+  the meta description plus Open Graph tags (omitted by default), and
+  `WithPublicMode()` anonymizes the rendered HTML and the metrics labels
+  for untrusted audiences — check names and error details become generic
+  `check-N` labels while statuses stay visible (`status.go`, `metrics.go`,
+  `publicmode_test.go`)
 - History features built on timestamped trend samples
   (`sample{At,Value,Status}`): `TrendHandler` serving samples plus derived
   status transitions as JSON at `Routes.Trend` (default `/health/trend`),
