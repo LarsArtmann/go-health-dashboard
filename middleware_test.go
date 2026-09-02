@@ -108,7 +108,11 @@ func TestMiddleware_ProbeEndpointsStayOpen(t *testing.T) {
 	for _, route := range []string{"/healthz", "/readyz", "/startupz"} {
 		w := requestWithAuth(t, s.mux, route, false)
 		if w.Code != http.StatusOK {
-			t.Errorf("unauthenticated %s: want 200 (kubelet cannot authenticate), got %d", route, w.Code)
+			t.Errorf(
+				"unauthenticated %s: want 200 (kubelet cannot authenticate), got %d",
+				route,
+				w.Code,
+			)
 		}
 	}
 }
@@ -184,6 +188,26 @@ func TestMiddleware_ComposedChain(t *testing.T) {
 
 	if len(order) != 2 || order[0] != "first" || order[1] != "second" {
 		t.Errorf("middleware order: want [first second], got %v", order)
+	}
+}
+
+func TestMiddleware_ProtectsMetrics(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t,
+		dashboard.WithMiddleware(bearerAuthMiddleware("secret-token")),
+		dashboard.WithMetrics(true),
+	)
+	defer s.cleanup()
+
+	w := requestWithAuth(t, s.mux, "/health/metrics", false)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("unauthenticated /health/metrics: want 401, got %d", w.Code)
+	}
+
+	w = requestWithAuth(t, s.mux, "/health/metrics", true)
+	if w.Code != http.StatusOK {
+		t.Errorf("authenticated /health/metrics: want 200, got %d", w.Code)
 	}
 }
 

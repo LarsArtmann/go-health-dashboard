@@ -43,6 +43,7 @@ type Config struct {
 	MaxSSEConnections int
 	RetryInterval     time.Duration
 	Middleware        func(http.Handler) http.Handler
+	MetricsEnabled    bool
 }
 
 // WithMiddleware wraps every dashboard-owned handler (dashboard HTML, SSE,
@@ -66,6 +67,14 @@ type Config struct {
 //	dashboard.WithMiddleware(chain(mwOne, mwTwo))
 func WithMiddleware(mw func(http.Handler) http.Handler) Option {
 	return func(c *Config) { c.Middleware = mw }
+}
+
+// WithMetrics enables the Prometheus metrics endpoint served at
+// Routes.Metrics (default /health/metrics) by RegisterRoutes. The endpoint
+// is disabled by default — it exposes per-check detail, so opt in and
+// protect it like the dashboard itself (WithMiddleware applies to it too).
+func WithMetrics(enabled bool) Option {
+	return func(c *Config) { c.MetricsEnabled = enabled }
 }
 
 // Option configures a Dashboard. Use the With* functions to create options.
@@ -178,7 +187,7 @@ func WithBasePath(prefix string) Option {
 		}
 
 		r := cfg.Routes
-		cfg.Routes = Routes{
+		out := Routes{
 			Dashboard: prefix + r.Dashboard,
 			SSE:       prefix + r.SSE,
 			Favicon:   prefix + r.Favicon,
@@ -186,6 +195,14 @@ func WithBasePath(prefix string) Option {
 			Readiness: prefix + r.Readiness,
 			Startup:   prefix + r.Startup,
 		}
+
+		// An empty Metrics route is meaningful ("disabled") — don't turn it
+		// into the bare prefix.
+		if r.Metrics != "" {
+			out.Metrics = prefix + r.Metrics
+		}
+
+		cfg.Routes = out
 	}
 }
 
@@ -410,7 +427,12 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 //   - Dashboard route (HTML page with Datastar SSE)
 //   - SSE route (Datastar patch stream)
 //   - Favicon route (SVG favicon)
+//   - Metrics route (Prometheus exposition, when enabled via WithMetrics)
 //   - Liveness, Readiness, Startup probe endpoints (JSON)
+//
+// Dashboard-owned routes (dashboard, SSE, favicon, metrics) pass through the
+// middleware configured via WithMiddleware; the Kubernetes probe endpoints
+// never do, so kubelet probes keep working without credentials.
 func (d *Dashboard) RegisterRoutes(mux *http.ServeMux) {
 	routes := d.cfg.Routes
 
@@ -419,6 +441,10 @@ func (d *Dashboard) RegisterRoutes(mux *http.ServeMux) {
 
 	if routes.Favicon != "" {
 		mux.Handle(routes.Favicon, d.wrap(d.FaviconHandler()))
+	}
+
+	if d.cfg.MetricsEnabled && routes.Metrics != "" {
+		mux.Handle(routes.Metrics, d.wrap(d.MetricsHandler()))
 	}
 
 	mux.HandleFunc(routes.Liveness, d.probe.LivenessHandler())

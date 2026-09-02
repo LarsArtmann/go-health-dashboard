@@ -43,32 +43,42 @@ func (d *Dashboard) renderMetrics() string {
 
 	var b strings.Builder
 
-	b.WriteString("# HELP dashboard_health_up Whether the overall health status is pass (1) or not (0).\n")
+	b.WriteString(
+		"# HELP dashboard_health_up Whether the overall health status is pass (1) or not (0).\n",
+	)
 	b.WriteString("# TYPE dashboard_health_up gauge\n")
 	fmt.Fprintf(&b, "dashboard_health_up %d\n", boolGauge(resp.Status == health.StatusPass))
 
-	b.WriteString("# HELP dashboard_health_status Overall health status encoded numerically: 2 pass, 1 warn, 0 fail, -1 unknown.\n")
+	b.WriteString(
+		"# HELP dashboard_health_status Overall health status encoded numerically: 2 pass, 1 warn, 0 fail, -1 unknown.\n",
+	)
 	b.WriteString("# TYPE dashboard_health_status gauge\n")
 	fmt.Fprintf(&b, "dashboard_health_status %d\n", numericHealthStatus(resp.Status))
 
-	b.WriteString("# HELP dashboard_health_check Individual check health: 1 when the check passes, 0 otherwise.\n")
+	b.WriteString(
+		"# HELP dashboard_health_check Individual check health: 1 when the check passes, 0 otherwise.\n",
+	)
 	b.WriteString("# TYPE dashboard_health_check gauge\n")
 
 	for _, name := range sortedCheckNames(resp.Checks) {
 		check := resp.Checks[name]
 
-		fmt.Fprintf(&b, "dashboard_health_check{check=%q,status=%q} %d\n",
+		fmt.Fprintf(&b, "dashboard_health_check{check=\"%s\",status=\"%s\"} %d\n",
 			escapeLabelValue(name),
 			escapeLabelValue(string(check.Status)),
 			boolGauge(check.Status == health.StatusPass),
 		)
 	}
 
-	b.WriteString("# HELP dashboard_health_latency_ms Wall-clock time spent running the last health-check batch, in milliseconds.\n")
+	b.WriteString(
+		"# HELP dashboard_health_latency_ms Wall-clock time spent running the last health-check batch, in milliseconds.\n",
+	)
 	b.WriteString("# TYPE dashboard_health_latency_ms gauge\n")
 	fmt.Fprintf(&b, "dashboard_health_latency_ms %d\n", resp.TotalLatencyMs)
 
-	b.WriteString("# HELP dashboard_health_shutting_down Whether the probe has been marked for shutdown (1) or not (0).\n")
+	b.WriteString(
+		"# HELP dashboard_health_shutting_down Whether the probe has been marked for shutdown (1) or not (0).\n",
+	)
 	b.WriteString("# TYPE dashboard_health_shutting_down gauge\n")
 	fmt.Fprintf(&b, "dashboard_health_shutting_down %d\n", boolGauge(resp.ShuttingDown))
 
@@ -76,7 +86,9 @@ func (d *Dashboard) renderMetrics() string {
 	b.WriteString("# TYPE dashboard_sse_connections gauge\n")
 	fmt.Fprintf(&b, "dashboard_sse_connections %d\n", d.SubscriberCount())
 
-	b.WriteString("# HELP dashboard_pusher_active Whether the SSE pusher goroutine is running (1) or not (0).\n")
+	b.WriteString(
+		"# HELP dashboard_pusher_active Whether the SSE pusher goroutine is running (1) or not (0).\n",
+	)
 	b.WriteString("# TYPE dashboard_pusher_active gauge\n")
 	fmt.Fprintf(&b, "dashboard_pusher_active %d\n", boolGauge(d.push.Load() != nil))
 

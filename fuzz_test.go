@@ -86,7 +86,16 @@ func FuzzHealthResponseSerialization(
 		{version: "emoji-🚀", checkErr: " ERR\n \"quoted\" \\ path"},
 		{latency: -5},
 	} {
-		f.Add(s.status, s.version, s.uptime, s.shuttingDown, s.latency, s.checkName, s.checkStatus, s.checkErr)
+		f.Add(
+			s.status,
+			s.version,
+			s.uptime,
+			s.shuttingDown,
+			s.latency,
+			s.checkName,
+			s.checkStatus,
+			s.checkErr,
+		)
 	}
 
 	//nolint:lll // long parameter list is inherent to fuzz corpus tuples

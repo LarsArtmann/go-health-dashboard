@@ -361,10 +361,22 @@ func TestContentNegotiation_AcceptHeaderSelectsContentType(t *testing.T) {
 	}{
 		{name: "json accept returns json", accept: "application/json", wantCT: "application/json"},
 		{name: "html accept returns html", accept: "text/html", wantCT: "text/html"},
-		{name: "q-value prefers json", accept: "application/json;q=0.9, text/html;q=0.8", wantCT: "application/json"},
-		{name: "q-value prefers html", accept: "text/html;q=1.0, application/json;q=0.1", wantCT: "text/html"},
+		{
+			name:   "q-value prefers json",
+			accept: "application/json;q=0.9, text/html;q=0.8",
+			wantCT: "application/json",
+		},
+		{
+			name:   "q-value prefers html",
+			accept: "text/html;q=1.0, application/json;q=0.1",
+			wantCT: "text/html",
+		},
 		{name: "wildcard returns html default", accept: "*/*", wantCT: "text/html"},
-		{name: "equal q-values return html default", accept: "application/json, text/html", wantCT: "text/html"},
+		{
+			name:   "equal q-values return html default",
+			accept: "application/json, text/html",
+			wantCT: "text/html",
+		},
 	}
 
 	for _, tt := range tests {
