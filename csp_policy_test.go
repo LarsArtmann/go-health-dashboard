@@ -86,7 +86,10 @@ func TestRecommendedCSP(t *testing.T) {
 				t.Errorf("RecommendedCSP(%q) =\n%q\nwant:\n%q", tt.nonce, got, tt.want)
 			}
 			if strings.Contains(got, "unsafe-inline") {
-				t.Errorf("RecommendedCSP(%q) contains 'unsafe-inline', policy must stay strict", tt.nonce)
+				t.Errorf(
+					"RecommendedCSP(%q) contains 'unsafe-inline', policy must stay strict",
+					tt.nonce,
+				)
 			}
 		})
 	}
