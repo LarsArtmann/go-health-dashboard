@@ -635,40 +635,84 @@ func TestBrowser_Accessibility(t *testing.T) {
 	var audit string
 
 	inject := `(function () {
-		if (window.axe) { return Promise.resolve("ready"); }
-		return new Promise(function (resolve) {
-			var s = document.createElement("script");
-			s.src = "/static/axe.js";
-			s.onload = function () { resolve("ready"); };
-			s.onerror = function () { resolve("failed"); };
-			document.head.appendChild(s);
-		});
+		if (window.axe) { return; }
+		var s = document.createElement("script");
+		s.src = "/static/axe.js";
+		document.head.appendChild(s);
 	})()`
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(inject, &audit)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Evaluate(inject, nil)); err != nil {
 		t.Fatalf("axe inject: %v", err)
 	}
 
-	if audit != "ready" {
-		t.Fatalf("axe-core failed to load: %s", audit)
-	}
+	waitForJS(
+		t, ctx,
+		`window.axe !== undefined`,
+		`typeof window.axe`,
+		nil,
+	)
 
 	// Only serious and critical violations fail the build; moderate issues
 	// (often contrast judgement calls on brand colors) are surfaced but
 	// tolerated.
-	run := `axe.run(document, {resultTypes: ["violations"]}).then(function (r) {
-		return JSON.stringify(r.violations.filter(function (v) {
+	start := `axe.run(document, {resultTypes: ["violations"]}).then(function (r) {
+		window.__axeViolations = JSON.stringify(r.violations.filter(function (v) {
 			return v.impact === "serious" || v.impact === "critical";
-		}).map(function (v) { return v.id + ":" + v.impact + ":" + v.nodes.length; }));
+		}).map(function (v) { return v.id + ":" + v.impact + ":" + v.nodes.length + ":" + v.nodes.map(function (n) { return n.html; }).join(" | ").slice(0, 200); }));
+	}).catch(function (e) {
+		window.__axeViolations = "AXE_ERROR: " + e;
 	})`
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(run, &audit)); err != nil {
-		t.Fatalf("axe run: %v", err)
+	if err := chromedp.Run(ctx, chromedp.Evaluate(start, nil)); err != nil {
+		t.Fatalf("axe start: %v", err)
 	}
+
+	waitForJS(
+		t, ctx,
+		`window.__axeViolations !== undefined`,
+		`window.__axeViolations`,
+		&audit,
+	)
 
 	if audit != "[]" {
 		t.Errorf("axe-core found serious/critical violations: %s", audit)
 	}
 
 	assertNoBrowserErrors(t, errLog)
+}
+
+// waitForJS polls a JavaScript predicate until it is truthy (bounded by a
+// 30s deadline) and then unmarshals the value expression into res when res
+// is non-nil. This avoids chromedp.Poll's predicate-value unmarshalling
+// semantics, which complicate boolean-gated string results.
+func waitForJS(t *testing.T, ctx context.Context, predicate, valueExpr string, res interface{}) {
+	t.Helper()
+
+	deadline := time.Now().Add(30 * time.Second)
+
+	for {
+		var truthy bool
+
+		if err := chromedp.Run(ctx, chromedp.Evaluate("!!("+predicate+")", &truthy)); err != nil {
+			t.Fatalf("browser evaluate %q: %v", predicate, err)
+		}
+
+		if truthy {
+			if res == nil {
+				return
+			}
+
+			if err := chromedp.Run(ctx, chromedp.Evaluate(valueExpr, res)); err != nil {
+				t.Fatalf("browser fetch %q: %v", valueExpr, err)
+			}
+
+			return
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatalf("condition never became true within 30s: %s", predicate)
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
 }
