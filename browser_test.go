@@ -1,11 +1,14 @@
 package dashboard_test
 
 import (
+	"bufio"
 	"context"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -14,6 +17,9 @@ import (
 	dstarstatic "github.com/larsartmann/go-datastar/static"
 	dashboard "github.com/larsartmann/go-health-dashboard"
 )
+
+// itoa is a tiny helper keeping the exec.Command argument list readable.
+func itoa(n int) string { return strconv.Itoa(n) }
 
 // findChrome returns a usable Chrome/Chromium executable or skips the test.
 // Resolution order: GO_HEALTH_DASHBOARD_CHROME env var, then well-known
@@ -38,6 +44,83 @@ func findChrome(t *testing.T) string {
 	t.Skip("no Chrome/Chromium binary found; set GO_HEALTH_DASHBOARD_CHROME to enable browser tests")
 
 	return ""
+}
+
+// freePort reserves an ephemeral TCP port and immediately releases it, so
+// Chrome can be pinned to a concrete debugging port — this Chromium build
+// never announces a DevTools websocket when asked for port 0.
+func freePort(t *testing.T) int {
+	t.Helper()
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("reserve free port: %v", err)
+	}
+
+	defer ln.Close()
+
+	return ln.Addr().(*net.TCPAddr).Port
+}
+
+// startHeadlessChrome launches Chrome manually with a concrete DevTools port
+// and returns the websocket debugger URL parsed from stderr. chromedp's own
+// launcher queries the debugger over 127.0.0.1, which hangs when Chrome
+// binds the DevTools listener to IPv6 ::1 only — parsing the announced URL
+// avoids that failure mode entirely.
+func startHeadlessChrome(t *testing.T, chromePath string) (wsURL string, stop func()) {
+	t.Helper()
+
+	cmd := exec.Command(chromePath,
+		"--headless",
+		"--no-sandbox",
+		"--disable-gpu",
+		"--remote-debugging-port="+itoa(freePort(t)),
+		"--user-data-dir="+t.TempDir(),
+		"about:blank",
+	)
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		t.Fatalf("chrome stderr pipe: %v", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("chrome start: %v", err)
+	}
+
+	lines := make(chan string)
+
+	go func() {
+		defer close(lines)
+
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			lines <- scanner.Text()
+		}
+	}()
+
+	timeout := time.After(20 * time.Second)
+
+	for {
+		select {
+		case <-timeout:
+			_ = cmd.Process.Kill()
+			_ = cmd.Wait()
+			t.Fatal("chrome did not announce a DevTools websocket within 20s")
+		case line, ok := <-lines:
+			if !ok {
+				_ = cmd.Wait()
+				t.Fatal("chrome exited before announcing a DevTools websocket")
+			}
+
+			if url, found := strings.CutPrefix(line, "DevTools listening on "); found {
+				return url, func() {
+					_ = cmd.Process.Kill()
+					_ = cmd.Wait()
+				}
+			}
+		}
+	}
 }
 
 // strictCSPMiddleware serves a locked-down CSP: no unsafe-inline for scripts
@@ -94,11 +177,13 @@ func TestBrowser_CSPCleanRuntime(t *testing.T) {
 	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
 	defer server.Close()
 
-	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(),
-		append(chromedp.DefaultExecAllocatorOptions[:],
-			chromedp.ExecPath(chromePath),
-			chromedp.Flag("no-sandbox", true),
-		)...)
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
 	defer allocCancel()
 
 	ctx, cancel := chromedp.NewContext(allocCtx)
