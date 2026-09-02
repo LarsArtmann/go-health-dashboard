@@ -1,0 +1,46 @@
+name: Nightly Fuzz
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+env:
+  GOEXPERIMENT: jsonv2
+
+jobs:
+  fuzz:
+    name: Fuzz all targets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      - name: Install templ CLI
+        run: go install github.com/a-h/templ/cmd/templ@latest
+
+      - name: Generate templ files
+        run: templ generate ./...
+
+      - name: Fuzz Accept-header parser
+        run: go test -run '^$' -fuzz FuzzWantsJSON -fuzztime 60s .
+
+      - name: Fuzz health response serialization
+        run: go test -run '^$' -fuzz FuzzHealthResponseSerialization -fuzztime 60s .
+
+      - name: Fuzz Prometheus label escaping
+        run: go test -run '^$' -fuzz FuzzEscapeLabelValue -fuzztime 60s .
+
+      - name: Fuzz change-detection fingerprint
+        run: go test -run '^$' -fuzz FuzzFingerprintChecks -fuzztime 60s .
+
+      - name: Print crasher inputs
+        if: failure()
+        run: |
+          find testdata/fuzz -type f 2>/dev/null | while read -r crasher; do
+            echo "--- $crasher"
+            cat "$crasher"
+          done

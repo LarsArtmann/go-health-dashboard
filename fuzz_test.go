@@ -217,8 +217,26 @@ func FuzzFingerprintChecks(
 
 	//nolint:lll // long parameter list is inherent to fuzz corpus tuples
 	f.Fuzz(func(t *testing.T, n1, s1, e1, n2, s2, e2 string) {
-		na, sa, ea := strings.ToValidUTF8(n1, "\uFFFD"), strings.ToValidUTF8(s1, "\uFFFD"), strings.ToValidUTF8(e1, "\uFFFD")
-		nb, sb, eb := strings.ToValidUTF8(n2, "\uFFFD"), strings.ToValidUTF8(s2, "\uFFFD"), strings.ToValidUTF8(e2, "\uFFFD")
+		na, sa, ea := strings.ToValidUTF8(
+			n1,
+			"\uFFFD",
+		), strings.ToValidUTF8(
+			s1,
+			"\uFFFD",
+		), strings.ToValidUTF8(
+			e1,
+			"\uFFFD",
+		)
+		nb, sb, eb := strings.ToValidUTF8(
+			n2,
+			"\uFFFD",
+		), strings.ToValidUTF8(
+			s2,
+			"\uFFFD",
+		), strings.ToValidUTF8(
+			e2,
+			"\uFFFD",
+		)
 
 		checks := map[string]health.Check{
 			na: {Status: health.Status(sa), Error: ea},

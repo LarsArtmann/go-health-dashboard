@@ -15,6 +15,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   requires. Invalid nonce tokens (outside the CSP base64 alphabet) are
   omitted so the header can never be malformed (`csp.go`,
   `csp_policy_test.go`)
+- Fuzz targets `FuzzEscapeLabelValue` (Prometheus label escaper: no raw
+  newlines, lossless round-trip) and `FuzzFingerprintChecks` (change-detection
+  fingerprint: deterministic, distinguishes any single-field mutation)
+  (`fuzz_test.go`)
+- Nightly fuzz workflow (`.github/workflows/fuzz.yml`): 60s per target on a
+  03:00 UTC schedule plus manual dispatch, printing crasher inputs on failure
+- CI browser job: the runtime CSP test now runs on every push/PR against a
+  real Chrome (`GO_HEALTH_DASHBOARD_CHROME`), and the test job reports
+  coverage totals (`.github/workflows/ci.yml`)
+
+### Fixed
+
+- `fingerprintChecks` delimiter collision: a check name containing `:` or
+  `;` could alias a different split of the same bytes across name, status,
+  and error (e.g. name `a:b` with status `c` collided with name `a` and
+  status `b:c`), causing missed change detection. Fields are now
+  length-prefixed so boundaries are unambiguous (`status.go`,
+  `status_test.go`)
 
 ## [0.3.1] - 2026-09-02
 
