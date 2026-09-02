@@ -44,6 +44,7 @@ type pusher struct {
 	maxConns    int
 	retry       time.Duration
 	connections atomic.Int64
+	history     *historyBuffer
 
 	mu              sync.Mutex
 	lastStatus      health.Status
@@ -51,8 +52,14 @@ type pusher struct {
 }
 
 // newPusher creates a pusher that broadcasts at the dashboard's configured
-// push interval.
+// push interval. When TrendSamples is configured, the pusher also maintains
+// a ring buffer of recent status samples for the trend sparkline.
 func newPusher(d *Dashboard) *pusher {
+	var history *historyBuffer
+	if d.cfg.TrendSamples > 0 {
+		history = newHistoryBuffer(d.cfg.TrendSamples)
+	}
+
 	return &pusher{
 		broadcaster: sse.NewBroadcaster[sse.Event](),
 		dashboard:   d,
@@ -61,7 +68,56 @@ func newPusher(d *Dashboard) *pusher {
 		heartbeat:   d.cfg.HeartbeatInterval,
 		maxConns:    d.cfg.MaxSSEConnections,
 		retry:       d.cfg.RetryInterval,
+		history:     history,
 	}
+}
+
+// historyBuffer is a fixed-capacity ring buffer of status samples in
+// chronological order. The pusher goroutine records on every tick; the SSE
+// handler snapshots from other goroutines when rendering initial state, so
+// all access is mutex-guarded.
+type historyBuffer struct {
+	mu      sync.Mutex
+	samples []float64
+	next    int
+	full    bool
+}
+
+func newHistoryBuffer(capacity int) *historyBuffer {
+	if capacity < 1 {
+		capacity = 1
+	}
+
+	return &historyBuffer{samples: make([]float64, capacity)}
+}
+
+// record appends a sample, overwriting the oldest once at capacity.
+func (h *historyBuffer) record(v float64) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	h.samples[h.next] = v
+	h.next = (h.next + 1) % len(h.samples)
+	if h.next == 0 {
+		h.full = true
+	}
+}
+
+// snapshot returns the recorded samples oldest-first, or nil when empty.
+func (h *historyBuffer) snapshot() []float64 {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if !h.full && h.next == 0 {
+		return nil
+	}
+
+	out := make([]float64, 0, len(h.samples))
+	if h.full {
+		out = append(out, h.samples[h.next:]...)
+	}
+
+	return append(out, h.samples[:h.next]...)
 }
 
 // start runs the push loop until ctx is cancelled, then closes the broadcaster.
@@ -84,9 +140,14 @@ func (p *pusher) start(ctx context.Context) {
 }
 
 // broadcast renders the current dashboard content as a Datastar patch and
-// sends it to all subscribers. Respects PushMode for change detection.
+// sends it to all subscribers. Respects PushMode for change detection. Every
+// tick records a trend sample, regardless of whether a patch is broadcast.
 func (p *pusher) broadcast() {
 	resp := p.dashboard.currentResponse()
+
+	if p.history != nil {
+		p.history.record(statusValue(resp.Status))
+	}
 
 	if !p.shouldBroadcast(resp) {
 		return
@@ -106,6 +167,10 @@ func (p *pusher) renderPatch(resp health.Response) (sse.Event, bool) {
 	vm := buildViewModel(resp, p.dashboard.cfg.Title, p.dashboard.cfg.Routes.SSE)
 	vm.CSSPath = p.dashboard.cfg.CSSPath
 	vm.DatastarSrc = p.dashboard.cfg.DatastarSrc
+	vm.ShowStatCards = !p.dashboard.cfg.HideStatCards
+	if p.history != nil {
+		vm.History = p.history.snapshot()
+	}
 	content := dashboardContent(vm)
 
 	patch, err := dstar.ElementsFromTempl(content,

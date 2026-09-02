@@ -83,6 +83,13 @@ type viewModel struct {
 	DatastarSrc   string
 	DatastarNonce string
 	TailwindNonce string
+	// History holds recent overall-status samples for the trend sparkline
+	// (pass=1, warn=0.5, fail=0, oldest first). Nil when the trend is
+	// disabled (default) or no samples recorded yet.
+	History []float64
+	// ShowStatCards renders the version/uptime/latency card grid.
+	// Enabled by default; disabled via WithHideStatCards.
+	ShowStatCards bool
 }
 
 // buildViewModel transforms a health.Response into a template-ready viewModel.
@@ -100,15 +107,30 @@ func buildViewModel(resp health.Response, title, sseURL string) viewModel {
 	}
 
 	return viewModel{
-		Title:        title,
-		Status:       resp.Status,
-		FeedbackType: feedbackType,
-		StatusText:   statusText,
-		Version:      resp.Version,
-		Uptime:       resp.Uptime,
-		LatencyMs:    resp.TotalLatencyMs,
-		Groups:       groups,
-		SSEURL:       sseURL,
+		Title:         title,
+		Status:        resp.Status,
+		FeedbackType:  feedbackType,
+		StatusText:    statusText,
+		Version:       resp.Version,
+		Uptime:        resp.Uptime,
+		LatencyMs:     resp.TotalLatencyMs,
+		Groups:        groups,
+		SSEURL:        sseURL,
+		ShowStatCards: true,
+	}
+}
+
+// statusValue maps a status to the 0..1 trend scale used by the sparkline:
+// pass=1, warn=0.5, fail=0. Unknown statuses plot as fail — the trend line
+// dips on anything that is not provably healthy.
+func statusValue(s health.Status) float64 {
+	switch s {
+	case health.StatusPass:
+		return 1
+	case health.StatusWarn:
+		return 0.5
+	default:
+		return 0
 	}
 }
 

@@ -35,19 +35,21 @@ templ View(data viewModel) {
 					</div>
 					@layout.ThemeToggle("Toggle theme", data.DatastarNonce)
 				</div>
-				@display.Grid(display.GridProps{Cols: display.GridCols3}) {
-					@display.StatCard(display.StatCardProps{
-						Value: versionOrUnknown(data.Version),
-						Label: "Version",
-					})
-					@display.StatCard(display.StatCardProps{
-						Value: data.Uptime,
-						Label: "Uptime",
-					})
-					@display.StatCard(display.StatCardProps{
-						Value: fmt.Sprintf("%dms", data.LatencyMs),
-						Label: "Check Latency",
-					})
+				if data.ShowStatCards {
+					@display.Grid(display.GridProps{Cols: display.GridCols3}) {
+						@display.StatCard(display.StatCardProps{
+							Value: versionOrUnknown(data.Version),
+							Label: "Version",
+						})
+						@display.StatCard(display.StatCardProps{
+							Value: data.Uptime,
+							Label: "Uptime",
+						})
+						@display.StatCard(display.StatCardProps{
+							Value: fmt.Sprintf("%dms", data.LatencyMs),
+							Label: "Check Latency",
+						})
+					}
 				}
 				<div class="mt-6">
 					@datastar.LiveRegion(datastar.LiveRegionProps{
@@ -98,14 +100,38 @@ templ dashboardHead(data viewModel) {
 	}
 }
 
-// dashboardContent renders the alert banner and check-group cards. This is
-// the shared inner content used by both the initial page render (inside the
-// LiveRegion) and the SSE patches (which replace it with fresh data).
+// dashboardContent renders the alert banner, optional health trend card, and
+// check-group cards. This is the shared inner content used by both the
+// initial page render (inside the LiveRegion) and the SSE patches (which
+// replace it with fresh data).
 templ dashboardContent(data viewModel) {
+	{{
+		trendMinVal := 0.0
+		trendMaxVal := 1.0
+	}}
 	@feedback.Alert(feedback.AlertProps{
 		Type:  data.FeedbackType,
 		Title: data.StatusText,
 	})
+	if len(data.History) >= 2 {
+		<div class="mt-6">
+			@display.Card(display.CardProps{Title: "Health Trend"}) {
+				<div class="text-blue-500 dark:text-blue-400">
+					@display.Sparkline(display.SparklineProps{
+						BaseProps: utils.BaseProps{
+							AriaLabel: "Recent health status trend: one point per push interval, from pass (top) to fail (bottom)",
+						},
+						Values: data.History,
+						Filled: true,
+						Min:    &trendMinVal,
+						Max:    &trendMaxVal,
+						Width:  trendWidth,
+						Height: trendHeight,
+					})
+				</div>
+			}
+		</div>
+	}
 	<div class="mt-6 space-y-6">
 		if len(data.Groups) == 0 {
 			@display.Card(display.CardProps{Title: "Service Status"}) {
@@ -135,3 +161,10 @@ func versionOrUnknown(v string) string {
 	}
 	return v
 }
+
+// Trend sparkline geometry. Min/Max pin the 0..1 status scale so the line
+// position is comparable across renders instead of auto-rescaling.
+const (
+	trendWidth  = 480
+	trendHeight = 64
+)

@@ -44,6 +44,8 @@ type Config struct {
 	RetryInterval     time.Duration
 	Middleware        func(http.Handler) http.Handler
 	MetricsEnabled    bool
+	TrendSamples      int
+	HideStatCards     bool
 }
 
 // WithMiddleware wraps every dashboard-owned handler (dashboard HTML, SSE,
@@ -75,6 +77,26 @@ func WithMiddleware(mw func(http.Handler) http.Handler) Option {
 // protect it like the dashboard itself (WithMiddleware applies to it too).
 func WithMetrics(enabled bool) Option {
 	return func(c *Config) { c.MetricsEnabled = enabled }
+}
+
+// WithTrend enables the health trend sparkline and sets how many status
+// samples it retains. One sample is recorded per push interval (pass=1,
+// warn=0.5, fail=0); the card appears once at least two samples exist.
+// A sample count of 60 at the default 2s interval covers the last two
+// minutes. Non-positive values leave the trend disabled (the default).
+func WithTrend(samples int) Option {
+	return func(c *Config) {
+		if samples > 0 {
+			c.TrendSamples = samples
+		}
+	}
+}
+
+// WithHideStatCards hides the version/uptime/latency stat card grid.
+// Use this for compact dashboards where only the status banner and service
+// tables matter.
+func WithHideStatCards() Option {
+	return func(c *Config) { c.HideStatCards = true }
 }
 
 // Option configures a Dashboard. Use the With* functions to create options.
@@ -415,6 +437,11 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 	vm.CSSPath = d.cfg.CSSPath
 	vm.DatastarSrc = d.cfg.DatastarSrc
 	vm.FaviconURL = d.cfg.Routes.Favicon
+	vm.ShowStatCards = !d.cfg.HideStatCards
+
+	if p := d.push.Load(); p != nil && p.history != nil {
+		vm.History = p.history.snapshot()
+	}
 
 	return vm
 }
