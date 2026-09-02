@@ -81,10 +81,7 @@ func main() {
 
 	if token := os.Getenv("DEMO_AUTH"); token != "" {
 		opts = append(opts, dashboard.WithMiddleware(bearerAuth(token)))
-		log.Printf(
-			"auth: bearer token required on dashboard routes (DEMO_AUTH set, %d chars)",
-			len(token),
-		)
+		log.Printf("auth: bearer token required on dashboard routes (DEMO_AUTH set)")
 	}
 
 	if spec := os.Getenv("DEMO_RATELIMIT"); spec != "" {
@@ -93,15 +90,11 @@ func main() {
 			log.Fatalf(
 				"DEMO_RATELIMIT: %v",
 				err,
-			) //nolint:gosec // G706: echoing operator env config
+			)
 		}
 
 		opts = append(opts, dashboard.WithRateLimit(maxReqs, window))
-		log.Printf(
-			"rate limit: %d requests per %s on dashboard routes",
-			maxReqs,
-			window,
-		) //nolint:gosec // G706: echoing operator env config
+		log.Printf("rate limit: enabled on dashboard routes")
 	}
 
 	// Register the dashboard in the injector so it participates in
@@ -229,11 +222,7 @@ func parseDuration(key string) time.Duration {
 
 	d, err := time.ParseDuration(spec)
 	if err != nil || d < 0 {
-		log.Fatalf(
-			"%s: invalid duration %q",
-			key,
-			spec,
-		) //nolint:gosec // G706: echoing operator env config
+		log.Fatalf("%s: invalid duration", key)
 	}
 
 	return d

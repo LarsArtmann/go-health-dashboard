@@ -32,6 +32,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   audit (downloaded same-origin, skipped offline) enforces serious/critical
   accessibility violations plus targeted ARIA/landmark checks
   (`TestBrowser_Accessibility`)
+- History features built on timestamped trend samples
+  (`sample{At,Value,Status}`): `TrendHandler` serving samples plus derived
+  status transitions as JSON at `Routes.Trend` (default `/health/trend`),
+  `ExportHandler` for JSON/CSV export at `Routes.Export` (default
+  `/health/export`, `?format=csv` or `Accept: text/csv`), a status-change
+  timeline card in the UI, an "Updated <time>" refresh stamp, and a
+  hand-rolled `dashboard_health_check_duration_seconds` histogram in the
+  metrics exposition (`pusher.go`, `trend.go`, `metrics.go`, `view.templ`)
 - SSE hardening options: `WithShutdownDrain(d)` (Shutdown rejects new
   connections immediately and waits up to d for existing clients before
   closing the broadcaster), `WithMaxConnectionLifetime(d)` (server closes
