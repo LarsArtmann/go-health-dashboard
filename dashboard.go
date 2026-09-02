@@ -274,6 +274,16 @@ func WithBasePath(prefix string) Option {
 			out.Metrics = prefix + r.Metrics
 		}
 
+		// Same for Trend/Export: empty means disabled, and they only
+		// register when WithTrend is configured anyway.
+		if r.Trend != "" {
+			out.Trend = prefix + r.Trend
+		}
+
+		if r.Export != "" {
+			out.Export = prefix + r.Export
+		}
+
 		cfg.Routes = out
 	}
 }
@@ -498,7 +508,14 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 	vm.ShowStatCards = !d.cfg.HideStatCards
 
 	if p := d.push.Load(); p != nil && p.history != nil {
-		vm.History = p.history.snapshot()
+		samples := p.history.snapshot()
+
+		values := make([]float64, len(samples))
+		for i, s := range samples {
+			values[i] = s.Value
+		}
+
+		vm.History = values
 	}
 
 	return vm
@@ -530,6 +547,14 @@ func (d *Dashboard) RegisterRoutes(mux *http.ServeMux) {
 
 	if d.cfg.MetricsEnabled && routes.Metrics != "" {
 		mux.Handle(routes.Metrics, d.wrap(d.applyRateLimit(d.MetricsHandler())))
+	}
+
+	if d.cfg.TrendSamples > 0 && routes.Trend != "" {
+		mux.Handle(routes.Trend, d.wrap(d.applyRateLimit(d.TrendHandler())))
+	}
+
+	if d.cfg.TrendSamples > 0 && routes.Export != "" {
+		mux.Handle(routes.Export, d.wrap(d.applyRateLimit(d.ExportHandler())))
 	}
 
 	mux.HandleFunc(routes.Liveness, d.probe.LivenessHandler())

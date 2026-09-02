@@ -113,6 +113,9 @@ templ dashboardContent(data viewModel) {
 		Type:  data.FeedbackType,
 		Title: data.StatusText,
 	})
+	<p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+		Updated { data.LastUpdated }
+	</p>
 	if len(data.History) >= 2 {
 		<div class="mt-6">
 			@display.Card(display.CardProps{Title: "Health Trend"}) {
@@ -129,6 +132,24 @@ templ dashboardContent(data viewModel) {
 						Height: trendHeight,
 					})
 				</div>
+			}
+		</div>
+	}
+	if len(data.Timeline) > 0 {
+		<div class="mt-6">
+			@display.Card(display.CardProps{Title: "Status Changes"}) {
+				<ol class="divide-y divide-gray-200 dark:divide-gray-700">
+					for _, entry := range data.Timeline {
+						<li class="flex items-center justify-between gap-4 py-2 text-sm first:pt-0 last:pb-0">
+							<time class="font-mono text-gray-500 tabular-nums dark:text-gray-400">{ entry.At }</time>
+							if entry.Degraded {
+								<span class="font-medium text-amber-600 dark:text-amber-400">{ entry.Status }</span>
+							} else {
+								<span class="font-medium text-green-600 dark:text-green-400">{ entry.Status }</span>
+							}
+						</li>
+					}
+				</ol>
 			}
 		</div>
 	}

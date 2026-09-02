@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync/atomic"
 
 	health "github.com/larsartmann/go-health"
 )
@@ -92,6 +93,10 @@ func (d *Dashboard) renderMetrics() string {
 	b.WriteString("# TYPE dashboard_pusher_active gauge\n")
 	fmt.Fprintf(&b, "dashboard_pusher_active %d\n", boolGauge(d.push.Load() != nil))
 
+	if d.latency != nil {
+		d.latency.renderPrometheus(&b)
+	}
+
 	return b.String()
 }
 
@@ -174,7 +179,9 @@ func (h *latencyHistogram) observe(seconds float64) {
 // renderPrometheus writes the exposition lines for the histogram, including
 // the +Inf bucket, _sum, and _count.
 func (h *latencyHistogram) renderPrometheus(b *strings.Builder) {
-	b.WriteString("# HELP dashboard_health_check_duration_seconds Wall-clock duration of health-check batches.\n")
+	b.WriteString(
+		"# HELP dashboard_health_check_duration_seconds Wall-clock duration of health-check batches.\n",
+	)
 	b.WriteString("# TYPE dashboard_health_check_duration_seconds histogram\n")
 
 	cumulative := uint64(0)
@@ -182,10 +189,19 @@ func (h *latencyHistogram) renderPrometheus(b *strings.Builder) {
 	for i, bound := range latencyBucketBounds {
 		cumulative = h.buckets[i].Load()
 
-		fmt.Fprintf(b, "dashboard_health_check_duration_seconds_bucket{le=\"%g\"} %d\n", bound, cumulative)
+		fmt.Fprintf(
+			b,
+			"dashboard_health_check_duration_seconds_bucket{le=\"%g\"} %d\n",
+			bound,
+			cumulative,
+		)
 	}
 
-	fmt.Fprintf(b, "dashboard_health_check_duration_seconds_bucket{le=\"+Inf\"} %d\n", h.count.Load())
+	fmt.Fprintf(
+		b,
+		"dashboard_health_check_duration_seconds_bucket{le=\"+Inf\"} %d\n",
+		h.count.Load(),
+	)
 	fmt.Fprintf(b, "dashboard_health_check_duration_seconds_sum %g\n", float64(h.sum.Load())/1e6)
 	fmt.Fprintf(b, "dashboard_health_check_duration_seconds_count %d\n", h.count.Load())
 }

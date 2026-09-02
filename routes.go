@@ -9,6 +9,8 @@ type Routes struct {
 	Readiness string // Kubernetes readiness probe — JSON (default: /readyz)
 	Startup   string // Kubernetes startup probe — JSON (default: /startupz)
 	Metrics   string // Prometheus exposition endpoint (default: /health/metrics; leave empty to disable)
+	Trend     string // Status history JSON endpoint (default: /health/trend; only registered with WithTrend)
+	Export    string // Status history export endpoint, JSON/CSV (default: /health/export; only registered with WithTrend)
 }
 
 // DefaultRoutes returns conventional paths for the dashboard and Kubernetes
@@ -23,5 +25,7 @@ func DefaultRoutes() Routes {
 		Readiness: "/readyz",
 		Startup:   "/startupz",
 		Metrics:   "/health/metrics",
+		Trend:     "/health/trend",
+		Export:    "/health/export",
 	}
 }

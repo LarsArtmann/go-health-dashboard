@@ -2,9 +2,9 @@ package dashboard
 
 import (
 	"fmt"
-	"time"
 	"sort"
 	"strconv"
+	"time"
 
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/display"
@@ -88,8 +88,8 @@ type viewModel struct {
 	// History holds recent overall-status samples for the trend sparkline
 	// (pass=1, warn=0.5, fail=0, oldest first). Nil when the trend is
 	// disabled (default) or no samples recorded yet.
-	History   []float64
-	Timeline []TimelineEntry
+	History     []float64
+	Timeline    []TimelineEntry
 	LastUpdated string
 	// ShowStatCards renders the version/uptime/latency card grid.
 	// Enabled by default; disabled via WithHideStatCards.
@@ -111,7 +111,7 @@ func buildViewModel(resp health.Response, title, sseURL string) viewModel {
 	}
 
 	return viewModel{
-		LastUpdated: time.Now().UTC().Format("15:04:05 MST"),
+		LastUpdated:   time.Now().UTC().Format("15:04:05 MST"),
 		Title:         title,
 		Status:        resp.Status,
 		FeedbackType:  feedbackType,
