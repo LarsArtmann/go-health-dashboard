@@ -25,7 +25,7 @@ func findChrome(t *testing.T) string {
 	t.Helper()
 
 	if p := os.Getenv("GO_HEALTH_DASHBOARD_CHROME"); p != "" {
-		if _, err := os.Stat(p); err == nil {
+		if _, err := os.Stat(p); err == nil { //nolint:gosec // operator-provided test binary path
 			return p
 		}
 
@@ -38,7 +38,9 @@ func findChrome(t *testing.T) string {
 		}
 	}
 
-	t.Skip("no Chrome/Chromium binary found; set GO_HEALTH_DASHBOARD_CHROME to enable browser tests")
+	t.Skip(
+		"no Chrome/Chromium binary found; set GO_HEALTH_DASHBOARD_CHROME to enable browser tests",
+	)
 
 	return ""
 }
@@ -49,14 +51,19 @@ func findChrome(t *testing.T) string {
 func freePort(t *testing.T) int {
 	t.Helper()
 
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("reserve free port: %v", err)
 	}
 
-	defer ln.Close()
+	defer listener.Close()
 
-	return ln.Addr().(*net.TCPAddr).Port
+	tcpAddr, ok := listener.Addr().(*net.TCPAddr)
+	if !ok {
+		t.Fatalf("reserved address is not TCP: %v", listener.Addr())
+	}
+
+	return tcpAddr.Port
 }
 
 // startHeadlessChrome launches Chrome manually with a concrete DevTools port
@@ -64,15 +71,22 @@ func freePort(t *testing.T) int {
 // launcher queries the debugger over 127.0.0.1, which hangs when Chrome
 // binds the DevTools listener to IPv6 ::1 only — parsing the announced URL
 // avoids that failure mode entirely.
-func startHeadlessChrome(t *testing.T, chromePath string) (wsURL string, stop func()) {
+func startHeadlessChrome(t *testing.T, chromePath string) (string, func()) {
 	t.Helper()
 
-	profileDir, err := os.MkdirTemp("", "go-health-dashboard-chrome-")
+	// t.TempDir cleanup races Chrome's renderer children, which keep writing
+	// into the profile after the browser process exits — removal is retried
+	// in stopChrome instead.
+	profileDir, err := os.MkdirTemp(
+		"",
+		"go-health-dashboard-chrome-",
+	) //nolint:usetesting // see above
 	if err != nil {
 		t.Fatalf("chrome profile dir: %v", err)
 	}
 
-	cmd := exec.Command(chromePath,
+	cmd := exec.Command(
+		chromePath, //nolint:gosec // chromePath comes from the operator's env or PATH, test-only
 		"--headless",
 		"--no-sandbox",
 		"--disable-gpu",
@@ -174,6 +188,8 @@ func strictCSPMiddleware(nonce string, next http.Handler) http.Handler {
 // The page is fully self-hosted (compiled CSS + embedded Datastar bundle), so
 // the test runs hermetically without CDN access.
 func TestBrowser_CSPCleanRuntime(t *testing.T) {
+	t.Parallel()
+
 	chromePath := findChrome(t)
 
 	const nonce = "browser-test-nonce"
@@ -217,7 +233,9 @@ func TestBrowser_CSPCleanRuntime(t *testing.T) {
 	deadline := time.Now().Add(15 * time.Second)
 	for s.dash.SubscriberCount() == 0 {
 		if time.Now().After(deadline) {
-			t.Fatal("Datastar SDK never connected via SSE; CSP blocked the inline script or the connection")
+			t.Fatal(
+				"Datastar SDK never connected via SSE; CSP blocked the inline script or the connection",
+			)
 		}
 
 		time.Sleep(50 * time.Millisecond)
@@ -237,7 +255,8 @@ func TestBrowser_CSPCleanRuntime(t *testing.T) {
 	if err := chromedp.Run(ctx,
 		chromedp.Evaluate(
 			`[...document.querySelectorAll('[style]')].filter(e => e !== document.documentElement).length`,
-			&styleViolations),
+			&styleViolations,
+		),
 		chromedp.Evaluate(`document.querySelectorAll('style').length`, &styleTags),
 		chromedp.Evaluate(`document.body.innerText`, &bodyText),
 	); err != nil {
@@ -255,8 +274,11 @@ func TestBrowser_CSPCleanRuntime(t *testing.T) {
 			styledHTML = "could not fetch styled elements: " + err.Error()
 		}
 
-		t.Errorf("runtime DOM contains %d CSP-relevant elements with inline style attributes; want 0:\n%s",
-			styleViolations, styledHTML)
+		t.Errorf(
+			"runtime DOM contains %d CSP-relevant elements with inline style attributes; want 0:\n%s",
+			styleViolations,
+			styledHTML,
+		)
 	}
 
 	if styleTags != 0 {
