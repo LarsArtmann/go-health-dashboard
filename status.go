@@ -91,6 +91,7 @@ type viewModel struct {
 	History     []float64
 	Timeline    []TimelineEntry
 	LastUpdated string
+	Description string
 	// ShowStatCards renders the version/uptime/latency card grid.
 	// Enabled by default; disabled via WithHideStatCards.
 	ShowStatCards bool
@@ -288,4 +289,19 @@ type TimelineEntry struct {
 	At       string // HH:MM:SS render timestamp
 	Status   string
 	Degraded bool
+}
+
+// anonymizeViewModel replaces identifying details with generic labels so
+// the rendered page can be shared with untrusted audiences. Group titles,
+// check names, and error messages are masked; statuses remain visible.
+func anonymizeViewModel(vm *viewModel) {
+	for gi := range vm.Groups {
+		group := &vm.Groups[gi]
+
+		for ri := range group.Rows {
+			row := &group.Rows[ri]
+			row.Name = fmt.Sprintf("check-%d", gi*100+ri+1)
+			row.Error = ""
+		}
+	}
 }

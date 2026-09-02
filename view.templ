@@ -70,6 +70,12 @@ templ View(data viewModel) {
 // hosted when DatastarSrc is set, otherwise the jsdelivr CDN) and Tailwind
 // CSS via the Play CDN (when no compiled CSSPath is provided).
 templ dashboardHead(data viewModel) {
+	if data.Description != "" {
+		<meta name="description" content={ data.Description }/>
+		<meta property="og:title" content={ data.Title }/>
+		<meta property="og:description" content={ data.Description }/>
+		<meta property="og:type" content="website"/>
+	}
 	if data.DatastarSrc != "" {
 		@datastar.SDKScript(datastar.SDKScriptProps{
 			BaseProps: utils.BaseProps{Nonce: data.DatastarNonce},

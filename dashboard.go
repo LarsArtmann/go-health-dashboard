@@ -58,6 +58,16 @@ type Config struct {
 	// via the SSE retry field.
 	MaxConnectionLifetime time.Duration
 
+	// Description is rendered as the meta description plus Open Graph
+	// og:title/og:description tags. Empty (default) omits the tags entirely.
+	Description string
+
+	// PublicMode anonymizes the dashboard for untrusted audiences: check
+	// names and error details are replaced with generic labels in the HTML
+	// and the metrics endpoint. Health JSON and probe endpoints are
+	// unaffected.
+	PublicMode bool
+
 	// RateLimitRequests and RateLimitWindow configure a shared token
 	// bucket across all dashboard-owned routes. Zero disables rate
 	// limiting (default). Probe endpoints are never limited.
@@ -146,6 +156,24 @@ func WithRateLimit(maxRequests int, window time.Duration) Option {
 	return func(c *Config) {
 		c.RateLimitRequests = maxRequests
 		c.RateLimitWindow = window
+	}
+}
+
+// WithDescription sets the meta description and Open Graph tags for the
+// dashboard page. Empty by default, which omits the tags.
+func WithDescription(description string) Option {
+	return func(c *Config) {
+		c.Description = description
+	}
+}
+
+// WithPublicMode renders the dashboard for untrusted audiences: check names
+// and error details become generic labels in the HTML, and the metrics
+// endpoint labels checks opaquely. The /health JSON response and the
+// Kubernetes probe endpoints are unaffected.
+func WithPublicMode() Option {
+	return func(c *Config) {
+		c.PublicMode = true
 	}
 }
 
@@ -506,6 +534,11 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 	vm.DatastarSrc = d.cfg.DatastarSrc
 	vm.FaviconURL = d.cfg.Routes.Favicon
 	vm.ShowStatCards = !d.cfg.HideStatCards
+	vm.Description = d.cfg.Description
+
+	if d.cfg.PublicMode {
+		anonymizeViewModel(&vm)
+	}
 
 	if p := d.push.Load(); p != nil && p.history != nil {
 		populateHistory(&vm, p.history)
