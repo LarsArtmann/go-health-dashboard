@@ -116,11 +116,8 @@ func TestCaptureREADME_Screenshot(t *testing.T) {
 		t.Fatalf("screenshot: %v", err)
 	}
 
-	if err := os.WriteFile(
-		out,
-		png,
-		0o600,
-	); err != nil { //nolint:gosec // output path is the operator-provided SCREENSHOT_OUTPUT
+	//nolint:gosec // output path is the operator-provided SCREENSHOT_OUTPUT
+	if err := os.WriteFile(out, png, 0o600); err != nil {
 		t.Fatalf("write screenshot: %v", err)
 	}
 

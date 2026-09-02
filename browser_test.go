@@ -77,16 +77,14 @@ func startHeadlessChrome(t *testing.T, chromePath string) (string, func()) {
 	// t.TempDir cleanup races Chrome's renderer children, which keep writing
 	// into the profile after the browser process exits — removal is retried
 	// in stopChrome instead.
-	profileDir, err := os.MkdirTemp(
-		"",
-		"go-health-dashboard-chrome-",
-	) //nolint:usetesting // see above
+	//nolint:usetesting // see above
+	profileDir, err := os.MkdirTemp("", "go-health-dashboard-chrome-")
 	if err != nil {
 		t.Fatalf("chrome profile dir: %v", err)
 	}
 
-	cmd := exec.Command(
-		chromePath, //nolint:gosec // chromePath comes from the operator's env or PATH, test-only
+	//nolint:gosec // chromePath comes from the operator's env or PATH, test-only
+	cmd := exec.Command(chromePath,
 		"--headless",
 		"--no-sandbox",
 		"--disable-gpu",
