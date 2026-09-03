@@ -9,19 +9,19 @@
 
 ## a) FULLY DONE
 
-| # | Work | Evidence | Scope |
-|---|------|----------|-------|
-| 1 | **Fuzz target for Accept-header parsing** (`FuzzWantsJSON`) — 20 seeds, invariants: never panics, deterministic, empty Accept → HTML. 700k+ execs clean in an 8s run. | `fuzz_test.go`, `go test -fuzz` PASS | fuzz_test.go |
-| 2 | **Fuzz target for health response serialization** (`FuzzHealthResponseSerialization`) — JSON (v2) round-trip losslessness + byte-idempotent re-encoding, invalid-UTF-8 normalized so equality stays meaningful. 270k+ execs clean. | `fuzz_test.go`, `go test -fuzz` PASS | fuzz_test.go |
-| 3 | **Auth middleware integration** — `WithMiddleware(fn)` wraps dashboard-owned routes (HTML, SSE, favicon, metrics) only; kubelet probes deliberately stay open. 8 tests incl. 401/200 paths, chain order, request passthrough, metrics protection. | `middleware_test.go` PASS; `dashboard.go` wrap() | dashboard.go, middleware_test.go |
-| 4 | **Prometheus metrics endpoint** — `WithMetrics(true)` + `Routes.Metrics` (default `/health/metrics`, empty = disabled, `WithBasePath` guards the empty case). Hand-rolled text exposition 0.0.4 — **zero new runtime dependencies**. 7 metric families, deterministic sorted output, proper label escaping. 8 tests incl. escaping (`\`, `"`, newline) and scrape-to-scrape stability. | `metrics.go`, `metrics_test.go` PASS | metrics.go, routes.go, dashboard.go |
-| 5 | **Health trend sparkline** — `WithTrend(n)`: mutex-guarded `historyBuffer` ring in the pusher; records a sample per tick (pass=1, warn=0.5, fail=0) *before* change detection so samples accrue even in PushOnChange mode; renders via `display.Sparkline` with Min/Max pinned to 0..1; SSE patches carry it. 7 internal history tests + 4 render tests (polling, no fixed sleeps). | `pusher.go`, `view.templ` (regenerated), `trend_test.go`, `history_test.go` PASS | pusher.go, status.go, view.templ, view_templ.go |
-| 6 | **UI flexibility** — `WithHideStatCards()` hides the version/uptime/latency grid; banner and tables always render. Present/absent tests. | `trend_test.go` PASS | dashboard.go, view.templ |
-| 7 | **Headless-browser runtime CSP test** — chromedp loads the dashboard under a strict CSP (self-hosted CSS + embedded `go-datastar/static` SDK, hermetic), waits for the SSE connection (proves the SDK executed under CSP), asserts the runtime DOM has zero `<style>` elements and zero styled elements besides `<html>` (theme script's CSSOM `color-scheme` — CSP-safe by spec). Verified **3× stable (~0.6s)** against nix-store Chromium; skips cleanly when no Chrome is found. | `browser_test.go` PASS ×3; SKIP verified without env var | browser_test.go |
-| 8 | **README screenshot** — `screenshot_test.go` (env-guarded `SCREENSHOT_OUTPUT`) captures 1280×800 light-mode page with live trend card, degraded banner, severity-grouped tables; written to `docs/screenshot.png`, embedded at the top of the README. Visually verified. | `docs/screenshot.png`, screenshot_test.go PASS | screenshot_test.go, README.md |
-| 9 | **Documentation sweep** — README: screenshot, 4 new options in the Options block, new sections "Protecting the Dashboard", "Prometheus Metrics", "Health Trend", "Content-Security-Policy" (with the verified policy incl. `unsafe-eval`), Routes table + build note. FEATURES: 10+ new rows, new "Observability" section, Known Gaps corrected (2 gaps closed, 1 new documented). CHANGELOG: `[Unreleased]` rebuilt with all session work. TODO_LIST: cleared, Done section added. AGENTS: architecture tree, 5 new design decisions, 3 new gotchas, testing patterns. | All files edited; `nix flake check` (includes treefmt/dprint) passes | README.md, FEATURES.md, CHANGELOG.md, TODO_LIST.md, AGENTS.md |
-| 10 | **Two real bugs found & fixed by new tests** — (1) `%q` double-escaped Prometheus label values (would have produced wrong escape sequences in production output); (2) `WithBasePath` would turn an intentionally empty `Routes.Metrics` into the bare prefix. Both fixed with regression tests. | metrics_test.go, dashboard_test.go | metrics.go, dashboard.go |
-| 11 | **Quality gates all green at HEAD** — lint 0 issues, vet clean, race clean, fuzz smoke clean, flake check passes. | commands run at `840d64c` | — |
+| #  | Work                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Evidence                                                                         | Scope                                                         |
+| -- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| 1  | **Fuzz target for Accept-header parsing** (`FuzzWantsJSON`) — 20 seeds, invariants: never panics, deterministic, empty Accept → HTML. 700k+ execs clean in an 8s run.                                                                                                                                                                                                                                                                                                                                                                                                   | `fuzz_test.go`, `go test -fuzz` PASS                                             | fuzz_test.go                                                  |
+| 2  | **Fuzz target for health response serialization** (`FuzzHealthResponseSerialization`) — JSON (v2) round-trip losslessness + byte-idempotent re-encoding, invalid-UTF-8 normalized so equality stays meaningful. 270k+ execs clean.                                                                                                                                                                                                                                                                                                                                      | `fuzz_test.go`, `go test -fuzz` PASS                                             | fuzz_test.go                                                  |
+| 3  | **Auth middleware integration** — `WithMiddleware(fn)` wraps dashboard-owned routes (HTML, SSE, favicon, metrics) only; kubelet probes deliberately stay open. 8 tests incl. 401/200 paths, chain order, request passthrough, metrics protection.                                                                                                                                                                                                                                                                                                                       | `middleware_test.go` PASS; `dashboard.go` wrap()                                 | dashboard.go, middleware_test.go                              |
+| 4  | **Prometheus metrics endpoint** — `WithMetrics(true)` + `Routes.Metrics` (default `/health/metrics`, empty = disabled, `WithBasePath` guards the empty case). Hand-rolled text exposition 0.0.4 — **zero new runtime dependencies**. 7 metric families, deterministic sorted output, proper label escaping. 8 tests incl. escaping (`\`, `"`, newline) and scrape-to-scrape stability.                                                                                                                                                                                  | `metrics.go`, `metrics_test.go` PASS                                             | metrics.go, routes.go, dashboard.go                           |
+| 5  | **Health trend sparkline** — `WithTrend(n)`: mutex-guarded `historyBuffer` ring in the pusher; records a sample per tick (pass=1, warn=0.5, fail=0) _before_ change detection so samples accrue even in PushOnChange mode; renders via `display.Sparkline` with Min/Max pinned to 0..1; SSE patches carry it. 7 internal history tests + 4 render tests (polling, no fixed sleeps).                                                                                                                                                                                     | `pusher.go`, `view.templ` (regenerated), `trend_test.go`, `history_test.go` PASS | pusher.go, status.go, view.templ, view_templ.go               |
+| 6  | **UI flexibility** — `WithHideStatCards()` hides the version/uptime/latency grid; banner and tables always render. Present/absent tests.                                                                                                                                                                                                                                                                                                                                                                                                                                | `trend_test.go` PASS                                                             | dashboard.go, view.templ                                      |
+| 7  | **Headless-browser runtime CSP test** — chromedp loads the dashboard under a strict CSP (self-hosted CSS + embedded `go-datastar/static` SDK, hermetic), waits for the SSE connection (proves the SDK executed under CSP), asserts the runtime DOM has zero `<style>` elements and zero styled elements besides `<html>` (theme script's CSSOM `color-scheme` — CSP-safe by spec). Verified **3× stable (~0.6s)** against nix-store Chromium; skips cleanly when no Chrome is found.                                                                                    | `browser_test.go` PASS ×3; SKIP verified without env var                         | browser_test.go                                               |
+| 8  | **README screenshot** — `screenshot_test.go` (env-guarded `SCREENSHOT_OUTPUT`) captures 1280×800 light-mode page with live trend card, degraded banner, severity-grouped tables; written to `docs/screenshot.png`, embedded at the top of the README. Visually verified.                                                                                                                                                                                                                                                                                                | `docs/screenshot.png`, screenshot_test.go PASS                                   | screenshot_test.go, README.md                                 |
+| 9  | **Documentation sweep** — README: screenshot, 4 new options in the Options block, new sections "Protecting the Dashboard", "Prometheus Metrics", "Health Trend", "Content-Security-Policy" (with the verified policy incl. `unsafe-eval`), Routes table + build note. FEATURES: 10+ new rows, new "Observability" section, Known Gaps corrected (2 gaps closed, 1 new documented). CHANGELOG: `[Unreleased]` rebuilt with all session work. TODO_LIST: cleared, Done section added. AGENTS: architecture tree, 5 new design decisions, 3 new gotchas, testing patterns. | All files edited; `nix flake check` (includes treefmt/dprint) passes             | README.md, FEATURES.md, CHANGELOG.md, TODO_LIST.md, AGENTS.md |
+| 10 | **Two real bugs found & fixed by new tests** — (1) `%q` double-escaped Prometheus label values (would have produced wrong escape sequences in production output); (2) `WithBasePath` would turn an intentionally empty `Routes.Metrics` into the bare prefix. Both fixed with regression tests.                                                                                                                                                                                                                                                                         | metrics_test.go, dashboard_test.go                                               | metrics.go, dashboard.go                                      |
+| 11 | **Quality gates all green at HEAD** — lint 0 issues, vet clean, race clean, fuzz smoke clean, flake check passes.                                                                                                                                                                                                                                                                                                                                                                                                                                                       | commands run at `840d64c`                                                        | —                                                             |
 
 ## b) PARTIALLY DONE
 
@@ -36,18 +36,18 @@
 
 ## c) NOT STARTED
 
-*(Deliberately untouched this session — planned/ROADMAP only)*
+_(Deliberately untouched this session — planned/ROADMAP only)_
 
-1. **Build-tag gating for SSE** — the standing 🔵 BLOCKED item; needs *your* decision (accept `GOEXPERIMENT=jsonv2` / fork go-sse / build-tag gate). Untouched by design.
+1. **Build-tag gating for SSE** — the standing 🔵 BLOCKED item; needs _your_ decision (accept `GOEXPERIMENT=jsonv2` / fork go-sse / build-tag gate). Untouched by design.
 2. Graceful SSE shutdown drain, SSE connection max-lifetime, pusher self-check watchdog, request-logging middleware option, rate limiting on the dashboard route, per-route stricter CSP — ROADMAP Theme 1 (Production Hardening), unrefined.
 3. Multi-probe federation, service grouping, public status-page mode — ROADMAP Theme 2.
 4. Status-change timeline, incident tracking, JSON/CSV export, refresh-timestamp display — ROADMAP Theme 3 (partially advanced by `WithTrend`, which is the first stateful step; note the tension with the "stateless view layer" non-goal is now real and worth revisiting).
-5. WebSocket transport, OG metadata/social preview, PDF export, `RecommendedCSP()` helper — ROADMAP Theme 4. (`RecommendedCSP()` is now *much* easier: the exact verified policy is documented in the README.)
+5. WebSocket transport, OG metadata/social preview, PDF export, `RecommendedCSP()` helper — ROADMAP Theme 4. (`RecommendedCSP()` is now _much_ easier: the exact verified policy is documented in the README.)
 6. HEADLESS-browser a11y axe run, dark-mode README screenshot — new ideas surfaced this session, never started.
 
 ## d) TOTALLY FUCKED UP
 
-**Nothing in the shipped tree is broken** — all gates green at HEAD. Radical honesty about what *I* fucked up *during* the session (each caught by gates, but each was below the bar):
+**Nothing in the shipped tree is broken** — all gates green at HEAD. Radical honesty about what _I_ fucked up _during_ the session (each caught by gates, but each was below the bar):
 
 1. **I deadlocked the entire test package for 600 seconds.** `TestMiddleware_WithoutMiddlewareRoutesStayOpen` requested `/health/sse` through a plain `httptest.ResponseRecorder`; the streaming handler blocks forever and the package hit the 10-minute `go test` timeout, masking a second real failure. Root cause: I knew the SSE handler blocks and didn't apply it. Mitigation now codified as a gotcha in AGENTS.md. Severity during session: blocked all verification for 10 min.
 2. **I mangled CHANGELOG.md's `[Unreleased]` with a blind multiedit** — duplicated the Fixed section, orphaned ~20 bullets under the wrong header. Root cause: edited before reading the full target section (violated read-before-edit in spirit — I'd only read the head). Fixed by rebuilding the section with a script; verified structure after.
@@ -63,64 +63,64 @@
 3. **Think about blocking semantics before composing tests** — the SSE deadlock was predictable from knowledge I already had. Fix: when a test list includes a streaming endpoint, decide its timeout story first.
 4. **Addressable-variable/const mistakes in templ** — pattern repeats (embedded fields last release, const-addressing this one). Fix: a personal checklist line: "templ struct literal → embedded fields? & of what?" — or a lint rule upstream.
 5. **gopls vs golangci disagreement** — gopls shows 8-9 stale warnings all session; noisy enough to hide real diagnostics. Fix: investigate go-directive/toolchain bump (the `json.Marshal requires go1.27` hint) or gopls env (`GOEXPERIMENT` for gopls).
-6. **Auto-commit daemon granularity** — 16 "chore: auto-commit N file(s) (heuristic)" commits make bisecting this session painful; mixed unrelated files per commit. Fix (config-level): larger debounce or per-file-type grouping. *(Your infrastructure — your call.)*
+6. **Auto-commit daemon granularity** — 16 "chore: auto-commit N file(s) (heuristic)" commits make bisecting this session painful; mixed unrelated files per commit. Fix (config-level): larger debounce or per-file-type grouping. _(Your infrastructure — your call.)_
 7. **`WithTrend` vs "stateless view layer" non-goal** — the dashboard now holds state (ring buffer). Justified and documented, but the ROADMAP non-goal wording ("The dashboard is a stateless view layer") should be re-annotated before it confuses a future session.
 8. **Screenshot freshness** — the PNG will drift from the UI silently. Fix: a documented one-liner to regenerate (or CI artifact) + a "captured <date>" caption in the README.
 
 ## f) TOP 50 NEXT TASKS (brainstorm — HARVEST into TODO_LIST/ROADMAP before treating as commitments)
 
-| # | Task | Impact | Effort | Category |
-|---|------|--------|--------|----------|
-| 1 | Cut release v0.3.0: bump `Version` constant, date CHANGELOG, tag (new API surface: WithMiddleware/WithMetrics/WithTrend/WithHideStatCards) | High | S | Release |
-| 2 | Wire browser tests into CI (chromium + `GO_HEALTH_DASHBOARD_CHROME`) | High | M | Quality |
-| 3 | HARVEST this report's section (f) into TODO_LIST.md / ROADMAP.md | High | S | Documentation |
-| 4 | Resolve the BLOCKED build-tag gating decision (accept / fork go-sse / gate) | High | S | Decision |
-| 5 | `RecommendedCSP()` helper returning the verified policy (nonce param) | High | S | Feature |
-| 6 | Example app: showcase middleware + metrics + trend (env-toggled) | Medium | S | Feature |
-| 7 | promtool-based conformance test for the metrics exposition | Medium | S | Quality |
-| 8 | Latency histogram (prometheus buckets) instead of single gauge | Medium | M | Feature |
-| 9 | `dashboard_health_check_last_transition_seconds` metric | Low | M | Feature |
-| 10 | Optional `client_golang` bridge package (`metricsprom/`) for registry integration | Low | M | Feature |
-| 11 | Browser test: assert zero console errors/CSP violations (not just styles) | Medium | S | Quality |
-| 12 | Browser test: flip a check mid-test and assert the SSE patch updates the DOM | Medium | M | Quality |
-| 13 | axe-core accessibility run inside the browser test | Medium | M | Quality |
-| 14 | Dark-mode README screenshot (second image / toggle composite) | Low | S | Documentation |
-| 15 | "Regenerate the screenshot" one-liner docs + date caption | Low | S | Documentation |
-| 16 | SSE graceful shutdown: drain in-flight connections before broadcaster close | Medium | M | Feature |
-| 17 | SSE connection max-lifetime option (anti infinite-connection) | Medium | S | Feature |
-| 18 | Pusher watchdog: self-check + restart if goroutine dies | Medium | M | Feature |
-| 19 | Optional slog request-logging middleware for dashboard routes | Low | S | Feature |
-| 20 | Rate-limit option for the dashboard HTML route | Medium | M | Feature |
-| 21 | Metrics endpoint: `noindex` + security headers audit | Low | S | Quality |
-| 22 | Basic-auth middleware copy-paste example in README | Low | S | Documentation |
-| 23 | Document "protect probes via network policy, not auth" pattern | Low | S | Documentation |
-| 24 | New fuzz targets: `FuzzEscapeLabelValue`, `FuzzFingerprintChecks` | Low | S | Quality |
-| 25 | Nightly scheduled fuzzing workflow (60s per target) | Medium | S | Quality |
-| 26 | Fix gopls `json.Marshal requires go1.27` warning noise (go directive/toolchain) | Low | S | Cleanup |
-| 27 | Restore + publish coverage report in CI (was 79.7%) | Medium | S | Quality |
-| 28 | Benchmarks: `BenchmarkMetricsHandler`, `BenchmarkRenderPatch`, SSE broadcast | Low | S | Quality |
-| 29 | FEATURES.md line-number refresh sweep (docs-health ANNOTATE) | Low | S | Documentation |
-| 30 | DOMAIN_LANGUAGE.md: add Trend/History/Sample/Metrics terms | Low | S | Documentation |
-| 31 | CONTRIBUTING.md: how to run browser + screenshot tests locally | Low | S | Documentation |
-| 32 | docker-compose example: prometheus scraping `/health/metrics` | Medium | S | Documentation |
-| 33 | Trend: per-check sparklines grouped by severity | Low | M | Feature |
-| 34 | Trend: retention window option + `/health/trend` JSON scrape | Low | M | Feature |
-| 35 | Trend: status-transition markers (dots) on the sparkline | Low | M | Feature |
-| 36 | Trend: sample-interval + window in aria-label for screen readers | Low | S | Quality |
-| 37 | Re-annotate ROADMAP non-goal "stateless view layer" (trend adds state) | Low | S | Documentation |
-| 38 | Evaluate per-route middleware sets (UI vs metrics) — real need? | Low | S | Decision-spike |
-| 39 | Health-check history export: JSON/CSV endpoint (ROADMAP Theme 3) | Low | M | Feature |
-| 40 | Status-change timeline UI under the trend card (ROADMAP Theme 3) | Low | L | Feature |
-| 41 | Incident annotations on transitions (ROADMAP Theme 3) | Low | L | Feature |
-| 42 | Auto-generated "last refreshed" timestamp display | Low | S | Feature |
-| 43 | OG metadata + social preview image for the dashboard page | Low | S | Feature |
-| 44 | Public status-page mode (hide internal check names/errors) | Medium | L | Feature |
-| 45 | Multi-probe federation spike (ROADMAP Theme 2) | Low | L | Spike |
-| 46 | WebSocket transport spike — only if SSE-blocked envs are real (ROADMAP Theme 4) | Low | L | Spike |
-| 47 | templ-components upstream: opt-out flag for theme script's inline `color-scheme` (CSP-safe but non-zero) — verify before filing | Low | S | Cleanup |
-| 48 | Upstream chromedp: document/fix `[::1]` DevTools binding vs 127.0.0.1 launcher poll — verify before filing | Low | S | Cleanup |
-| 49 | CI: matrix include for the browser test job only (keep main job fast) | Low | S | Quality |
-| 50 | Consider `WithTrend` default-on for v0.4 after a deprecation-cycle warning in docs | Low | S | Decision-spike |
+| #  | Task                                                                                                                                       | Impact | Effort | Category       |
+| -- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------ | ------ | -------------- |
+| 1  | Cut release v0.3.0: bump `Version` constant, date CHANGELOG, tag (new API surface: WithMiddleware/WithMetrics/WithTrend/WithHideStatCards) | High   | S      | Release        |
+| 2  | Wire browser tests into CI (chromium + `GO_HEALTH_DASHBOARD_CHROME`)                                                                       | High   | M      | Quality        |
+| 3  | HARVEST this report's section (f) into TODO_LIST.md / ROADMAP.md                                                                           | High   | S      | Documentation  |
+| 4  | Resolve the BLOCKED build-tag gating decision (accept / fork go-sse / gate)                                                                | High   | S      | Decision       |
+| 5  | `RecommendedCSP()` helper returning the verified policy (nonce param)                                                                      | High   | S      | Feature        |
+| 6  | Example app: showcase middleware + metrics + trend (env-toggled)                                                                           | Medium | S      | Feature        |
+| 7  | promtool-based conformance test for the metrics exposition                                                                                 | Medium | S      | Quality        |
+| 8  | Latency histogram (prometheus buckets) instead of single gauge                                                                             | Medium | M      | Feature        |
+| 9  | `dashboard_health_check_last_transition_seconds` metric                                                                                    | Low    | M      | Feature        |
+| 10 | Optional `client_golang` bridge package (`metricsprom/`) for registry integration                                                          | Low    | M      | Feature        |
+| 11 | Browser test: assert zero console errors/CSP violations (not just styles)                                                                  | Medium | S      | Quality        |
+| 12 | Browser test: flip a check mid-test and assert the SSE patch updates the DOM                                                               | Medium | M      | Quality        |
+| 13 | axe-core accessibility run inside the browser test                                                                                         | Medium | M      | Quality        |
+| 14 | Dark-mode README screenshot (second image / toggle composite)                                                                              | Low    | S      | Documentation  |
+| 15 | "Regenerate the screenshot" one-liner docs + date caption                                                                                  | Low    | S      | Documentation  |
+| 16 | SSE graceful shutdown: drain in-flight connections before broadcaster close                                                                | Medium | M      | Feature        |
+| 17 | SSE connection max-lifetime option (anti infinite-connection)                                                                              | Medium | S      | Feature        |
+| 18 | Pusher watchdog: self-check + restart if goroutine dies                                                                                    | Medium | M      | Feature        |
+| 19 | Optional slog request-logging middleware for dashboard routes                                                                              | Low    | S      | Feature        |
+| 20 | Rate-limit option for the dashboard HTML route                                                                                             | Medium | M      | Feature        |
+| 21 | Metrics endpoint: `noindex` + security headers audit                                                                                       | Low    | S      | Quality        |
+| 22 | Basic-auth middleware copy-paste example in README                                                                                         | Low    | S      | Documentation  |
+| 23 | Document "protect probes via network policy, not auth" pattern                                                                             | Low    | S      | Documentation  |
+| 24 | New fuzz targets: `FuzzEscapeLabelValue`, `FuzzFingerprintChecks`                                                                          | Low    | S      | Quality        |
+| 25 | Nightly scheduled fuzzing workflow (60s per target)                                                                                        | Medium | S      | Quality        |
+| 26 | Fix gopls `json.Marshal requires go1.27` warning noise (go directive/toolchain)                                                            | Low    | S      | Cleanup        |
+| 27 | Restore + publish coverage report in CI (was 79.7%)                                                                                        | Medium | S      | Quality        |
+| 28 | Benchmarks: `BenchmarkMetricsHandler`, `BenchmarkRenderPatch`, SSE broadcast                                                               | Low    | S      | Quality        |
+| 29 | FEATURES.md line-number refresh sweep (docs-health ANNOTATE)                                                                               | Low    | S      | Documentation  |
+| 30 | DOMAIN_LANGUAGE.md: add Trend/History/Sample/Metrics terms                                                                                 | Low    | S      | Documentation  |
+| 31 | CONTRIBUTING.md: how to run browser + screenshot tests locally                                                                             | Low    | S      | Documentation  |
+| 32 | docker-compose example: prometheus scraping `/health/metrics`                                                                              | Medium | S      | Documentation  |
+| 33 | Trend: per-check sparklines grouped by severity                                                                                            | Low    | M      | Feature        |
+| 34 | Trend: retention window option + `/health/trend` JSON scrape                                                                               | Low    | M      | Feature        |
+| 35 | Trend: status-transition markers (dots) on the sparkline                                                                                   | Low    | M      | Feature        |
+| 36 | Trend: sample-interval + window in aria-label for screen readers                                                                           | Low    | S      | Quality        |
+| 37 | Re-annotate ROADMAP non-goal "stateless view layer" (trend adds state)                                                                     | Low    | S      | Documentation  |
+| 38 | Evaluate per-route middleware sets (UI vs metrics) — real need?                                                                            | Low    | S      | Decision-spike |
+| 39 | Health-check history export: JSON/CSV endpoint (ROADMAP Theme 3)                                                                           | Low    | M      | Feature        |
+| 40 | Status-change timeline UI under the trend card (ROADMAP Theme 3)                                                                           | Low    | L      | Feature        |
+| 41 | Incident annotations on transitions (ROADMAP Theme 3)                                                                                      | Low    | L      | Feature        |
+| 42 | Auto-generated "last refreshed" timestamp display                                                                                          | Low    | S      | Feature        |
+| 43 | OG metadata + social preview image for the dashboard page                                                                                  | Low    | S      | Feature        |
+| 44 | Public status-page mode (hide internal check names/errors)                                                                                 | Medium | L      | Feature        |
+| 45 | Multi-probe federation spike (ROADMAP Theme 2)                                                                                             | Low    | L      | Spike          |
+| 46 | WebSocket transport spike — only if SSE-blocked envs are real (ROADMAP Theme 4)                                                            | Low    | L      | Spike          |
+| 47 | templ-components upstream: opt-out flag for theme script's inline `color-scheme` (CSP-safe but non-zero) — verify before filing            | Low    | S      | Cleanup        |
+| 48 | Upstream chromedp: document/fix `[::1]` DevTools binding vs 127.0.0.1 launcher poll — verify before filing                                 | Low    | S      | Cleanup        |
+| 49 | CI: matrix include for the browser test job only (keep main job fast)                                                                      | Low    | S      | Quality        |
+| 50 | Consider `WithTrend` default-on for v0.4 after a deprecation-cycle warning in docs                                                         | Low    | S      | Decision-spike |
 
 ## g) QUESTIONS I CANNOT FIGURE OUT MYSELF
 
@@ -130,4 +130,4 @@
 
 ---
 
-*Report is a point-in-time snapshot. Section (f) is brainstorm input for `docs-health` HARVEST — items 3 covers its own harvesting; do not treat all 50 as commitments. Format override note: the status-report skill's canonical output is styled HTML; the user explicitly requested `.md` for this report, so Markdown was used.*
+_Report is a point-in-time snapshot. Section (f) is brainstorm input for `docs-health` HARVEST — items 3 covers its own harvesting; do not treat all 50 as commitments. Format override note: the status-report skill's canonical output is styled HTML; the user explicitly requested `.md` for this report, so Markdown was used._

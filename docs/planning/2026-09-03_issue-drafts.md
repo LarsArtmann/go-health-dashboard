@@ -20,7 +20,7 @@ verified against the upstream source before filing.
 ```
 
 The `<div>` wraps only the `<dd>` while its `<dt>` sibling stays outside
-the div. HTML allows `<div>` inside `<dl>` as a *group* wrapper, but the
+the div. HTML allows `<div>` inside `<dl>` as a _group_ wrapper, but the
 group must contain the dt/dd pairs it belongs to. axe-core flags this as a
 serious `definition-list` violation; screen readers lose the dt→dd
 association.

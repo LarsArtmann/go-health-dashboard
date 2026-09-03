@@ -14,15 +14,15 @@ implemented, tested, and verified.** Remaining ideas live in `ROADMAP.md`.
 
 ## What shipped this cycle
 
-| Area | Deliverables |
-| ---- | ------------ |
-| API | `RecommendedCSP`, `WithShutdownDrain`, `WithMaxConnectionLifetime`, `WithRateLimit`, `WithDescription`, `WithPublicMode` |
-| Endpoints | `/health/trend` (samples + transitions JSON), `/health/export` (JSON/CSV), latency histogram in `/health/metrics` |
-| UI | Status Changes timeline card, `Updated <time>` refresh stamp, OG tags |
-| Tests | 4 fuzz targets + nightly workflow, official-parser metrics conformance (+promtool passthrough), live SSE patch browser test, console/CSP error capture, axe-core a11y audit, delimiter-collision fingerprint fix |
-| CI | Browser job (real Chrome), coverage totals, nightly fuzz |
-| Tooling | gopls env fix (.vscode), benchmarks (metrics/patch render), dark-mode screenshot, example app env toggles, Dockerfile + docker-compose Prometheus demo |
-| Docs | README (toggles, routes, CSP helper), FEATURES/ROADMAP/AGENTS/TODO_LIST sweep, decision notes, upstream issue filed (templ-components#6) |
+| Area      | Deliverables                                                                                                                                                                                                     |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API       | `RecommendedCSP`, `WithShutdownDrain`, `WithMaxConnectionLifetime`, `WithRateLimit`, `WithDescription`, `WithPublicMode`                                                                                         |
+| Endpoints | `/health/trend` (samples + transitions JSON), `/health/export` (JSON/CSV), latency histogram in `/health/metrics`                                                                                                |
+| UI        | Status Changes timeline card, `Updated <time>` refresh stamp, OG tags                                                                                                                                            |
+| Tests     | 4 fuzz targets + nightly workflow, official-parser metrics conformance (+promtool passthrough), live SSE patch browser test, console/CSP error capture, axe-core a11y audit, delimiter-collision fingerprint fix |
+| CI        | Browser job (real Chrome), coverage totals, nightly fuzz                                                                                                                                                         |
+| Tooling   | gopls env fix (.vscode), benchmarks (metrics/patch render), dark-mode screenshot, example app env toggles, Dockerfile + docker-compose Prometheus demo                                                           |
+| Docs      | README (toggles, routes, CSP helper), FEATURES/ROADMAP/AGENTS/TODO_LIST sweep, decision notes, upstream issue filed (templ-components#6)                                                                         |
 
 ## Verification (all green)
 
@@ -46,7 +46,7 @@ implemented, tested, and verified.** Remaining ideas live in `ROADMAP.md`.
 
 ## Deliberately not done (with reasons)
 
-- Trend sparkline transition *markers* (visual): transitions are exposed
+- Trend sparkline transition _markers_ (visual): transitions are exposed
   via the trend JSON; drawing markers on the SVG sparkline is polish left
   to a future cycle.
 - WebSocket transport: rejected in the design spike (SSE suffices; see

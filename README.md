@@ -79,8 +79,8 @@ Open `http://localhost:8080/health` in a browser. Done.
 | `/health/sse`     | GET    | text/event-stream             | SSE endpoint (Datastar patch protocol)                                                                                    |
 | `/favicon.svg`    | GET    | image/svg+xml                 | SVG favicon (embedded green-heart icon)                                                                                   |
 | `/health/metrics` | GET    | text/plain                    | Prometheus exposition with latency histogram (only when `WithMetrics(true)`)                                              |
-| `/health/trend`   | GET    | application/json              | Status history + transitions (only when `WithTrend`)                                                                       |
-| `/health/export`  | GET    | application/json or text/csv  | History export, `?format=csv` or `Accept: text/csv` (only when `WithTrend`)                                                |
+| `/health/trend`   | GET    | application/json              | Status history + transitions (only when `WithTrend`)                                                                      |
+| `/health/export`  | GET    | application/json or text/csv  | History export, `?format=csv` or `Accept: text/csv` (only when `WithTrend`)                                               |
 | `/healthz`        | GET    | application/json              | Liveness probe (always 200, no dependency checks)                                                                         |
 | `/readyz`         | GET    | application/json              | Readiness probe (503 when critical services fail)                                                                         |
 | `/startupz`       | GET    | application/json              | Startup probe (latched once all critical services pass)                                                                   |
@@ -208,10 +208,10 @@ GOEXPERIMENT=jsonv2 DEMO_TREND=1 DEMO_METRICS=1 DEMO_AUTH=my-token DEMO_RATELIMI
 
 All toggles are optional — plain `go run ./example` works too.
 
-| Variable             | Effect                                                        |
-| -------------------- | ------------------------------------------------------------- |
-| `DEMO_TREND=1`       | Health trend sparkline (`WithTrend`)                          |
-| `DEMO_METRICS=1`     | Prometheus endpoint at `/health/metrics` (`WithMetrics`)      |
+| Variable             | Effect                                                         |
+| -------------------- | -------------------------------------------------------------- |
+| `DEMO_TREND=1`       | Health trend sparkline (`WithTrend`)                           |
+| `DEMO_METRICS=1`     | Prometheus endpoint at `/health/metrics` (`WithMetrics`)       |
 | `DEMO_AUTH=<token>`  | Bearer-token middleware on dashboard routes (`WithMiddleware`) |
 | `DEMO_RATELIMIT=n/w` | Token-bucket rate limit, e.g. `30/1m` (`WithRateLimit`)        |
 | `DEMO_DRAIN=5s`      | Graceful SSE drain window on shutdown (`WithShutdownDrain`)    |
