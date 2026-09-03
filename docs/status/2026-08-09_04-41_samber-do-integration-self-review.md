@@ -91,6 +91,8 @@ if !errors.Is(err, err) {
 
 **Fix:** Add `ErrPusherNotActive` sentinel, then rewrite the test to use `errors.Is`.
 
+~~**Fix:** Add `ErrPusherNotActive` sentinel, then rewrite the test to use `errors.Is`.~~ done 2026-09-03 (docs-health pass): sentinel exists at `dashboard.go:668` and the test now asserts `errors.Is(err, ErrPusherNotActive)`.
+
 ---
 
 ## e) WHAT WE SHOULD IMPROVE
@@ -120,24 +122,24 @@ if !errors.Is(err, err) {
 
 ### High Priority (do first)
 
-1. Add `ErrPusherNotActive` sentinel error in `dashboard.go`
-2. Rewrite `TestHealthCheck_ErrorIsDetectable` to use `errors.Is(err, ErrPusherNotActive)`
-3. Run `nix run .#lint` and fix all violations
-4. Run `nix fmt` to format all new/changed files
-5. Run `nix flake check` to validate the flake
+1. ~~Add `ErrPusherNotActive` sentinel error in `dashboard.go`~~ done (sentinel exists (dashboard.go:668), extracted in the 2026-08-09 defect-fix session)
+2. ~~Rewrite `TestHealthCheck_ErrorIsDetectable` to use `errors.Is(err, ErrPusherNotActive)`~~ done (fixed 2026-09-03 — test now asserts errors.Is against ErrPusherNotActive)
+3. ~~Run `nix run .#lint` and fix all violations~~ done (golangci-lint 0 issues at HEAD; CI Lint job green 2026-09-03)
+4. ~~Run `nix fmt` to format all new/changed files~~ done (treefmt enforced by nix flake check — clean)
+5. ~~Run `nix flake check` to validate the flake~~ done (green (v0.3.x cycle and 2026-09-03))
 6. Update `doc.go` Quick Start with `Register` example
 7. Verify whether Dashboard appears in its own health table when registered (test it)
 8. If it does appear, decide: keep (feature) or filter (confusing)
 
 ### Medium Priority
 
-9. Explore `ShutdownerWithContext` for graceful SSE drain
+9. ~~Explore `ShutdownerWithContext` for graceful SSE drain~~ done (resolved as WithShutdownDrain option (3022fbf) — bounded drain inside Shutdown instead of a context-aware Shutdowner interface)
 10. Add benchmark: `BenchmarkHealthCheck`
 11. Add benchmark: `BenchmarkRegister`
 12. Consider `do.Package` wrapper for one-call injection
 13. Add integration test: full lifecycle via `Register` → `Start` → serve → `do.Shutdown`
 14. Add integration test: `do.HealthCheck[*Dashboard]` in a realistic container with other services
-15. Test the example binary end-to-end (start, curl `/health`, curl `/readyz`, send SIGTERM)
+15. ~~Test the example binary end-to-end (start, curl `/health`, curl `/readyz`, send SIGTERM)~~ done (example v2 functionally smoke-tested over HTTP (401/200/metrics/probes) in the v0.3.x cycle)
 16. Document the shutdown ordering in the example (why probe before injector)
 17. Consider `WithInjector` option as alternative to `Register` (evaluate and dismiss or implement)
 18. Add `Provider` function (lazy variant using `do.Provide` instead of `do.ProvideValue`) — evaluate tradeoff
@@ -146,9 +148,9 @@ if !errors.Is(err, err) {
 
 ### Documentation
 
-21. Update `FEATURES.md` with DI lifecycle integration as a feature
-22. Update `CHANGELOG.md` with the new `Register`, `HealthCheck`, lifecycle interfaces
-23. Add section to AGENTS.md about the `ShutdownReport` gotcha (always non-nil)
+21. ~~Update `FEATURES.md` with DI lifecycle integration as a feature~~ done (FEATURES row added 2026-09-03 (samber/do lifecycle under Configuration))
+22. ~~Update `CHANGELOG.md` with the new `Register`, `HealthCheck`, lifecycle interfaces~~ done (v0.3.0 CHANGELOG section documents Register, HealthCheck, and the lifecycle interfaces)
+23. ~~Add section to AGENTS.md about the `ShutdownReport` gotcha (always non-nil)~~ done (present in AGENTS.md samber/do dependency notes)
 24. Document that `HealthCheck` ignores context intentionally (fast atomic read)
 25. Add architecture decision record for "why `ProvideValue` not `Provide`"
 
@@ -168,9 +170,9 @@ if !errors.Is(err, err) {
 34. Review `di.go` for naming — is `Register` the best name or should it be `RegisterDashboard`?
 35. Consider whether `di.go` should be named `container.go` or `injector.go`
 36. Add `//go:generate` instruction if needed
-37. Run `govulncheck` (`nix run .#vulncheck`) — never ran it
-38. Run `go vet` (`nix run .#vet`) — never ran it separately
-39. Check coverage: `nix run .#coverage` — measure lifecycle test coverage
+37. ~~Run `govulncheck` (`nix run .#vulncheck`) — never ran it~~ done (nix run .#vulncheck — no vulnerabilities 2026-09-03)
+38. ~~Run `go vet` (`nix run .#vet`) — never ran it separately~~ done (go vet clean at HEAD)
+39. ~~Check coverage: `nix run .#coverage` — measure lifecycle test coverage~~ done (coverage baseline 76.9% recorded 2026-09-03)
 40. Consider whether `HealthCheck` should also check probe health (not just pusher)
 
 ### Future Features

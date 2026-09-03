@@ -302,19 +302,19 @@ Both are flaky-test bait under CI load.
 
 ### Critical — fix this session's mistakes
 
-1. **Fix `lifecycle_test.go:205`** — change `errors.Is(err, err)` to
-   `errors.Is(err, dashboard.ErrPusherNotActive)` — meaningless test
-2. **Update CHANGELOG test count** — 78 → 89
-3. **Update CHANGELOG coverage** — 79.7% → 80.0%
-4. **Update FEATURES test count** — 78 → 89
-5. **Update FEATURES coverage** — 79.7% → 80.0%
-6. **Update FEATURES file count** — "4 files" → "5 files"
-7. **Add DI integration to CHANGELOG `[Unreleased]`** — `Register()`,
-   `HealthCheck()`, `ErrPusherNotActive`, `do.Shutdowner`/
-   `do.HealthcheckerWithContext`
-8. **Add DI integration rows to FEATURES.md** — new public API
-9. **Commit the AGENTS.md DI section** — it's the only dirty file
-10. **Add `di.go` and `lifecycle_test.go` to AGENTS.md file listing**
+1. ~~**Fix `lifecycle_test.go:205`** — change `errors.Is(err, err)` to~~ done (fixed 2026-09-03 — test now asserts errors.Is against ErrPusherNotActive)
+   ~~`errors.Is(err, dashboard.ErrPusherNotActive)` — meaningless test~~
+2. ~~**Update CHANGELOG test count** — 78 → 89~~ done (superseded — later releases recorded their own counts; current totals verified 2026-09-03 (154 funcs / 19 files, see FEATURES))
+3. ~~**Update CHANGELOG coverage** — 79.7% → 80.0%~~ done (superseded — coverage no longer hardcoded; baseline 76.9% recorded 2026-09-03)
+4. ~~**Update FEATURES test count** — 78 → 89~~ done (superseded — see FEATURES test-suite row corrected 2026-09-03)
+5. ~~**Update FEATURES coverage** — 79.7% → 80.0%~~ done (superseded — see FEATURES test-suite row corrected 2026-09-03)
+6. ~~**Update FEATURES file count** — "4 files" → "5 files"~~ done (superseded — AGENTS.md now states 19 test files)
+7. ~~**Add DI integration to CHANGELOG `[Unreleased]`** — `Register()`,~~ done (v0.3.0 CHANGELOG section documents the DI integration)
+   ~~`HealthCheck()`, `ErrPusherNotActive`, `do.Shutdowner`/~~
+   ~~`do.HealthcheckerWithContext`~~
+8. ~~**Add DI integration rows to FEATURES.md** — new public API~~ done (FEATURES samber/do lifecycle row added 2026-09-03)
+9. ~~**Commit the AGENTS.md DI section** — it's the only dirty file~~ done (committed; present at HEAD)
+10. ~~**Add `di.go` and `lifecycle_test.go` to AGENTS.md file listing**~~ done (present; inventory refreshed 2026-09-03)
 
 ### High — fix remaining timing issues
 
@@ -327,10 +327,10 @@ Both are flaky-test bait under CI load.
 
 ### Medium — improve DI integration quality
 
-14. **Add `HealthCheck` depth** — check goroutine liveness, not just pointer
-    nil-ness
-15. **Consider `Register` auto-start** — wire `Start()` into container
-    lifecycle instead of leaving it manual
+14. ~~**Add `HealthCheck` depth** — check goroutine liveness, not just pointer~~ done at `3022fbf`
+    ~~nil-ness~~
+15. ~~**Consider `Register` auto-start** — wire `Start()` into container~~ done (routed to ROADMAP raw ideas 2026-09-03)
+    ~~lifecycle instead of leaving it manual~~
 16. **Distinguish "not started" from "shut down"** in `ErrPusherNotActive`
     or add `ErrPusherAlreadyShutdown`
 17. **Add `TestWithMaxSSEConnections_ZeroAllowsUnlimited`** — verify zero =
@@ -342,12 +342,12 @@ Both are flaky-test bait under CI load.
     HealthCheck → HTTP request → Shutdown
 21. **Add `Register()` to doc.go Quick Start** — show the DI path
 22. **Add `ErrPusherNotActive` to doc.go** — document the sentinel error
-23. **Update README.md** — show `Register()` as recommended for samber/do
-    users
+23. ~~**Update README.md** — show `Register()` as recommended for samber/do~~ done (README Register note added 2026-09-03)
+    ~~users~~
 
 ### Lower — polish and hardening
 
-24. **Bump `Version` to "0.3.0"** — breaking change + major features
+24. ~~**Bump `Version` to "0.3.0"** — breaking change + major features~~ done at `d453c52`
 25. **Add `WithRetryInterval` sub-millisecond validation** — 500µs silently
     becomes 0ms
 26. **Consider `WithBasePath` resolution in `New()`** — store BasePath as a
@@ -356,35 +356,35 @@ Both are flaky-test bait under CI load.
 28. **Add benchmark for `renderPatch` with retry field** — per-event stamping
     overhead
 29. **Add `style=` assertion to SSE nonce test** — not just `<script>`
-30. **Update ROADMAP.md** — mark DI integration as done if listed
-31. **Review `example/main.go` signal handling** — daemon rewrote it
-    significantly, verify correctness
-32. **Check if `go.mod` needs updating** — new `do/v2` import in non-test
-    code (`di.go`) may change the module graph
-33. **Run `go mod tidy`** — ensure dependencies are clean after `di.go`
-34. **Verify `nix run .#vulncheck`** — not run this session
+30. ~~**Update ROADMAP.md** — mark DI integration as done if listed~~ done (DI shipped (v0.3.0); ROADMAP tracks the Register auto-start follow-up)
+31. ~~**Review `example/main.go` signal handling** — daemon rewrote it~~ done at `50f2bcc`
+    ~~significantly, verify correctness~~
+32. ~~**Check if `go.mod` needs updating** — new `do/v2` import in non-test~~ done (CI green on master (run 33763955031))
+    ~~code (`di.go`) may change the module graph~~
+33. ~~**Run `go mod tidy`** — ensure dependencies are clean after `di.go`~~ done (go mod tidy clean (CI green))
+34. ~~**Verify `nix run .#vulncheck`** — not run this session~~ done (nix run .#vulncheck — no vulnerabilities 2026-09-03)
 35. **Add CONTRIBUTING.md mention of `Register()` and DI pattern**
 
 ### Pre-existing (from prior sessions, still open)
 
-36. Fix 30 broken cross-references in archived reports
-37. Investigate `gopls stdversion` warning on `dashboard.go`
-38. Verify pkg.go.dev v0.2.0 indexing (will need v0.3.0 recheck)
-39. Examine `docs/research/2026-08-09_templ-components-deep-dive.html`
-40. Auth middleware integration (Medium, TODO_LIST.md)
-41. Add screenshot to README (Medium, TODO_LIST.md)
-42. Fuzzing for Accept header parsing (Low, TODO_LIST.md)
-43. Fuzzing for health response serialization (Low, TODO_LIST.md)
-44. Prometheus metrics endpoint (Low, TODO_LIST.md)
-45. Health history / sparkline (Low, TODO_LIST.md)
-46. UI flexibility options (Low, TODO_LIST.md)
-47. Headless-browser CSP test (Low, TODO_LIST.md)
+36. ~~Fix 30 broken cross-references in archived reports~~ done (30 cross-refs rewritten 2026-09-03; all targets resolve)
+37. ~~Investigate `gopls stdversion` warning on `dashboard.go`~~ done (covered by AGENTS.md gopls gotcha; editor-only noise)
+38. ~~Verify pkg.go.dev v0.2.0 indexing (will need v0.3.0 recheck)~~ done (v0.3.1 verified indexed on pkg.go.dev 2026-09-03)
+39. ~~Examine `docs/research/2026-08-09_templ-components-deep-dive.html`~~ done (examined 2026-09-03 — research artifact, LEAVE decision)
+40. ~~Auth middleware integration (Medium, TODO_LIST.md)~~ done at `d453c52`
+41. ~~Add screenshot to README (Medium, TODO_LIST.md)~~ done at `d453c52`
+42. ~~Fuzzing for Accept header parsing (Low, TODO_LIST.md)~~ done at `d453c52`
+43. ~~Fuzzing for health response serialization (Low, TODO_LIST.md)~~ done at `d453c52`
+44. ~~Prometheus metrics endpoint (Low, TODO_LIST.md)~~ done at `d453c52`
+45. ~~Health history / sparkline (Low, TODO_LIST.md)~~ done at `d453c52`
+46. ~~UI flexibility options (Low, TODO_LIST.md)~~ done at `d453c52`
+47. ~~Headless-browser CSP test (Low, TODO_LIST.md)~~ done at `d453c52`
 48. Build-tag gating for example/lifecycle (BLOCKED, TODO_LIST.md)
 
 ### User decisions needed (see section g)
 
-49. Ship `RegisterRoutes` breaking change as-is or add deprecated shim?
-50. Tag v0.3.0 now or batch more features?
+49. ~~Ship `RegisterRoutes` breaking change as-is or add deprecated shim?~~ done (shipped as a clean break in v0.3.0 — no shim requested)
+50. ~~Tag v0.3.0 now or batch more features?~~ done at `d453c52`
 
 ---
 

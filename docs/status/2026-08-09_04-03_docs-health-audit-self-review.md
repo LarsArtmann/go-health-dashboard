@@ -116,49 +116,49 @@ My final summary to the user presented a clean green checklist. The build/vet/te
 
 | # | Task                                                                                                                                                        | Effort |
 | - | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 1 | **Fix 30 broken cross-references in archived reports** — rewrite `docs/(status\|planning)/2026-...` → `docs/$1/archived/2026-...` across all archived files | S      |
-| 2 | **Verify pkg.go.dev indexes v0.2.0** — fetch the URL or downgrade the FEATURES claim                                                                        | XS     |
-| 3 | **Verify remaining ~25 FEATURES.md line citations** — read each line at the cited number                                                                    | M      |
+| ~~1~~ | ~~**Fix 30 broken cross-references in archived reports** — rewrite `docs/(status\|planning)/2026-...` → `docs/$1/archived/2026-...` across all archived files~~ done — 30 cross-refs rewritten 2026-09-03; all targets resolve | ~~S~~  |
+| ~~2~~ | ~~**Verify pkg.go.dev indexes v0.2.0** — fetch the URL or downgrade the FEATURES claim~~ done — v0.3.1 verified indexed on pkg.go.dev 2026-09-03; FEATURES row updated | ~~XS~~  |
+| ~~3~~ | ~~**Verify remaining ~25 FEATURES.md line citations** — read each line at the cited number~~ done — FEATURES citations rebuilt as symbol references 2026-09-03 | ~~M~~  |
 
 ### High (close loops this session left open)
 
 | # | Task                                                                                                                                          | Effort |
 | - | --------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 4 | **Examine `docs/research/2026-08-09_templ-components-deep-dive.html`** — decide annotate/archive/leave; harvest any open items                | M      |
-| 5 | **Verify GitHub CI is green on HEAD** — `gh run list --limit 3`                                                                               | XS     |
-| 6 | **Add `gopls stdversion` warning to FEATURES Known Gaps** — `dashboard.go:269`, json.Marshal needs go1.27                                     | XS     |
-| 7 | **Full README consistency audit** — routes table, dependencies, "How Real-Time Works" vs actual code                                          | M      |
-| 8 | **Full AGENTS.md consistency audit** — verify file list, design decisions reflect v0.2.0 (NonceExtractor documented in Key Design Decisions?) | M      |
+| ~~4~~ | ~~**Examine `docs/research/2026-08-09_templ-components-deep-dive.html`** — decide annotate/archive/leave; harvest any open items~~ done — examined 2026-09-03; research artifact, LEAVE decision (no open items inside) | ~~M~~  |
+| ~~5~~ | ~~**Verify GitHub CI is green on HEAD** — `gh run list --limit 3`~~ done — CI green on master incl. browser job (run 33763955031) 2026-09-03 | ~~XS~~  |
+| ~~6~~ | ~~**Add `gopls stdversion` warning to FEATURES Known Gaps** — `dashboard.go:269`, json.Marshal needs go1.27~~ done — covered by AGENTS.md gopls gotcha (.vscode gopls env); editor-only noise | ~~XS~~  |
+| ~~7~~ | ~~**Full README consistency audit** — routes table, dependencies, "How Real-Time Works" vs actual code~~ done — README audited and updated 2026-09-03 | ~~M~~  |
+| ~~8~~ | ~~**Full AGENTS.md consistency audit** — verify file list, design decisions reflect v0.2.0 (NonceExtractor documented in Key Design Decisions?)~~ done — AGENTS.md audited and inventory updated 2026-09-03 | ~~M~~  |
 
 ### Medium (testing gaps carried forward)
 
 | #  | Task                                                                    | Effort |
 | -- | ----------------------------------------------------------------------- | ------ |
-| 9  | Add test for `SubscriberCount()`                                        | 15min  |
-| 10 | Add test for `WithHeartbeatInterval`                                    | 15min  |
-| 11 | SSE nonce flow integration test (patches should carry nonce if scripts) | 30min  |
-| 12 | Fuzz test for Accept header q-value parsing                             | 30min  |
-| 13 | Fuzz test for `fingerprintChecks` pathological inputs                   | 30min  |
+| ~~9~~ | ~~Add test for `SubscriberCount()`~~ done at `d453c52` | ~~15min~~  |
+| ~~10~~ | ~~Add test for `WithHeartbeatInterval`~~ done at `d453c52` | ~~15min~~  |
+| ~~11~~ | ~~SSE nonce flow integration test (patches should carry nonce if scripts)~~ done at `d453c52` | ~~30min~~  |
+| ~~12~~ | ~~Fuzz test for Accept header q-value parsing~~ done at `d453c52` | ~~30min~~  |
+| ~~13~~ | ~~Fuzz test for `fingerprintChecks` pathological inputs~~ done at `dd483c2` | ~~30min~~  |
 
 ### Low (polish & future, from ROADMAP)
 
 | #  | Task                                                                                                                               | Effort |
 | -- | ---------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 14 | Headless-browser CSP test (chromedp) — closes the runtime-style-injection loop                                                     | L      |
+| ~~14~~ | ~~Headless-browser CSP test (chromedp) — closes the runtime-style-injection loop~~ done at `d453c52` | ~~L~~  |
 | 15 | Per-route stricter CSP for `/health` (no `style-src 'unsafe-inline'`)                                                              | M      |
-| 16 | `RecommendedCSP()` helper for consumers                                                                                            | S      |
-| 17 | Screenshot / GIF for README                                                                                                        | 30min  |
+| ~~16~~ | ~~`RecommendedCSP()` helper for consumers~~ done at `f627164` | ~~S~~  |
+| ~~17~~ | ~~Screenshot / GIF for README~~ done at `d453c52` | ~~30min~~  |
 | 18 | Coverage badge in README (80.0%)                                                                                                   | 10min  |
-| 19 | Document `WithNonceExtractor` in CONTRIBUTING / doc.go example                                                                     | S      |
+| ~~19~~ | ~~Document `WithNonceExtractor` in CONTRIBUTING / doc.go example~~ done — README + godoc examples shipped; CONTRIBUTING mention tracked in TODO_LIST | ~~S~~  |
 | 20 | templ-components UI follow-ups (`display.PageHeader`, `layout.Stack`, StatCard icons, `Dot`) — verify not already done, then adopt | M      |
 | 21 | Deprecate `WithNonce` in favor of `WithNonceExtractor` (long-term)                                                                 | S      |
 | 22 | Build-tag gating for SSE (BLOCKED on GOEXPERIMENT decision)                                                                        | L      |
-| 23 | SSE reconnection (Last-Event-ID)                                                                                                   | M      |
-| 24 | Embeddable dashboard mode (sub-path)                                                                                               | M      |
-| 25 | Auth middleware integration                                                                                                        | M      |
-| 26 | Prometheus metrics endpoint                                                                                                        | L      |
-| 27 | Health history / sparkline                                                                                                         | L      |
-| 28 | UI flexibility options (WithHideStatCards etc.)                                                                                    | L      |
+| ~~23~~ | ~~SSE reconnection (Last-Event-ID)~~ done — rejected by design; current-state-on-connect documented as correct for a health monitor | ~~M~~  |
+| ~~24~~ | ~~Embeddable dashboard mode (sub-path)~~ done at `d453c52` | ~~M~~  |
+| ~~25~~ | ~~Auth middleware integration~~ done at `d453c52` | ~~M~~  |
+| ~~26~~ | ~~Prometheus metrics endpoint~~ done at `d453c52` | ~~L~~  |
+| ~~27~~ | ~~Health history / sparkline~~ done at `d453c52` | ~~L~~  |
+| ~~28~~ | ~~UI flexibility options (WithHideStatCards etc.)~~ done at `d453c52` | ~~L~~  |
 | 29 | Pin golangci-lint version in CI (currently `latest`)                                                                               | XS     |
 | 30 | Add `nix run .#ci` mirroring GitHub Actions locally                                                                                | S      |
 
@@ -166,14 +166,20 @@ My final summary to the user presented a clean green checklist. The build/vet/te
 
 ## g) Questions I Cannot Answer Myself
 
-### Q1: Should I fix the 30 broken cross-references in the archived reports now, or are archived reports "frozen history" where dead links are acceptable?
+### Q1: ~~Should I fix the 30 broken cross-references in the archived reports now, or are archived reports "frozen history" where dead links are acceptable?~~
+
+**Answered 2026-09-03:** option (a) executed — all 30 refs rewritten to `archived/` paths; every target now resolves.
 
 The docs-health skill says historical docs "cannot be rewritten without destroying their value." But it also says "every internal markdown link resolves." These two principles collide: fixing the links means editing historical files; not fixing them leaves 30 dead links. The cleanest options are (a) `sed`-rewrite all paths to include `archived/` (minimal edit, preserves content), or (b) accept that archived reports live in a relocated namespace and add a one-line "paths reflect pre-archive locations" note at the top of each. Which do you prefer?
 
-### Q2: Is the `gopls stdversion` warning on `dashboard.go:269` (`json.Marshal requires go1.27`, module is `go 1.26.5`) a real bug I should fix, or a gopls false positive to suppress?
+### Q2: ~~Is the `gopls stdversion` warning on `dashboard.go:269` (`json.Marshal requires go1.27`, module is `go 1.26.5`) a real bug I should fix, or a gopls false positive to suppress?~~
+
+**Answered:** gopls-only noise, fixed via committed `.vscode/settings.json` gopls build env (`GOEXPERIMENT=jsonv2`); AGENTS.md documents trusting `nix run .#lint` over editor squiggles.
 
 The build compiles and all tests pass, so `json.Marshal` _works_ on Go 1.26.5 in practice — but gopls flags it as requiring go1.27. This may be a `GOEXPERIMENT=jsonv2` interaction (the `encoding/json/v2` experiment may backport the API). Either bump the `go` directive to `1.27`, suppress the warning, or confirm it's a false positive. I can't tell whether it's safe to ignore without knowing if Go 1.27 is the project's target.
 
-### Q3: Should I verify pkg.go.dev v0.2.0 indexing by fetching the URL, or downgrade the FEATURES claim now and let a future session verify?
+### Q3: ~~Should I verify pkg.go.dev v0.2.0 indexing by fetching the URL, or downgrade the FEATURES claim now and let a future session verify?~~
+
+**Answered 2026-09-03:** fetched — v0.3.1 verified as the latest indexed version; FEATURES row updated with the verified claim.
 
 Fetching `https://pkg.go.dev/github.com/larsartmann/go-health-dashboard` would confirm indexing (and may trigger it if not yet indexed). But I'm unsure whether you want me making outbound web requests to third-party services in this context, or whether you'd rather I keep the doc honest-but-unverified until you check manually. My default is to downgrade the claim to "v0.1.0 confirmed; v0.2.0 unverified" — but say the word and I'll fetch it.
