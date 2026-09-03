@@ -162,7 +162,7 @@ func View(data viewModel) templ.Component {
 					return nil
 				})
 				templ_7745c5c3_Err = datastar.LiveRegion(datastar.LiveRegionProps{
-					BaseProps: utils.BaseProps{ID: "health-region"},
+					BaseProps: utils.BaseProps{ID: "health-region", Nonce: data.DatastarNonce},
 					URL:       data.SSEURL,
 					AutoStart: true,
 					Live:      datastar.LivePolite,

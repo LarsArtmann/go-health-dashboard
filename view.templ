@@ -53,7 +53,7 @@ templ View(data viewModel) {
 				}
 				<div class="mt-6">
 					@datastar.LiveRegion(datastar.LiveRegionProps{
-						BaseProps: utils.BaseProps{ID: "health-region"},
+						BaseProps: utils.BaseProps{ID: "health-region", Nonce: data.DatastarNonce},
 						URL:       data.SSEURL,
 						AutoStart: true,
 						Live:      datastar.LivePolite,
