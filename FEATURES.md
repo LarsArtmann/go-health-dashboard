@@ -104,6 +104,7 @@
 | WithDescription           | 🟢 `FULLY_FUNCTIONAL` | `view.templ` — meta description + Open Graph tags                         |
 | WithPublicMode            | 🟢 `FULLY_FUNCTIONAL` | `status.go`/`metrics.go` — anonymized HTML and metrics                    |
 | WithDatastarSrc           | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` — self-hosted Datastar SDK for strict CSP                  |
+| samber/do lifecycle (`Register`) | 🟢 `FULLY_FUNCTIONAL` | `di.go` — participates in `do.Shutdown`/`do.HealthCheck` cascades; `ErrPusherNotActive`/`ErrPusherStale` sentinels; `lifecycle_test.go` |
 
 ## Observability
 

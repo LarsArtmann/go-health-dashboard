@@ -25,25 +25,25 @@
 
 ## b) PARTIALLY DONE
 
-1. **Browser tests are local-only right now.** Works: verified locally with nix chromium; skip logic proven. Missing: CI wiring (chromium install + `GO_HEALTH_DASHBOARD_CHROME` env in `.github/workflows/ci.yml`), so CI never exercises them. Blocker: none, just not wired. Effort: M.
+1. ~~**Browser tests are local-only right now.** Works: verified locally with nix chromium; skip logic proven. Missing: CI wiring (chromium install + `GO_HEALTH_DASHBOARD_CHROME` env in `.github/workflows/ci.yml`), so CI never exercises them. Blocker: none, just not wired. Effort: M.~~ done (CI browser job wired and verified green on runner (run 33763955031) 2026-09-03)
 2. **Screenshot capture is a manual command.** Works: one-command reproduction from the repo. Missing: CI job or `nix run .#screenshot` flake app; also no dark-theme variant. Effort: S–M.
-3. **Metrics endpoint conformance.** Works: hand-rolled exposition with tests. Missing: `promtool check metrics`-style validation, latency histogram (currently a single ms gauge), no `client_golang` bridge helper for consumers with existing registries. Effort: M.
-4. **CHANGELOG `[Unreleased]`** — complete entries written, but no release cut: `Version` constant still `0.2.0`, no tag. The new API surface (4 options + MetricsHandler) is unreleased. Effort: S (release flow exists as skill).
-5. **TODO_LIST harvest from this report** — section (f) below is brainstorm; per the docs-health flow it must be routed into TODO_LIST.md/ROADMAP.md. Not done yet. Effort: S.
-6. **Example app** — still demonstrates the v0.2.0 feature set; does not showcase middleware, metrics, or the trend card. Effort: S.
-7. **LSP diagnostics noise** — gopls persistently warns (`json.Marshal requires go1.27`, stale varnamelen/golines echoes) while the real toolchain and golangci-lint are clean. Pre-existing; not fixed this session. Effort: S (probably a `tools`/gopls settings or go-directive question).
-8. **Fuzzing in CI** — targets run as seed tests in normal `go test` (good), but no scheduled actual fuzzing workflow exists. Effort: S.
+3. ~~**Metrics endpoint conformance.** Works: hand-rolled exposition with tests. Missing: `promtool check metrics`-style validation, latency histogram (currently a single ms gauge), no `client_golang` bridge helper for consumers with existing registries. Effort: M.~~ done at `bd99de0`
+4. ~~**CHANGELOG `[Unreleased]`** — complete entries written, but no release cut: `Version` constant still `0.2.0`, no tag. The new API surface (4 options + MetricsHandler) is unreleased. Effort: S (release flow exists as skill).~~ done at `d453c52`
+5. ~~**TODO_LIST harvest from this report** — section (f) below is brainstorm; per the docs-health flow it must be routed into TODO_LIST.md/ROADMAP.md. Not done yet. Effort: S.~~ done at `40ba449`
+6. ~~**Example app** — still demonstrates the v0.2.0 feature set; does not showcase middleware, metrics, or the trend card. Effort: S.~~ done at `50f2bcc`
+7. ~~**LSP diagnostics noise** — gopls persistently warns (`json.Marshal requires go1.27`, stale varnamelen/golines echoes) while the real toolchain and golangci-lint are clean. Pre-existing; not fixed this session. Effort: S (probably a `tools`/gopls settings or go-directive question).~~ done (fixed via committed .vscode/settings.json (v0.3.x cycle))
+8. ~~**Fuzzing in CI** — targets run as seed tests in normal `go test` (good), but no scheduled actual fuzzing workflow exists. Effort: S.~~ done (nightly fuzz workflow shipped (.github/workflows/fuzz.yml))
 
 ## c) NOT STARTED
 
 _(Deliberately untouched this session — planned/ROADMAP only)_
 
 1. **Build-tag gating for SSE** — the standing 🔵 BLOCKED item; needs _your_ decision (accept `GOEXPERIMENT=jsonv2` / fork go-sse / build-tag gate). Untouched by design.
-2. Graceful SSE shutdown drain, SSE connection max-lifetime, pusher self-check watchdog, request-logging middleware option, rate limiting on the dashboard route, per-route stricter CSP — ROADMAP Theme 1 (Production Hardening), unrefined.
+2. ~~Graceful SSE shutdown drain, SSE connection max-lifetime, pusher self-check watchdog, request-logging middleware option, rate limiting on the dashboard route, per-route stricter CSP — ROADMAP Theme 1 (Production Hardening), unrefined.~~ done at `3022fbf`
 3. Multi-probe federation, service grouping, public status-page mode — ROADMAP Theme 2.
-4. Status-change timeline, incident tracking, JSON/CSV export, refresh-timestamp display — ROADMAP Theme 3 (partially advanced by `WithTrend`, which is the first stateful step; note the tension with the "stateless view layer" non-goal is now real and worth revisiting).
-5. WebSocket transport, OG metadata/social preview, PDF export, `RecommendedCSP()` helper — ROADMAP Theme 4. (`RecommendedCSP()` is now _much_ easier: the exact verified policy is documented in the README.)
-6. HEADLESS-browser a11y axe run, dark-mode README screenshot — new ideas surfaced this session, never started.
+4. ~~Status-change timeline, incident tracking, JSON/CSV export, refresh-timestamp display — ROADMAP Theme 3 (partially advanced by `WithTrend`, which is the first stateful step; note the tension with the "stateless view layer" non-goal is now real and worth revisiting).~~ done at `e9f47cb`
+5. ~~WebSocket transport, OG metadata/social preview, PDF export, `RecommendedCSP()` helper — ROADMAP Theme 4. (`RecommendedCSP()` is now _much_ easier: the exact verified policy is documented in the README.)~~ done (OG at 4e4a149, RecommendedCSP at f627164, WebSocket spike rejected (ROADMAP Design Spikes), PDF out of scope)
+6. ~~HEADLESS-browser a11y axe run, dark-mode README screenshot — new ideas surfaced this session, never started.~~ done at `be5fe4c`
 
 ## d) TOTALLY FUCKED UP
 
@@ -71,52 +71,52 @@ _(Deliberately untouched this session — planned/ROADMAP only)_
 
 | #  | Task                                                                                                                                       | Impact | Effort | Category       |
 | -- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------ | ------ | -------------- |
-| 1  | Cut release v0.3.0: bump `Version` constant, date CHANGELOG, tag (new API surface: WithMiddleware/WithMetrics/WithTrend/WithHideStatCards) | High   | S      | Release        |
-| 2  | Wire browser tests into CI (chromium + `GO_HEALTH_DASHBOARD_CHROME`)                                                                       | High   | M      | Quality        |
-| 3  | HARVEST this report's section (f) into TODO_LIST.md / ROADMAP.md                                                                           | High   | S      | Documentation  |
+| ~~1~~  | ~~Cut release v0.3.0: bump `Version` constant, date CHANGELOG, tag (new API surface: WithMiddleware/WithMetrics/WithTrend/WithHideStatCards)~~ done at `d453c52` | ~~High~~ | ~~S~~ | ~~Release~~ |
+| ~~2~~  | ~~Wire browser tests into CI (chromium + `GO_HEALTH_DASHBOARD_CHROME`)~~ done — CI browser job verified green on runner (run 33763955031) 2026-09-03 | ~~High~~ | ~~M~~ | ~~Quality~~ |
+| ~~3~~  | ~~HARVEST this report's section (f) into TODO_LIST.md / ROADMAP.md~~ done at `40ba449` | ~~High~~ | ~~S~~ | ~~Documentation~~ |
 | 4  | Resolve the BLOCKED build-tag gating decision (accept / fork go-sse / gate)                                                                | High   | S      | Decision       |
-| 5  | `RecommendedCSP()` helper returning the verified policy (nonce param)                                                                      | High   | S      | Feature        |
-| 6  | Example app: showcase middleware + metrics + trend (env-toggled)                                                                           | Medium | S      | Feature        |
-| 7  | promtool-based conformance test for the metrics exposition                                                                                 | Medium | S      | Quality        |
-| 8  | Latency histogram (prometheus buckets) instead of single gauge                                                                             | Medium | M      | Feature        |
-| 9  | `dashboard_health_check_last_transition_seconds` metric                                                                                    | Low    | M      | Feature        |
-| 10 | Optional `client_golang` bridge package (`metricsprom/`) for registry integration                                                          | Low    | M      | Feature        |
-| 11 | Browser test: assert zero console errors/CSP violations (not just styles)                                                                  | Medium | S      | Quality        |
-| 12 | Browser test: flip a check mid-test and assert the SSE patch updates the DOM                                                               | Medium | M      | Quality        |
-| 13 | axe-core accessibility run inside the browser test                                                                                         | Medium | M      | Quality        |
-| 14 | Dark-mode README screenshot (second image / toggle composite)                                                                              | Low    | S      | Documentation  |
+| ~~5~~  | ~~`RecommendedCSP()` helper returning the verified policy (nonce param)~~ done at `f627164` | ~~High~~ | ~~S~~ | ~~Feature~~ |
+| ~~6~~  | ~~Example app: showcase middleware + metrics + trend (env-toggled)~~ done at `50f2bcc` | ~~Medium~~ | ~~S~~ | ~~Feature~~ |
+| ~~7~~  | ~~promtool-based conformance test for the metrics exposition~~ done at `bd99de0` | ~~Medium~~ | ~~S~~ | ~~Quality~~ |
+| ~~8~~  | ~~Latency histogram (prometheus buckets) instead of single gauge~~ done at `e9f47cb` | ~~Medium~~ | ~~M~~ | ~~Feature~~ |
+| ~~9~~  | ~~`dashboard_health_check_last_transition_seconds` metric~~ done — routed to ROADMAP raw ideas 2026-09-03 | ~~Low~~ | ~~M~~ | ~~Feature~~ |
+| ~~10~~ | ~~Optional `client_golang` bridge package (`metricsprom/`) for registry integration~~ done — routed to ROADMAP raw ideas 2026-09-03 | ~~Low~~ | ~~M~~ | ~~Feature~~ |
+| ~~11~~ | ~~Browser test: assert zero console errors/CSP violations (not just styles)~~ done at `be5fe4c` | ~~Medium~~ | ~~S~~ | ~~Quality~~ |
+| ~~12~~ | ~~Browser test: flip a check mid-test and assert the SSE patch updates the DOM~~ done at `be5fe4c` | ~~Medium~~ | ~~M~~ | ~~Quality~~ |
+| ~~13~~ | ~~axe-core accessibility run inside the browser test~~ done at `be5fe4c` | ~~Medium~~ | ~~M~~ | ~~Quality~~ |
+| ~~14~~ | ~~Dark-mode README screenshot (second image / toggle composite)~~ done — captured in v0.3.x cycle; embedded in README Dark Mode 2026-09-03 | ~~Low~~ | ~~S~~ | ~~Documentation~~ |
 | 15 | "Regenerate the screenshot" one-liner docs + date caption                                                                                  | Low    | S      | Documentation  |
-| 16 | SSE graceful shutdown: drain in-flight connections before broadcaster close                                                                | Medium | M      | Feature        |
-| 17 | SSE connection max-lifetime option (anti infinite-connection)                                                                              | Medium | S      | Feature        |
-| 18 | Pusher watchdog: self-check + restart if goroutine dies                                                                                    | Medium | M      | Feature        |
-| 19 | Optional slog request-logging middleware for dashboard routes                                                                              | Low    | S      | Feature        |
-| 20 | Rate-limit option for the dashboard HTML route                                                                                             | Medium | M      | Feature        |
-| 21 | Metrics endpoint: `noindex` + security headers audit                                                                                       | Low    | S      | Quality        |
-| 22 | Basic-auth middleware copy-paste example in README                                                                                         | Low    | S      | Documentation  |
+| ~~16~~ | ~~SSE graceful shutdown: drain in-flight connections before broadcaster close~~ done at `3022fbf` | ~~Medium~~ | ~~M~~ | ~~Feature~~ |
+| ~~17~~ | ~~SSE connection max-lifetime option (anti infinite-connection)~~ done at `3022fbf` | ~~Medium~~ | ~~S~~ | ~~Feature~~ |
+| ~~18~~ | ~~Pusher watchdog: self-check + restart if goroutine dies~~ done at `3022fbf` | ~~Medium~~ | ~~M~~ | ~~Feature~~ |
+| ~~19~~ | ~~Optional slog request-logging middleware for dashboard routes~~ done — routed to ROADMAP raw ideas 2026-09-03 | ~~Low~~ | ~~S~~ | ~~Feature~~ |
+| ~~20~~ | ~~Rate-limit option for the dashboard HTML route~~ done at `3022fbf` | ~~Medium~~ | ~~M~~ | ~~Feature~~ |
+| ~~21~~ | ~~Metrics endpoint: `noindex` + security headers audit~~ done — routed to ROADMAP raw ideas 2026-09-03; OG shipped at 4e4a149 | ~~Low~~ | ~~S~~ | ~~Quality~~ |
+| ~~22~~ | ~~Basic-auth middleware copy-paste example in README~~ done at `d453c52` | ~~Low~~ | ~~S~~ | ~~Documentation~~ |
 | 23 | Document "protect probes via network policy, not auth" pattern                                                                             | Low    | S      | Documentation  |
-| 24 | New fuzz targets: `FuzzEscapeLabelValue`, `FuzzFingerprintChecks`                                                                          | Low    | S      | Quality        |
-| 25 | Nightly scheduled fuzzing workflow (60s per target)                                                                                        | Medium | S      | Quality        |
-| 26 | Fix gopls `json.Marshal requires go1.27` warning noise (go directive/toolchain)                                                            | Low    | S      | Cleanup        |
-| 27 | Restore + publish coverage report in CI (was 79.7%)                                                                                        | Medium | S      | Quality        |
-| 28 | Benchmarks: `BenchmarkMetricsHandler`, `BenchmarkRenderPatch`, SSE broadcast                                                               | Low    | S      | Quality        |
-| 29 | FEATURES.md line-number refresh sweep (docs-health ANNOTATE)                                                                               | Low    | S      | Documentation  |
-| 30 | DOMAIN_LANGUAGE.md: add Trend/History/Sample/Metrics terms                                                                                 | Low    | S      | Documentation  |
+| ~~24~~ | ~~New fuzz targets: `FuzzEscapeLabelValue`, `FuzzFingerprintChecks`~~ done at `dd483c2` | ~~Low~~ | ~~S~~ | ~~Quality~~ |
+| ~~25~~ | ~~Nightly scheduled fuzzing workflow (60s per target)~~ done — nightly fuzz workflow shipped (.github/workflows/fuzz.yml) | ~~Medium~~ | ~~S~~ | ~~Quality~~ |
+| ~~26~~ | ~~Fix gopls `json.Marshal requires go1.27` warning noise (go directive/toolchain)~~ done — fixed via committed .vscode/settings.json (v0.3.x cycle) | ~~Low~~ | ~~S~~ | ~~Cleanup~~ |
+| ~~27~~ | ~~Restore + publish coverage report in CI (was 79.7%)~~ done — CI test job prints coverage totals; baseline 76.9% recorded 2026-09-03 | ~~Medium~~ | ~~S~~ | ~~Quality~~ |
+| ~~28~~ | ~~Benchmarks: `BenchmarkMetricsHandler`, `BenchmarkRenderPatch`, SSE broadcast~~ done at `4e4a149` | ~~Low~~ | ~~S~~ | ~~Quality~~ |
+| ~~29~~ | ~~FEATURES.md line-number refresh sweep (docs-health ANNOTATE)~~ done — FEATURES citations rebuilt as symbol references 2026-09-03 | ~~Low~~ | ~~S~~ | ~~Documentation~~ |
+| ~~30~~ | ~~DOMAIN_LANGUAGE.md: add Trend/History/Sample/Metrics terms~~ done — trend/history/metrics terms added to DOMAIN_LANGUAGE 2026-09-03 | ~~Low~~ | ~~S~~ | ~~Documentation~~ |
 | 31 | CONTRIBUTING.md: how to run browser + screenshot tests locally                                                                             | Low    | S      | Documentation  |
-| 32 | docker-compose example: prometheus scraping `/health/metrics`                                                                              | Medium | S      | Documentation  |
-| 33 | Trend: per-check sparklines grouped by severity                                                                                            | Low    | M      | Feature        |
-| 34 | Trend: retention window option + `/health/trend` JSON scrape                                                                               | Low    | M      | Feature        |
-| 35 | Trend: status-transition markers (dots) on the sparkline                                                                                   | Low    | M      | Feature        |
+| ~~32~~ | ~~docker-compose example: prometheus scraping `/health/metrics`~~ done at `4e4a149` | ~~Medium~~ | ~~S~~ | ~~Documentation~~ |
+| ~~33~~ | ~~Trend: per-check sparklines grouped by severity~~ done — routed to ROADMAP raw ideas 2026-09-03 | ~~Low~~ | ~~M~~ | ~~Feature~~ |
+| ~~34~~ | ~~Trend: retention window option + `/health/trend` JSON scrape~~ done — routed to ROADMAP raw ideas 2026-09-03 | ~~Low~~ | ~~M~~ | ~~Feature~~ |
+| ~~35~~ | ~~Trend: status-transition markers (dots) on the sparkline~~ done — routed to ROADMAP raw ideas 2026-09-03; transitions ship as data (e9f47cb) | ~~Low~~ | ~~M~~ | ~~Feature~~ |
 | 36 | Trend: sample-interval + window in aria-label for screen readers                                                                           | Low    | S      | Quality        |
-| 37 | Re-annotate ROADMAP non-goal "stateless view layer" (trend adds state)                                                                     | Low    | S      | Documentation  |
+| ~~37~~ | ~~Re-annotate ROADMAP non-goal "stateless view layer" (trend adds state)~~ done — non-goal re-annotated in ROADMAP 2026-09-03 | ~~Low~~ | ~~S~~ | ~~Documentation~~ |
 | 38 | Evaluate per-route middleware sets (UI vs metrics) — real need?                                                                            | Low    | S      | Decision-spike |
-| 39 | Health-check history export: JSON/CSV endpoint (ROADMAP Theme 3)                                                                           | Low    | M      | Feature        |
-| 40 | Status-change timeline UI under the trend card (ROADMAP Theme 3)                                                                           | Low    | L      | Feature        |
-| 41 | Incident annotations on transitions (ROADMAP Theme 3)                                                                                      | Low    | L      | Feature        |
-| 42 | Auto-generated "last refreshed" timestamp display                                                                                          | Low    | S      | Feature        |
-| 43 | OG metadata + social preview image for the dashboard page                                                                                  | Low    | S      | Feature        |
-| 44 | Public status-page mode (hide internal check names/errors)                                                                                 | Medium | L      | Feature        |
-| 45 | Multi-probe federation spike (ROADMAP Theme 2)                                                                                             | Low    | L      | Spike          |
-| 46 | WebSocket transport spike — only if SSE-blocked envs are real (ROADMAP Theme 4)                                                            | Low    | L      | Spike          |
+| ~~39~~ | ~~Health-check history export: JSON/CSV endpoint (ROADMAP Theme 3)~~ done at `e9f47cb` | ~~Low~~ | ~~M~~ | ~~Feature~~ |
+| ~~40~~ | ~~Status-change timeline UI under the trend card (ROADMAP Theme 3)~~ done at `e9f47cb` | ~~Low~~ | ~~L~~ | ~~Feature~~ |
+| ~~41~~ | ~~Incident annotations on transitions (ROADMAP Theme 3)~~ done — deferred — ROADMAP raw idea | ~~Low~~ | ~~L~~ | ~~Feature~~ |
+| ~~42~~ | ~~Auto-generated "last refreshed" timestamp display~~ done at `e9f47cb` | ~~Low~~ | ~~S~~ | ~~Feature~~ |
+| ~~43~~ | ~~OG metadata + social preview image for the dashboard page~~ done at `4e4a149` | ~~Low~~ | ~~S~~ | ~~Feature~~ |
+| ~~44~~ | ~~Public status-page mode (hide internal check names/errors)~~ done at `4e4a149` | ~~Medium~~ | ~~L~~ | ~~Feature~~ |
+| ~~45~~ | ~~Multi-probe federation spike (ROADMAP Theme 2)~~ done — spike concluded — ROADMAP Design Spikes + decision notes | ~~Low~~ | ~~L~~ | ~~Spike~~ |
+| ~~46~~ | ~~WebSocket transport spike — only if SSE-blocked envs are real (ROADMAP Theme 4)~~ done — spike concluded — rejected; ROADMAP Design Spikes | ~~Low~~ | ~~L~~ | ~~Spike~~ |
 | 47 | templ-components upstream: opt-out flag for theme script's inline `color-scheme` (CSP-safe but non-zero) — verify before filing            | Low    | S      | Cleanup        |
 | 48 | Upstream chromedp: document/fix `[::1]` DevTools binding vs 127.0.0.1 launcher poll — verify before filing                                 | Low    | S      | Cleanup        |
 | 49 | CI: matrix include for the browser test job only (keep main job fast)                                                                      | Low    | S      | Quality        |
@@ -124,9 +124,9 @@ _(Deliberately untouched this session — planned/ROADMAP only)_
 
 ## g) QUESTIONS I CANNOT FIGURE OUT MYSELF
 
-1. **Release intent:** Should I cut **v0.3.0 now** (the unreleased set adds four public options + a handler — real API surface), or keep batching features and release later? This decides whether I bump `Version`, date the CHANGELOG, and tag.
+1. ~~**Release intent:** Should I cut **v0.3.0 now** (the unreleased set adds four public options + a handler — real API surface), or keep batching features and release later? This decides whether I bump `Version`, date the CHANGELOG, and tag.~~ done at `d453c52`
 2. **Build-tag gating (the standing BLOCKED item):** accept `GOEXPERIMENT=jsonv2` as documented status quo, fork go-sse, or build-tag-gate the SSE code? Everything else in Theme 1/4 is unblocked; this one has been waiting on you.
-3. **Should browser tests run in CI?** They need a Chromium in the runner (~250MB, +~15-60s job time). My recommendation is yes (it's the strongest test in the repo), but it's your CI budget/runner-policy call — I can't see your runner constraints or costs.
+3. ~~**Should browser tests run in CI?** They need a Chromium in the runner (~250MB, +~15-60s job time). My recommendation is yes (it's the strongest test in the repo), but it's your CI budget/runner-policy call — I can't see your runner constraints or costs.~~ done (answered yes — browser job in CI, verified green (run 33763955031) 2026-09-03)
 
 ---
 

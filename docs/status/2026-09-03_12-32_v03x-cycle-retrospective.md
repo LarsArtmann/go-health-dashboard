@@ -39,18 +39,18 @@ Companion docs: `docs/status/2026-09-03_v03x-cycle-execution-complete.md`
 1. **Trend sparkline transition _markers_ (M22 visual)** — data shipped
    (`/health/trend` transitions), the SVG markers were not drawn. The plan
    asked for the visual; I downgraded it to data-level and re-labeled it.
-2. **promtool flake app + devShell package (M6)** — impossible as planned
-   (nixpkgs prometheus 3.x ships no promtool; separate package doesn't
-   exist). Documented deviation; the promtool test is opt-in via PATH.
+2. ~~**promtool flake app + devShell package (M6)** — impossible as planned~~ **Won't implement — nixpkgs prometheus 3.x ships no promtool; conformance anchored on the official parser instead.**
+   ~~(nixpkgs prometheus 3.x ships no promtool; separate package doesn't~~
+   ~~exist). Documented deviation; the promtool test is opt-in via PATH.~~
 3. **templ-components#6** — issue filed with source-verified diagnosis, but
    no upstream PR with the actual fix + golden-file updates.
-4. **Dark screenshot usage** — captured to `docs/screenshot-dark.png` but
-   NOT embedded anywhere (README Dark Mode section still references only
-   prose; light screenshot remains the only embed).
-5. **CI workflows are unverified in the runner** — ci.yml browser job and
-   fuzz.yml nightly have never been observed executing on GitHub Actions.
-   fuzz.yml has workflow_dispatch (not triggered); ci.yml changes ride on
-   pushes whose Action runs I did not check.
+4. ~~**Dark screenshot usage** — captured to `docs/screenshot-dark.png` but~~ done (embedded in README Dark Mode section 2026-09-03)
+   ~~NOT embedded anywhere (README Dark Mode section still references only~~
+   ~~prose; light screenshot remains the only embed).~~
+5. ~~**CI workflows are unverified in the runner** — ci.yml browser job and~~ done (CI browser job verified green on runner (run 33763955031) 2026-09-03)
+   ~~fuzz.yml nightly have never been observed executing on GitHub Actions.~~
+   ~~fuzz.yml has workflow_dispatch (not triggered); ci.yml changes ride on~~
+   ~~pushes whose Action runs I did not check.~~
 6. **Refresh stamp fidelity** — implemented as _render_ time, not
    _observation_ time. On the initial HTML the data can be up to one
    probe interval older than the stamped clock. Works, slightly dishonest
@@ -65,20 +65,20 @@ Companion docs: `docs/status/2026-09-03_v03x-cycle-execution-complete.md`
 1. Next release cut — the CHANGELOG `[Unreleased]` section now holds a
    full feature batch (CSP helper, SSE hardening, trend/export endpoints,
    public mode, OG, histogram) while `Version` still reads `0.3.1`.
-2. Coverage baseline (`nix run .#coverage` was never run this session) and
-   any coverage floor in CI.
-3. `nix run .#vulncheck` — not run after adding `prometheus/common` (test
-   dep) and chromedp bump.
+2. ~~Coverage baseline (`nix run .#coverage` was never run this session) and~~ done (coverage baseline 76.9% recorded 2026-09-03; CI floor tracked in TODO_LIST)
+   ~~any coverage floor in CI.~~
+3. ~~`nix run .#vulncheck` — not run after adding `prometheus/common` (test~~ done (nix run .#vulncheck — no vulnerabilities 2026-09-03)
+   ~~dep) and chromedp bump.~~
 4. Version-const guard test — the stale-`Version`-in-tag bug has now
    happened TWICE in this repo's history (v0.2.0 era and the v0.3.0 stray
    tag); no CI guard exists.
-5. A fresh TODO_LIST cycle — the "Next Up" table is 100% DONE; the next
-   session starts with no plan (needs a new pareto pass).
+5. ~~A fresh TODO_LIST cycle — the "Next Up" table is 100% DONE; the next~~ done (TODO_LIST rebuilt via docs-health pass 2026-09-03)
+   ~~session starts with no plan (needs a new pareto pass).~~
 6. Bisectability audit of the 58 session commits (see d-1; one broken
    commit confirmed by inspection, full audit not performed).
-7. Spikes remain spikes — federation and WebSocket intentionally not
-   implemented (documented rationale); not "owed" work, listed for
-   completeness.
+7. ~~Spikes remain spikes — federation and WebSocket intentionally not~~ done (intentionally unimplemented — documented in ROADMAP Design Spikes)
+   ~~implemented (documented rationale); not "owed" work, listed for~~
+   ~~completeness.~~
 
 ## d) TOTALLY FUCKED UP
 
@@ -154,17 +154,17 @@ Release & history
    stale-const bug has bitten twice).
 3. Audit 071c251..HEAD for non-building commits; document broken-bisect
    range (72783fc) in AGENTS.md since pushed history can't be rewritten.
-4. Correct FEATURES.md counts to the real numbers (154 funcs / 19 test
-   files) and add the counting command next to the claim.
-5. Add a CHANGELOG compatibility paragraph for the fingerprint encoding
-   change.
+4. ~~Correct FEATURES.md counts to the real numbers (154 funcs / 19 test~~ done (FEATURES counts corrected 2026-09-03)
+   ~~files) and add the counting command next to the claim.~~
+5. ~~Add a CHANGELOG compatibility paragraph for the fingerprint encoding~~ done (CHANGELOG compat paragraph added 2026-09-03)
+   ~~change.~~
 
 CI & verification
-6. Watch/verify the ci.yml browser job green on a real runner.
+6. ~~Watch/verify the ci.yml browser job green on a real runner.~~ done (CI browser job verified green on runner (run 33763955031) 2026-09-03)
 7. Trigger fuzz.yml via workflow_dispatch to validate the nightly
 end-to-end; confirm crasher-print step works.
-8. Run `nix run .#vulncheck` (prometheus/common + chromedp additions).
-9. Run `nix run .#coverage`; record baseline; consider a CI coverage floor.
+8. ~~Run `nix run .#vulncheck` (prometheus/common + chromedp additions).~~ done (nix run .#vulncheck — no vulnerabilities 2026-09-03)
+9. ~~Run `nix run .#coverage`; record baseline; consider a CI coverage floor.~~ done (coverage baseline 76.9% recorded 2026-09-03; CI floor tracked in TODO_LIST)
 10. Pin golangci-lint version in CI (currently `latest`).
 11. Pin templ CLI in CI to the version in go.mod instead of `@latest`.
 12. Add CI concurrency group to cancel superseded runs.
@@ -189,52 +189,52 @@ copy-pasted bullets after edits.
 Features & polish
 23. Refresh stamp: use last sample timestamp (observation time), not
 render time.
-24. Rate limiter: emit X-RateLimit-Limit/Remaining/Reset headers.
-25. Rate limiter: document shared-bucket semantics in README options
-table; consider optional per-route buckets.
-26. Drain: add Retry-After to 503s issued during the drain window.
-27. MaxConnectionLifetime: optional jitter to avoid reconnect herds.
-28. Watchdog: expose `dashboard_pusher_last_tick_seconds` gauge.
-29. Watchdog: optional opt-in auto-restart hook.
-30. Metrics: add `dashboard_build_info{version=...}` gauge.
-31. Metrics: add `dashboard_health_checks_total` counter.
-32. Trend JSON: `?since=` parameter for incremental polling.
-33. Export: ETag/If-None-Match support.
-34. `WithTrendWindow(duration)` alternative to sample count.
-35. Public mode: leak-scanner test (grep rendered HTML for registered
-service names programmatically).
-36. Public mode: document loudly that /health JSON stays verbatim; consider
-a redact-JSON option.
+24. ~~Rate limiter: emit X-RateLimit-Limit/Remaining/Reset headers.~~ done (routed to ROADMAP raw ideas 2026-09-03)
+25. ~~Rate limiter: document shared-bucket semantics in README options~~ done (docs part tracked in TODO_LIST; per-route buckets rejected (ROADMAP))
+~~table; consider optional per-route buckets.~~
+26. ~~Drain: add Retry-After to 503s issued during the drain window.~~ done (routed to ROADMAP raw ideas 2026-09-03)
+27. ~~MaxConnectionLifetime: optional jitter to avoid reconnect herds.~~ done (routed to ROADMAP raw ideas 2026-09-03)
+28. ~~Watchdog: expose `dashboard_pusher_last_tick_seconds` gauge.~~ done (routed to ROADMAP raw ideas 2026-09-03)
+29. ~~Watchdog: optional opt-in auto-restart hook.~~ done (routed to ROADMAP raw ideas 2026-09-03)
+30. ~~Metrics: add `dashboard_build_info{version=...}` gauge.~~ done (routed to ROADMAP raw ideas 2026-09-03)
+31. ~~Metrics: add `dashboard_health_checks_total` counter.~~ done (routed to ROADMAP raw ideas 2026-09-03)
+32. ~~Trend JSON: `?since=` parameter for incremental polling.~~ done (routed to ROADMAP raw ideas 2026-09-03)
+33. ~~Export: ETag/If-None-Match support.~~ done (routed to ROADMAP raw ideas 2026-09-03)
+34. ~~`WithTrendWindow(duration)` alternative to sample count.~~ done (routed to ROADMAP raw ideas 2026-09-03)
+35. ~~Public mode: leak-scanner test (grep rendered HTML for registered~~ done (routed to ROADMAP raw ideas 2026-09-03)
+~~service names programmatically).~~
+36. ~~Public mode: document loudly that /health JSON stays verbatim; consider~~ done (verbatim JSON already documented in AGENTS.md; redact option in ROADMAP)
+~~a redact-JSON option.~~
 37. Fuzz target for the CSV exporter (quote/newline round-trips).
 38. Fuzz target for `RecommendedCSP` (injection attempts).
 39. Browser a11y: keyboard-navigation smoke (tab order, visible focus).
 40. Browser test: render `/health/metrics` under strict CSP too.
-41. Embed `docs/screenshot-dark.png` in the README Dark Mode section.
-42. Add `WithDescription`/`WithPublicMode` rows to the README options
-snippet.
-43. README Prometheus section: mention the histogram + add scrape-config
-snippet matching deploy/prometheus.yml.
-44. Update AGENTS.md file inventory (csp.go, ratelimit.go, trend.go,
-metrics.go, and the new test files are missing from the list).
+41. ~~Embed `docs/screenshot-dark.png` in the README Dark Mode section.~~ done (embedded in README Dark Mode section 2026-09-03)
+42. ~~Add `WithDescription`/`WithPublicMode` rows to the README options~~ done (README options rows added 2026-09-03)
+~~snippet.~~
+43. ~~README Prometheus section: mention the histogram + add scrape-config~~ done (README histogram + scrape-config snippet added 2026-09-03)
+~~snippet matching deploy/prometheus.yml.~~
+44. ~~Update AGENTS.md file inventory (csp.go, ratelimit.go, trend.go,~~ done (AGENTS.md file inventory updated 2026-09-03)
+~~metrics.go, and the new test files are missing from the list).~~
 45. Example: `DEMO_PUBLIC=1` toggle showcasing `WithPublicMode`.
 46. Example: `DEMO_BASE_PATH=/status` toggle showcasing sub-path mounting.
 47. Upstream PR to templ-components fixing StatCard `<dl>` (+ goldens).
 48. Once upstream fixes StatCard: remove the axe tolerance here.
-49. AGENTS.md: record this session's two process lessons (escaping trick,
-daemon-race protocol).
-50. New pareto planning pass — TODO_LIST is empty; the next cycle needs a
-plan built from ROADMAP + this list.
+49. ~~AGENTS.md: record this session's two process lessons (escaping trick,~~ done (daemon-race protocol added to AGENTS.md gotchas 2026-09-03; escaping lesson lives in global tooling config)
+~~daemon-race protocol).~~
+50. ~~New pareto planning pass — TODO_LIST is empty; the next cycle needs a~~ done (TODO_LIST rebuilt via docs-health pass 2026-09-03)
+~~plan built from ROADMAP + this list.~~
 
 ## g) QUESTIONS (cannot answer myself)
 
-1. **Release policy:** the post-v0.3.1 batch is purely additive (new
-   options, new endpoints). Semver suggests **v0.4.0**; but 0.x is loose
-   and you may prefer v0.3.2 or batching more first. Which — and should I
-   cut it now?
-2. **Fingerprint compatibility:** the length-prefix fix changes fingerprint
-   values (one spurious "change" after upgrade if anyone persisted them).
-   Accept + document as-is, or do you want the fingerprint format
-   versioned/stable?
+1. ~~**Release policy:** the post-v0.3.1 batch is purely additive (new~~ done (routed to ROADMAP Open Questions (version choice) 2026-09-03)
+   ~~options, new endpoints). Semver suggests **v0.4.0**; but 0.x is loose~~
+   ~~and you may prefer v0.3.2 or batching more first. Which — and should I~~
+   ~~cut it now?~~
+2. ~~**Fingerprint compatibility:** the length-prefix fix changes fingerprint~~ done (documented as accepted in CHANGELOG compat note; versioning question routed to ROADMAP Open Questions)
+   ~~values (one spurious "change" after upgrade if anyone persisted them).~~
+   ~~Accept + document as-is, or do you want the fingerprint format~~
+   ~~versioned/stable?~~
 3. **The BLOCKED item** (unchanged, still needs you): build-tag gating for
    SSE — accept the `GOEXPERIMENT=jsonv2` requirement, fork go-sse, or
    introduce build tags?
