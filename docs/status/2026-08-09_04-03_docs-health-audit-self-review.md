@@ -114,53 +114,53 @@ My final summary to the user presented a clean green checklist. The build/vet/te
 
 ### Critical (fix the damage from this session)
 
-| # | Task                                                                                                                                                        | Effort |
-| - | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| #     | Task                                                                                                                                                                                                                           | Effort |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
 | ~~1~~ | ~~**Fix 30 broken cross-references in archived reports** — rewrite `docs/(status\|planning)/2026-...` → `docs/$1/archived/2026-...` across all archived files~~ done — 30 cross-refs rewritten 2026-09-03; all targets resolve | ~~S~~  |
-| ~~2~~ | ~~**Verify pkg.go.dev indexes v0.2.0** — fetch the URL or downgrade the FEATURES claim~~ done — v0.3.1 verified indexed on pkg.go.dev 2026-09-03; FEATURES row updated | ~~XS~~  |
-| ~~3~~ | ~~**Verify remaining ~25 FEATURES.md line citations** — read each line at the cited number~~ done — FEATURES citations rebuilt as symbol references 2026-09-03 | ~~M~~  |
+| ~~2~~ | ~~**Verify pkg.go.dev indexes v0.2.0** — fetch the URL or downgrade the FEATURES claim~~ done — v0.3.1 verified indexed on pkg.go.dev 2026-09-03; FEATURES row updated                                                         | ~~XS~~ |
+| ~~3~~ | ~~**Verify remaining ~25 FEATURES.md line citations** — read each line at the cited number~~ done — FEATURES citations rebuilt as symbol references 2026-09-03                                                                 | ~~M~~  |
 
 ### High (close loops this session left open)
 
-| # | Task                                                                                                                                          | Effort |
-| - | --------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| #     | Task                                                                                                                                                                                                                    | Effort |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | ~~4~~ | ~~**Examine `docs/research/2026-08-09_templ-components-deep-dive.html`** — decide annotate/archive/leave; harvest any open items~~ done — examined 2026-09-03; research artifact, LEAVE decision (no open items inside) | ~~M~~  |
-| ~~5~~ | ~~**Verify GitHub CI is green on HEAD** — `gh run list --limit 3`~~ done — CI green on master incl. browser job (run 33763955031) 2026-09-03 | ~~XS~~  |
-| ~~6~~ | ~~**Add `gopls stdversion` warning to FEATURES Known Gaps** — `dashboard.go:269`, json.Marshal needs go1.27~~ done — covered by AGENTS.md gopls gotcha (.vscode gopls env); editor-only noise | ~~XS~~  |
-| ~~7~~ | ~~**Full README consistency audit** — routes table, dependencies, "How Real-Time Works" vs actual code~~ done — README audited and updated 2026-09-03 | ~~M~~  |
-| ~~8~~ | ~~**Full AGENTS.md consistency audit** — verify file list, design decisions reflect v0.2.0 (NonceExtractor documented in Key Design Decisions?)~~ done — AGENTS.md audited and inventory updated 2026-09-03 | ~~M~~  |
+| ~~5~~ | ~~**Verify GitHub CI is green on HEAD** — `gh run list --limit 3`~~ done — CI green on master incl. browser job (run 33763955031) 2026-09-03                                                                            | ~~XS~~ |
+| ~~6~~ | ~~**Add `gopls stdversion` warning to FEATURES Known Gaps** — `dashboard.go:269`, json.Marshal needs go1.27~~ done — covered by AGENTS.md gopls gotcha (.vscode gopls env); editor-only noise                           | ~~XS~~ |
+| ~~7~~ | ~~**Full README consistency audit** — routes table, dependencies, "How Real-Time Works" vs actual code~~ done — README audited and updated 2026-09-03                                                                   | ~~M~~  |
+| ~~8~~ | ~~**Full AGENTS.md consistency audit** — verify file list, design decisions reflect v0.2.0 (NonceExtractor documented in Key Design Decisions?)~~ done — AGENTS.md audited and inventory updated 2026-09-03             | ~~M~~  |
 
 ### Medium (testing gaps carried forward)
 
-| #  | Task                                                                    | Effort |
-| -- | ----------------------------------------------------------------------- | ------ |
-| ~~9~~ | ~~Add test for `SubscriberCount()`~~ done at `d453c52` | ~~15min~~  |
-| ~~10~~ | ~~Add test for `WithHeartbeatInterval`~~ done at `d453c52` | ~~15min~~  |
-| ~~11~~ | ~~SSE nonce flow integration test (patches should carry nonce if scripts)~~ done at `d453c52` | ~~30min~~  |
-| ~~12~~ | ~~Fuzz test for Accept header q-value parsing~~ done at `d453c52` | ~~30min~~  |
-| ~~13~~ | ~~Fuzz test for `fingerprintChecks` pathological inputs~~ done at `dd483c2` | ~~30min~~  |
+| #      | Task                                                                                          | Effort    |
+| ------ | --------------------------------------------------------------------------------------------- | --------- |
+| ~~9~~  | ~~Add test for `SubscriberCount()`~~ done at `d453c52`                                        | ~~15min~~ |
+| ~~10~~ | ~~Add test for `WithHeartbeatInterval`~~ done at `d453c52`                                    | ~~15min~~ |
+| ~~11~~ | ~~SSE nonce flow integration test (patches should carry nonce if scripts)~~ done at `d453c52` | ~~30min~~ |
+| ~~12~~ | ~~Fuzz test for Accept header q-value parsing~~ done at `d453c52`                             | ~~30min~~ |
+| ~~13~~ | ~~Fuzz test for `fingerprintChecks` pathological inputs~~ done at `dd483c2`                   | ~~30min~~ |
 
 ### Low (polish & future, from ROADMAP)
 
-| #  | Task                                                                                                                               | Effort |
-| -- | ---------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| ~~14~~ | ~~Headless-browser CSP test (chromedp) — closes the runtime-style-injection loop~~ done at `d453c52` | ~~L~~  |
-| 15 | Per-route stricter CSP for `/health` (no `style-src 'unsafe-inline'`)                                                              | M      |
-| ~~16~~ | ~~`RecommendedCSP()` helper for consumers~~ done at `f627164` | ~~S~~  |
-| ~~17~~ | ~~Screenshot / GIF for README~~ done at `d453c52` | ~~30min~~  |
-| 18 | Coverage badge in README (80.0%)                                                                                                   | 10min  |
-| ~~19~~ | ~~Document `WithNonceExtractor` in CONTRIBUTING / doc.go example~~ done — README + godoc examples shipped; CONTRIBUTING mention tracked in TODO_LIST | ~~S~~  |
-| 20 | templ-components UI follow-ups (`display.PageHeader`, `layout.Stack`, StatCard icons, `Dot`) — verify not already done, then adopt | M      |
-| 21 | Deprecate `WithNonce` in favor of `WithNonceExtractor` (long-term)                                                                 | S      |
-| 22 | Build-tag gating for SSE (BLOCKED on GOEXPERIMENT decision)                                                                        | L      |
-| ~~23~~ | ~~SSE reconnection (Last-Event-ID)~~ done — rejected by design; current-state-on-connect documented as correct for a health monitor | ~~M~~  |
-| ~~24~~ | ~~Embeddable dashboard mode (sub-path)~~ done at `d453c52` | ~~M~~  |
-| ~~25~~ | ~~Auth middleware integration~~ done at `d453c52` | ~~M~~  |
-| ~~26~~ | ~~Prometheus metrics endpoint~~ done at `d453c52` | ~~L~~  |
-| ~~27~~ | ~~Health history / sparkline~~ done at `d453c52` | ~~L~~  |
-| ~~28~~ | ~~UI flexibility options (WithHideStatCards etc.)~~ done at `d453c52` | ~~L~~  |
-| 29 | Pin golangci-lint version in CI (currently `latest`)                                                                               | XS     |
-| 30 | Add `nix run .#ci` mirroring GitHub Actions locally                                                                                | S      |
+| #      | Task                                                                                                                                                 | Effort    |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| ~~14~~ | ~~Headless-browser CSP test (chromedp) — closes the runtime-style-injection loop~~ done at `d453c52`                                                 | ~~L~~     |
+| 15     | Per-route stricter CSP for `/health` (no `style-src 'unsafe-inline'`)                                                                                | M         |
+| ~~16~~ | ~~`RecommendedCSP()` helper for consumers~~ done at `f627164`                                                                                        | ~~S~~     |
+| ~~17~~ | ~~Screenshot / GIF for README~~ done at `d453c52`                                                                                                    | ~~30min~~ |
+| 18     | Coverage badge in README (80.0%)                                                                                                                     | 10min     |
+| ~~19~~ | ~~Document `WithNonceExtractor` in CONTRIBUTING / doc.go example~~ done — README + godoc examples shipped; CONTRIBUTING mention tracked in TODO_LIST | ~~S~~     |
+| 20     | templ-components UI follow-ups (`display.PageHeader`, `layout.Stack`, StatCard icons, `Dot`) — verify not already done, then adopt                   | M         |
+| 21     | Deprecate `WithNonce` in favor of `WithNonceExtractor` (long-term)                                                                                   | S         |
+| 22     | Build-tag gating for SSE (BLOCKED on GOEXPERIMENT decision)                                                                                          | L         |
+| ~~23~~ | ~~SSE reconnection (Last-Event-ID)~~ done — rejected by design; current-state-on-connect documented as correct for a health monitor                  | ~~M~~     |
+| ~~24~~ | ~~Embeddable dashboard mode (sub-path)~~ done at `d453c52`                                                                                           | ~~M~~     |
+| ~~25~~ | ~~Auth middleware integration~~ done at `d453c52`                                                                                                    | ~~M~~     |
+| ~~26~~ | ~~Prometheus metrics endpoint~~ done at `d453c52`                                                                                                    | ~~L~~     |
+| ~~27~~ | ~~Health history / sparkline~~ done at `d453c52`                                                                                                     | ~~L~~     |
+| ~~28~~ | ~~UI flexibility options (WithHideStatCards etc.)~~ done at `d453c52`                                                                                | ~~L~~     |
+| 29     | Pin golangci-lint version in CI (currently `latest`)                                                                                                 | XS        |
+| 30     | Add `nix run .#ci` mirroring GitHub Actions locally                                                                                                  | S         |
 
 ---
 

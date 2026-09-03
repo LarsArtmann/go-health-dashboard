@@ -168,14 +168,14 @@ the pusher's atomic counter. Returns 0 when the pusher has not been started.
 
 ## Route Layout
 
-| Route             | Purpose                             | Content Type      |
-| ----------------- | ----------------------------------- | ----------------- |
-| `/health`         | HTML dashboard (or JSON via Accept) | text/html or JSON |
-| `/health/sse`     | SSE patch stream                    | text/event-stream |
-| `/favicon.svg`    | Dashboard favicon                   | image/svg+xml     |
-| `/health/metrics` | Prometheus exposition (opt-in)      | text/plain        |
-| `/health/trend`   | History samples + transitions (opt-in) | application/json |
+| Route             | Purpose                                | Content Type                 |
+| ----------------- | -------------------------------------- | ---------------------------- |
+| `/health`         | HTML dashboard (or JSON via Accept)    | text/html or JSON            |
+| `/health/sse`     | SSE patch stream                       | text/event-stream            |
+| `/favicon.svg`    | Dashboard favicon                      | image/svg+xml                |
+| `/health/metrics` | Prometheus exposition (opt-in)         | text/plain                   |
+| `/health/trend`   | History samples + transitions (opt-in) | application/json             |
 | `/health/export`  | History export, JSON or CSV (opt-in)   | application/json or text/csv |
-| `/healthz`        | Kubernetes liveness probe           | application/json  |
-| `/readyz`         | Kubernetes readiness probe          | application/json  |
-| `/startupz`       | Kubernetes startup probe            | application/json  |
+| `/healthz`        | Kubernetes liveness probe              | application/json             |
+| `/readyz`         | Kubernetes readiness probe             | application/json             |
+| `/startupz`       | Kubernetes startup probe               | application/json             |

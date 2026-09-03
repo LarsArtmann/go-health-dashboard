@@ -31,7 +31,7 @@ I resumed from a handoff describing a completed `WithNonceExtractor` implementat
 | 5 | **Consumer build/vet/test pass**               | 23 test packages pass, build clean, vet clean                                                                                                                                                |
 | 6 | **Nonce code lint-clean**                      | `middleware.go` + `csp_test.go` exhaustruct fixed via `DefaultNonceConfig()` + override. 0 lint issues in nonce-specific code                                                                |
 | 7 | **End-to-end nonce integration test**          | `TestNonceFlow_CSPHeaderMatchesHTMLNonce` — wires real `httputil.Nonce` → `WithNonceExtractor`, asserts CSP-header nonce == every HTML `<script>` nonce, asserts distinct nonces per request |
-| 8 | **Resolution status report written + pushed**  | `docs/status/archived/2026-08-09_02-22_nonce-followup-resolution.md` documents style-src decision, CQRS gap, v0.2.0 publish                                                                           |
+| 8 | **Resolution status report written + pushed**  | `docs/status/archived/2026-08-09_02-22_nonce-followup-resolution.md` documents style-src decision, CQRS gap, v0.2.0 publish                                                                  |
 | 9 | **AGENTS.md updated**                          | go-health-dashboard: status → v0.2.0, CSP-clean render guarantee documented                                                                                                                  |
 
 ---

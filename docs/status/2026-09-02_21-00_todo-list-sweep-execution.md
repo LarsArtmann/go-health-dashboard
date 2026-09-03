@@ -69,58 +69,58 @@ _(Deliberately untouched this session — planned/ROADMAP only)_
 
 ## f) TOP 50 NEXT TASKS (brainstorm — HARVEST into TODO_LIST/ROADMAP before treating as commitments)
 
-| #  | Task                                                                                                                                       | Impact | Effort | Category       |
-| -- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------ | ------ | -------------- |
-| ~~1~~  | ~~Cut release v0.3.0: bump `Version` constant, date CHANGELOG, tag (new API surface: WithMiddleware/WithMetrics/WithTrend/WithHideStatCards)~~ done at `d453c52` | ~~High~~ | ~~S~~ | ~~Release~~ |
-| ~~2~~  | ~~Wire browser tests into CI (chromium + `GO_HEALTH_DASHBOARD_CHROME`)~~ done — CI browser job verified green on runner (run 33763955031) 2026-09-03 | ~~High~~ | ~~M~~ | ~~Quality~~ |
-| ~~3~~  | ~~HARVEST this report's section (f) into TODO_LIST.md / ROADMAP.md~~ done at `40ba449` | ~~High~~ | ~~S~~ | ~~Documentation~~ |
-| 4  | Resolve the BLOCKED build-tag gating decision (accept / fork go-sse / gate)                                                                | High   | S      | Decision       |
-| ~~5~~  | ~~`RecommendedCSP()` helper returning the verified policy (nonce param)~~ done at `f627164` | ~~High~~ | ~~S~~ | ~~Feature~~ |
-| ~~6~~  | ~~Example app: showcase middleware + metrics + trend (env-toggled)~~ done at `50f2bcc` | ~~Medium~~ | ~~S~~ | ~~Feature~~ |
-| ~~7~~  | ~~promtool-based conformance test for the metrics exposition~~ done at `bd99de0` | ~~Medium~~ | ~~S~~ | ~~Quality~~ |
-| ~~8~~  | ~~Latency histogram (prometheus buckets) instead of single gauge~~ done at `e9f47cb` | ~~Medium~~ | ~~M~~ | ~~Feature~~ |
-| ~~9~~  | ~~`dashboard_health_check_last_transition_seconds` metric~~ done — routed to ROADMAP raw ideas 2026-09-03 | ~~Low~~ | ~~M~~ | ~~Feature~~ |
-| ~~10~~ | ~~Optional `client_golang` bridge package (`metricsprom/`) for registry integration~~ done — routed to ROADMAP raw ideas 2026-09-03 | ~~Low~~ | ~~M~~ | ~~Feature~~ |
-| ~~11~~ | ~~Browser test: assert zero console errors/CSP violations (not just styles)~~ done at `be5fe4c` | ~~Medium~~ | ~~S~~ | ~~Quality~~ |
-| ~~12~~ | ~~Browser test: flip a check mid-test and assert the SSE patch updates the DOM~~ done at `be5fe4c` | ~~Medium~~ | ~~M~~ | ~~Quality~~ |
-| ~~13~~ | ~~axe-core accessibility run inside the browser test~~ done at `be5fe4c` | ~~Medium~~ | ~~M~~ | ~~Quality~~ |
-| ~~14~~ | ~~Dark-mode README screenshot (second image / toggle composite)~~ done — captured in v0.3.x cycle; embedded in README Dark Mode 2026-09-03 | ~~Low~~ | ~~S~~ | ~~Documentation~~ |
-| 15 | "Regenerate the screenshot" one-liner docs + date caption                                                                                  | Low    | S      | Documentation  |
-| ~~16~~ | ~~SSE graceful shutdown: drain in-flight connections before broadcaster close~~ done at `3022fbf` | ~~Medium~~ | ~~M~~ | ~~Feature~~ |
-| ~~17~~ | ~~SSE connection max-lifetime option (anti infinite-connection)~~ done at `3022fbf` | ~~Medium~~ | ~~S~~ | ~~Feature~~ |
-| ~~18~~ | ~~Pusher watchdog: self-check + restart if goroutine dies~~ done at `3022fbf` | ~~Medium~~ | ~~M~~ | ~~Feature~~ |
-| ~~19~~ | ~~Optional slog request-logging middleware for dashboard routes~~ done — routed to ROADMAP raw ideas 2026-09-03 | ~~Low~~ | ~~S~~ | ~~Feature~~ |
-| ~~20~~ | ~~Rate-limit option for the dashboard HTML route~~ done at `3022fbf` | ~~Medium~~ | ~~M~~ | ~~Feature~~ |
-| ~~21~~ | ~~Metrics endpoint: `noindex` + security headers audit~~ done — routed to ROADMAP raw ideas 2026-09-03; OG shipped at 4e4a149 | ~~Low~~ | ~~S~~ | ~~Quality~~ |
-| ~~22~~ | ~~Basic-auth middleware copy-paste example in README~~ done at `d453c52` | ~~Low~~ | ~~S~~ | ~~Documentation~~ |
-| 23 | Document "protect probes via network policy, not auth" pattern                                                                             | Low    | S      | Documentation  |
-| ~~24~~ | ~~New fuzz targets: `FuzzEscapeLabelValue`, `FuzzFingerprintChecks`~~ done at `dd483c2` | ~~Low~~ | ~~S~~ | ~~Quality~~ |
-| ~~25~~ | ~~Nightly scheduled fuzzing workflow (60s per target)~~ done — nightly fuzz workflow shipped (.github/workflows/fuzz.yml) | ~~Medium~~ | ~~S~~ | ~~Quality~~ |
-| ~~26~~ | ~~Fix gopls `json.Marshal requires go1.27` warning noise (go directive/toolchain)~~ done — fixed via committed .vscode/settings.json (v0.3.x cycle) | ~~Low~~ | ~~S~~ | ~~Cleanup~~ |
-| ~~27~~ | ~~Restore + publish coverage report in CI (was 79.7%)~~ done — CI test job prints coverage totals; baseline 76.9% recorded 2026-09-03 | ~~Medium~~ | ~~S~~ | ~~Quality~~ |
-| ~~28~~ | ~~Benchmarks: `BenchmarkMetricsHandler`, `BenchmarkRenderPatch`, SSE broadcast~~ done at `4e4a149` | ~~Low~~ | ~~S~~ | ~~Quality~~ |
-| ~~29~~ | ~~FEATURES.md line-number refresh sweep (docs-health ANNOTATE)~~ done — FEATURES citations rebuilt as symbol references 2026-09-03 | ~~Low~~ | ~~S~~ | ~~Documentation~~ |
-| ~~30~~ | ~~DOMAIN_LANGUAGE.md: add Trend/History/Sample/Metrics terms~~ done — trend/history/metrics terms added to DOMAIN_LANGUAGE 2026-09-03 | ~~Low~~ | ~~S~~ | ~~Documentation~~ |
-| 31 | CONTRIBUTING.md: how to run browser + screenshot tests locally                                                                             | Low    | S      | Documentation  |
-| ~~32~~ | ~~docker-compose example: prometheus scraping `/health/metrics`~~ done at `4e4a149` | ~~Medium~~ | ~~S~~ | ~~Documentation~~ |
-| ~~33~~ | ~~Trend: per-check sparklines grouped by severity~~ done — routed to ROADMAP raw ideas 2026-09-03 | ~~Low~~ | ~~M~~ | ~~Feature~~ |
-| ~~34~~ | ~~Trend: retention window option + `/health/trend` JSON scrape~~ done — routed to ROADMAP raw ideas 2026-09-03 | ~~Low~~ | ~~M~~ | ~~Feature~~ |
-| ~~35~~ | ~~Trend: status-transition markers (dots) on the sparkline~~ done — routed to ROADMAP raw ideas 2026-09-03; transitions ship as data (e9f47cb) | ~~Low~~ | ~~M~~ | ~~Feature~~ |
-| 36 | Trend: sample-interval + window in aria-label for screen readers                                                                           | Low    | S      | Quality        |
-| ~~37~~ | ~~Re-annotate ROADMAP non-goal "stateless view layer" (trend adds state)~~ done — non-goal re-annotated in ROADMAP 2026-09-03 | ~~Low~~ | ~~S~~ | ~~Documentation~~ |
-| 38 | Evaluate per-route middleware sets (UI vs metrics) — real need?                                                                            | Low    | S      | Decision-spike |
-| ~~39~~ | ~~Health-check history export: JSON/CSV endpoint (ROADMAP Theme 3)~~ done at `e9f47cb` | ~~Low~~ | ~~M~~ | ~~Feature~~ |
-| ~~40~~ | ~~Status-change timeline UI under the trend card (ROADMAP Theme 3)~~ done at `e9f47cb` | ~~Low~~ | ~~L~~ | ~~Feature~~ |
-| ~~41~~ | ~~Incident annotations on transitions (ROADMAP Theme 3)~~ done — deferred — ROADMAP raw idea | ~~Low~~ | ~~L~~ | ~~Feature~~ |
-| ~~42~~ | ~~Auto-generated "last refreshed" timestamp display~~ done at `e9f47cb` | ~~Low~~ | ~~S~~ | ~~Feature~~ |
-| ~~43~~ | ~~OG metadata + social preview image for the dashboard page~~ done at `4e4a149` | ~~Low~~ | ~~S~~ | ~~Feature~~ |
-| ~~44~~ | ~~Public status-page mode (hide internal check names/errors)~~ done at `4e4a149` | ~~Medium~~ | ~~L~~ | ~~Feature~~ |
-| ~~45~~ | ~~Multi-probe federation spike (ROADMAP Theme 2)~~ done — spike concluded — ROADMAP Design Spikes + decision notes | ~~Low~~ | ~~L~~ | ~~Spike~~ |
-| ~~46~~ | ~~WebSocket transport spike — only if SSE-blocked envs are real (ROADMAP Theme 4)~~ done — spike concluded — rejected; ROADMAP Design Spikes | ~~Low~~ | ~~L~~ | ~~Spike~~ |
-| 47 | templ-components upstream: opt-out flag for theme script's inline `color-scheme` (CSP-safe but non-zero) — verify before filing            | Low    | S      | Cleanup        |
-| 48 | Upstream chromedp: document/fix `[::1]` DevTools binding vs 127.0.0.1 launcher poll — verify before filing                                 | Low    | S      | Cleanup        |
-| 49 | CI: matrix include for the browser test job only (keep main job fast)                                                                      | Low    | S      | Quality        |
-| 50 | Consider `WithTrend` default-on for v0.4 after a deprecation-cycle warning in docs                                                         | Low    | S      | Decision-spike |
+| #      | Task                                                                                                                                                             | Impact     | Effort | Category          |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------ | ----------------- |
+| ~~1~~  | ~~Cut release v0.3.0: bump `Version` constant, date CHANGELOG, tag (new API surface: WithMiddleware/WithMetrics/WithTrend/WithHideStatCards)~~ done at `d453c52` | ~~High~~   | ~~S~~  | ~~Release~~       |
+| ~~2~~  | ~~Wire browser tests into CI (chromium + `GO_HEALTH_DASHBOARD_CHROME`)~~ done — CI browser job verified green on runner (run 33763955031) 2026-09-03             | ~~High~~   | ~~M~~  | ~~Quality~~       |
+| ~~3~~  | ~~HARVEST this report's section (f) into TODO_LIST.md / ROADMAP.md~~ done at `40ba449`                                                                           | ~~High~~   | ~~S~~  | ~~Documentation~~ |
+| 4      | Resolve the BLOCKED build-tag gating decision (accept / fork go-sse / gate)                                                                                      | High       | S      | Decision          |
+| ~~5~~  | ~~`RecommendedCSP()` helper returning the verified policy (nonce param)~~ done at `f627164`                                                                      | ~~High~~   | ~~S~~  | ~~Feature~~       |
+| ~~6~~  | ~~Example app: showcase middleware + metrics + trend (env-toggled)~~ done at `50f2bcc`                                                                           | ~~Medium~~ | ~~S~~  | ~~Feature~~       |
+| ~~7~~  | ~~promtool-based conformance test for the metrics exposition~~ done at `bd99de0`                                                                                 | ~~Medium~~ | ~~S~~  | ~~Quality~~       |
+| ~~8~~  | ~~Latency histogram (prometheus buckets) instead of single gauge~~ done at `e9f47cb`                                                                             | ~~Medium~~ | ~~M~~  | ~~Feature~~       |
+| ~~9~~  | ~~`dashboard_health_check_last_transition_seconds` metric~~ done — routed to ROADMAP raw ideas 2026-09-03                                                        | ~~Low~~    | ~~M~~  | ~~Feature~~       |
+| ~~10~~ | ~~Optional `client_golang` bridge package (`metricsprom/`) for registry integration~~ done — routed to ROADMAP raw ideas 2026-09-03                              | ~~Low~~    | ~~M~~  | ~~Feature~~       |
+| ~~11~~ | ~~Browser test: assert zero console errors/CSP violations (not just styles)~~ done at `be5fe4c`                                                                  | ~~Medium~~ | ~~S~~  | ~~Quality~~       |
+| ~~12~~ | ~~Browser test: flip a check mid-test and assert the SSE patch updates the DOM~~ done at `be5fe4c`                                                               | ~~Medium~~ | ~~M~~  | ~~Quality~~       |
+| ~~13~~ | ~~axe-core accessibility run inside the browser test~~ done at `be5fe4c`                                                                                         | ~~Medium~~ | ~~M~~  | ~~Quality~~       |
+| ~~14~~ | ~~Dark-mode README screenshot (second image / toggle composite)~~ done — captured in v0.3.x cycle; embedded in README Dark Mode 2026-09-03                       | ~~Low~~    | ~~S~~  | ~~Documentation~~ |
+| 15     | "Regenerate the screenshot" one-liner docs + date caption                                                                                                        | Low        | S      | Documentation     |
+| ~~16~~ | ~~SSE graceful shutdown: drain in-flight connections before broadcaster close~~ done at `3022fbf`                                                                | ~~Medium~~ | ~~M~~  | ~~Feature~~       |
+| ~~17~~ | ~~SSE connection max-lifetime option (anti infinite-connection)~~ done at `3022fbf`                                                                              | ~~Medium~~ | ~~S~~  | ~~Feature~~       |
+| ~~18~~ | ~~Pusher watchdog: self-check + restart if goroutine dies~~ done at `3022fbf`                                                                                    | ~~Medium~~ | ~~M~~  | ~~Feature~~       |
+| ~~19~~ | ~~Optional slog request-logging middleware for dashboard routes~~ done — routed to ROADMAP raw ideas 2026-09-03                                                  | ~~Low~~    | ~~S~~  | ~~Feature~~       |
+| ~~20~~ | ~~Rate-limit option for the dashboard HTML route~~ done at `3022fbf`                                                                                             | ~~Medium~~ | ~~M~~  | ~~Feature~~       |
+| ~~21~~ | ~~Metrics endpoint: `noindex` + security headers audit~~ done — routed to ROADMAP raw ideas 2026-09-03; OG shipped at 4e4a149                                    | ~~Low~~    | ~~S~~  | ~~Quality~~       |
+| ~~22~~ | ~~Basic-auth middleware copy-paste example in README~~ done at `d453c52`                                                                                         | ~~Low~~    | ~~S~~  | ~~Documentation~~ |
+| 23     | Document "protect probes via network policy, not auth" pattern                                                                                                   | Low        | S      | Documentation     |
+| ~~24~~ | ~~New fuzz targets: `FuzzEscapeLabelValue`, `FuzzFingerprintChecks`~~ done at `dd483c2`                                                                          | ~~Low~~    | ~~S~~  | ~~Quality~~       |
+| ~~25~~ | ~~Nightly scheduled fuzzing workflow (60s per target)~~ done — nightly fuzz workflow shipped (.github/workflows/fuzz.yml)                                        | ~~Medium~~ | ~~S~~  | ~~Quality~~       |
+| ~~26~~ | ~~Fix gopls `json.Marshal requires go1.27` warning noise (go directive/toolchain)~~ done — fixed via committed .vscode/settings.json (v0.3.x cycle)              | ~~Low~~    | ~~S~~  | ~~Cleanup~~       |
+| ~~27~~ | ~~Restore + publish coverage report in CI (was 79.7%)~~ done — CI test job prints coverage totals; baseline 76.9% recorded 2026-09-03                            | ~~Medium~~ | ~~S~~  | ~~Quality~~       |
+| ~~28~~ | ~~Benchmarks: `BenchmarkMetricsHandler`, `BenchmarkRenderPatch`, SSE broadcast~~ done at `4e4a149`                                                               | ~~Low~~    | ~~S~~  | ~~Quality~~       |
+| ~~29~~ | ~~FEATURES.md line-number refresh sweep (docs-health ANNOTATE)~~ done — FEATURES citations rebuilt as symbol references 2026-09-03                               | ~~Low~~    | ~~S~~  | ~~Documentation~~ |
+| ~~30~~ | ~~DOMAIN_LANGUAGE.md: add Trend/History/Sample/Metrics terms~~ done — trend/history/metrics terms added to DOMAIN_LANGUAGE 2026-09-03                            | ~~Low~~    | ~~S~~  | ~~Documentation~~ |
+| 31     | CONTRIBUTING.md: how to run browser + screenshot tests locally                                                                                                   | Low        | S      | Documentation     |
+| ~~32~~ | ~~docker-compose example: prometheus scraping `/health/metrics`~~ done at `4e4a149`                                                                              | ~~Medium~~ | ~~S~~  | ~~Documentation~~ |
+| ~~33~~ | ~~Trend: per-check sparklines grouped by severity~~ done — routed to ROADMAP raw ideas 2026-09-03                                                                | ~~Low~~    | ~~M~~  | ~~Feature~~       |
+| ~~34~~ | ~~Trend: retention window option + `/health/trend` JSON scrape~~ done — routed to ROADMAP raw ideas 2026-09-03                                                   | ~~Low~~    | ~~M~~  | ~~Feature~~       |
+| ~~35~~ | ~~Trend: status-transition markers (dots) on the sparkline~~ done — routed to ROADMAP raw ideas 2026-09-03; transitions ship as data (e9f47cb)                   | ~~Low~~    | ~~M~~  | ~~Feature~~       |
+| 36     | Trend: sample-interval + window in aria-label for screen readers                                                                                                 | Low        | S      | Quality           |
+| ~~37~~ | ~~Re-annotate ROADMAP non-goal "stateless view layer" (trend adds state)~~ done — non-goal re-annotated in ROADMAP 2026-09-03                                    | ~~Low~~    | ~~S~~  | ~~Documentation~~ |
+| 38     | Evaluate per-route middleware sets (UI vs metrics) — real need?                                                                                                  | Low        | S      | Decision-spike    |
+| ~~39~~ | ~~Health-check history export: JSON/CSV endpoint (ROADMAP Theme 3)~~ done at `e9f47cb`                                                                           | ~~Low~~    | ~~M~~  | ~~Feature~~       |
+| ~~40~~ | ~~Status-change timeline UI under the trend card (ROADMAP Theme 3)~~ done at `e9f47cb`                                                                           | ~~Low~~    | ~~L~~  | ~~Feature~~       |
+| ~~41~~ | ~~Incident annotations on transitions (ROADMAP Theme 3)~~ done — deferred — ROADMAP raw idea                                                                     | ~~Low~~    | ~~L~~  | ~~Feature~~       |
+| ~~42~~ | ~~Auto-generated "last refreshed" timestamp display~~ done at `e9f47cb`                                                                                          | ~~Low~~    | ~~S~~  | ~~Feature~~       |
+| ~~43~~ | ~~OG metadata + social preview image for the dashboard page~~ done at `4e4a149`                                                                                  | ~~Low~~    | ~~S~~  | ~~Feature~~       |
+| ~~44~~ | ~~Public status-page mode (hide internal check names/errors)~~ done at `4e4a149`                                                                                 | ~~Medium~~ | ~~L~~  | ~~Feature~~       |
+| ~~45~~ | ~~Multi-probe federation spike (ROADMAP Theme 2)~~ done — spike concluded — ROADMAP Design Spikes + decision notes                                               | ~~Low~~    | ~~L~~  | ~~Spike~~         |
+| ~~46~~ | ~~WebSocket transport spike — only if SSE-blocked envs are real (ROADMAP Theme 4)~~ done — spike concluded — rejected; ROADMAP Design Spikes                     | ~~Low~~    | ~~L~~  | ~~Spike~~         |
+| 47     | templ-components upstream: opt-out flag for theme script's inline `color-scheme` (CSP-safe but non-zero) — verify before filing                                  | Low        | S      | Cleanup           |
+| 48     | Upstream chromedp: document/fix `[::1]` DevTools binding vs 127.0.0.1 launcher poll — verify before filing                                                       | Low        | S      | Cleanup           |
+| 49     | CI: matrix include for the browser test job only (keep main job fast)                                                                                            | Low        | S      | Quality           |
+| 50     | Consider `WithTrend` default-on for v0.4 after a deprecation-cycle warning in docs                                                                               | Low        | S      | Decision-spike    |
 
 ## g) QUESTIONS I CANNOT FIGURE OUT MYSELF
 

@@ -21,8 +21,8 @@
 
 All 10 `2026-08-*` files now have resolution banners and inline item resolution:
 
-| File                                                                     | Annotation                                                                                                                        |
-| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| File                                                                              | Annotation                                                                                                                        |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `docs/planning/archived/2026-08-08_02-46-go-health-dashboard.md`                  | Already had EXECUTED banner — verified intact                                                                                     |
 | `docs/planning/archived/2026-08-08_08-24_path-to-v0.1.0-release.md`               | PLANNING → EXECUTED. Added decision-gate resolution table (D1=MIT, D2/D3 open). Added 27-row execution results table              |
 | `docs/status/archived/2026-08-08_03-36_initial-implementation-review.md`          | Already had SUPERSEDED banner + inline `done at` markers — verified intact                                                        |
@@ -32,7 +32,7 @@ All 10 `2026-08-*` files now have resolution banners and inline item resolution:
 | `docs/status/archived/2026-08-08_08-52_phase1-2-execution-security-race-csp.md`   | Fixed stale status header (2 failing tests → FULLY RESOLVED). Resolved Phase 3/4 items inline. Added F-section resolution summary |
 | `docs/status/archived/2026-08-08_09-25_v0.1.0-execution-features-hardening-ci.md` | Added post-session resolution banner. Marked all D-section items as FIXED. Added F-section resolution summary                     |
 | `docs/status/archived/2026-08-08_09-32_public-launch-github-metadata-badges.md`   | Added post-session resolution banner. Added F-section resolution summary                                                          |
-| `docs/feedback/archived/2026-08-08_seven-planning-mistakes.md`           | Added "All 7 mistakes resolved" banner                                                                                            |
+| `docs/feedback/archived/2026-08-08_seven-planning-mistakes.md`                    | Added "All 7 mistakes resolved" banner                                                                                            |
 
 ### Bonus fixes (not in original scope)
 
