@@ -7,11 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [0.4.0] - 2026-09-03
 
-Harden and expose. The dashboard gains opt-in SSE hardening (graceful\ndrain, connection lifetime, rate limiting, a pusher watchdog),\ntimestamped history with JSON and CSV export endpoints, a status\nchange timeline, a latency histogram, public status-page mode, and\na verified CSP helper.
+Harden and expose. The dashboard gains opt-in SSE hardening (graceful
+drain, connection lifetime, rate limiting, a pusher watchdog),
+timestamped history with JSON and CSV export endpoints, a status
+change timeline, a latency histogram, public status-page mode, and
+a verified CSP helper.
 
 ### Compatibility
 
-- The change-detection fingerprint encoding changed from delimiter-\n  separated fields to length-prefixed fields (fixing a real collision).\n  Fingerprints are in-memory and short-lived, so upgrades are seamless\n  in practice; but a fingerprint persisted across an upgrade produces\n  exactly one spurious change detection on the first tick.
+- The change-detection fingerprint encoding changed from
+  delimiter-separated fields to length-prefixed fields (fixing a real
+  collision).
+  Fingerprints are in-memory and short-lived, so upgrades are seamless
+  in practice; but a fingerprint persisted across an upgrade produces
+  exactly one spurious change detection on the first tick.
+- templ-components is pinned at v1.11.0: v1.12.0's new LiveRegion
+  busy-script emits `nonce=""` (unguarded attribute), breaking no-nonce
+  and strict-CSP renders. Reported upstream (templ-components#7); the
+  pin lifts when the guard ships.
 
 ### Added
 
