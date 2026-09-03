@@ -44,38 +44,38 @@ Sorted by importance/impact/effort/customer-value. 32 tasks, ≈46 h total.
 
 | ID  | Task                                                                                                    | Impact | Effort | Cust. value | Depends | Tier    |
 | --- | ------------------------------------------------------------------------------------------------------- | ------ | ------ | ----------- | ------- | ------- |
-| M1  | Release v0.3.0: bump Version, date CHANGELOG, gates, tag, verify pkg.go.dev                             | H      | 45m    | H           | —       | 1%      |
-| M4  | HARVEST: route all plan items into TODO_LIST/ROADMAP, cross-link plan                                   | H      | 30m    | M           | —       | 4%      |
-| M2  | CI: browser-test job (chromium, env, run, verify green)                                                 | H      | 60m    | H           | —       | 4%      |
-| M3  | `RecommendedCSP(nonce)` helper: csp.go + tests + README                                                 | H      | 45m    | H           | —       | 4%      |
-| M6  | promtool conformance: devShell tool + scrape-check test + CI step                                       | H      | 45m    | M           | —       | 20%     |
-| M5  | Example app v2: auth/metrics/trend via env toggles + verify + docs                                      | M      | 60m    | H           | M1      | 20%     |
-| M7  | Browser-test hardening: console/CSP-violation asserts + live SSE patch DOM check                        | H      | 72m    | M           | M2      | 20%     |
-| M13 | Fix gopls `go1.27` stdversion noise (go directive/toolchain/gopls env)                                  | M      | 30m    | L           | —       | 20%     |
-| M16 | Fuzz targets: `FuzzEscapeLabelValue`, `FuzzFingerprintChecks`                                           | M      | 30m    | L           | —       | 20%     |
-| M17 | Nightly fuzz workflow (60s/target, failure artifacts)                                                   | M      | 30m    | L           | M16     | 20%     |
-| M9  | SSE graceful shutdown: drain connections, `WithShutdownDrain(d)`, tests                                 | H      | 73m    | M           | —       | 80%     |
-| M10 | SSE max-lifetime connection timeout option + tests                                                      | M      | 60m    | M           | —       | 80%     |
-| M11 | Pusher watchdog: last-tick recency check surfaced via `HealthCheck`                                     | M      | 72m    | M           | —       | 80%     |
-| M12 | Rate-limit option for dashboard routes (token bucket per IP) + tests                                    | M      | 72m    | M           | M3      | 80%     |
-| M8  | Latency histogram metric (`dashboard_health_latency_seconds`) + promtool pass                           | M      | 60m    | M           | M6      | 80%     |
-| M22 | Trend v2: status-transition markers + window info in aria-label                                         | M      | 60m    | M           | —       | 80%     |
-| M23 | Trend JSON endpoint (`Routes.Trend`, window param) + tests                                              | M      | 60m    | M           | M22     | 80%     |
-| M14 | Coverage: restore report, CI upload, surface in job summary                                             | M      | 45m    | L           | —       | 80%     |
-| M15 | Benchmarks: MetricsHandler, RenderPatch, BroadcastFanOut + sanity run                                   | L      | 45m    | L           | —       | 80%     |
-| M18 | Docs sweep: FEATURES line-refs, DOMAIN_LANGUAGE terms, CONTRIBUTING how-to, ROADMAP non-goal annotation | M      | 60m    | M           | M4      | 80%     |
-| M19 | Dark-mode screenshot + README composite + "regenerate" caption                                          | L      | 30m    | L           | —       | 80%     |
-| M20 | docker-compose demo: app + prometheus scraping `/health/metrics`                                        | M      | 45m    | M           | M1      | 80%     |
-| M21 | axe-core a11y run in browser test; fix critical findings                                                | M      | 60m    | M           | M2      | 80%     |
-| M26 | "Updated HH:MM:SS" server-rendered refresh timestamp                                                    | L      | 30m    | L           | —       | 80%     |
-| M27 | Security headers audit (metrics noindex etc.) + OG description option                                   | M      | 60m    | L           | —       | 80%     |
-| M25 | Export endpoint JSON/CSV over trend window + tests + docs                                               | L      | 90m    | L           | M23     | 80%     |
-| M24 | Decision notes: trend-vs-stateless non-goal, per-route middleware need, trend default                   | L      | 30m    | L           | —       | 80%     |
-| M28 | Public status-page mode (`WithPublicMode`): hide check names/errors                                     | M      | 90m    | M           | —       | 80%     |
-| M29 | Status-change timeline UI under trend (transitions + timestamps)                                        | L      | 96m    | L           | M22     | 80%     |
-| M30 | Upstream filings (verify-first): templ-components color-scheme flag, chromedp `[::1]` launcher          | L      | 45m    | L           | —       | 80%     |
-| M31 | Federation spike: multi-probe aggregation design doc (no code)                                          | L      | 96m    | L           | —       | explore |
-| M32 | WebSocket transport spike: feasibility design doc (no code)                                             | L      | 96m    | L           | —       | explore |
+| ~~M1~~  | ~~Release v0.3.0: bump Version, date CHANGELOG, gates, tag, verify pkg.go.dev~~ done at `d453c52` | ~~H~~ | ~~45m~~ | ~~H~~ | ~~—~~ | ~~1%~~ |
+| ~~M4~~  | ~~HARVEST: route all plan items into TODO_LIST/ROADMAP, cross-link plan~~ done at `40ba449` | ~~H~~ | ~~30m~~ | ~~M~~ | ~~—~~ | ~~4%~~ |
+| ~~M2~~  | ~~CI: browser-test job (chromium, env, run, verify green)~~ done — CI browser job verified green on runner (run 33763955031) 2026-09-03 | ~~H~~ | ~~60m~~ | ~~H~~ | ~~—~~ | ~~4%~~ |
+| ~~M3~~  | ~~`RecommendedCSP(nonce)` helper: csp.go + tests + README~~ done at `f627164` | ~~H~~ | ~~45m~~ | ~~H~~ | ~~—~~ | ~~4%~~ |
+| ~~M6~~  | ~~promtool conformance: devShell tool + scrape-check test + CI step~~ done — anchored on the official prometheus/common parser (bd99de0); promtool impossible in nixpkgs — documented deviation | ~~H~~ | ~~45m~~ | ~~M~~ | ~~—~~ | ~~20%~~ |
+| ~~M5~~  | ~~Example app v2: auth/metrics/trend via env toggles + verify + docs~~ done at `50f2bcc` | ~~M~~ | ~~60m~~ | ~~H~~ | ~~M1~~ | ~~20%~~ |
+| ~~M7~~  | ~~Browser-test hardening: console/CSP-violation asserts + live SSE patch DOM check~~ done at `be5fe4c` | ~~H~~ | ~~72m~~ | ~~M~~ | ~~M2~~ | ~~20%~~ |
+| ~~M13~~ | ~~Fix gopls `go1.27` stdversion noise (go directive/toolchain/gopls env)~~ done — fixed via committed .vscode/settings.json | ~~M~~ | ~~30m~~ | ~~L~~ | ~~—~~ | ~~20%~~ |
+| ~~M16~~ | ~~Fuzz targets: `FuzzEscapeLabelValue`, `FuzzFingerprintChecks`~~ done at `dd483c2` | ~~M~~ | ~~30m~~ | ~~L~~ | ~~—~~ | ~~20%~~ |
+| ~~M17~~ | ~~Nightly fuzz workflow (60s/target, failure artifacts)~~ done — nightly fuzz workflow shipped (.github/workflows/fuzz.yml) | ~~M~~ | ~~30m~~ | ~~L~~ | ~~M16~~ | ~~20%~~ |
+| ~~M9~~  | ~~SSE graceful shutdown: drain connections, `WithShutdownDrain(d)`, tests~~ done at `3022fbf` | ~~H~~ | ~~73m~~ | ~~M~~ | ~~—~~ | ~~80%~~ |
+| ~~M10~~ | ~~SSE max-lifetime connection timeout option + tests~~ done at `3022fbf` | ~~M~~ | ~~60m~~ | ~~M~~ | ~~—~~ | ~~80%~~ |
+| ~~M11~~ | ~~Pusher watchdog: last-tick recency check surfaced via `HealthCheck`~~ done at `3022fbf` | ~~M~~ | ~~72m~~ | ~~M~~ | ~~—~~ | ~~80%~~ |
+| ~~M12~~ | ~~Rate-limit option for dashboard routes (token bucket per IP) + tests~~ done at `3022fbf` | ~~M~~ | ~~72m~~ | ~~M~~ | ~~M3~~ | ~~80%~~ |
+| ~~M8~~  | ~~Latency histogram metric (`dashboard_health_latency_seconds`) + promtool pass~~ done at `e9f47cb` | ~~M~~ | ~~60m~~ | ~~M~~ | ~~M6~~ | ~~80%~~ |
+| ~~M22~~ | ~~Trend v2: status-transition markers + window info in aria-label~~ done — downgraded to data level — transitions ship via /health/trend (e9f47cb); visual markers in ROADMAP | ~~M~~ | ~~60m~~ | ~~M~~ | ~~—~~ | ~~80%~~ |
+| ~~M23~~ | ~~Trend JSON endpoint (`Routes.Trend`, window param) + tests~~ done at `e9f47cb` | ~~M~~ | ~~60m~~ | ~~M~~ | ~~M22~~ | ~~80%~~ |
+| ~~M14~~ | ~~Coverage: restore report, CI upload, surface in job summary~~ done — CI test job prints coverage totals; baseline 76.9% recorded 2026-09-03 | ~~M~~ | ~~45m~~ | ~~L~~ | ~~—~~ | ~~80%~~ |
+| ~~M15~~ | ~~Benchmarks: MetricsHandler, RenderPatch, BroadcastFanOut + sanity run~~ done at `4e4a149` | ~~L~~ | ~~45m~~ | ~~L~~ | ~~—~~ | ~~80%~~ |
+| ~~M18~~ | ~~Docs sweep: FEATURES line-refs, DOMAIN_LANGUAGE terms, CONTRIBUTING how-to, ROADMAP non-goal annotation~~ done — docs sweep 40ba449 + 2026-09-03 pass (DOMAIN_LANGUAGE terms, ROADMAP non-goal annotation, symbol citations) | ~~M~~ | ~~60m~~ | ~~M~~ | ~~M4~~ | ~~80%~~ |
+| ~~M19~~ | ~~Dark-mode screenshot + README composite + "regenerate" caption~~ done — captured (v0.3.x cycle) and embedded in README Dark Mode 2026-09-03 | ~~L~~ | ~~30m~~ | ~~L~~ | ~~—~~ | ~~80%~~ |
+| ~~M20~~ | ~~docker-compose demo: app + prometheus scraping `/health/metrics`~~ done at `4e4a149` | ~~M~~ | ~~45m~~ | ~~M~~ | ~~M1~~ | ~~80%~~ |
+| ~~M21~~ | ~~axe-core a11y run in browser test; fix critical findings~~ done at `be5fe4c` | ~~M~~ | ~~60m~~ | ~~M~~ | ~~M2~~ | ~~80%~~ |
+| ~~M26~~ | ~~"Updated HH:MM:SS" server-rendered refresh timestamp~~ done at `e9f47cb` | ~~L~~ | ~~30m~~ | ~~L~~ | ~~—~~ | ~~80%~~ |
+| ~~M27~~ | ~~Security headers audit (metrics noindex etc.) + OG description option~~ done — OG shipped at 4e4a149; security-headers audit remains open (ROADMAP) | ~~M~~ | ~~60m~~ | ~~L~~ | ~~—~~ | ~~80%~~ |
+| ~~M25~~ | ~~Export endpoint JSON/CSV over trend window + tests + docs~~ done at `e9f47cb` | ~~L~~ | ~~90m~~ | ~~L~~ | ~~M23~~ | ~~80%~~ |
+| ~~M24~~ | ~~Decision notes: trend-vs-stateless non-goal, per-route middleware need, trend default~~ done — decision notes + ROADMAP non-goal re-annotated 2026-09-03 | ~~L~~ | ~~30m~~ | ~~L~~ | ~~—~~ | ~~80%~~ |
+| ~~M28~~ | ~~Public status-page mode (`WithPublicMode`): hide check names/errors~~ done at `4e4a149` | ~~M~~ | ~~90m~~ | ~~M~~ | ~~—~~ | ~~80%~~ |
+| ~~M29~~ | ~~Status-change timeline UI under trend (transitions + timestamps)~~ done at `e9f47cb` | ~~L~~ | ~~96m~~ | ~~L~~ | ~~M22~~ | ~~80%~~ |
+| ~~M30~~ | ~~Upstream filings (verify-first): templ-components color-scheme flag, chromedp `[::1]` launcher~~ done — templ-components#6 filed with verified diagnosis; chromedp and theme-script filings still open (TODO_LIST) | ~~L~~ | ~~45m~~ | ~~L~~ | ~~—~~ | ~~80%~~ |
+| ~~M31~~ | ~~Federation spike: multi-probe aggregation design doc (no code)~~ done — spike concluded — ROADMAP Design Spikes + decision notes | ~~L~~ | ~~96m~~ | ~~L~~ | ~~—~~ | ~~explore~~ |
+| ~~M32~~ | ~~WebSocket transport spike: feasibility design doc (no code)~~ done — spike concluded — rejected; ROADMAP Design Spikes | ~~L~~ | ~~96m~~ | ~~L~~ | ~~—~~ | ~~explore~~ |
 
 _Effort total ≈ 45.4 h. The 🔵 BLOCKED build-tag decision is intentionally not scheduled — it gates nothing below._
 
@@ -340,3 +340,23 @@ flowchart TD
 ## Snapshot vs living docs
 
 This file is a point-in-time plan. M4 routes the actionable subset into `TODO_LIST.md` (done as part of this commit) and the rest into `ROADMAP.md` on execution. When a later session needs to bring this plan current: `docs-health` → ANNOTATE, never rewrite.
+
+---
+
+## Resolution (2026-09-03)
+
+All 32 medium tasks above are annotated inline with their closing commit or
+disposition. The 166 fine tasks in Step 3 were consumed by their parent
+M-tasks (each M-task's fine breakdown executed as part of it) and are not
+individually annotated; cycle completion was verified in
+`docs/status/2026-09-03_v03x-cycle-execution-complete.md`.
+
+Residuals that outlived the plan (tracked, not lost):
+
+- M22 visual transition markers — ROADMAP raw idea (data shipped, SVG markers not drawn)
+- M27 security-headers audit — ROADMAP raw idea (OG/description shipped)
+- M30 chromedp `[::1]` launcher and templ-components theme-script filings — open; templ-components#6 (StatCard `<dl>`) filed with verified diagnosis (`docs/planning/2026-09-03_issue-drafts.md`)
+- M6 promtool devShell package — impossible in nixpkgs (prometheus 3.x ships no promtool); conformance anchored on the official parser
+
+This plan is fully harvested: open work lives in `TODO_LIST.md`, long-term
+ideas in `ROADMAP.md`.
