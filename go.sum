@@ -28,6 +28,8 @@ github.com/larsartmann/go-error-family v0.10.0 h1:xGPT8WzPr9EJ+SHCasLtZ2mJ7drVxm
 github.com/larsartmann/go-error-family v0.10.0/go.mod h1:c5ZKAqG/2xJmF7ZjShNAenbxHzWqut90ARS0lPuyUaY=
 github.com/larsartmann/go-health v0.0.2 h1:sUqB5SvX8BZHUfHmQmQ0uuDr5UXyVtpzPESo9TboNL8=
 github.com/larsartmann/go-health v0.0.2/go.mod h1:9wau4MHt4fGLdrRn81rWnkcI6M51IvQyfrzhyiBIZCg=
+github.com/larsartmann/go-health v0.1.0 h1:U/DFaysL+u6SCJbd5Jm6u/NtS7qA7g0c89nN0++0/eo=
+github.com/larsartmann/go-health v0.1.0/go.mod h1:AuHniwkxGZFEdTDAE0bml30QQfXZ8ZnZvFMl6VBzNUM=
 github.com/larsartmann/go-sse v0.6.0 h1:ITsMQi4Cfg+cXE5YYChk3p6wYsn33AxKJPVwd5hsiBY=
 github.com/larsartmann/go-sse v0.6.0/go.mod h1:ndYQ/lEnJVzTWqvF/h4+XMG/hJK/bEn6zSkfpkBAuUg=
 github.com/larsartmann/templ-components v1.11.0 h1:+SndP77yYib2fH6x17RynVNQ9CowKd9lYWE3k7xzkNE=
