@@ -61,6 +61,8 @@ Raw ideas:
 - Public mode hardening: leak-scanner test (grep rendered HTML for registered
   service names), optional redaction of the `/health` JSON (which stays
   verbatim today — documented in AGENTS.md)
+- Incident tracking (annotate status changes with context) — deferred; needs
+  product thought beyond the timeline card that shipped in the v0.3.x cycle
 
 ### 4. Deployment Flexibility
 

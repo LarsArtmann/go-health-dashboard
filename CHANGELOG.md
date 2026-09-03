@@ -72,6 +72,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   status `b:c`), causing missed change detection. Fields are now
   length-prefixed so boundaries are unambiguous (`status.go`,
   `status_test.go`)
+  **Compatibility:** this changes fingerprint values. Fingerprints are
+  in-memory change-detection state only — nothing persisted or exposed — so
+  the only visible effect after upgrading is at most one spurious broadcast
+  on the first tick. Code that persisted fingerprints across versions (not a
+  supported use) will see one false "changed" report.
 
 ## [0.3.1] - 2026-09-02
 
