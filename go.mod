@@ -10,8 +10,8 @@ require (
 	github.com/larsartmann/go-datastar/static v0.4.0
 	github.com/larsartmann/go-health v0.0.2
 	github.com/larsartmann/go-sse v0.6.0
-	github.com/larsartmann/templ-components v1.12.0
-	github.com/larsartmann/templ-components/datastar v1.12.0
+	github.com/larsartmann/templ-components v1.11.0
+	github.com/larsartmann/templ-components/datastar v1.11.0
 	github.com/larsartmann/templ-components/utils v1.12.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.71.0
