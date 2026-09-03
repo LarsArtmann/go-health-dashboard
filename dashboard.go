@@ -73,6 +73,18 @@ type Config struct {
 	// limiting (default). Probe endpoints are never limited.
 	RateLimitRequests int
 	RateLimitWindow   time.Duration
+
+	// WebhookURL receives a JSON status snapshot on every health-state
+	// transition (change-only, independent of PushMode). Empty disables the
+	// webhook (default). Deliveries are best-effort with a 10s timeout and
+	// no retry — the receiver owns alert thresholds. The URL may embed a
+	// secret; it is never logged.
+	WebhookURL string
+
+	// WebhookHeaders are sent with every webhook delivery, typically for
+	// receiver authentication (e.g. {"Authorization": "Bearer ..."}).
+	// Nil/empty (default) sends only Content-Type.
+	WebhookHeaders map[string]string
 }
 
 // WithMiddleware wraps every dashboard-owned handler (dashboard HTML, SSE,
@@ -174,6 +186,34 @@ func WithDescription(description string) Option {
 func WithPublicMode() Option {
 	return func(c *Config) {
 		c.PublicMode = true
+	}
+}
+
+// WithWebhook pushes a JSON health snapshot to url on every status
+// transition — including the initial state on Start — so egress-restricted
+// deployments (NAT, serverless) can feed event ingests and monitoring
+// pipelines without a scraper. Change detection is independent of PushMode:
+// a PushAlways dashboard still fires the webhook only on transitions.
+//
+// Deliveries are best-effort: one goroutine per fire with a 10s timeout, no
+// retries, no logging. Use WithWebhookHeaders for receiver authentication.
+// Combine with WithPublicMode to mask check names and error details before
+// they leave the process.
+func WithWebhook(url string) Option {
+	return func(cfg *Config) {
+		cfg.WebhookURL = url
+	}
+}
+
+// WithWebhookHeaders sets headers sent with every webhook delivery, usually
+// receiver authentication:
+//
+//	dashboard.WithWebhookHeaders(map[string]string{
+//		"Authorization": "Bearer " + token,
+//	})
+func WithWebhookHeaders(headers map[string]string) Option {
+	return func(cfg *Config) {
+		cfg.WebhookHeaders = headers
 	}
 }
 
@@ -388,7 +428,7 @@ func New(probe Prober, opts ...Option) *Dashboard {
 
 	cfg.PushInterval = resolvePushInterval(cfg.PushInterval, probe)
 
-	d := &Dashboard{probe: probe, cfg: cfg, latency: newLatencyHistogram()}
+	d := &Dashboard{probe: probe, cfg: cfg, latency: newLatencyHistogram(), notify: newWebhookNotifier(cfg)}
 
 	if cfg.RateLimitRequests > 0 && cfg.RateLimitWindow > 0 {
 		d.limiter = newRateLimiter(cfg.RateLimitRequests, cfg.RateLimitWindow)

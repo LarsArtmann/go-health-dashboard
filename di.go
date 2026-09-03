@@ -1,7 +1,6 @@
 package dashboard
 
 import (
-	health "github.com/larsartmann/go-health"
 	"github.com/samber/do/v2"
 )
 

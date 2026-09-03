@@ -206,6 +206,13 @@ func (p *pusher) broadcast() {
 		return
 	}
 
+	// Announce the transition to the webhook before rendering the SSE patch:
+	// webhook delivery is state propagation and must not depend on rendering
+	// success. fireOnChange is change-only and non-blocking.
+	if n := p.dashboard.notify; n != nil {
+		n.fireOnChange(resp)
+	}
+
 	evt, ok := p.renderPatch(resp)
 	if !ok {
 		return
