@@ -428,7 +428,12 @@ func New(probe Prober, opts ...Option) *Dashboard {
 
 	cfg.PushInterval = resolvePushInterval(cfg.PushInterval, probe)
 
-	d := &Dashboard{probe: probe, cfg: cfg, latency: newLatencyHistogram(), notify: newWebhookNotifier(cfg)}
+	d := &Dashboard{
+		probe:   probe,
+		cfg:     cfg,
+		latency: newLatencyHistogram(),
+		notify:  newWebhookNotifier(cfg),
+	}
 
 	if cfg.RateLimitRequests > 0 && cfg.RateLimitWindow > 0 {
 		d.limiter = newRateLimiter(cfg.RateLimitRequests, cfg.RateLimitWindow)

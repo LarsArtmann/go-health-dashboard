@@ -124,7 +124,12 @@ func (n *webhookNotifier) post(resp health.Response) {
 	ctx, cancel := context.WithTimeout(context.Background(), webhookTimeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, n.url, strings.NewReader(string(body)))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		n.url,
+		strings.NewReader(string(body)),
+	)
 	if err != nil {
 		return
 	}

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	health "github.com/larsartmann/go-health"
-	"github.com/larsartmann/go-health-dashboard"
+	dashboard "github.com/larsartmann/go-health-dashboard"
 	aggregate "github.com/larsartmann/go-health/aggregate"
 	"github.com/samber/do/v2"
 )
@@ -158,9 +158,18 @@ func TestWebhook_AnnouncesInitialStateThenTransitions(t *testing.T) {
 		t.Fatalf("dash.Start: %v", err)
 	}
 
-	first := decodeWebhook(t, capture.next(t))
+	firstReq := capture.next(t)
+	first := decodeWebhook(t, firstReq)
 	if first["status"] != string(health.StatusPass) {
 		t.Fatalf("initial webhook status = %v, want pass", first["status"])
+	}
+
+	if got := firstReq.headers.Get("Authorization"); got != "Bearer test-token" {
+		t.Fatalf("Authorization header = %q, want bearer token passthrough", got)
+	}
+
+	if got := firstReq.headers.Get("Content-Type"); got != "application/json" {
+		t.Fatalf("Content-Type = %q, want application/json", got)
 	}
 
 	// Trigger a transition: pass → warn.
@@ -192,16 +201,6 @@ func TestWebhook_AnnouncesInitialStateThenTransitions(t *testing.T) {
 	if _, ok := second["changed_at"].(string); !ok {
 		t.Fatalf("changed_at missing or not a string: %v", second["changed_at"])
 	}
-
-	// The final delivery of this test also proves header propagation.
-	last := capture.next(t)
-	if got := last.headers.Get("Authorization"); got != "Bearer test-token" {
-		t.Fatalf("Authorization header = %q, want bearer token passthrough", got)
-	}
-
-	if got := last.headers.Get("Content-Type"); got != "application/json" {
-		t.Fatalf("Content-Type = %q, want application/json", got)
-	}
 }
 
 func TestWebhook_SilentWhenNothingChanges(t *testing.T) {
@@ -229,7 +228,7 @@ func TestWebhook_SilentWhenNothingChanges(t *testing.T) {
 	// Many push ticks later, no further deliveries may arrive.
 	select {
 	case r := <-capture.ch:
-		t.Fatalf("unexpected extra webhook delivery: %v", r.URL)
+		t.Fatalf("unexpected extra webhook delivery: %s", r.body)
 	case <-time.After(300 * time.Millisecond):
 	}
 }
