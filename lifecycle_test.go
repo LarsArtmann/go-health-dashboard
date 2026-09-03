@@ -202,7 +202,7 @@ func TestHealthCheck_ErrorIsDetectable(t *testing.T) {
 		t.Fatal("expected error")
 	}
 
-	if !errors.Is(err, err) {
-		t.Fatal("errors.Is should return true for the same error")
+	if !errors.Is(err, dashboard.ErrPusherNotActive) {
+		t.Fatalf("errors.Is(err, ErrPusherNotActive) = false, want true (err: %v)", err)
 	}
 }
