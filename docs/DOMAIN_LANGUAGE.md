@@ -148,6 +148,24 @@ The `/health` endpoint inspects the `Accept` header using RFC 7231 q-value
 parsing. `Accept: application/json` returns the raw health response as JSON;
 any other value renders the HTML dashboard. Equal q-values default to HTML.
 
+### BasePath
+
+`WithBasePath(prefix)` — a route prefix applied to all configured routes so
+the dashboard can mount under a non-root path (e.g. `/admin` produces
+`/admin/health`, `/admin/health/sse`). Call it after `WithRoutes`; a later
+`WithRoutes` replaces the prefixed set.
+
+### RetryInterval
+
+`WithRetryInterval(d)` — the SSE `retry` field (milliseconds) sent to
+browsers so they know how long to wait before reconnecting. Zero (default)
+uses the browser's built-in delay; negatives are clamped to zero.
+
+### SubscriberCount
+
+`Dashboard.SubscriberCount()` — the number of active SSE connections, from
+the pusher's atomic counter. Returns 0 when the pusher has not been started.
+
 ## Route Layout
 
 | Route             | Purpose                             | Content Type      |

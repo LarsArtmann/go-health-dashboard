@@ -48,7 +48,7 @@ implemented, tested, and verified.** Remaining ideas live in `ROADMAP.md`.
 
 - Trend sparkline transition _markers_ (visual): transitions are exposed
   via the trend JSON; drawing markers on the SVG sparkline is polish left
-  to a future cycle.
+  to a future cycle. _(Tracked as a ROADMAP raw idea, 2026-09-03.)_
 - WebSocket transport: rejected in the design spike (SSE suffices; see
   decision notes).
 - Build-tag gating for SSE (BLOCKED on user decision, unchanged —
