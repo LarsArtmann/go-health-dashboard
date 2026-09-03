@@ -316,6 +316,27 @@ func WithBasePath(prefix string) Option {
 	}
 }
 
+// Prober is the minimal health-probe surface the dashboard renders. It is
+// satisfied by *health.Probe (the common case) and by go-health's
+// aggregate.Aggregate, so one dashboard can serve a merged multi-service
+// view without the dashboard importing or knowing the concrete source type.
+// The interface lives on the consumer side by Go convention: providers stay
+// concrete, consumers define what they need.
+type Prober interface {
+	// CachedResponse returns the current health snapshot without running
+	// dependency checks. The pusher reads it once per push interval.
+	CachedResponse() health.Response
+	// RefreshInterval reports the probe's cache refresh cadence. Used as the
+	// default push interval; zero means the probe evaluates live.
+	RefreshInterval() time.Duration
+	// LivenessHandler serves the JSON liveness probe (always 200).
+	LivenessHandler() http.HandlerFunc
+	// ReadinessHandler serves the JSON readiness probe (503 on fail).
+	ReadinessHandler() http.HandlerFunc
+	// StartupHandler serves the JSON startup probe (503 until latched).
+	StartupHandler() http.HandlerFunc
+}
+
 // Dashboard renders a browser-friendly health dashboard from a go-health
 // Probe using Datastar SSE for real-time updates.
 //
@@ -326,11 +347,12 @@ func WithBasePath(prefix string) Option {
 //
 // Dashboard is safe for concurrent use by multiple goroutines.
 type Dashboard struct {
-	probe   *health.Probe
+	probe   Prober
 	cfg     Config
 	push    atomic.Pointer[pusher]
 	limiter *rateLimiter
 	latency *latencyHistogram
+	notify  *webhookNotifier
 }
 
 // Compile-time assertions that Dashboard satisfies samber/do lifecycle interfaces.
@@ -341,16 +363,18 @@ var (
 	_ do.Shutdowner               = (*Dashboard)(nil)
 )
 
-// New creates a Dashboard wired to the given Probe. The Probe provides
+// New creates a Dashboard wired to the given Prober. The Prober provides
 // health data (via CachedResponse) and JSON handlers (via ReadinessHandler,
-// LivenessHandler, StartupHandler).
+// LivenessHandler, StartupHandler). Both *health.Probe and go-health's
+// aggregate.Aggregate satisfy it — pass an aggregate to render several
+// in-process probes as one multi-service dashboard.
 //
 // Default configuration:
 //   - Title: "Health Dashboard"
 //   - PushInterval: probe's RefreshInterval, or 2s if probe is live
 //   - PushMode: PushOnChange
 //   - Routes: DefaultRoutes()
-func New(probe *health.Probe, opts ...Option) *Dashboard {
+func New(probe Prober, opts ...Option) *Dashboard {
 	cfg := Config{
 		Title:             defaultTitle,
 		PushMode:          PushOnChange,
@@ -377,7 +401,7 @@ func New(probe *health.Probe, opts ...Option) *Dashboard {
 // caller provides a positive interval via WithPushInterval, it wins.
 // Otherwise we fall back to the probe's configured interval, or the default
 // when the probe is in live mode (interval == 0).
-func resolvePushInterval(configured time.Duration, probe *health.Probe) time.Duration {
+func resolvePushInterval(configured time.Duration, probe Prober) time.Duration {
 	if configured > 0 {
 		return configured
 	}

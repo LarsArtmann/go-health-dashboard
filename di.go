@@ -5,8 +5,9 @@ import (
 	"github.com/samber/do/v2"
 )
 
-// Register creates a Dashboard wired to the given Probe and registers it in
-// the injector so it participates in container lifecycle cascades.
+// Register creates a Dashboard wired to the given Prober (a *health.Probe or
+// go-health's aggregate.Aggregate) and registers it in the injector so it
+// participates in container lifecycle cascades.
 //
 // After registration:
 //
@@ -26,7 +27,7 @@ import (
 //	dash.Start(ctx)
 //	dash.RegisterRoutes(mux)
 //	// On shutdown: do.Shutdown(injector) cascades to dash.Shutdown().
-func Register(injector do.Injector, probe *health.Probe, opts ...Option) *Dashboard {
+func Register(injector do.Injector, probe Prober, opts ...Option) *Dashboard {
 	dash := New(probe, opts...)
 	do.ProvideValue(injector, dash)
 
