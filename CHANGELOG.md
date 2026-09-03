@@ -5,6 +5,49 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-09-04
+
+Integrate, don't compete. The dashboard now feeds monitoring platforms
+(Prometheus, SigNoz, Gatus, Uptime Kuma) instead of trying to replace
+them, and natively renders go-health's new multi-probe aggregate.
+go-health is bumped to v0.1.0, which introduces the `aggregate`
+sub-package this release consumes.
+
+### Compatibility
+
+- `dashboard.New` now accepts the new `Prober` interface instead of the
+  concrete `*health.Probe`. Source-compatible: every existing caller
+  keeps compiling unchanged (structural typing), and
+  `*aggregate.Aggregate` satisfies the same interface.
+- The dependency bumps to `github.com/larsartmann/go-health v0.1.0`.
+
+### Added
+
+- `WithWebhook(url)` and `WithWebhookHeaders(map[string]string)`:
+  push a JSON status snapshot on every health transition (initial
+  state included), independent of `PushMode`. Deliveries are
+  best-effort (10s timeout, no retries, no logging) with bounded
+  in-flight goroutines, so a slow receiver can never block the SSE
+  push loop. `WithPublicMode` masks check names (`check-N`) and
+  strips error strings from the payload. Docs:
+  `docs/integrations.md`
+- `Prober` interface: the minimal probe surface the dashboard
+  renders, defined on the consumer side (Go convention). Satisfied
+  by `*health.Probe` and go-health's `*aggregate.Aggregate`, enabling
+  one dashboard to serve N in-process probes with `source/check`
+  namespaced checks and worst-of status (`integration_test.go`
+  verifies the aggregate end-to-end).
+- Integration cookbook `docs/integrations.md`: validated recipes for
+  Prometheus/SigNoz alerting (including the SigNoz `target=0` and
+  `{{$value}}` traps), Gatus and Uptime Kuma endpoint configuration
+  against go-health semantics, and the webhook payload contract.
+
+### Changed
+
+- `go.mod`: `github.com/larsartmann/go-health` v0.0.2 → v0.1.0.
+- README: new "Monitoring Integrations" and "Multi-Service
+  Dashboards (aggregate)" sections.
+
 ## [0.4.0] - 2026-09-03
 
 Harden and expose. The dashboard gains opt-in SSE hardening (graceful
