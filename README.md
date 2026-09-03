@@ -106,6 +106,8 @@ dash := dashboard.New(probe,
     dashboard.WithShutdownDrain(5*time.Second),                // Wait for SSE clients on Shutdown
     dashboard.WithMaxConnectionLifetime(10*time.Minute),       // Recycle long-lived SSE streams
     dashboard.WithRateLimit(100, time.Minute),                 // Token bucket on dashboard routes (429 beyond)
+    dashboard.WithDescription("Status page for My Service"),   // Meta description + Open Graph tags
+    dashboard.WithPublicMode(),                                // Anonymize check names/errors in HTML + metrics
     dashboard.WithDatastarSrc("/static/datastar.js"),          // Self-hosted Datastar SDK (CSP 'self')
     dashboard.WithBasePath("/admin"),                          // Prefix all routes for sub-path mounting
     dashboard.WithRoutes(dashboard.Routes{
@@ -151,12 +153,26 @@ dashboard_health_up 1                           # 1 when overall status is pass
 dashboard_health_status 2                       # 2 pass, 1 warn, 0 fail, -1 unknown
 dashboard_health_check{check="postgres",status="pass"} 1
 dashboard_health_latency_ms 12                  # last check batch duration
+dashboard_health_check_duration_seconds_bucket{le="0.01"} 42
+dashboard_health_check_duration_seconds_sum 0.42
+dashboard_health_check_duration_seconds_count 96
 dashboard_health_shutting_down 0
 dashboard_sse_connections 3                     # live dashboard viewers
 dashboard_pusher_active 1                       # SSE pusher goroutine health
 ```
 
 The metrics route is middleware-protected when `WithMiddleware` is set.
+
+A Prometheus scrape config matching `deploy/prometheus.yml`:
+
+```yaml
+scrape_configs:
+  - job_name: go-health-dashboard
+    metrics_path: /health/metrics
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["dashboard:8080"]
+```
 
 ## Health Trend
 
@@ -242,6 +258,10 @@ pass/fail every 15s), and one always failing. Watch the dashboard update live.
 The dashboard respects the user's OS dark-mode preference and includes a
 toggle button for manual switching. The preference is persisted in
 `localStorage`.
+
+![Health dashboard in dark mode showing the same layout with a dark theme](docs/screenshot-dark.png)
+
+Dark screenshot captured by `screenshot_dark_test.go` (`SCREENSHOT_OUTPUT_DARK=docs/screenshot-dark.png`).
 
 ## Content-Security-Policy
 
