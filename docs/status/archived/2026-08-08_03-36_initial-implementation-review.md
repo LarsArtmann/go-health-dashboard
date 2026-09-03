@@ -6,7 +6,7 @@
 
 > **SUPERSEDED** — This report describes the v1 HTMX-polling architecture that was
 > entirely replaced by the SSE-first rewrite (see
-> `docs/status/2026-08-08_07-22_sse-rewrite-fixes-seven-mistakes.md`). The
+> `docs/status/archived/2026-08-08_07-22_sse-rewrite-fixes-seven-mistakes.md`). The
 > feedback driving that rewrite is archived at
 > `docs/feedback/archived/2026-08-08_seven-planning-mistakes.md`. Open items
 > from this report have been harvested into `TODO_LIST.md`. Kept for

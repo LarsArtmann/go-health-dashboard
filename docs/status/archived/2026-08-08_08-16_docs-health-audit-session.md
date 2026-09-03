@@ -34,10 +34,10 @@ Verified: `rg -l "no content negotiation" README.md AGENTS.md doc.go` returns **
 
 | File                                                                     | Action                                                                                                                    |
 | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `docs/status/2026-08-08_03-36_initial-implementation-review.md`          | Added SUPERSEDED banner; all 11 "NOT STARTED" items resolved inline with `done at` / `Still open — see TODO_LIST` markers |
-| `docs/status/2026-08-08_07-22_sse-rewrite-fixes-seven-mistakes.md`       | Added SUPERSEDED banner; all 8 "NOT STARTED" items resolved inline                                                        |
-| `docs/status/2026-08-08_07-58_content-negotiation-and-session-review.md` | Added "Open items harvested" banner                                                                                       |
-| `docs/planning/2026-08-08_02-46-go-health-dashboard.md`                  | Status changed from PLANNING to EXECUTED with cross-references                                                            |
+| `docs/status/archived/2026-08-08_03-36_initial-implementation-review.md`          | Added SUPERSEDED banner; all 11 "NOT STARTED" items resolved inline with `done at` / `Still open — see TODO_LIST` markers |
+| `docs/status/archived/2026-08-08_07-22_sse-rewrite-fixes-seven-mistakes.md`       | Added SUPERSEDED banner; all 8 "NOT STARTED" items resolved inline                                                        |
+| `docs/status/archived/2026-08-08_07-58_content-negotiation-and-session-review.md` | Added "Open items harvested" banner                                                                                       |
+| `docs/planning/archived/2026-08-08_02-46-go-health-dashboard.md`                  | Status changed from PLANNING to EXECUTED with cross-references                                                            |
 | `docs/feedback/new/2026-08-08_seven-planning-mistakes.md`                | Moved to `docs/feedback/archived/` via `git mv`                                                                           |
 | `docs/feedback/new/` directory                                           | Removed (empty)                                                                                                           |
 
@@ -105,7 +105,7 @@ The docs-health skill says "Run the project's quality gate." I ran `go build`, `
 I added an HTML comment at the bottom of TODO_LIST.md:
 
 ```html
-<!-- Source: harvested from docs/status/2026-08-08_07-58, ... -->
+<!-- Source: harvested from docs/status/archived/2026-08-08_07-58, ... -->
 ```
 
 This is temporal pollution. It'll rot. The harvest provenance doesn't need to be in the file — it's in the git history. Minor but it violates the endurance test.
@@ -142,7 +142,7 @@ The project has domain-specific vocabulary (Probe, Check, Status, FeedbackType, 
 > SSE reconnection) tracked in `TODO_LIST.md` / `ROADMAP.md`. P3 items 24–50:
 > long-term ideas, tracked in `ROADMAP.md`. This report's D1–D4
 > (TOTALLY FUCKED UP) items were all fixed in the session that followed
-> (`docs/status/2026-08-08_08-52_phase1-2-execution-security-race-csp.md`).
+> (`docs/status/archived/2026-08-08_08-52_phase1-2-execution-security-race-csp.md`).
 
 ### P0 — Must do before any release
 

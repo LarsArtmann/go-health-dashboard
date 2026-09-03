@@ -150,7 +150,7 @@ The rewrite was comprehensive. No features are half-implemented.
 
 ### D2: Old status report and feedback file still in place
 
-The `docs/status/2026-08-08_03-36_initial-implementation-review.md` describes the old architecture (content negotiation, HTMX polling, etc.) and is now completely stale. The `docs/feedback/new/2026-08-08_seven-planning-mistakes.md` was processed but still sits in `new/`. Both should be annotated or moved.
+The `docs/status/archived/2026-08-08_03-36_initial-implementation-review.md` describes the old architecture (content negotiation, HTMX polling, etc.) and is now completely stale. The `docs/feedback/new/2026-08-08_seven-planning-mistakes.md` was processed but still sits in `new/`. Both should be annotated or moved.
 
 ### D3: gopls diagnostics show stale errors
 
@@ -189,7 +189,7 @@ The LSP diagnostics in the editor still show errors referencing deleted files (`
 5. **Run `govulncheck ./...`** — Security scan.
 6. **Regenerate `flake.lock`** — Run `nix flake lock` after flake.nix changes.
 7. **Test `nix build`** — Verify the Nix build works with GOWORK=off.
-8. **Move old status report** — Annotate `docs/status/2026-08-08_03-36_initial-implementation-review.md` as superseded.
+8. **Move old status report** — Annotate `docs/status/archived/2026-08-08_03-36_initial-implementation-review.md` as superseded.
 9. **Process feedback file** — Move `docs/feedback/new/2026-08-08_seven-planning-mistakes.md` to `docs/feedback/`.
 
 ### High Priority
@@ -199,7 +199,7 @@ The LSP diagnostics in the editor still show errors referencing deleted files (`
 12. **Verify CSP nonce handling** — Test that Datastar SDK script and Tailwind script actually get the nonce attribute rendered.
 13. **Restart gopls** — Clear stale diagnostics from deleted files.
 14. **Add `go test -race` to CI** — Race detector caught nothing this time but should be standard.
-15. **Annotate the planning doc** — `docs/planning/2026-08-08_02-46-go-health-dashboard.md` describes the old architecture. Mark as superseded.
+15. **Annotate the planning doc** — `docs/planning/archived/2026-08-08_02-46-go-health-dashboard.md` describes the old architecture. Mark as superseded.
 16. **Add dark mode toggle button** — layout.Base includes theme script but no toggle is rendered.
 17. **Add favicon** — layout.Base references `/favicon.svg` but none is served.
 18. **Verify mobile responsive layout** — Only checked that `grid` class exists.

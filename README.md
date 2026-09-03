@@ -71,6 +71,16 @@ func main() {
 
 Open `http://localhost:8080/health` in a browser. Done.
 
+Because go-health already requires a samber/do injector, DI-integrated apps
+can swap `dashboard.New` + `dash.Shutdown` for one call:
+
+```go
+dash := dashboard.Register(injector, probe, dashboard.WithTitle("My Service"))
+```
+
+`Register` stores the Dashboard in the injector, so `do.Shutdown(injector)`
+and `do.HealthCheck[*Dashboard](injector)` cascade to it automatically.
+
 ## Routes
 
 | Path              | Method | Content-Type                  | What It Does                                                                                                              |

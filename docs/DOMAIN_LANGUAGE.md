@@ -98,6 +98,50 @@ The template-ready representation of a health `Response`. The `buildViewModel`
 function transforms a `Response` into a `viewModel` by mapping statuses to
 display types, grouping checks by severity, and sorting alphabetically.
 
+### Sample
+
+One timestamped status observation in the pusher's history: `sample{At, Value,
+Status}` where `Value` maps pass=1, warn=0.5, fail=0 (unknown=0). Recorded on
+every pusher tick when `WithTrend` is enabled, before change detection.
+
+### History Buffer
+
+The mutex-guarded ring buffer in the pusher that retains the last n samples.
+Powers the sparkline card, `/health/trend`, `/health/export`, the Status
+Changes timeline card, and the `Updated <time>` stamp. Transitions are derived
+on demand (`historyBuffer.transitions()`), never stored.
+
+### Status Transition
+
+A derived change point between consecutive samples (e.g. pass → fail with a
+timestamp). The raw data behind the timeline card and the `/health/trend`
+transitions array.
+
+### Latency Histogram
+
+`dashboard_health_check_duration_seconds` — a hand-rolled, fixed-bucket,
+cumulative Prometheus histogram (with `_sum` and `_count`) of check-batch
+durations in the metrics exposition. Zero-dependency by design.
+
+### Shutdown Drain
+
+`WithShutdownDrain(d)` behavior: `Shutdown()` first swaps the pusher to nil
+(new SSE connections get an immediate 503), then waits up to `d` for existing
+subscribers to disconnect before closing the broadcaster. Bounded by design.
+
+### Rate Limiter
+
+`WithRateLimit(max, window)` — a hand-rolled shared token bucket across
+dashboard-owned routes. Returns 429 with `Retry-After`; Kubernetes probes are
+exempt. Deliberately not `golang.org/x/time/rate` to keep zero runtime deps.
+
+### Public Mode
+
+`WithPublicMode()` — presentation-only anonymization: check names and error
+details become generic `check-N` labels in the rendered HTML and metric
+labels. The `/health` JSON response and kubelet probes intentionally stay
+verbatim.
+
 ### Content Negotiation
 
 The `/health` endpoint inspects the `Accept` header using RFC 7231 q-value
@@ -106,11 +150,14 @@ any other value renders the HTML dashboard. Equal q-values default to HTML.
 
 ## Route Layout
 
-| Route          | Purpose                             | Content Type      |
-| -------------- | ----------------------------------- | ----------------- |
-| `/health`      | HTML dashboard (or JSON via Accept) | text/html or JSON |
-| `/health/sse`  | SSE patch stream                    | text/event-stream |
-| `/favicon.svg` | Dashboard favicon                   | image/svg+xml     |
-| `/healthz`     | Kubernetes liveness probe           | application/json  |
-| `/readyz`      | Kubernetes readiness probe          | application/json  |
-| `/startupz`    | Kubernetes startup probe            | application/json  |
+| Route             | Purpose                             | Content Type      |
+| ----------------- | ----------------------------------- | ----------------- |
+| `/health`         | HTML dashboard (or JSON via Accept) | text/html or JSON |
+| `/health/sse`     | SSE patch stream                    | text/event-stream |
+| `/favicon.svg`    | Dashboard favicon                   | image/svg+xml     |
+| `/health/metrics` | Prometheus exposition (opt-in)      | text/plain        |
+| `/health/trend`   | History samples + transitions (opt-in) | application/json |
+| `/health/export`  | History export, JSON or CSV (opt-in)   | application/json or text/csv |
+| `/healthz`        | Kubernetes liveness probe           | application/json  |
+| `/readyz`         | Kubernetes readiness probe          | application/json  |
+| `/startupz`       | Kubernetes startup probe            | application/json  |

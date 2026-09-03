@@ -32,7 +32,7 @@
 5. **Full test suite passes** — `go test ./...` green across all 15 packages.
 6. **httputil feedback doc written** — `/home/lars/projects/httputil/docs/feedback/new/2026-08-09_consumer-reinvents-nonce-csp-system.md` documents the API discoverability gap and recommends structured CSP type, RouteCSP helper, and ValidateCSP function.
 7. **Auto-git committed the refactor** — Commit `4cdc7ca` captured the middleware/handler/doc changes + nonce.go deletion.
-8. **Previous status report written** — `docs/status/2026-08-09_00-41_csp-nonce-misplacement-fix.md` documents the first self-critique.
+8. **Previous status report written** — `docs/status/archived/2026-08-09_00-41_csp-nonce-misplacement-fix.md` documents the first self-critique.
 
 ---
 
