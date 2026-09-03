@@ -19,6 +19,10 @@ import (
 // retries, so a failed delivery is dropped, never retried here.
 const webhookTimeout = 10 * time.Second
 
+// webhookMaxInFlight bounds concurrent deliveries: a flapping status against
+// a slow receiver must not accumulate unbounded goroutines across push ticks.
+const webhookMaxInFlight = 8
+
 // webhookNotifier pushes health-state transitions to a caller-provided HTTP
 // endpoint (WithWebhook). It exists so egress-restricted deployments — NAT,
 // serverless, locked-down clusters — can be observed without a scraper
@@ -94,6 +98,7 @@ func (n *webhookNotifier) fireOnChange(resp health.Response) {
 	}
 	n.lastStatus = resp.Status
 	n.lastFingerprint = fp
+
 	n.announced = true
 	n.mu.Unlock()
 
@@ -104,7 +109,7 @@ func (n *webhookNotifier) fireOnChange(resp health.Response) {
 // is someone else's ingest, and alerting on a failed alert path belongs to
 // the operator's monitoring stack, not to this library (zero-logging policy).
 func (n *webhookNotifier) post(resp health.Response) {
-	if n.inFlight.Add(1) > 8 {
+	if n.inFlight.Add(1) > webhookMaxInFlight {
 		// Bound concurrent deliveries under a flapping receiver: a slow or
 		// broken endpoint must not accumulate unbounded goroutines across
 		// push ticks. Later transitions coalesce into the next fire.
@@ -135,6 +140,7 @@ func (n *webhookNotifier) post(resp health.Response) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+
 	for k, v := range n.headers {
 		req.Header.Set(k, v)
 	}
