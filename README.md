@@ -191,6 +191,43 @@ pass=1 / warn=0.5 / fail=0) and renders a sparkline card above the service
 tables. The card appears once two samples exist and updates live via the
 same SSE stream.
 
+## Monitoring Integrations
+
+The dashboard is designed to feed your existing stack — see
+[docs/integrations.md](docs/integrations.md) for validated recipes:
+
+- **Prometheus / Grafana / SigNoz**: `WithMetrics(true)` serves
+  `/health/metrics`; alert on `dashboard_health_status` (2=pass, 1=warn, 0=fail)
+- **Gatus / Uptime Kuma**: point an HTTP monitor at `/readyz` — 200 means
+  serving (warn stays 200 by design), 503 means down or draining
+- **Webhooks (push)**: `WithWebhook(url)` POSTs a JSON snapshot on every
+  transition — for egress-restricted hosts and custom event ingests:
+
+```go
+dash := dashboard.New(probe,
+    dashboard.WithWebhook("https://ingest.example.com/health-events"),
+    dashboard.WithWebhookHeaders(map[string]string{
+        "Authorization": "Bearer " + os.Getenv("INGEST_TOKEN"),
+    }),
+)
+```
+
+## Multi-Service Dashboards (aggregate)
+
+One process embedding several logical services? go-health v0.1.0's
+`aggregate` package merges N probes into one surface the dashboard renders
+natively (checks namespaced `source/check`, worst-of status):
+
+```go
+import "github.com/larsartmann/go-health/aggregate"
+
+agg, _ := aggregate.New(
+    aggregate.Source{Name: "api", Probe: apiProbe},
+    aggregate.Source{Name: "web", Probe: webProbe},
+)
+dash := dashboard.New(agg) // Prober interface accepts *health.Probe or *aggregate.Aggregate
+```
+
 ## How Real-Time Works
 
 The dashboard uses [Datastar](https://data-star.dev) for real-time DOM updates:

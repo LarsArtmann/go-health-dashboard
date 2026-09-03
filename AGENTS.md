@@ -39,6 +39,7 @@ routes.go        — Routes struct (Dashboard, SSE, Favicon, Liveness, Readiness
 dashboard.go     — Dashboard struct, Config, Option type, New(), all With* options, Handler(), SSEHandler(), MetricsHandler(), SubscriberCount(), RegisterRoutes(mux), wrap(), Start(), Shutdown(), HealthCheck()
 di.go            — Register(injector, probe, opts...) for samber/do container integration
 pusher.go        — pusher struct (with atomic connection counter), PushMode enum, sample/historyBuffer ring buffer, start goroutine, broadcast, shouldBroadcast (change detection), renderPatch, sseHandler
+webhook.go       — webhookNotifier: change-only JSON transition pushes (WithWebhook), public-mode masking, bounded in-flight goroutines
 metrics.go       — Hand-rolled Prometheus text exposition 0.0.4 (WithMetrics), latency histogram, label escaping, deterministic sorted output
 trend.go         — TrendHandler (/health/trend: samples + transitions JSON) and ExportHandler (/health/export: JSON/CSV)
 csp.go           — RecommendedCSP(nonce): the verified strict CSP policy (no unsafe-inline; unsafe-eval for the Datastar SDK)
@@ -59,6 +60,17 @@ per-file suites.
 
 ### Key Design Decisions
 
+- **Prober interface on the consumer side** — `dashboard.New` takes a narrow `Prober`
+  interface (`CachedResponse`, `RefreshInterval`, the three handler getters), not
+  `*health.Probe`. Structural typing keeps every existing caller compiling, and
+  go-health v0.1.0's `aggregate.Aggregate` satisfies it, so one dashboard renders N
+  in-process probes (namespaced `source/check` keys, worst-of status) with zero
+  dashboard knowledge of the aggregate type.
+- **Webhooks are change-only and best-effort** — `WithWebhook` fires when the status or
+  check fingerprint changes, independent of PushMode (PushAlways never spams a webhook);
+  the initial state is announced on Start, mirroring the SSE initial patch. One
+  goroutine per fire, 10s timeout, bounded in-flight, no retries, no logging
+  (zero-logging policy; the URL may embed a secret). Receivers own thresholds and dedup.
 - **SSE-first, Datastar-powered** — The dashboard uses Datastar SSE for real-time updates. The Datastar SDK handles SSE connections, reconnection, and DOM patching client-side. The `datastar.LiveRegion` component wraps the health content with `data-init="@get('/health/sse')"`.
 - **Content negotiation on `/health`** — Browsers get the HTML dashboard by default. `Accept: application/json` returns the full health response as JSON (200 for pass/warn, 503 for fail). Kubelet probe endpoints (`/healthz`, `/readyz`, `/startupz`) are JSON-only.
 - **Status mapping: direct constants** — go-health uses `pass`/`warn`/`fail`. We map directly to `BadgeType` constants and `FeedbackType` constants (not the deprecated `AlertType` alias).
@@ -159,6 +171,10 @@ Provides `Probe`, `Response`, `Check`, `Status`. The dashboard is a pure consume
 - `Probe.CachedResponse() Response` — reads atomic cache, overlays shutdown flag
 - `Probe.RefreshInterval() time.Duration` — returns configured refresh interval
 - `Probe.LivenessHandler()`, `Probe.ReadinessHandler()`, `Probe.StartupHandler()` — JSON HTTP handlers
+- `aggregate` sub-package (since v0.1.0) — `aggregate.New(sources...)` merges N probes into
+  one `Prober`-compatible surface for multi-service dashboards. Sources must have unique
+  non-empty names; checks land namespaced as `source/check`. Sources must eagerly invoke
+  their samber/do services or they silently health-check as pass (same gotcha as single probes).
 
 ### templ-components (`github.com/larsartmann/templ-components`)
 
