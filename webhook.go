@@ -96,6 +96,7 @@ func (n *webhookNotifier) fireOnChange(resp health.Response) {
 
 		return
 	}
+
 	n.lastStatus = resp.Status
 	n.lastFingerprint = fp
 
