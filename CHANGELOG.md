@@ -5,6 +5,30 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+Route ergonomics and observability groundwork: the WithBasePath
+ordering footgun is gone, the resolved routes are queryable, and a new
+opt-in introspection endpoint exposes the running configuration.
+
+### Compatibility
+
+- `WithBasePath` no longer mutates routes at option-run time; the
+  prefix is applied once after all options run. Code that relied on
+  `WithRoutes` after `WithBasePath` silently dropping the prefix (a
+  footgun, never a feature) will now see the prefixed routes.
+
+### Added
+
+- `Routes()` accessor: returns the dashboard's fully resolved routes
+  (defaults or `WithRoutes`, then the `WithBasePath` prefix).
+- `WithIntrospection()` + `GET /health/introspect`
+  (`Routes.Introspect`, empty disables): a deterministic JSON document
+  of the resolved configuration — version, routes, limits, modes.
+  Opt-in; configuration metadata only (never check results or names);
+  passes through the same middleware and rate limiting as other
+  dashboard-owned routes.
+
 ## [0.6.0] - 2026-09-04
 
 Integrity and watchtowers. Every dashboard write seam now sanitizes the
