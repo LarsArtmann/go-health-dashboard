@@ -93,3 +93,43 @@ func TestWithMiddleware_NonWrappedProbes(t *testing.T) {
 		t.Errorf("probe endpoint should keep working, got %d", w.Code)
 	}
 }
+
+// TestPublicMode_LeakScanner sweeps every public surface — HTML, metrics,
+// and the JSON health response — for the real service names and error
+// strings that public mode must never disclose. This is the regression
+// scanner for the 2026-09-04 pin incident class: presentation-layer leaks
+// that only appear in rendered output.
+func TestPublicMode_LeakScanner(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboardWithFailures(t,
+		dashboard.WithMetrics(true),
+		dashboard.WithPublicMode(),
+	)
+	defer s.cleanup()
+
+	// The exact secrets public mode must keep private: the real service
+	// names chosen by setupDashboardWithFailures and the error strings
+	// the unhealthy services carry.
+	secrets := []string{"database", "cache", "queue", "connection refused", "timeout"}
+
+	for _, path := range []string{"/health", "/health/metrics"} {
+		w := doRequest(t, s.mux, path)
+		if w.Code != http.StatusOK && w.Code != http.StatusServiceUnavailable {
+			t.Fatalf("%s: unexpected status %d", path, w.Code)
+		}
+
+		body := w.Body.String()
+		for _, secret := range secrets {
+			if strings.Contains(body, secret) {
+				t.Errorf("%s leaked %q in public mode:\n%.200s", path, secret, body)
+			}
+		}
+	}
+
+	// And the documented boundary holds: probes stay verbatim JSON in
+	// public mode (the kubelet is trusted infrastructure).
+	if w := doRequest(t, s.mux, "/readyz"); !strings.Contains(w.Body.String(), `"cache"`) {
+		t.Error("readyz should stay verbatim in public mode, but cache name is missing")
+	}
+}

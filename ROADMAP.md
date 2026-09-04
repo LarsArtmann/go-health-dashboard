@@ -132,22 +132,14 @@ Raw ideas:
 - Mutation-test spot check on change-detection (fingerprint) logic
 - DI-surface ideas (from the 04-41 NEXT-50, still open): example-binary e2e
   run, `BenchmarkRegister`, `do.Package` wrapper, `WithInjector` evaluation,
-  lazy `Provider` variant, the self-monitoring decision (should a registered
+  lazy `Provider` variant,
   Dashboard appear in its own health table?), robustness tests (nil
   injector/probe panics, double-`Register` override, restart-after-shutdown,
   cascade order, `HealthCheck` under live SSE, `SubscriberCount` after
   `Register`), HealthCheck↔probe aggregation, pusher-metrics exposure,
   `RegisterNamed` multi-instance, child scopes, `Explain()` output, the
   `do.Healthchecker` no-context variant, and the ProvideValue-vs-Provide ADR
-- Decide the Dashboard self-monitoring question (a registered Dashboard may
-  appear in its own health table): feature or filter?
 - Shutdown-ordering test for the example (pusher alive vs broadcaster closed)
-- API ergonomics: `Routes()` accessor for external mux wiring; store a
-  `BasePath` field and resolve routes after all options run (kills the
-  `WithRoutes`/`WithBasePath` ordering footgun)
-- docs/release-checklist.md (reconcile → changelog → version → tag → push →
-  proxy-verify → CI watch)
-- ADR: the options/handlers/history split + the error-sentinel family
 - README: coverage badge; "protect probes via network policy" note;
   screenshot regenerate one-liner + caption for the light screenshot
 - doc.go: webhook + public-mode combo example; `WithBasePath` example
@@ -210,3 +202,18 @@ Summaries in `docs/planning/archived/2026-09-03_v03-cycle-decisions-notes.md`.
   one-way push with browser-managed reconnection; WebSocket would add a
   second protocol surface (auth, proxies, reconnect logic) with no
   dashboard use case for bidirectional traffic.
+
+## Decisions (2026-09-04 v0.6.0 cycle)
+
+- **Self-monitoring: feature, keep as-is.** Empirically verified
+  (`selfmonitor_test.go`): `dashboard.Register` stores the Dashboard in the
+  injector the probe evaluates each tick, so the dashboard appears in its own
+  health table and (while running) reports itself `pass`. This is honest — a
+  not-yet-started or drained dashboard SHOULD show unhealthy. Users who do
+  not want it construct with `New` instead of `Register`. No filter option;
+  revisit only with a concrete demand signal.
+- **InstanceID UI: defer.** go-health carries `InstanceID` in its JSON only;
+  the dashboard adds no StatCard for it. Rationale: public mode would need a
+  masking rule for it, single-replica users gain nothing, and the JSON field
+  already serves load-balancer attribution. Revisit if multi-replica
+  dashboard UI demand materializes.
