@@ -101,11 +101,22 @@ func (d *Dashboard) renderMetrics() string {
 	if d.latency != nil {
 		d.latency.renderPrometheus(&b)
 	}
+
 	if d.webhookStats != nil && d.notify != nil {
 		b.WriteString("# HELP dashboard_webhook_deliveries_total Webhook deliveries by result.\n")
 		b.WriteString("# TYPE dashboard_webhook_deliveries_total counter\n")
-		fmt.Fprintf(&b, "dashboard_webhook_deliveries_total{result=%q} %d\n", "ok", d.webhookStats.ok.Load())
-		fmt.Fprintf(&b, "dashboard_webhook_deliveries_total{result=%q} %d\n", "error", d.webhookStats.err.Load())
+		fmt.Fprintf(
+			&b,
+			"dashboard_webhook_deliveries_total{result=%q} %d\n",
+			"ok",
+			d.webhookStats.ok.Load(),
+		)
+		fmt.Fprintf(
+			&b,
+			"dashboard_webhook_deliveries_total{result=%q} %d\n",
+			"error",
+			d.webhookStats.err.Load(),
+		)
 		d.webhookStats.duration.renderNamed(&b,
 			"dashboard_webhook_delivery_duration_seconds",
 			"Webhook delivery duration.",
@@ -214,7 +225,7 @@ func (h *latencyHistogram) renderNamed(b *strings.Builder, name, help string) {
 	for i, bound := range latencyBucketBounds {
 		fmt.Fprintf(
 			b,
-			"\"%s_bucket{le=\"\"%g\"\"} %d\n",
+			"%s_bucket{le=\"%g\"} %d\n",
 			name,
 			bound,
 			h.buckets[i].Load(),

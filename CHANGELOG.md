@@ -40,6 +40,10 @@ opt-in introspection endpoint exposes the running configuration.
   with a `Retry-After` header pointing past the drain window, so
   well-behaved clients reconnect instead of hammering a draining
   server.
+- With `WithMetrics(true)` and a webhook configured, the metrics
+  endpoint exposes `dashboard_webhook_deliveries_total{result="ok"|"error"}`
+  and a `dashboard_webhook_delivery_duration_seconds` histogram so
+  receiver health is observable in Prometheus.
 - `WithEmbeddedDatastarSDK()` + `GET /health/datastar.js`
   (`Routes.DatastarJS`, empty disables): serves the pinned SDK bundle
   from the `go-datastar/static` embed and points the dashboard's script

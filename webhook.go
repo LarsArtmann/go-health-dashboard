@@ -63,7 +63,7 @@ func (s *webhookDeliveryStats) record(ok bool, seconds float64) {
 }
 
 type webhookNotifier struct {
-	stats *webhookDeliveryStats
+	stats   *webhookDeliveryStats
 	url     string
 	headers map[string]string
 	public  bool
@@ -183,7 +183,10 @@ func (n *webhookNotifier) post(resp health.Response) {
 	// Drain so the connection returns to the pool.
 	_, _ = io.Copy(io.Discard, httpResp.Body)
 
-	n.stats.record(httpResp.StatusCode >= 200 && httpResp.StatusCode < 300, time.Since(start).Seconds())
+	n.stats.record(
+		httpResp.StatusCode >= 200 && httpResp.StatusCode < 300,
+		time.Since(start).Seconds(),
+	)
 }
 
 // buildPayload snapshots resp for the wire. Public mode masks check names to

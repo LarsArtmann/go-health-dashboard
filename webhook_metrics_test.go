@@ -85,7 +85,7 @@ func TestWebhookDeliveryMetrics(t *testing.T) {
 // metricValue extracts the sample value for an exact metric series line, or
 // "" when absent.
 func metricValue(scrape, series string) string {
-	for _, line := range strings.Split(scrape, "\n") {
+	for line := range strings.SplitSeq(scrape, "\n") {
 		if strings.HasPrefix(line, series+" ") {
 			fields := strings.Fields(line)
 
