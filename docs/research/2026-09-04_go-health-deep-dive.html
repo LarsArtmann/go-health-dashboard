@@ -879,9 +879,9 @@
           <h1>Is the go-health integration the best imaginable?</h1>
           <p class="subtitle">
             A capability-by-capability audit of how go-health-dashboard consumes
-            its primary dependency, github.com/larsartmann/go-health &mdash; every
-            exported API mapped, every gap graded, one real bug found and fixed
-            with a proven-failing test.
+            its primary dependency, github.com/larsartmann/go-health &mdash;
+            every exported API mapped, every gap graded, one real bug found and
+            fixed with a proven-failing test.
           </p>
           <div class="meta">
             <span class="tag amber">go-health v0.1.2 (latest tag)</span>
@@ -912,18 +912,20 @@
         <section id="summary">
           <h2><span class="num">00</span>Summary</h2>
           <p>
-            <strong>Yes &mdash; the integration architecture is the best imaginable
-            shape for Go; the execution had one real hole, now closed.</strong>
+            <strong
+              >Yes &mdash; the integration architecture is the best imaginable
+              shape for Go; the execution had one real hole, now closed.</strong
+            >
             The seam is a five-method consumer-side structural interface
             (<code>Prober</code>), which is exactly what the Go community
-            prescribes: the consumer defines what it needs, the provider satisfies
-            it implicitly, and source compatibility is proven by an untouched test
-            suite plus a stub-prober test. The aggregate pivot (v0.5.0) composed
-            instead of competed. The audit found the shape right and the
-            execution one bug short of ideal: the dashboard marshaled the raw
-            cached snapshot while go-health deliberately sanitizes invalid UTF-8
-            at its own write seams &mdash; the dashboard bypassed that protection
-            on every one of its five write paths.
+            prescribes: the consumer defines what it needs, the provider
+            satisfies it implicitly, and source compatibility is proven by an
+            untouched test suite plus a stub-prober test. The aggregate pivot
+            (v0.5.0) composed instead of competed. The audit found the shape
+            right and the execution one bug short of ideal: the dashboard
+            marshaled the raw cached snapshot while go-health deliberately
+            sanitizes invalid UTF-8 at its own write seams &mdash; the dashboard
+            bypassed that protection on every one of its five write paths.
           </p>
           <div class="callout callout-amber">
             <strong>The bottom line</strong>
@@ -942,36 +944,72 @@
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
-                <strong>Consumer-side structural <code>Prober</code> interface (dashboard.go:22-37)</strong>
-                <span>Five methods, defined on the consumer side per Go convention. <code>*health.Probe</code> and <code>*aggregate.Aggregate</code> satisfy it implicitly; the entire pre-existing suite passed untouched when the interface landed, and <code>TestNew_AcceptsCustomProber</code> pins third-party implementability.</span>
+                <strong
+                  >Consumer-side structural <code>Prober</code> interface
+                  (dashboard.go:22-37)</strong
+                >
+                <span
+                  >Five methods, defined on the consumer side per Go convention.
+                  <code>*health.Probe</code> and
+                  <code>*aggregate.Aggregate</code> satisfy it implicitly; the
+                  entire pre-existing suite passed untouched when the interface
+                  landed, and <code>TestNew_AcceptsCustomProber</code> pins
+                  third-party implementability.</span
+                >
               </div>
             </div>
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
                 <strong>One zero-cost snapshot feeds everything</strong>
-                <span><code>CachedResponse()</code> is a lock-free atomic read; the dashboard funnels it through a single choke point (<code>currentResponse</code>, dashboard.go:130) so the HTML view, JSON response, metrics, trend samples, change-detection fingerprints, and webhook payloads all share one consistent snapshot per tick.</span>
+                <span
+                  ><code>CachedResponse()</code> is a lock-free atomic read; the
+                  dashboard funnels it through a single choke point
+                  (<code>currentResponse</code>, dashboard.go:130) so the HTML
+                  view, JSON response, metrics, trend samples, change-detection
+                  fingerprints, and webhook payloads all share one consistent
+                  snapshot per tick.</span
+                >
               </div>
             </div>
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
                 <strong>Error-surface opacity by design</strong>
-                <span>The <code>Prober</code> deliberately excludes go-health's error plumbing (<code>ErrProbeUnhealthy</code>, <code>ErrPanicDuringHealthCheck</code>, evaluation hooks). The dashboard cannot leak probe internals, and probe lifecycle errors stay probe-side &mdash; a renderer should not re-implement a health-checker.</span>
+                <span
+                  >The <code>Prober</code> deliberately excludes go-health's
+                  error plumbing (<code>ErrProbeUnhealthy</code>,
+                  <code>ErrPanicDuringHealthCheck</code>, evaluation hooks). The
+                  dashboard cannot leak probe internals, and probe lifecycle
+                  errors stay probe-side &mdash; a renderer should not
+                  re-implement a health-checker.</span
+                >
               </div>
             </div>
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
                 <strong>Aggregate composition, end-to-end tested</strong>
-                <span>The v0.5.0 "integration over federation" pivot: <code>aggregate.New</code> + namespaced <code>source/check</code> keys + worst-of status, rendered natively, verified by an injector-to-HTML e2e test (<code>integration_test.go</code>) and documented in README + cookbook.</span>
+                <span
+                  >The v0.5.0 "integration over federation" pivot:
+                  <code>aggregate.New</code> + namespaced
+                  <code>source/check</code> keys + worst-of status, rendered
+                  natively, verified by an injector-to-HTML e2e test
+                  (<code>integration_test.go</code>) and documented in README +
+                  cookbook.</span
+                >
               </div>
             </div>
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
                 <strong>Zero-dependency discipline held on both sides</strong>
-                <span>The dashboard hand-rolled Prometheus exposition and the token bucket rather than growing its dependency tree; go-health keeps samber/do as its single dependency and the dashboard adds nothing beyond it.</span>
+                <span
+                  >The dashboard hand-rolled Prometheus exposition and the token
+                  bucket rather than growing its dependency tree; go-health
+                  keeps samber/do as its single dependency and the dashboard
+                  adds nothing beyond it.</span
+                >
               </div>
             </div>
           </div>
@@ -981,18 +1019,28 @@
           <h2><span class="num">01</span>Findings</h2>
 
           <div class="issue issue-critical" id="issue-1">
-            <span class="severity severity-critical">Found &amp; fixed today &middot; High impact</span>
-            <h3>Raw snapshot marshaled: invalid UTF-8 leaked past go-health's write-seam protection</h3>
-            <div class="where">handlers.go:94-110 (serveJSON) &middot; webhook.go:123-175 (buildPayload + jsonv2 marshal) &middot; fixed at dashboard.go:130 (currentResponse)</div>
+            <span class="severity severity-critical"
+              >Found &amp; fixed today &middot; High impact</span
+            >
+            <h3>
+              Raw snapshot marshaled: invalid UTF-8 leaked past go-health's
+              write-seam protection
+            </h3>
+            <div class="where">
+              handlers.go:94-110 (serveJSON) &middot; webhook.go:123-175
+              (buildPayload + jsonv2 marshal) &middot; fixed at dashboard.go:130
+              (currentResponse)
+            </div>
             <p>
-              go-health exports <code>SanitizeResponse</code> and applies it in its
-              own handlers explicitly so served bytes stay valid under
+              go-health exports <code>SanitizeResponse</code> and applies it in
+              its own handlers explicitly so served bytes stay valid under
               <em>both</em> encoding/json v1 and v2 semantics for any input
               (handlers.go:203-220 upstream). The dashboard bypassed it:
               <code>serveJSON</code> and the webhook payload marshaled the raw
-              <code>CachedResponse()</code> under <code>GOEXPERIMENT=jsonv2</code>.
-              A service-supplied check error containing invalid UTF-8 (raw network
-              garbage is a realistic error payload) produced invalid output bytes.
+              <code>CachedResponse()</code> under
+              <code>GOEXPERIMENT=jsonv2</code>. A service-supplied check error
+              containing invalid UTF-8 (raw network garbage is a realistic error
+              payload) produced invalid output bytes.
             </p>
             <pre><code>// before — raw snapshot reaches five write seams
 func (d *Dashboard) currentResponse() health.Response {
@@ -1006,41 +1054,60 @@ func (d *Dashboard) currentResponse() health.Response {
             <div class="callout callout-teal">
               <strong>Fixed &amp; proven</strong>
               <code>TestJSON_SanitizesInvalidUTF8FromStubProber</code> feeds
-              <code>ÿþ</code> through a stub prober and asserts the served
-              JSON is valid UTF-8, contains U+FFFD, and round-trips. The test was
-              run against the unfixed code and failed, then passed after the
+              <code>ÿþ</code> through a stub prober and asserts the served JSON
+              is valid UTF-8, contains U+FFFD, and round-trips. The test was run
+              against the unfixed code and failed, then passed after the
               one-line fix.
             </div>
           </div>
 
           <div class="issue issue-important" id="issue-2">
-            <span class="severity severity-important">Found &amp; fixed today &middot; Medium impact</span>
-            <h3><code>NewWithHealthCheck</code> (no-injector path) existed undocumented</h3>
-            <div class="where">go-health accessors.go:34 (v0.1.2) &middot; dashboard README "Why a Separate Repo?"</div>
+            <span class="severity severity-important"
+              >Found &amp; fixed today &middot; Medium impact</span
+            >
+            <h3>
+              <code>NewWithHealthCheck</code> (no-injector path) existed
+              undocumented
+            </h3>
+            <div class="where">
+              go-health accessors.go:34 (v0.1.2) &middot; dashboard README "Why
+              a Separate Repo?"
+            </div>
             <p>
-              go-health v0.1.2 ships <code>NewWithHealthCheck(fn HealthCheckFunc,
-              opts...)</code>: a full probe built from a plain function, no
-              samber/do injector involved. The dashboard's README framing
-              ("go-health already requires a samber/do injector") undersold this
-              path to non-do applications.
+              go-health v0.1.2 ships
+              <code>NewWithHealthCheck(fn HealthCheckFunc, opts...)</code>: a
+              full probe built from a plain function, no samber/do injector
+              involved. The dashboard's README framing ("go-health already
+              requires a samber/do injector") undersold this path to non-do
+              applications.
             </p>
             <div class="callout callout-teal">
               <strong>Fixed</strong>
-              README now documents the no-do path (<code>NewWithHealthCheck</code>
-              + <code>dashboard.New</code> + <code>Start</code>/<code>Shutdown</code>;
-              only <code>Register</code> needs an injector), and AGENTS.md's
+              README now documents the no-do path (<code
+                >NewWithHealthCheck</code
+              >
+              + <code>dashboard.New</code> +
+              <code>Start</code>/<code>Shutdown</code>; only
+              <code>Register</code> needs an injector), and AGENTS.md's
               go-health notes carry the accessor family.
             </div>
           </div>
 
           <div class="issue issue-important" id="issue-3">
-            <span class="severity severity-important">Upstream ask &middot; Medium impact</span>
-            <h3><code>StartupComplete()</code> exists on both implementations but not on <code>Prober</code></h3>
-            <div class="where">go-health probe.go &amp; aggregate &middot; dashboard.go:22-37</div>
+            <span class="severity severity-important"
+              >Upstream ask &middot; Medium impact</span
+            >
+            <h3>
+              <code>StartupComplete()</code> exists on both implementations but
+              not on <code>Prober</code>
+            </h3>
+            <div class="where">
+              go-health probe.go &amp; aggregate &middot; dashboard.go:22-37
+            </div>
             <p>
               Both <code>*Probe</code> and <code>*Aggregate</code> expose
-              <code>StartupComplete()</code>, but the dashboard's interface omits
-              it &mdash; so the UI cannot distinguish "starting up" from
+              <code>StartupComplete()</code>, but the dashboard's interface
+              omits it &mdash; so the UI cannot distinguish "starting up" from
               "pass". Keeping it off is deliberate right-sizing (adding a method
               breaks external implementers); the payoff would be a startup-aware
               banner or metric.
@@ -1053,12 +1120,20 @@ func (d *Dashboard) currentResponse() health.Response {
           </div>
 
           <div class="issue issue-important" id="issue-4">
-            <span class="severity severity-important">Upstream gap &middot; Medium impact</span>
-            <h3><code>Aggregate</code> does not participate in samber/do lifecycle cascades</h3>
-            <div class="where">go-health aggregate package (v0.1.2 surface)</div>
+            <span class="severity severity-important"
+              >Upstream gap &middot; Medium impact</span
+            >
+            <h3>
+              <code>Aggregate</code> does not participate in samber/do lifecycle
+              cascades
+            </h3>
+            <div class="where">
+              go-health aggregate package (v0.1.2 surface)
+            </div>
             <p>
-              <code>*Probe</code> implements <code>do.HealthcheckerWithContext</code>
-              and <code>do.Shutdowner</code>; <code>*Aggregate</code> implements
+              <code>*Probe</code> implements
+              <code>do.HealthcheckerWithContext</code> and
+              <code>do.Shutdowner</code>; <code>*Aggregate</code> implements
               neither, so a registered aggregate is invisible to container-wide
               <code>do.HealthCheck</code>/<code>do.Shutdown</code> cascades even
               though it merges probes that do participate.
@@ -1072,9 +1147,14 @@ func (d *Dashboard) currentResponse() health.Response {
           </div>
 
           <div class="issue issue-nice" id="issue-5">
-            <span class="severity severity-nice">Upstream ask &middot; Low impact</span>
+            <span class="severity severity-nice"
+              >Upstream ask &middot; Low impact</span
+            >
             <h3>Status severity ordering is re-encoded by every consumer</h3>
-            <div class="where">go-health types.go (plain string type) &middot; dashboard trend values + metrics statusValue &middot; aggregate worstOf</div>
+            <div class="where">
+              go-health types.go (plain string type) &middot; dashboard trend
+              values + metrics statusValue &middot; aggregate worstOf
+            </div>
             <p>
               <code>Status</code> ships three constants and no ordering. The
               aggregate's unexported <code>worstOf</code>, the dashboard's trend
@@ -1086,24 +1166,35 @@ func (d *Dashboard) currentResponse() health.Response {
           </div>
 
           <div class="issue issue-nice" id="issue-6">
-            <span class="severity severity-nice">Nice to have &middot; Low impact</span>
-            <h3>Cookbook could recommend probe-side option combos; <code>InstanceID</code> is UI-invisible</h3>
-            <div class="where">go-health probe options &middot; docs/integrations.md &middot; view StatCards</div>
+            <span class="severity severity-nice"
+              >Nice to have &middot; Low impact</span
+            >
+            <h3>
+              Cookbook could recommend probe-side option combos;
+              <code>InstanceID</code> is UI-invisible
+            </h3>
+            <div class="where">
+              go-health probe options &middot; docs/integrations.md &middot;
+              view StatCards
+            </div>
             <p>
               <code>WithGETOnly</code>, <code>WithAllowedMethods</code>,
               <code>WithLiveThrottle</code>, <code>WithEvaluationHook</code>,
-              <code>WithHealthRecorder</code>, and <code>WithInstanceID</code> are
-              all relevant to dashboard deployments but appear in no recipe. The
-              UI renders Version/Uptime StatCards but ignores
-              <code>Response.InstanceID</code> &mdash; and aggregate pages show
-              empty scalars entirely (a known open question from the v0.5.0
-              report).
+              <code>WithHealthRecorder</code>, and
+              <code>WithInstanceID</code> are all relevant to dashboard
+              deployments but appear in no recipe. The UI renders Version/Uptime
+              StatCards but ignores <code>Response.InstanceID</code> &mdash; and
+              aggregate pages show empty scalars entirely (a known open question
+              from the v0.5.0 report).
             </p>
           </div>
         </section>
 
         <section id="proposal">
-          <h2><span class="num">02</span>Target state (reached today, minus upstream asks)</h2>
+          <h2>
+            <span class="num">02</span>Target state (reached today, minus
+            upstream asks)
+          </h2>
           <pre><code>// The seam, as of this audit:
 type Prober interface {            // consumer-side, five methods, stable
     CachedResponse() health.Response
@@ -1127,29 +1218,115 @@ func (d *Dashboard) currentResponse() health.Response {
         </section>
 
         <section id="appendix">
-          <h2><span class="num">03</span>Capability matrix &amp; methodology</h2>
+          <h2>
+            <span class="num">03</span>Capability matrix &amp; methodology
+          </h2>
           <table class="compare">
             <thead>
-              <tr><th>go-health capability</th><th>Dashboard adoption</th><th>Evidence</th><th>Status</th></tr>
+              <tr>
+                <th>go-health capability</th>
+                <th>Dashboard adoption</th>
+                <th>Evidence</th>
+                <th>Status</th>
+              </tr>
             </thead>
             <tbody>
-              <tr><td><code>New</code> + options (probe construction)</td><td>Tests, example, README</td><td>33 call sites</td><td class="yes">Fully leveraged</td></tr>
-              <tr><td><code>CachedResponse</code> (lock-free snapshot)</td><td>Single choke point, all seams</td><td>dashboard.go:130</td><td class="yes">Fully leveraged</td></tr>
-              <tr><td>Liveness/Readiness/Startup handlers</td><td>Wired via <code>RegisterRoutes</code></td><td>handlers.go</td><td class="yes">Fully leveraged</td></tr>
-              <tr><td><code>Status</code> constants + type</td><td>Direct mapping to badges/feedback</td><td>status.go</td><td class="yes">Fully leveraged</td></tr>
-              <tr><td><code>Response</code>/<code>Check</code> wire types</td><td>JSON, view, metrics, trend, webhook</td><td>28 files</td><td class="yes">Fully leveraged</td></tr>
-              <tr><td><code>aggregate</code> package</td><td>Native rendering + e2e test</td><td>integration_test.go</td><td class="yes">Fully leveraged</td></tr>
-              <tr><td><code>SanitizeResponse</code></td><td>Applied at choke point</td><td>fixed this audit</td><td class="no">Was missed &rarr; fixed</td></tr>
-              <tr><td><code>NewWithHealthCheck</code> (no-do)</td><td>Documented in README</td><td>fixed this audit</td><td class="no">Was missed &rarr; fixed</td></tr>
-              <tr><td><code>StartupComplete()</code></td><td>Not in <code>Prober</code></td><td>roadmap decision</td><td class="no">Routed</td></tr>
-              <tr><td>Aggregate do-lifecycle</td><td>n/a (upstream)</td><td>upstream ask</td><td class="no">Routed</td></tr>
-              <tr><td>Status severity ordering</td><td>re-encoded locally</td><td>upstream ask</td><td class="no">Routed</td></tr>
-              <tr><td><code>Status()</code>/<code>Alive()</code>/<code>Ready()</code> accessors</td><td>deliberately unused (one-snapshot design)</td><td>AGENTS.md</td><td class="yes">N/A by design</td></tr>
-              <tr><td>Sentinel errors (<code>ErrProbeUnhealthy</code>&hellip;)</td><td>intentionally opaque behind <code>Prober</code></td><td>interface design</td><td class="yes">N/A by design</td></tr>
-              <tr><td>Probe-side knobs (<code>WithGETOnly</code>, hooks, throttle)</td><td>cookbook recipes pending</td><td>docs opportunity</td><td class="no">Routed</td></tr>
+              <tr>
+                <td><code>New</code> + options (probe construction)</td>
+                <td>Tests, example, README</td>
+                <td>33 call sites</td>
+                <td class="yes">Fully leveraged</td>
+              </tr>
+              <tr>
+                <td><code>CachedResponse</code> (lock-free snapshot)</td>
+                <td>Single choke point, all seams</td>
+                <td>dashboard.go:130</td>
+                <td class="yes">Fully leveraged</td>
+              </tr>
+              <tr>
+                <td>Liveness/Readiness/Startup handlers</td>
+                <td>Wired via <code>RegisterRoutes</code></td>
+                <td>handlers.go</td>
+                <td class="yes">Fully leveraged</td>
+              </tr>
+              <tr>
+                <td><code>Status</code> constants + type</td>
+                <td>Direct mapping to badges/feedback</td>
+                <td>status.go</td>
+                <td class="yes">Fully leveraged</td>
+              </tr>
+              <tr>
+                <td><code>Response</code>/<code>Check</code> wire types</td>
+                <td>JSON, view, metrics, trend, webhook</td>
+                <td>28 files</td>
+                <td class="yes">Fully leveraged</td>
+              </tr>
+              <tr>
+                <td><code>aggregate</code> package</td>
+                <td>Native rendering + e2e test</td>
+                <td>integration_test.go</td>
+                <td class="yes">Fully leveraged</td>
+              </tr>
+              <tr>
+                <td><code>SanitizeResponse</code></td>
+                <td>Applied at choke point</td>
+                <td>fixed this audit</td>
+                <td class="no">Was missed &rarr; fixed</td>
+              </tr>
+              <tr>
+                <td><code>NewWithHealthCheck</code> (no-do)</td>
+                <td>Documented in README</td>
+                <td>fixed this audit</td>
+                <td class="no">Was missed &rarr; fixed</td>
+              </tr>
+              <tr>
+                <td><code>StartupComplete()</code></td>
+                <td>Not in <code>Prober</code></td>
+                <td>roadmap decision</td>
+                <td class="no">Routed</td>
+              </tr>
+              <tr>
+                <td>Aggregate do-lifecycle</td>
+                <td>n/a (upstream)</td>
+                <td>upstream ask</td>
+                <td class="no">Routed</td>
+              </tr>
+              <tr>
+                <td>Status severity ordering</td>
+                <td>re-encoded locally</td>
+                <td>upstream ask</td>
+                <td class="no">Routed</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>Status()</code>/<code>Alive()</code>/<code
+                    >Ready()</code
+                  >
+                  accessors
+                </td>
+                <td>deliberately unused (one-snapshot design)</td>
+                <td>AGENTS.md</td>
+                <td class="yes">N/A by design</td>
+              </tr>
+              <tr>
+                <td>
+                  Sentinel errors (<code>ErrProbeUnhealthy</code>&hellip;)
+                </td>
+                <td>intentionally opaque behind <code>Prober</code></td>
+                <td>interface design</td>
+                <td class="yes">N/A by design</td>
+              </tr>
+              <tr>
+                <td>
+                  Probe-side knobs (<code>WithGETOnly</code>, hooks, throttle)
+                </td>
+                <td>cookbook recipes pending</td>
+                <td>docs opportunity</td>
+                <td class="no">Routed</td>
+              </tr>
             </tbody>
           </table>
-          <p style="margin-top:1.2rem">
+          <p style="margin-top: 1.2rem">
             <strong>Method:</strong> every go-health import in the dashboard
             enumerated (28 files, 12 distinct API symbols + the aggregate
             package); the full exported surface of go-health v0.1.2 mapped from
@@ -1163,8 +1340,8 @@ func (d *Dashboard) currentResponse() health.Response {
           <p>
             Generated 2026-09-04 &middot; Reviewed against go-health v0.1.2
             (module cache) and dashboard master &middot; All claims verified
-            against source; the sanitization finding includes a
-            proven-failing regression test
+            against source; the sanitization finding includes a proven-failing
+            regression test
           </p>
         </footer>
       </main>

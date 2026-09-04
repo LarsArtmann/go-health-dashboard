@@ -38,7 +38,7 @@ Verified: `rg -l "no content negotiation" README.md AGENTS.md doc.go` returns **
 | `docs/status/archived/2026-08-08_07-22_sse-rewrite-fixes-seven-mistakes.md`       | Added SUPERSEDED banner; all 8 "NOT STARTED" items resolved inline                                                        |
 | `docs/status/archived/2026-08-08_07-58_content-negotiation-and-session-review.md` | Added "Open items harvested" banner                                                                                       |
 | `docs/planning/archived/2026-08-08_02-46-go-health-dashboard.md`                  | Status changed from PLANNING to EXECUTED with cross-references                                                            |
-| `docs/feedback/archived/2026-08-08_seven-planning-mistakes.md`                         | Moved to `docs/feedback/archived/` via `git mv`                                                                           |
+| `docs/feedback/archived/2026-08-08_seven-planning-mistakes.md`                    | Moved to `docs/feedback/archived/` via `git mv`                                                                           |
 | `docs/feedback/new/` directory                                                    | Removed (empty)                                                                                                           |
 
 ### CONTRIBUTING.md updated
