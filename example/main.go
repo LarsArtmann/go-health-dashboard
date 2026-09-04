@@ -16,6 +16,8 @@
 //	DEMO_DRAIN=5s                graceful SSE drain window on shutdown
 //	DEMO_PUBLIC=1                public status-page mode (WithPublicMode)
 //	DEMO_BASE_PATH=/status       mount the dashboard under a sub-path (WithBasePath)
+//	DEMO_AGGREGATE=1             serve a two-probe aggregate instead of one probe (go-health aggregate)
+//	DEMO_WEBHOOK=<url>           POST transitions to this receiver (WithWebhook)
 //	PORT=8080                    listen address
 package main
 
@@ -34,6 +36,7 @@ import (
 	"time"
 
 	health "github.com/larsartmann/go-health"
+	"github.com/larsartmann/go-health/aggregate"
 	dashboard "github.com/larsartmann/go-health-dashboard"
 	"github.com/samber/do/v2"
 )
@@ -45,24 +48,8 @@ func main() {
 	injector := do.New()
 	defer func() { _ = injector.Shutdown() }()
 
-	registerService(injector, "postgres", &alwaysHealthy{})
-	registerService(injector, "redis", &flappingService{failEvery: 15 * time.Second})
-	registerService(
-		injector,
-		"metrics-exporter",
-		&alwaysFailing{reason: "exporter endpoint unreachable"},
-	)
-
-	probe := health.New(injector,
-		health.WithVersion("1.2.3"),
-		health.WithCriticalServices("postgres", "redis"),
-		health.WithRefreshInterval(2*time.Second),
-	)
-
-	if err := probe.Start(ctx); err != nil {
-		log.Fatalf("probe.Start: %v", err)
-	}
-	defer probe.Shutdown()
+	probe, shutdownProbe := buildProbe(ctx, injector)
+	defer shutdownProbe()
 
 	// Assemble the option set from environment toggles so every feature can
 	// be demonstrated without code changes.
@@ -105,6 +92,73 @@ func main() {
 	}
 }
 
+// buildProbe constructs the health probe the dashboard renders. With
+// DEMO_AGGREGATE=1 it builds two independent probes (api + worker service
+// groups) and merges them with go-health's aggregate — demonstrating the
+// multi-service dashboard from AGENTS.md — otherwise it builds the classic
+// single probe. The returned shutdown func stops whichever probe was built.
+func buildProbe(ctx context.Context, injector *do.RootScope) (dashboard.Prober, func()) {
+	if os.Getenv("DEMO_AGGREGATE") == "" {
+		registerService(injector, "postgres", &alwaysHealthy{})
+		registerService(injector, "redis", &flappingService{failEvery: 15 * time.Second})
+		registerService(
+			injector,
+			"metrics-exporter",
+			&alwaysFailing{reason: "exporter endpoint unreachable"},
+		)
+
+		probe := health.New(injector,
+			health.WithVersion("1.2.3"),
+			health.WithCriticalServices("postgres", "redis"),
+			health.WithRefreshInterval(2*time.Second),
+		)
+
+		if err := probe.Start(ctx); err != nil {
+			log.Fatalf("probe.Start: %v", err)
+		}
+
+		return probe, probe.Shutdown
+	}
+
+	// Aggregate mode: two probes over disjoint service groups. Sources must
+	// have unique, slash-free names (go-health v0.1.3 contract).
+	apiInjector := do.New()
+	registerService(apiInjector, "postgres", &alwaysHealthy{})
+	registerService(apiInjector, "redis", &flappingService{failEvery: 15 * time.Second})
+
+	workerInjector := do.New()
+	registerService(workerInjector, "metrics-exporter", &alwaysFailing{reason: "exporter endpoint unreachable"})
+
+	apiProbe := health.New(apiInjector,
+		health.WithVersion("1.2.3"),
+		health.WithCriticalServices("postgres"),
+		health.WithRefreshInterval(2*time.Second),
+	)
+	workerProbe := health.New(workerInjector,
+		health.WithRefreshInterval(2*time.Second),
+	)
+
+	agg, err := aggregate.New(
+		aggregate.NamedSource("api", apiProbe),
+		aggregate.NamedSource("worker", workerProbe),
+	)
+	if err != nil {
+		log.Fatalf("aggregate.New: %v", err)
+	}
+
+	if err := apiProbe.Start(ctx); err != nil {
+		log.Fatalf("api probe.Start: %v", err)
+	}
+	if err := workerProbe.Start(ctx); err != nil {
+		log.Fatalf("worker probe.Start: %v", err)
+	}
+
+	return agg, func() {
+		apiProbe.Shutdown()
+		workerProbe.Shutdown()
+	}
+}
+
 // buildOptions assembles the demo option set from environment toggles so
 // every feature can be demonstrated without code changes.
 func buildOptions() []dashboard.Option {
@@ -139,6 +193,11 @@ func buildOptions() []dashboard.Option {
 
 		opts = append(opts, dashboard.WithRateLimit(maxReqs, window))
 		log.Printf("rate limit: enabled on dashboard routes")
+	}
+
+	if url := os.Getenv("DEMO_WEBHOOK"); url != "" {
+		opts = append(opts, dashboard.WithWebhook(url))
+		log.Printf("webhook: transitions POST to %s (DEMO_WEBHOOK set)", url)
 	}
 
 	if os.Getenv("DEMO_PUBLIC") != "" {
