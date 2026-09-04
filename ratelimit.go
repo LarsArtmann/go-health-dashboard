@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"encoding/json/v2"
 	"math"
 	"net/http"
 	"strconv"
@@ -78,6 +79,22 @@ func (d *Dashboard) applyRateLimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !limiter.Allow() {
 			w.Header().Set("Retry-After", strconv.Itoa(limiter.retryAfter()))
+			if wantsJSON(r) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusTooManyRequests)
+
+				body, _ := json.Marshal(
+					rateLimitBody{
+						Error:      "dashboard: rate limit exceeded",
+						RetryAfter: limiter.retryAfter(),
+					},
+					json.Deterministic(true),
+				)
+				_, _ = w.Write(body)
+
+				return
+			}
+
 			http.Error(w, "dashboard: rate limit exceeded", http.StatusTooManyRequests)
 
 			return
@@ -85,4 +102,12 @@ func (d *Dashboard) applyRateLimit(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// rateLimitBody is the JSON document served to JSON-negotiating clients on
+// 429 (WithRateLimit). retry_after mirrors the Retry-After header in
+// seconds.
+type rateLimitBody struct {
+	Error      string `json:"error"`
+	RetryAfter int    `json:"retry_after"`
 }

@@ -2,7 +2,9 @@ package dashboard
 
 import (
 	"context"
+	"math"
 	"net/http"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -205,6 +207,12 @@ func (p *pusher) atCapacity(w http.ResponseWriter) bool {
 func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
 	push := d.push.Load()
 	if push == nil {
+		// A configured shutdown drain means the 503 is temporary: tell
+		// well-behaved clients to come back after the drain window.
+		if d.cfg.ShutdownDrain > 0 {
+			w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(d.cfg.ShutdownDrain.Seconds()))))
+		}
+
 		http.Error(w, "dashboard: SSE push is not active", http.StatusServiceUnavailable)
 
 		return
