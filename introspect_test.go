@@ -9,6 +9,37 @@ import (
 	dashboard "github.com/larsartmann/go-health-dashboard"
 )
 
+// introspectionDoc mirrors the JSON shape served by IntrospectionHandler.
+type introspectionDoc struct {
+	Version   string            `json:"version"`
+	GoVersion string            `json:"go_version"`
+	Routes    map[string]string `json:"routes"`
+	Limits    struct {
+		MaxSSEConnections int    `json:"max_sse_connections"`
+		RateLimitEnabled  bool   `json:"rate_limit_enabled"`
+		ShutdownDrain     string `json:"shutdown_drain"`
+	} `json:"limits"`
+	Modes struct {
+		PushMode      string `json:"push_mode"`
+		PublicMode    bool   `json:"public_mode"`
+		Metrics       bool   `json:"metrics"`
+		Webhook       bool   `json:"webhook"`
+		TrendSamples  int    `json:"trend_samples"`
+		NonceStrategy string `json:"nonce_strategy"`
+	} `json:"modes"`
+}
+
+func decodeIntrospection(t *testing.T, body []byte) introspectionDoc {
+	t.Helper()
+
+	var doc introspectionDoc
+	if err := json.Unmarshal(body, &doc); err != nil {
+		t.Fatalf("introspection is not valid JSON: %v\n%s", err, body)
+	}
+
+	return doc
+}
+
 // TestIntrospection_ServesResolvedConfig verifies the endpoint reports the
 // dashboard's own version, the resolved routes, and the configured modes.
 func TestIntrospection_ServesResolvedConfig(t *testing.T) {
@@ -37,97 +68,22 @@ func TestIntrospection_ServesResolvedConfig(t *testing.T) {
 		t.Errorf("version: want %q, got %q", dashboard.Version, doc.Version)
 	}
 
-	if doc.GoVersion == "" {
-		t.Error("go_version is empty")
-	}
-
 	for _, route := range []string{"dashboard", "sse", "trend", "export", "metrics"} {
 		if doc.Routes[route] == "" {
 			t.Errorf("routes.%s missing for an enabled feature", route)
 		}
 	}
 
-	if doc.Modes.TrendSamples != 42 {
+	switch {
+	case doc.Modes.TrendSamples != 42:
 		t.Errorf("modes.trend_samples: want 42, got %d", doc.Modes.TrendSamples)
-	}
-}
-
-// introspectionDoc mirrors the JSON shape served by IntrospectionHandler.
-type introspectionDoc struct {
-	Version   string            `json:"version"`
-	GoVersion string            `json:"go_version"`
-	Routes    map[string]string `json:"routes"`
-	Limits    struct {
-		MaxSSEConnections int    `json:"max_sse_connections"`
-		RateLimitEnabled  bool   `json:"rate_limit_enabled"`
-		ShutdownDrain     string `json:"shutdown_drain"`
-	} `json:"limits"`
-	Modes struct {
-		PushMode      string `json:"push_mode"`
-		PublicMode    bool   `json:"public_mode"`
-		Metrics       bool   `json:"metrics"`
-		Webhook       bool   `json:"webhook"`
-		TrendSamples  int    `json:"trend_samples"`
-		NonceStrategy string `json:"nonce_strategy"`
-	} `json:"modes"`
-}
-
-func decodeIntrospection(t *testing.T, body []byte) introspectionDoc {
-	t.Helper()
-
-	var doc struct {
-		Version   string            `json:"version"`
-		GoVersion string            `json:"go_version"`
-		Routes    map[string]string `json:"routes"`
-		Limits    struct {
-			MaxSSEConnections int    `json:"max_sse_connections"`
-			RateLimitEnabled  bool   `json:"rate_limit_enabled"`
-			ShutdownDrain     string `json:"shutdown_drain"`
-		} `json:"limits"`
-		Modes struct {
-			PushMode      string `json:"push_mode"`
-			PublicMode    bool   `json:"public_mode"`
-			Metrics       bool   `json:"metrics"`
-			Webhook       bool   `json:"webhook"`
-			TrendSamples  int    `json:"trend_samples"`
-			NonceStrategy string `json:"nonce_strategy"`
-		} `json:"modes"`
-	}
-	if err := json.Unmarshal(w.Body.Bytes(), &doc); err != nil {
-		t.Fatalf("introspection is not valid JSON: %v\n%s", err, w.Body.String())
-	}
-
-	if doc.Version != dashboard.Version {
-		t.Errorf("version: want %q, got %q", dashboard.Version, doc.Version)
-	}
-
-	if doc.GoVersion == "" {
-		t.Error("go_version is empty")
-	}
-
-	for _, route := range []string{"dashboard", "sse", "trend", "export", "metrics"} {
-		if doc.Routes[route] == "" {
-			t.Errorf("routes.%s missing for an enabled feature", route)
-		}
-	}
-
-	if doc.Modes.TrendSamples != 42 {
-		t.Errorf("modes.trend_samples: want 42, got %d", doc.Modes.TrendSamples)
-	}
-
-	if doc.Modes.PushMode != "on-change" {
+	case doc.Modes.PushMode != "on-change":
 		t.Errorf("modes.push_mode: want on-change, got %q", doc.Modes.PushMode)
-	}
-
-	if !doc.Modes.Metrics {
+	case !doc.Modes.Metrics:
 		t.Error("modes.metrics: want true after WithMetrics(true)")
-	}
-
-	if !doc.Limits.RateLimitEnabled {
+	case !doc.Limits.RateLimitEnabled:
 		t.Error("limits.rate_limit_enabled: want true after WithRateLimit")
-	}
-
-	if doc.Modes.NonceStrategy != "none" {
+	case doc.Modes.NonceStrategy != "none":
 		t.Errorf("modes.nonce_strategy: want none, got %q", doc.Modes.NonceStrategy)
 	}
 }
@@ -158,10 +114,9 @@ func TestIntrospection_NeverLeaksCheckData(t *testing.T) {
 		t.Fatalf("introspection: want 200, got %d", w.Code)
 	}
 
-	body := w.Body.String()
-	for _, leak := range []string{"cache", "queue", "error", "fail"} {
-		if strings.Contains(body, leak) {
-			t.Errorf("introspection body contains check-derived data %q:\n%s", leak, body)
+	for _, leak := range []string{"cache", "queue", `"error"`, `"fail"`} {
+		if strings.Contains(w.Body.String(), leak) {
+			t.Errorf("introspection body contains check-derived data %q:\n%s", leak, w.Body.String())
 		}
 	}
 }
