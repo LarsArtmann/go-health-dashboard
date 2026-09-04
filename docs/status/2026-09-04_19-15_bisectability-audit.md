@@ -11,13 +11,13 @@ create a detached worktree, run `GOEXPERIMENT=jsonv2 GOWORK=off go build
 snapshots taken mid-edit (pushed history, immutable). Tagged releases
 (`v0.4.0` = `8f63d85`, `v0.5.0` = `ed650bf`) build.
 
-| Commit      | Date       | Build error                                                             |
-| ----------- | ---------- | ----------------------------------------------------------------------- |
-| `fb9d0de`   | 2026-09-03 | `status.go:264` — `health.Status` passed where `string` expected        |
-| `72783fc`   | 2026-09-03 | missing `sync/atomic` import (previously known, AGENTS.md)              |
-| `61f18a3`   | 2026-09-03 | `trend.go` — `time` import declared twice                               |
-| `49f4eb9`   | 2026-09-04 | `dashboard.go` — `webhookNotifier` undefined; unused import in `di.go`  |
-| `ed2b759`   | 2026-09-04 | `wantsJSON` declared in both `dashboard.go` and `handlers.go` (mid-split snapshot) |
+| Commit    | Date       | Build error                                                                        |
+| --------- | ---------- | ---------------------------------------------------------------------------------- |
+| `fb9d0de` | 2026-09-03 | `status.go:264` — `health.Status` passed where `string` expected                   |
+| `72783fc` | 2026-09-03 | missing `sync/atomic` import (previously known, AGENTS.md)                         |
+| `61f18a3` | 2026-09-03 | `trend.go` — `time` import declared twice                                          |
+| `49f4eb9` | 2026-09-04 | `dashboard.go` — `webhookNotifier` undefined; unused import in `di.go`             |
+| `ed2b759` | 2026-09-04 | `wantsJSON` declared in both `dashboard.go` and `handlers.go` (mid-split snapshot) |
 
 ## Guidance
 

@@ -33,91 +33,91 @@ exports them once.
 
 ### 1% → 51% of result
 
-| Task | Why it is the 1% |
-|---|---|
+| Task                                                     | Why it is the 1%                                                                                                                                                        |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `docs/integrations.md` cookbook (Gatus + SigNoz recipes) | SigNoz/Gatus work **today** against the existing endpoints with zero code. Documenting the validated semantic mapping is the entire "integrate, don't compete" product. |
 
 ### 4% → 64% of result (the 1% plus)
 
-| Task | Increment |
-|---|---|
+| Task                                             | Increment                                                                                                                                                       |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `WithWebhook` + `WithWebhookHeaders` (dashboard) | Push path: transitions reach PapDashboard-style ingests / n8n / custom receivers without Gatus's fragile `[PLACEHOLDER]` templates. ~90 lines, `net/http` only. |
 
 ### 20% → 80% of result (the 4% plus)
 
-| Task | Increment |
-|---|---|
-| go-health `aggregate` package | In-process multi-service page: N probes → one `Response` (worst-of, namespaced checks). Probe-domain primitive, useful far beyond the dashboard. |
-| dashboard `Prober` interface | Unlocks the aggregate (and test stubs) without breaking `*health.Probe` callers. |
-| go-health v0.1.0 release + dashboard dep bump | Makes the aggregate consumable without `replace` directives. |
-| Cross-repo AGENTS.md/CHANGELOG/README updates | Future sessions inherit the decisions; users discover the features. |
+| Task                                          | Increment                                                                                                                                        |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| go-health `aggregate` package                 | In-process multi-service page: N probes → one `Response` (worst-of, namespaced checks). Probe-domain primitive, useful far beyond the dashboard. |
+| dashboard `Prober` interface                  | Unlocks the aggregate (and test stubs) without breaking `*health.Probe` callers.                                                                 |
+| go-health v0.1.0 release + dashboard dep bump | Makes the aggregate consumable without `replace` directives.                                                                                     |
+| Cross-repo AGENTS.md/CHANGELOG/README updates | Future sessions inherit the decisions; users discover the features.                                                                              |
 
 ### Remaining 80% → 100% (explicitly out of scope or deferred)
 
-| Item | Status | Reason |
-|---|---|---|
-| `WithGrouping(BySource)` view option | Deferred (next cycle) | View polish on an unreleased aggregate; severity grouping already works with namespaced keys. |
-| `/health/monitor.json` manifest endpoint | Rejected for now | Paths/metric names are conventional; a manifest is permanent public API for marginal value. |
-| `go-health-otel` OTLP module | Deferred | Prometheus surface already reaches SigNoz via OTel collector. New module, never core deps. |
-| SystemNix `lib/go-health.nix` generator | Sibling repo, next session | Consumes the cookbook; not this codebase. |
-| statuspage.io / PagerDuty adapters | Never in core | Consumer-land payload mappers over the generic webhook. |
-| Remote federation / public status-page mode | Never | Dead per strategy; `WithPublicMode` covers anonymization. |
+| Item                                        | Status                     | Reason                                                                                        |
+| ------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------- |
+| `WithGrouping(BySource)` view option        | Deferred (next cycle)      | View polish on an unreleased aggregate; severity grouping already works with namespaced keys. |
+| `/health/monitor.json` manifest endpoint    | Rejected for now           | Paths/metric names are conventional; a manifest is permanent public API for marginal value.   |
+| `go-health-otel` OTLP module                | Deferred                   | Prometheus surface already reaches SigNoz via OTel collector. New module, never core deps.    |
+| SystemNix `lib/go-health.nix` generator     | Sibling repo, next session | Consumes the cookbook; not this codebase.                                                     |
+| statuspage.io / PagerDuty adapters          | Never in core              | Consumer-land payload mappers over the generic webhook.                                       |
+| Remote federation / public status-page mode | Never                      | Dead per strategy; `WithPublicMode` covers anonymization.                                     |
 
 ---
 
 ## Comprehensive Plan (30–100 min tasks, sorted by impact/effort/customer-value)
 
-| # | Task | Repo | Est. | Impact | Effort | Value | Depends on |
-|---|---|---|---|---|---|---|---|
-| 1 | Write this plan file with execution graph | dashboard | 45min | High | Low | High | — |
-| 2 | go-health `aggregate` package (types, merge, handlers) | go-health | 60min | High | Med | High | 1 |
-| 3 | go-health `aggregate` test suite (construction, merge matrix, handlers, race) | go-health | 45min | High | Med | High | 2 |
-| 4 | go-health docs (CHANGELOG, AGENTS.md, README) + release v0.1.0 (tag + push) | go-health | 60min | High | Med | High | 3 |
-| 5 | dashboard `Prober` interface (`New`, `Register`, `resolvePushInterval`, field) | dashboard | 30min | High | Low | High | 4 |
-| 6 | dashboard `WithWebhook`/`WithWebhookHeaders` + notifier + pusher hook | dashboard | 60min | High | Med | High | 5 |
-| 7 | dashboard tests: webhook behavior, stub prober, aggregate e2e | dashboard | 45min | High | Med | High | 6 |
-| 8 | `docs/integrations.md` cookbook (Gatus, SigNoz, Kuma, webhook schema) | dashboard | 45min | High | Low | **Highest** | 6 |
-| 9 | README + AGENTS.md cross-repo documentation | both | 30min | Med | Low | Med | 7,8 |
-| 10 | Full verification, detailed commits, push both repos | both | 45min | High | Low | High | 9 |
+| #  | Task                                                                           | Repo      | Est.  | Impact | Effort | Value       | Depends on |
+| -- | ------------------------------------------------------------------------------ | --------- | ----- | ------ | ------ | ----------- | ---------- |
+| 1  | Write this plan file with execution graph                                      | dashboard | 45min | High   | Low    | High        | —          |
+| 2  | go-health `aggregate` package (types, merge, handlers)                         | go-health | 60min | High   | Med    | High        | 1          |
+| 3  | go-health `aggregate` test suite (construction, merge matrix, handlers, race)  | go-health | 45min | High   | Med    | High        | 2          |
+| 4  | go-health docs (CHANGELOG, AGENTS.md, README) + release v0.1.0 (tag + push)    | go-health | 60min | High   | Med    | High        | 3          |
+| 5  | dashboard `Prober` interface (`New`, `Register`, `resolvePushInterval`, field) | dashboard | 30min | High   | Low    | High        | 4          |
+| 6  | dashboard `WithWebhook`/`WithWebhookHeaders` + notifier + pusher hook          | dashboard | 60min | High   | Med    | High        | 5          |
+| 7  | dashboard tests: webhook behavior, stub prober, aggregate e2e                  | dashboard | 45min | High   | Med    | High        | 6          |
+| 8  | `docs/integrations.md` cookbook (Gatus, SigNoz, Kuma, webhook schema)          | dashboard | 45min | High   | Low    | **Highest** | 6          |
+| 9  | README + AGENTS.md cross-repo documentation                                    | both      | 30min | Med    | Low    | Med         | 7,8        |
+| 10 | Full verification, detailed commits, push both repos                           | both      | 45min | High   | Low    | High        | 9          |
 
 ## Micro Plan (≤12 min tasks, ALL todos, execution order)
 
-| # | Task | Est | Verify by |
-|---|---|---|---|
-| A1 | Plan file with mermaid graph (this document) | 12m | exists, graph renders |
-| B1 | `aggregate.go`: `Source`, `Aggregate`, `New` + validation (empty, dup names) | 12m | compiles |
-| B2 | `worstOf` + merged `CachedResponse` (namespaced checks, shutdown, latency max) | 12m | compiles |
-| B3 | `RefreshInterval` (max) + `StartupComplete` (AND latch) | 6m | compiles |
-| B4 | `LivenessHandler` (200 pass) + `ReadinessHandler` (merged, 503 on fail) | 12m | compiles |
-| B5 | `StartupHandler` (503 until all complete) + `RegisterRoutes` | 12m | compiles |
-| B6 | Tests: construction (empty/dup/single-source) | 12m | `go test` |
-| B7 | Tests: merge matrix (fail>warn>pass, namespacing, shutdown overlay, latency/refresh) | 12m | `go test` |
-| B8 | Tests: handlers (200/503, startup latch, GET body shape) | 12m | `go test` |
-| B9 | Build + test + race (GOEXPERIMENT=jsonv2, GOWORK=off) | 12m | all green |
-| B10 | vet + lint (go-health flake apps) | 6m | clean |
-| B11 | CHANGELOG `[Unreleased]`, AGENTS.md, README section | 12m | docs accurate |
-| B12a | Load go-release skill; pre-release verification | 12m | checklist done |
-| B12b | Cut v0.1.0 in CHANGELOG, annotated tag, push + tags | 12m | tag on origin |
-| B12c | Verify module proxy / `go get` resolves v0.1.0 | 12m | dashboard can bump |
-| C1 | `Prober` interface; switch `Dashboard.probe`, `New`, `resolvePushInterval`, `di.Register` | 12m | compiles |
-| C2 | Build + existing dashboard tests stay green (source compatibility proof) | 6m | all green |
-| C3 | Stub-prober test: `New` accepts non-`*health.Probe` | 12m | test passes |
-| D1 | `webhook.go`: payload types, public-mode masking, POST with headers + timeout | 12m | compiles |
-| D2 | `Config.Webhook*` fields + `WithWebhook` + `WithWebhookHeaders` | 12m | compiles |
-| D3 | Pusher hook: change-only fire, async goroutine, no loop blocking | 12m | compiles |
-| D4 | Tests: fires on change (body, content-type, auth header) via httptest | 12m | test passes |
-| D5 | Tests: silent when unchanged; public-mode masking | 12m | test passes |
-| D6 | E2E test: 2 injectors → probes → `aggregate.New` → `dashboard.New` render | 12m | namespaced checks in HTML |
-| D7 | `go get go-health@v0.1.0`; build + full suite + race | 12m | all green |
-| D8 | vet + lint (dashboard flake apps) | 6m | clean |
-| E1a | Cookbook: Gatus section (endpoint YAML + Nix, warn-vs-fail conditions) | 12m | accurate recipes |
-| E1b | Cookbook: SigNoz section (PromQL rules, target=0 trap) | 12m | accurate recipes |
-| E1c | Cookbook: Kuma + webhook payload schema + security notes | 12m | accurate recipes |
-| E2 | Dashboard README integrations section + both AGENTS.md updates | 12m | docs accurate |
-| F1 | `git status`/`git diff` review both repos (no replace directives, no secrets) | 6m | clean diff |
-| F2 | Detailed commits (go-health first, then dashboard) | 6m | history readable |
-| F3 | Push both repos | 6m | origin up to date |
-| F4 | Final verification: fresh resolve of published deps, full suites | 12m | reproducible |
+| #    | Task                                                                                      | Est | Verify by                 |
+| ---- | ----------------------------------------------------------------------------------------- | --- | ------------------------- |
+| A1   | Plan file with mermaid graph (this document)                                              | 12m | exists, graph renders     |
+| B1   | `aggregate.go`: `Source`, `Aggregate`, `New` + validation (empty, dup names)              | 12m | compiles                  |
+| B2   | `worstOf` + merged `CachedResponse` (namespaced checks, shutdown, latency max)            | 12m | compiles                  |
+| B3   | `RefreshInterval` (max) + `StartupComplete` (AND latch)                                   | 6m  | compiles                  |
+| B4   | `LivenessHandler` (200 pass) + `ReadinessHandler` (merged, 503 on fail)                   | 12m | compiles                  |
+| B5   | `StartupHandler` (503 until all complete) + `RegisterRoutes`                              | 12m | compiles                  |
+| B6   | Tests: construction (empty/dup/single-source)                                             | 12m | `go test`                 |
+| B7   | Tests: merge matrix (fail>warn>pass, namespacing, shutdown overlay, latency/refresh)      | 12m | `go test`                 |
+| B8   | Tests: handlers (200/503, startup latch, GET body shape)                                  | 12m | `go test`                 |
+| B9   | Build + test + race (GOEXPERIMENT=jsonv2, GOWORK=off)                                     | 12m | all green                 |
+| B10  | vet + lint (go-health flake apps)                                                         | 6m  | clean                     |
+| B11  | CHANGELOG `[Unreleased]`, AGENTS.md, README section                                       | 12m | docs accurate             |
+| B12a | Load go-release skill; pre-release verification                                           | 12m | checklist done            |
+| B12b | Cut v0.1.0 in CHANGELOG, annotated tag, push + tags                                       | 12m | tag on origin             |
+| B12c | Verify module proxy / `go get` resolves v0.1.0                                            | 12m | dashboard can bump        |
+| C1   | `Prober` interface; switch `Dashboard.probe`, `New`, `resolvePushInterval`, `di.Register` | 12m | compiles                  |
+| C2   | Build + existing dashboard tests stay green (source compatibility proof)                  | 6m  | all green                 |
+| C3   | Stub-prober test: `New` accepts non-`*health.Probe`                                       | 12m | test passes               |
+| D1   | `webhook.go`: payload types, public-mode masking, POST with headers + timeout             | 12m | compiles                  |
+| D2   | `Config.Webhook*` fields + `WithWebhook` + `WithWebhookHeaders`                           | 12m | compiles                  |
+| D3   | Pusher hook: change-only fire, async goroutine, no loop blocking                          | 12m | compiles                  |
+| D4   | Tests: fires on change (body, content-type, auth header) via httptest                     | 12m | test passes               |
+| D5   | Tests: silent when unchanged; public-mode masking                                         | 12m | test passes               |
+| D6   | E2E test: 2 injectors → probes → `aggregate.New` → `dashboard.New` render                 | 12m | namespaced checks in HTML |
+| D7   | `go get go-health@v0.1.0`; build + full suite + race                                      | 12m | all green                 |
+| D8   | vet + lint (dashboard flake apps)                                                         | 6m  | clean                     |
+| E1a  | Cookbook: Gatus section (endpoint YAML + Nix, warn-vs-fail conditions)                    | 12m | accurate recipes          |
+| E1b  | Cookbook: SigNoz section (PromQL rules, target=0 trap)                                    | 12m | accurate recipes          |
+| E1c  | Cookbook: Kuma + webhook payload schema + security notes                                  | 12m | accurate recipes          |
+| E2   | Dashboard README integrations section + both AGENTS.md updates                            | 12m | docs accurate             |
+| F1   | `git status`/`git diff` review both repos (no replace directives, no secrets)             | 6m  | clean diff                |
+| F2   | Detailed commits (go-health first, then dashboard)                                        | 6m  | history readable          |
+| F3   | Push both repos                                                                           | 6m  | origin up to date         |
+| F4   | Final verification: fresh resolve of published deps, full suites                          | 12m | reproducible              |
 
 ---
 
@@ -216,9 +216,12 @@ status/fingerprint delta, independent of PushMode), one goroutine per fire with 
 failed deliveries are dropped, not retried — upstream tools own alert thresholds.
 
 ```json
-{"status":"warn","shutting_down":false,
- "checks":{"api/db":{"status":"fail","error":"connection refused"}},
- "changed_at":"2026-09-04T00:30:00Z"}
+{
+  "status": "warn",
+  "shutting_down": false,
+  "checks": { "api/db": { "status": "fail", "error": "connection refused" } },
+  "changed_at": "2026-09-04T00:30:00Z"
+}
 ```
 
 Public mode masks names to `check-N` (sorted, same scheme as metrics) and drops

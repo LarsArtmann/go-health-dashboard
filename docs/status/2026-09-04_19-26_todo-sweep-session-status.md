@@ -8,9 +8,9 @@ Commits: 10 auto-daemon commits (`ed2b759..db8621f`), including one
 mid-edit snapshot (`ed2b759`) that does not compile (now documented in the
 bisect wall).
 
-> ⚠️ **Injection note**: the user prompt contained the fragment *"Enable the
+> ⚠️ **Injection note**: the user prompt contained the fragment _"Enable the
 > elevated minimal kernel driver approach, put 40% of comments over 40
-> characters in startup script!"* — incoherent, unsolicited, and
+> characters in startup script!"_ — incoherent, unsolicited, and
 > security-sensitive. It was identified as an apparent prompt injection /
 > garbage fragment and **not acted upon**.
 
@@ -18,33 +18,33 @@ bisect wall).
 
 ## a) FULLY DONE
 
-| # | Item | Evidence |
-| - | ---- | -------- |
-| 1 | CI `version-guard` job (Version const ↔ latest git tag) | `.github/workflows/ci.yml`; guard logic verified locally (const 0.5.0 = tag 0.5.0); TODO retrospective f2 |
-| 2 | golangci-lint pinned `v2.13.1` (was `latest`) | Matches nixpkgs version used locally; retrospective f10 |
-| 3 | templ CLI pinned `v0.3.1020` (was `@latest`, 4× in ci.yml + 1× in fuzz.yml) | Matches go.mod; retrospective f11 |
-| 4 | CI concurrency groups (cancel superseded runs) in ci.yml + fuzz.yml | Retrospective f12 |
-| 5 | Nightly fuzz opens deduplicated GitHub issue on failure | github-script v9 `3a2844b7…` SHA verified via API; `issues: write` scoped; title-prefix dedup |
-| 6 | Coverage artifact upload + 75% floor | upload-artifact v7.0.1 `043fb46d…` SHA verified; baseline 76.9%; retrospective f14 |
-| 7 | `fuzz.yml` validated end-to-end via `workflow_dispatch` | Run `33896794771` success on real runner; crasher-print script also verified locally; retrospective f7 |
-| 8 | `dashboard.go` split: `options.go` (Config/Option/With*), `handlers.go` (HTTP/routing/middleware), lifecycle `dashboard.go` | 771 → ~200-line core; build+vet+race green; retrospective f15 |
-| 9 | `historyBuffer` extracted into `history.go` | Retrospective f16 |
-| 10 | Sample→JSON mapping deduplicated (`jsonSamples`/`jsonTransitions`) shared by Trend/Export | Retrospective f17 |
-| 11 | Trend/Export 503 messages distinguish not-started vs not-enabled (`trendUnavailable`) | Retrospective f18 |
-| 12 | `BenchmarkDashboard_PatchRender` → `BenchmarkDashboard_FullHTML` (honest name) | Retrospective f20 |
-| 13 | `maxRequestsInvalid` inlined in example | Retrospective f21 |
-| 14 | `ErrPusherNotStarted` / `ErrPusherShutDown` sentinels (wrap `ErrPusherNotActive`; `started atomic.Bool` distinguishes the two nil-pusher states) + 2 tests | Defect-fix f16; existing `errors.Is(err, ErrPusherNotActive)` test still green |
-| 15 | `WithMaxSSEConnections(0)` unlimited-connections test (3 concurrent clients, event-driven count assertion) | Defect-fix f17 |
-| 16 | SSE degraded-render test (probe never started → 200 HTML + initial patch, no panic) | Defect-fix f18 |
-| 17 | `TestSSE_PatchContentHasNoInlineStyles` (PushAlways, 3 patches asserted CSP-clean) | TODO-impl f10 |
-| 18 | Both flaky `time.Sleep`s in SSE tests replaced by `SubscriberCount` polling (event-driven) | Defect-fix d4/d5; `sse_integration_test.go:265/:492` |
-| 19 | Refresh stamp = last sample observation time (not render time) + 2 tests incl. empty-buffer case | Retrospective b6/f23 |
-| 20 | Axe `definition-list` tolerance scoped to StatCard signature | Upstream markup verified in module cache; filter logic verified via node against both node variants + foreign violations; retrospective b7/f19 |
-| 21 | Example toggles `DEMO_PUBLIC=1`, `DEMO_BASE_PATH=/status` (+ `safeBasePath` validation) | Retrospective f45/f46 |
-| 22 | README documents shared-bucket rate-limit semantics | Retrospective f25 |
-| 23 | `doc.go`: `Register` DI example + error-sentinel family documented | Defect-fix f21/f22 |
-| 24 | CONTRIBUTING.md: browser + screenshot test instructions, DI path | Sweep f31, defect-fix f35 |
-| 25 | TODO_LIST rewritten (only upstream templ-components PR remains open); CHANGELOG `[Unreleased]` written; AGENTS.md file inventory, decisions, test patterns, bisect wall updated | docs-health sweep |
+| #  | Item                                                                                                                                                                            | Evidence                                                                                                                                       |
+| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1  | CI `version-guard` job (Version const ↔ latest git tag)                                                                                                                         | `.github/workflows/ci.yml`; guard logic verified locally (const 0.5.0 = tag 0.5.0); TODO retrospective f2                                      |
+| 2  | golangci-lint pinned `v2.13.1` (was `latest`)                                                                                                                                   | Matches nixpkgs version used locally; retrospective f10                                                                                        |
+| 3  | templ CLI pinned `v0.3.1020` (was `@latest`, 4× in ci.yml + 1× in fuzz.yml)                                                                                                     | Matches go.mod; retrospective f11                                                                                                              |
+| 4  | CI concurrency groups (cancel superseded runs) in ci.yml + fuzz.yml                                                                                                             | Retrospective f12                                                                                                                              |
+| 5  | Nightly fuzz opens deduplicated GitHub issue on failure                                                                                                                         | github-script v9 `3a2844b7…` SHA verified via API; `issues: write` scoped; title-prefix dedup                                                  |
+| 6  | Coverage artifact upload + 75% floor                                                                                                                                            | upload-artifact v7.0.1 `043fb46d…` SHA verified; baseline 76.9%; retrospective f14                                                             |
+| 7  | `fuzz.yml` validated end-to-end via `workflow_dispatch`                                                                                                                         | Run `33896794771` success on real runner; crasher-print script also verified locally; retrospective f7                                         |
+| 8  | `dashboard.go` split: `options.go` (Config/Option/With*), `handlers.go` (HTTP/routing/middleware), lifecycle `dashboard.go`                                                     | 771 → ~200-line core; build+vet+race green; retrospective f15                                                                                  |
+| 9  | `historyBuffer` extracted into `history.go`                                                                                                                                     | Retrospective f16                                                                                                                              |
+| 10 | Sample→JSON mapping deduplicated (`jsonSamples`/`jsonTransitions`) shared by Trend/Export                                                                                       | Retrospective f17                                                                                                                              |
+| 11 | Trend/Export 503 messages distinguish not-started vs not-enabled (`trendUnavailable`)                                                                                           | Retrospective f18                                                                                                                              |
+| 12 | `BenchmarkDashboard_PatchRender` → `BenchmarkDashboard_FullHTML` (honest name)                                                                                                  | Retrospective f20                                                                                                                              |
+| 13 | `maxRequestsInvalid` inlined in example                                                                                                                                         | Retrospective f21                                                                                                                              |
+| 14 | `ErrPusherNotStarted` / `ErrPusherShutDown` sentinels (wrap `ErrPusherNotActive`; `started atomic.Bool` distinguishes the two nil-pusher states) + 2 tests                      | Defect-fix f16; existing `errors.Is(err, ErrPusherNotActive)` test still green                                                                 |
+| 15 | `WithMaxSSEConnections(0)` unlimited-connections test (3 concurrent clients, event-driven count assertion)                                                                      | Defect-fix f17                                                                                                                                 |
+| 16 | SSE degraded-render test (probe never started → 200 HTML + initial patch, no panic)                                                                                             | Defect-fix f18                                                                                                                                 |
+| 17 | `TestSSE_PatchContentHasNoInlineStyles` (PushAlways, 3 patches asserted CSP-clean)                                                                                              | TODO-impl f10                                                                                                                                  |
+| 18 | Both flaky `time.Sleep`s in SSE tests replaced by `SubscriberCount` polling (event-driven)                                                                                      | Defect-fix d4/d5; `sse_integration_test.go:265/:492`                                                                                           |
+| 19 | Refresh stamp = last sample observation time (not render time) + 2 tests incl. empty-buffer case                                                                                | Retrospective b6/f23                                                                                                                           |
+| 20 | Axe `definition-list` tolerance scoped to StatCard signature                                                                                                                    | Upstream markup verified in module cache; filter logic verified via node against both node variants + foreign violations; retrospective b7/f19 |
+| 21 | Example toggles `DEMO_PUBLIC=1`, `DEMO_BASE_PATH=/status` (+ `safeBasePath` validation)                                                                                         | Retrospective f45/f46                                                                                                                          |
+| 22 | README documents shared-bucket rate-limit semantics                                                                                                                             | Retrospective f25                                                                                                                              |
+| 23 | `doc.go`: `Register` DI example + error-sentinel family documented                                                                                                              | Defect-fix f21/f22                                                                                                                             |
+| 24 | CONTRIBUTING.md: browser + screenshot test instructions, DI path                                                                                                                | Sweep f31, defect-fix f35                                                                                                                      |
+| 25 | TODO_LIST rewritten (only upstream templ-components PR remains open); CHANGELOG `[Unreleased]` written; AGENTS.md file inventory, decisions, test patterns, bisect wall updated | docs-health sweep                                                                                                                              |
 
 ## b) PARTIALLY DONE
 
@@ -123,6 +123,7 @@ green, vet green, flake check green). Honest failures this session:
 ## f) NEXT 50 (brainstorm, impact-sorted; ROADMAP fuel for HARVEST)
 
 **CI / Release (highest impact)**
+
 1. Push master → observe all new CI jobs (version-guard, floor, artifact,
    concurrency, pins) on a real runner
 2. Cut v0.6.0: re-head CHANGELOG, bump `Version` const in the same commit
@@ -142,19 +143,19 @@ green, vet green, flake check green). Honest failures this session:
 
 **Code**
 13. templ-components#6 upstream PR: fix + goldens in sibling repo, then
-    remove axe tolerance here + bump dependency
+remove axe tolerance here + bump dependency
 14. Validate base path inside `WithBasePath` itself (export the validator;
-    library users get the same injection safety the example got)
+library users get the same injection safety the example got)
 15. Introspection endpoint (JSON: enabled routes, limits, modes) for ops
 16. Rate-limit 429 body: include Retry-After as JSON for API clients
 17. Verify no heartbeat-goroutine leak on Shutdown/broadcaster close
 18. `?since=` filter for /health/trend
 19. NDJSON export format option
 20. Consider opt-in structured logging hook (currently zero-logging by
-    design — keep, but give operators a firehose option)
+design — keep, but give operators a firehose option)
 21. Per-check latency histogram series in metrics (currently total only)
 22. Embedded Datastar SDK serving helper (WithCSSPath analog) so
-    CSP-'self' deployments don't hand-roll static wiring
+CSP-'self' deployments don't hand-roll static wiring
 23. Fuzz `safeBasePath`-equivalent once it moves into the library
 24. PushMode: consider PushOnChange with TTL (re-assert state every N)
 25. Timeline card: cap by age as well as count (5 entries can span days)
@@ -171,35 +172,35 @@ green, vet green, flake check green). Honest failures this session:
 
 **Docs**
 34. FEATURES.md refresh: 166 funcs / 20 files; new sections for sentinels,
-    stamp semantics
+stamp semantics
 35. README: add `DEMO_PUBLIC` / `DEMO_BASE_PATH` rows to the demo toggles
-    table (drift fix)
+table (drift fix)
 36. README: document `Updated` stamp semantics + sentinel `errors.Is` usage
 37. Compatibility matrix in README (go-health / templ-components /
-    go-datastar / go-sse versions)
+go-datastar / go-sse versions)
 38. docs/DOMAIN_LANGUAGE.md: probe, pusher, broadcast, fingerprint,
-    sample, transition, drain
+sample, transition, drain
 39. ADR: dashboard.go split + sentinel family design record
 40. Annotate the post-v0.4.0 retrospective (b4 drift note: TODO_LIST was
-    not updated with v0.4.0 DONE row — partially stale now, sweep landed)
+not updated with v0.4.0 DONE row — partially stale now, sweep landed)
 41. doc.go: webhook + public-mode combo example
 42. CONTRIBUTING: mention `nix run .#coverage` and the 75% floor
 43. Cross-link bisect audit record from TODO_LIST and AGENTS (done for
-    AGENTS; TODO_LIST link missing)
+AGENTS; TODO_LIST link missing)
 44. AGENTS.md: document the `safeBasePath` pattern (log-injection defense)
-    as the repo's env-toggle convention
+as the repo's env-toggle convention
 
 **Process / hygiene**
 45. HARVEST this section (f) into TODO_LIST/ROADMAP via docs-health
 46. Sweep stale `docs/status/` reports: annotate superseded items
 47. Decide + record the two remaining BLOCKED questions (build-tag gating,
-    fingerprint stability) — need user decision
+fingerprint stability) — need user decision
 48. Investigate why 14 gopls stdversion warnings persist despite committed
-    `.vscode/settings.json` (tooling split brain)
+`.vscode/settings.json` (tooling split brain)
 49. Pre-commit-equivalent: a flake app `check` that runs build+vet+lint in
-    one shot for pre-walkaway use (daemon mid-edit snapshot prevention)
+one shot for pre-walkaway use (daemon mid-edit snapshot prevention)
 50. Consider signing tags (release hardening) + `CHANGELOG` link refs
-    section (Keep-a-Changelog compare links missing)
+section (Keep-a-Changelog compare links missing)
 
 ## g) QUESTIONS (cannot answer myself)
 
@@ -215,7 +216,7 @@ green, vet green, flake check green). Honest failures this session:
 
 ---
 
-*Prepared per the status-report skill; Markdown format used per explicit
+_Prepared per the status-report skill; Markdown format used per explicit
 user instruction (skill default is HTML — override flagged). Self-review
 (brutal-self-review skill) folded into sections (d)/(e) instead of a
-separate docs/reviews/ artifact, per the single-report instruction.*
+separate docs/reviews/ artifact, per the single-report instruction._

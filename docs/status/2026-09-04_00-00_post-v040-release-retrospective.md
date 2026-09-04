@@ -10,19 +10,19 @@ execution, and the incidents found on the way.
 
 ## a) FULLY DONE
 
-| Item | Evidence |
-| ---- | -------- |
-| **v0.4.0 released** | CHANGELOG re-headed with blurb + new **Compatibility** section; `Version = "0.4.0"`; AGENTS status bumped; tagged `v0.4.0`; pushed; proxy `.info` verified → `8f63d85` |
-| Fingerprint compat documented (Q2 = accept) | "Compatibility" paragraph in the 0.4.0 notes: delimiter → length-prefixed change, one spurious change detection if persisted |
-| go-sse claim **verified false** (Q3) | Source: `stream.go:5` imports `encoding/json/v2` unconditionally, zero build tags in the module. Empirical: fresh module, `GOEXPERIMENT= go build github.com/larsartmann/go-sse` fails — "build constraints exclude all Go files in encoding/json/v2". Dual-build without touching go-sse is impossible |
-| templ-components v1.12.0 regression **root-caused** | New LiveRegion busy-script (`tcLiveBusyAttached`) emits `nonce=""` verbatim; source-level: `live_region.templ:66` calls the script unconditionally, line 81 renders the attribute without an empty-guard (ThemeScript guards; this doesn't) |
-| Empirical bisect | Pin v1.11.0 → all three broken CSP tests pass. Minimal Base-only repro rendered identically in both versions (ruled Base out honestly) before locating the real culprit via full-script dump |
-| LiveRegion nonce propagation fix | `view.templ:56`: `BaseProps.Nonce: data.DatastarNonce` — correct with both upstream versions, fixes extractor flows |
-| Pin v1.11.0 | go.mod pinned (all 3 sibling modules) so v0.4.0 ships with green CSP invariants |
-| Upstream issue #7 filed | templ-components#7 — source lines, minimal repro, rendered HTML, suggested guard, consumer workaround |
-| Upstream issue #6 (from previous segment) confirmed filed | templ-components#6 |
-| FEATURES count corrected | "154 test/fuzz/benchmark funcs across 19 test files" (was "140+ across 14") |
-| Gates at release | test -count=1 green, lint 0 issues, fmt clean; tag push confirmed by proxy |
+| Item                                                      | Evidence                                                                                                                                                                                                                                                                                                |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **v0.4.0 released**                                       | CHANGELOG re-headed with blurb + new **Compatibility** section; `Version = "0.4.0"`; AGENTS status bumped; tagged `v0.4.0`; pushed; proxy `.info` verified → `8f63d85`                                                                                                                                  |
+| Fingerprint compat documented (Q2 = accept)               | "Compatibility" paragraph in the 0.4.0 notes: delimiter → length-prefixed change, one spurious change detection if persisted                                                                                                                                                                            |
+| go-sse claim **verified false** (Q3)                      | Source: `stream.go:5` imports `encoding/json/v2` unconditionally, zero build tags in the module. Empirical: fresh module, `GOEXPERIMENT= go build github.com/larsartmann/go-sse` fails — "build constraints exclude all Go files in encoding/json/v2". Dual-build without touching go-sse is impossible |
+| templ-components v1.12.0 regression **root-caused**       | New LiveRegion busy-script (`tcLiveBusyAttached`) emits `nonce=""` verbatim; source-level: `live_region.templ:66` calls the script unconditionally, line 81 renders the attribute without an empty-guard (ThemeScript guards; this doesn't)                                                             |
+| Empirical bisect                                          | Pin v1.11.0 → all three broken CSP tests pass. Minimal Base-only repro rendered identically in both versions (ruled Base out honestly) before locating the real culprit via full-script dump                                                                                                            |
+| LiveRegion nonce propagation fix                          | `view.templ:56`: `BaseProps.Nonce: data.DatastarNonce` — correct with both upstream versions, fixes extractor flows                                                                                                                                                                                     |
+| Pin v1.11.0                                               | go.mod pinned (all 3 sibling modules) so v0.4.0 ships with green CSP invariants                                                                                                                                                                                                                         |
+| Upstream issue #7 filed                                   | templ-components#7 — source lines, minimal repro, rendered HTML, suggested guard, consumer workaround                                                                                                                                                                                                   |
+| Upstream issue #6 (from previous segment) confirmed filed | templ-components#6                                                                                                                                                                                                                                                                                      |
+| FEATURES count corrected                                  | "154 test/fuzz/benchmark funcs across 19 test files" (was "140+ across 14")                                                                                                                                                                                                                             |
+| Gates at release                                          | test -count=1 green, lint 0 issues, fmt clean; tag push confirmed by proxy                                                                                                                                                                                                                              |
 
 ## b) PARTIALLY DONE
 
@@ -120,6 +120,7 @@ execution, and the incidents found on the way.
 ## f) 50 THINGS TO DO NEXT (carried + new, deduplicated)
 
 Release & history
+
 1. Watch the v0.4.0 CI run end-to-end (browser job included) and fix what
    breaks on the runner.
 2. Dispatch fuzz.yml once via workflow_dispatch to validate the nightly.
@@ -132,15 +133,15 @@ Release & history
 
 Upstream
 7. PR the fix for templ-components#7 (guard in liveRegionBusyScript) —
-   same owner, fastest path to lifting the pin.
+same owner, fastest path to lifting the pin.
 8. PR the fix for templ-components#6 (StatCard `<dl>` structure + goldens).
 9. After #7 lands: bump templ-components, drop the pin, note it in the
-   CHANGELOG.
+CHANGELOG.
 10. After #6 lands: remove the axe `definition-list` tolerance.
 11. go-sse: decide and execute — request upstream build-tag/dual-mode
-    support, fork, or formally accept jsonv2 (document the decision).
+support, fork, or formally accept jsonv2 (document the decision).
 12. Keep templ-components bumps blocked on the browser suite (policy from
-    this incident).
+this incident).
 
 Tests & verification
 13. Run `nix run .#coverage`; record baseline; add CI coverage floor.
@@ -148,13 +149,13 @@ Tests & verification
 15. Fuzz target for the CSV exporter.
 16. Fuzz target for `RecommendedCSP` (injection attempts).
 17. Public-mode leak-scanner test (grep rendered HTML for real service
-    names).
+names).
 18. Keyboard-navigation a11y smoke in the browser suite.
 19. Browser-test the metrics endpoint under strict CSP.
 20. Scope the axe `definition-list` tolerance to specific nodes, not the
-    whole rule (until #10).
+whole rule (until #10).
 21. Add a test that `Version` matches the latest git tag in CI (same as 4,
-    implementation side).
+implementation side).
 
 Code quality
 22. Split dashboard.go (config/options vs lifecycle vs handlers).
@@ -168,7 +169,7 @@ Features & polish
 28. Refresh stamp: observation time (last sample At), not render time.
 29. Rate-limit response headers: X-RateLimit-Limit/Remaining/Reset.
 30. Rate limiter: document shared-bucket semantics in README; optional
-    per-route buckets.
+per-route buckets.
 31. Drain: Retry-After on 503s during the drain window.
 32. MaxConnectionLifetime: optional reconnect jitter.
 33. `dashboard_pusher_last_tick_seconds` gauge (watchdog observability).
@@ -179,7 +180,7 @@ Features & polish
 38. Export ETag/If-None-Match.
 39. `WithTrendWindow(duration)` alternative to sample count.
 40. Public mode: redact-JSON option + loud docs that /health JSON stays
-    verbatim.
+verbatim.
 41. Example: `DEMO_PUBLIC=1` and `DEMO_BASE_PATH=/status` toggles.
 
 Docs & process
@@ -187,16 +188,16 @@ Docs & process
 43. README options snippet: add `WithDescription`/`WithPublicMode` rows.
 44. README Prometheus section: histogram mention + scrape snippet.
 45. AGENTS.md file inventory: add csp.go, ratelimit.go, trend.go,
-    metrics.go and new test files.
+metrics.go and new test files.
 46. AGENTS.md: record the two new process lessons (empirical bisect
-    first; no backslash-built heredocs).
+first; no backslash-built heredocs).
 47. Create docs/release-checklist.md (reconcile → changelog → version →
-    tag → push → proxy-verify → CI watch).
+tag → push → proxy-verify → CI watch).
 48. Adopt a lint+build pre-commit gate (lefthook/pre-commit) to end the
-    lint-churn commits.
+lint-churn commits.
 49. Pin golangci-lint and templ versions in CI (currently `latest`).
 50. Add a CI concurrency group; decide a Renovate/Dependabot policy that
-    requires the browser suite for UI-library bumps.
+requires the browser suite for UI-library bumps.
 
 ## g) QUESTIONS (cannot be answered from the repo)
 
