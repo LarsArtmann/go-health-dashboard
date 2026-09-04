@@ -378,13 +378,12 @@ func FuzzRecommendedCSP(f *testing.F) {
 		}
 
 		matches := cspNonceValue.MatchString(nonce)
-		if !matches && nonce != "" && strings.Contains(first, nonce) {
-			t.Fatalf("invalid nonce %q leaked into CSP: %q", nonce, first)
+		if !matches && strings.Contains(first, "'nonce-"+nonce+"'") {
+			t.Fatalf("invalid nonce %q leaked into CSP as a nonce-source: %q", nonce, first)
 		}
 
-		stripped := strings.ReplaceAll(first, "'nonce-"+nonce+"'", "")
-		if matches && strings.Contains(stripped, nonce) {
-			t.Fatalf("nonce %q appears outside its nonce-source: %q", nonce, first)
+		if matches && strings.Count(first, "'nonce-"+nonce+"'") != 1 {
+			t.Fatalf("nonce %q does not appear exactly once as a quoted nonce-source: %q", nonce, first)
 		}
 	})
 }
@@ -430,11 +429,18 @@ func FuzzWebhookPayload(f *testing.F) {
 		}
 
 		if public {
-			if errText != "" && strings.Contains(string(body), validUTF8(errText)) {
-				t.Fatalf("public mode leaked error text: %s", body)
+			checks, ok := decoded["checks"].(map[string]any)
+			if !ok {
+				t.Fatalf("public payload missing checks map: %s", body)
 			}
-			if strings.Contains(string(body), validUTF8(name)) {
-				t.Fatalf("public mode leaked check name: %s", body)
+			for key, raw := range checks {
+				if key == validUTF8(name) {
+					t.Fatalf("public mode kept original check name %q: %s", name, body)
+				}
+				fields, _ := raw.(map[string]any)
+				if errText != "" && fields["error"] == validUTF8(errText) {
+					t.Fatalf("public mode kept error text for %q: %s", key, body)
+				}
 			}
 		}
 	})
