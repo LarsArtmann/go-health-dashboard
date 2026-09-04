@@ -288,7 +288,9 @@ func csvExportFor(t *testing.T, status string) string {
 
 	buf := d.push.Load().history
 	buf.record(sample{At: time.Date(2026, 9, 4, 12, 0, 0, 0, time.UTC), Value: 1, Status: "pass"})
-	buf.record(sample{At: time.Date(2026, 9, 4, 12, 0, 30, 0, time.UTC), Value: 0.5, Status: status})
+	buf.record(
+		sample{At: time.Date(2026, 9, 4, 12, 0, 30, 0, time.UTC), Value: 0.5, Status: status},
+	)
 
 	rec := httptest.NewRecorder()
 	req := fuzzRequest("text/csv")
@@ -334,7 +336,12 @@ func FuzzCSVExport(f *testing.F) {
 		clean := !strings.ContainsAny(status, ",\"\r\n")
 		if clean {
 			if len(lines) != 4 { // header + 2 rows + trailing newline
-				t.Fatalf("expected 4 lines for clean status %q, got %d: %q", status, len(lines), first)
+				t.Fatalf(
+					"expected 4 lines for clean status %q, got %d: %q",
+					status,
+					len(lines),
+					first,
+				)
 			}
 			fields := strings.Split(lines[2], ",")
 			if len(fields) != 3 || fields[2] != status {
@@ -374,7 +381,12 @@ func FuzzRecommendedCSP(f *testing.F) {
 
 		directives := strings.Split(first, "; ")
 		if len(directives) != 8 {
-			t.Fatalf("expected 8 directives for nonce %q, got %d: %q", nonce, len(directives), first)
+			t.Fatalf(
+				"expected 8 directives for nonce %q, got %d: %q",
+				nonce,
+				len(directives),
+				first,
+			)
 		}
 
 		matches := cspNonceValue.MatchString(nonce)
@@ -383,7 +395,11 @@ func FuzzRecommendedCSP(f *testing.F) {
 		}
 
 		if matches && strings.Count(first, "'nonce-"+nonce+"'") != 1 {
-			t.Fatalf("nonce %q does not appear exactly once as a quoted nonce-source: %q", nonce, first)
+			t.Fatalf(
+				"nonce %q does not appear exactly once as a quoted nonce-source: %q",
+				nonce,
+				first,
+			)
 		}
 	})
 }
@@ -405,18 +421,30 @@ func FuzzWebhookPayload(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, name, errText, status string, public bool) {
-		notifier := newWebhookNotifier(Config{WebhookURL: "http://fuzz.invalid/hook", PublicMode: public})
+		notifier := newWebhookNotifier(
+			Config{WebhookURL: "http://fuzz.invalid/hook", PublicMode: public},
+		)
 		resp := health.Response{
 			Status: health.Status(validUTF8(status)),
 			Checks: map[string]health.Check{
-				validUTF8(name): {Status: health.Status(validUTF8(status)), Error: validUTF8(errText)},
+				validUTF8(name): {
+					Status: health.Status(validUTF8(status)),
+					Error:  validUTF8(errText),
+				},
 			},
 		}
 
 		payload := notifier.buildPayload(resp)
 		body, err := json.Marshal(payload, json.Deterministic(true))
 		if err != nil {
-			t.Fatalf("marshal failed for name=%q err=%q status=%q public=%v: %v", name, errText, status, public, err)
+			t.Fatalf(
+				"marshal failed for name=%q err=%q status=%q public=%v: %v",
+				name,
+				errText,
+				status,
+				public,
+				err,
+			)
 		}
 
 		var decoded map[string]any
