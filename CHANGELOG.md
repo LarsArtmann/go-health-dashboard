@@ -52,6 +52,16 @@ sentinels (both wrap the existing `ErrPusherNotActive`, so existing
   CONTRIBUTING.md explains browser/screenshot tests and the DI
   registration path; README documents the rate limiter's shared-bucket
   semantics.
+- `go.mod`: `github.com/larsartmann/go-health` v0.1.0 → v0.1.1 (patch
+  bump, no API change).
+- Restored the UI dependency pins after an undocumented `go get` sweep
+  moved templ-components to v1.12.0 and go-datastar to v0.5.0: v1.12.0
+  re-introduces the LiveRegion busy-script `nonce=""` regression
+  (upstream templ-components#7 is still unfixed at v1.12.0) and the
+  bump swapped the audited Datastar SDK bundle — three CSP-invariant
+  tests failed. Pins restored to templ-components v1.11.0 and
+  go-datastar v0.4.0 (`8cf2c62`); the bumps can re-land once upstream
+  ships the nonce guard and the browser suite validates the bundle.
 
 ### Verified
 
@@ -60,7 +70,10 @@ sentinels (both wrap the existing `ErrPusherNotActive`, so existing
 - Bisectability audit `071c251..HEAD` (91 commits): 86 build, 5
   auto-daemon mid-edit snapshots do not — all five documented in
   AGENTS.md for `git bisect skip`
-  (`docs/status/2026-09-04_19-15_bisectability-audit.md`).
+  (`docs/status/archived/2026-09-04_19-15_bisectability-audit.md`).
+- Full gate re-run green after the dependency-pin restore (`8cf2c62`):
+  build, vet, `-race` suite, `golangci-lint` 0 issues, `nix flake
+  check`.
 
 ## [0.5.0] - 2026-09-04
 
