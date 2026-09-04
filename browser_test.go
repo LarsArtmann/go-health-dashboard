@@ -752,6 +752,27 @@ func browserStaticHandlers(t *testing.T, s *probeSetup) {
 
 // TestBrowser_KeyboardNavigation walks the page with real Tab keystrokes
 // and asserts the focus ring stays on visible, meaningful targets in a
+// classifyFocusStop interprets a focus descriptor: the first result reports
+// whether the stop is an interactive element (anything but <body>), the
+// second whether it was visible with a non-none focus outline.
+func classifyFocusStop(desc string) (bool, bool) {
+	if desc == "body" {
+		return false, false
+	}
+
+	parts := strings.SplitN(desc, "|", 4)
+	if len(parts) != 4 {
+		return true, false
+	}
+
+	w, h := 0, 0
+	if _, err := fmt.Sscanf(parts[2], "%dx%d", &w, &h); err != nil || w <= 0 || h <= 0 {
+		return true, false
+	}
+
+	return true, !strings.HasPrefix(parts[3], "none/")
+}
+
 // sane order: it must reach at least two distinct interactive elements,
 // never die on <body>, and every stop must be visible with a non-none
 // focus outline (Chrome's default ring — the harness loads no Tailwind).
@@ -805,7 +826,7 @@ func TestBrowser_KeyboardNavigation(t *testing.T) {
 	})()`
 
 	var desc string
-	var stops []string
+	stops := make([]string, 0, 15)
 	visibleWithOutline := 0
 
 	if err := chromedp.Run(ctx,
@@ -822,18 +843,8 @@ func TestBrowser_KeyboardNavigation(t *testing.T) {
 			t.Fatalf("describe focus after tab %d: %v", i, err)
 		}
 		stops = append(stops, desc)
-		if desc == "body" {
-			continue
-		}
-		parts := strings.SplitN(desc, "|", 4)
-		if len(parts) == 4 {
-			size := parts[2]
-			w, h := 0, 0
-			if _, err := fmt.Sscanf(size, "%dx%d", &w, &h); err == nil && w > 0 && h > 0 {
-				if !strings.HasPrefix(parts[3], "none/") {
-					visibleWithOutline++
-				}
-			}
+		if _, visible := classifyFocusStop(desc); visible {
+			visibleWithOutline++
 		}
 	}
 
