@@ -230,6 +230,7 @@ func (d *Dashboard) embeddedSDKHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != strings.TrimSuffix(d.cfg.Routes.DatastarJS, "/") {
 			http.NotFound(w, r)
+
 			return
 		}
 
