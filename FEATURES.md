@@ -145,12 +145,12 @@
 | Example app              | 🟢 `FULLY_FUNCTIONAL` | `example/main.go` — DEMO_TREND/DEMO_METRICS/DEMO_AUTH/DEMO_RATELIMIT/DEMO_DRAIN/DEMO_PUBLIC/DEMO_BASE_PATH env toggles                                                                                                                                                                                                                         |
 | Docker + Prometheus demo | 🟢 `FULLY_FUNCTIONAL` | `Dockerfile`, `deploy/docker-compose.yml`, `deploy/prometheus.yml` — example + scraper                                                                                                                                                                                                                                                         |
 | Domain language docs     | 🟢 `FULLY_FUNCTIONAL` | `docs/DOMAIN_LANGUAGE.md` — ubiquitous language glossary                                                                                                                                                                                                                                                                                       |
-| Released (pkg.go.dev)    | 🟢 `FULLY_FUNCTIONAL` | Tagged v0.6.0 (proxy-verification via `go list -m @v0.6.0` immediately after push); v0.5.0 proxy-resolved 2026-09-04; zero replace directives                                                                                                                                                                                                     |
+| Released (pkg.go.dev)    | 🟢 `FULLY_FUNCTIONAL` | Tagged v0.6.0 (proxy-verification via `go list -m @v0.6.0` immediately after push); v0.5.0 proxy-resolved 2026-09-04; zero replace directives                                                                                                                                                                                                  |
 
 ## Known Gaps
 
-| Gap                                         | Where documented                                                                                                                 |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| GOEXPERIMENT=jsonv2 requirement             | All Go commands require this env var; go-sse uses `encoding/json/v2`                                                             |
-| Datastar needs `unsafe-eval`                | The SDK compiles expressions via `Function`; strict CSPs must allow it — documented in README, verified by `browser_test.go`     |
-| templ-components pinned at v1.11.0          | v1.12.0's LiveRegion busy-script emits `nonce=""` (upstream #6/#7 open); pin freezes the audited Datastar bundle — see CHANGELOG |
+| Gap                                | Where documented                                                                                                                 |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| GOEXPERIMENT=jsonv2 requirement    | All Go commands require this env var; go-sse uses `encoding/json/v2`                                                             |
+| Datastar needs `unsafe-eval`       | The SDK compiles expressions via `Function`; strict CSPs must allow it — documented in README, verified by `browser_test.go`     |
+| templ-components pinned at v1.11.0 | v1.12.0's LiveRegion busy-script emits `nonce=""` (upstream #6/#7 open); pin freezes the audited Datastar bundle — see CHANGELOG |
