@@ -20,6 +20,7 @@ import (
 	"github.com/chromedp/chromedp"
 	dstarstatic "github.com/larsartmann/go-datastar/static"
 	health "github.com/larsartmann/go-health"
+	"github.com/larsartmann/go-health/aggregate"
 	dashboard "github.com/larsartmann/go-health-dashboard"
 	"github.com/samber/do/v2"
 )
@@ -960,6 +961,95 @@ func TestBrowser_MetricsUnderStrictCSP(t *testing.T) {
 			"scrape does not look like dashboard exposition (no dashboard_health series): %.200s",
 			body,
 		)
+	}
+
+	assertNoBrowserErrors(t, errLog)
+}
+
+// TestBrowser_AggregateCSPClean renders a two-source aggregate page (the
+// multi-service dashboard) under the strict CSP harness: namespaced
+// source/check rows must appear, the runtime must stay style-free, and the
+// SSE connection must come up — proving the aggregate surface is
+// browser-valid, not just unit-tested.
+func TestBrowser_AggregateCSPClean(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-agg-nonce"
+
+	apiInjector := do.New()
+	provideHealthy(apiInjector, "postgres")
+	invoke[*healthyService](t, apiInjector, "postgres")
+
+	apiProbe := health.New(apiInjector, health.WithRefreshInterval(100*time.Millisecond))
+	if err := apiProbe.Start(context.Background()); err != nil {
+		t.Fatalf("api probe start: %v", err)
+	}
+	defer apiProbe.Shutdown()
+
+	agg, err := aggregate.New(
+		aggregate.Source{Name: "api", Probe: apiProbe},
+	)
+	if err != nil {
+		t.Fatalf("aggregate.New: %v", err)
+	}
+
+	s := setupDashboardWithProber(t, agg,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+	)
+	defer s.cleanup()
+
+	browserStaticHandlers(t, s)
+
+	server := httptest.NewServer(s.mux)
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+
+	var namespaced string
+	if err := chromedp.Run(ctx, chromedp.Evaluate(
+		`document.body.innerText.includes("api/postgres") ? "yes" : "no"`,
+		&namespaced,
+	)); err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+
+	if namespaced != "yes" {
+		t.Error("aggregate page does not show the namespaced api/postgres check")
+	}
+
+	// CSP-clean invariants, same as the single-probe page.
+	var styles string
+	if err := chromedp.Run(ctx, chromedp.Evaluate(
+		`document.querySelectorAll("style").length + ":" + [...document.querySelectorAll("[style]")].length`,
+		&styles,
+	)); err != nil {
+		t.Fatalf("style probe: %v", err)
+	}
+
+	if styles != "0:0" {
+		t.Errorf("aggregate page has inline styles or style tags: %s", styles)
 	}
 
 	assertNoBrowserErrors(t, errLog)

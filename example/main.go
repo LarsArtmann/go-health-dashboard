@@ -139,8 +139,8 @@ func buildProbe(ctx context.Context, injector *do.RootScope) (dashboard.Prober, 
 	)
 
 	agg, err := aggregate.New(
-		aggregate.NamedSource("api", apiProbe),
-		aggregate.NamedSource("worker", workerProbe),
+		aggregate.Source{Name: "api", Probe: apiProbe},
+		aggregate.Source{Name: "worker", Probe: workerProbe},
 	)
 	if err != nil {
 		log.Fatalf("aggregate.New: %v", err)
