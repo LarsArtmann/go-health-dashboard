@@ -24,6 +24,15 @@ jobs:
         with:
           go-version-file: go.mod
 
+      # UI-dependency pin guard: templ-components v1.12.0 re-introduced the
+      # LiveRegion busy-script nonce="" regression (upstream #7) and the
+      # go-datastar v0.5.0 SDK bundle is unaudited. Remove this step (and
+      # scripts/check-ui-pins.sh) once #7 ships and the browser suite
+      # validates the new bundles — see the script header for the full
+      # removal condition.
+      - name: UI dependency pin guard
+        run: bash scripts/check-ui-pins.sh
+
       - name: Install templ CLI
         run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
 
@@ -43,14 +52,30 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: UI dependency pin guard
+        run: bash scripts/check-ui-pins.sh
+
       - name: Install templ CLI
-        run: go install github.com/a-h/templ/cmd/templ@latest
+        run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
 
       - name: Generate templ files
         run: templ generate ./...
 
       - name: Test with race detector and coverage
         run: go test ./... -count=1 -race -timeout=60s -covermode=atomic -coverprofile=coverage.out
+
+      - name: FEATURES test-count drift guard
+        run: |
+          actual_funcs=$(cat ./*_test.go | grep -cE '^func (Test|Benchmark|Fuzz)')
+          set -- ./*_test.go
+          actual_files=$#
+          expected_funcs=$(grep -oE '[0-9]+ top-level test/benchmark/fuzz functions' FEATURES.md | grep -oE '^[0-9]+')
+          expected_files=$(grep -oE 'across [0-9]+ test files' FEATURES.md | grep -oE '[0-9]+')
+          echo "FEATURES claims ${expected_funcs} functions across ${expected_files} files; actual ${actual_funcs} across ${actual_files}"
+          if [ "$actual_funcs" != "$expected_funcs" ] || [ "$actual_files" != "$expected_files" ]; then
+            echo "::error::FEATURES.md test-suite counts drifted from reality — recount with rg and update the Test suite row"
+            exit 1
+          fi
 
       - name: Coverage floor
         run: |
@@ -155,3 +180,34 @@ jobs:
             echo "::error::Version const (${const_version}) does not match latest git tag (${tag_version}). Bump the const in the same commit as the tag."
             exit 1
           fi
+
+  hygiene:
+    name: Hygiene (actionlint, templ drift, flake)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      - name: Lint workflow files with actionlint
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          actionlint -color
+
+      - name: Install templ CLI
+        run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
+
+      - name: templ generate drift check
+        run: |
+          templ generate ./...
+          if ! git diff --exit-code -- '*_templ.go'; then
+            echo "::error::templ generate produced diffs — a committed *_templ.go is stale; run 'templ generate' and commit the result"
+            exit 1
+          fi
+
+      - uses: cachix/install-nix-action@b85815f71a6de0ddee80b8a80a98d43f4bcc66c7 # v31
+
+      - name: nix flake check
+        run: nix flake check
