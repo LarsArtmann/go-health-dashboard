@@ -101,6 +101,16 @@ func (d *Dashboard) renderMetrics() string {
 	if d.latency != nil {
 		d.latency.renderPrometheus(&b)
 	}
+	if d.webhookStats != nil && d.notify != nil {
+		b.WriteString("# HELP dashboard_webhook_deliveries_total Webhook deliveries by result.\n")
+		b.WriteString("# TYPE dashboard_webhook_deliveries_total counter\n")
+		fmt.Fprintf(&b, "dashboard_webhook_deliveries_total{result=%q} %d\n", "ok", d.webhookStats.ok.Load())
+		fmt.Fprintf(&b, "dashboard_webhook_deliveries_total{result=%q} %d\n", "error", d.webhookStats.err.Load())
+		d.webhookStats.duration.renderNamed(&b,
+			"dashboard_webhook_delivery_duration_seconds",
+			"Webhook delivery duration.",
+		)
+	}
 
 	return b.String()
 }
@@ -189,29 +199,34 @@ func (h *latencyHistogram) observe(seconds float64) {
 // renderPrometheus writes the exposition lines for the histogram, including
 // the +Inf bucket, _sum, and _count.
 func (h *latencyHistogram) renderPrometheus(b *strings.Builder) {
-	b.WriteString(
-		"# HELP dashboard_health_check_duration_seconds Wall-clock duration of health-check batches.\n",
+	h.renderNamed(b,
+		"dashboard_health_check_duration_seconds",
+		"Wall-clock duration of health-check batches.",
 	)
-	b.WriteString("# TYPE dashboard_health_check_duration_seconds histogram\n")
+}
+
+// renderNamed writes the histogram under a custom metric name, sharing the
+// bucket bounds and encoding with the check-duration histogram.
+func (h *latencyHistogram) renderNamed(b *strings.Builder, name, help string) {
+	fmt.Fprintf(b, "# HELP %s %s\n", name, help)
+	fmt.Fprintf(b, "# TYPE %s histogram\n", name)
 
 	for i, bound := range latencyBucketBounds {
 		fmt.Fprintf(
 			b,
-			"dashboard_health_check_duration_seconds_bucket{le=\"%g\"} %d\n",
+			"\"%s_bucket{le=\"\"%g\"\"} %d\n",
+			name,
 			bound,
 			h.buckets[i].Load(),
 		)
 	}
 
+	fmt.Fprintf(b, "%s_bucket{le=\"+Inf\"} %d\n", name, h.count.Load())
 	fmt.Fprintf(
 		b,
-		"dashboard_health_check_duration_seconds_bucket{le=\"+Inf\"} %d\n",
-		h.count.Load(),
-	)
-	fmt.Fprintf(
-		b,
-		"dashboard_health_check_duration_seconds_sum %g\n",
+		"%s_sum %g\n",
+		name,
 		float64(h.sum.Load())/float64(microsPerSecond),
 	)
-	fmt.Fprintf(b, "dashboard_health_check_duration_seconds_count %d\n", h.count.Load())
+	fmt.Fprintf(b, "%s_count %d\n", name, h.count.Load())
 }
