@@ -94,6 +94,7 @@ func New(probe Prober, opts ...Option) *Dashboard {
 		opt(&cfg)
 	}
 
+	cfg.resolveRoutes()
 	cfg.PushInterval = resolvePushInterval(cfg.PushInterval, probe)
 
 	d := &Dashboard{
@@ -108,6 +109,13 @@ func New(probe Prober, opts ...Option) *Dashboard {
 	}
 
 	return d
+}
+
+// Routes returns the dashboard's fully resolved routes: defaults or
+// WithRoutes, then the WithBasePath prefix applied once after all options
+// ran. Empty string values mean "endpoint disabled" and were not prefixed.
+func (d *Dashboard) Routes() Routes {
+	return d.cfg.Routes
 }
 
 // resolvePushInterval determines the effective push interval. When the

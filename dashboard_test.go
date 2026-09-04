@@ -862,24 +862,54 @@ func TestWithRoutes_AfterWithBasePath(t *testing.T) {
 		Startup:   "/start",
 	}
 
-	// WithRoutes is applied last — it replaces the prefixed set entirely.
+	// BasePath is applied once after ALL options run, so option order no
+	// longer matters (historically WithRoutes after WithBasePath silently
+	// dropped the prefix). Both orders must yield the same prefixed set.
 	s := setupDashboard(t,
 		dashboard.WithBasePath("/admin"),
 		dashboard.WithRoutes(custom),
 	)
 	defer s.cleanup()
 
-	for _, path := range []string{"/status", "/live", "/ready", "/start"} {
-		w := doRequest(t, s.mux, path)
-		if w.Code == http.StatusNotFound {
-			t.Errorf("unprefixed custom route %s should be registered (WithRoutes wins)", path)
+	reversed := setupDashboard(t,
+		dashboard.WithRoutes(custom),
+		dashboard.WithBasePath("/admin"),
+	)
+	defer reversed.cleanup()
+
+	want := []string{
+		"/admin/status",
+		"/admin/status/sse",
+		"/admin/live",
+		"/admin/ready",
+		"/admin/start",
+	}
+	for _, dash := range []*dashboard.Dashboard{s.dash, reversed.dash} {
+		if got := dash.Routes(); got.Dashboard != want[0] || got.SSE != want[1] ||
+			got.Liveness != want[2] {
+			t.Errorf(
+				"resolved routes: want dashboard=%s sse=%s liveness=%s, got %+v",
+				want[0],
+				want[1],
+				want[2],
+				got,
+			)
 		}
 	}
 
-	for _, path := range []string{"/admin/status", "/admin/live"} {
-		w := doRequest(t, s.mux, path)
-		if w.Code != http.StatusNotFound {
-			t.Errorf("prefixed route %s should NOT be registered: want 404, got %d", path, w.Code)
+	for _, path := range want[:1] {
+		if w := doRequest(t, s.mux, path); w.Code == http.StatusNotFound {
+			t.Errorf("prefixed custom route %s should be registered", path)
+		}
+		if w := doRequest(t, reversed.mux, path); w.Code == http.StatusNotFound {
+			t.Errorf("prefixed custom route %s should be registered (reverse order)", path)
+		}
+	}
+
+	// The unprefixed custom routes must NOT be registered — the prefix won.
+	for _, mux := range []*http.ServeMux{s.mux, reversed.mux} {
+		if w := doRequest(t, mux, "/status"); w.Code != http.StatusNotFound {
+			t.Errorf("unprefixed /status should NOT be registered: want 404, got %d", w.Code)
 		}
 	}
 }

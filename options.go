@@ -57,6 +57,10 @@ type Config struct {
 	// unaffected.
 	PublicMode bool
 
+	// BasePath is stored by WithBasePath and applied to Routes once after
+	// all options run (see resolveRoutes). Empty means no prefix.
+	BasePath string
+
 	// RateLimitRequests and RateLimitWindow configure a shared token
 	// bucket across all dashboard-owned routes. Zero disables rate
 	// limiting (default). Probe endpoints are never limited.
@@ -305,44 +309,54 @@ func WithRetryInterval(d time.Duration) Option {
 // Use this when mounting the dashboard under a non-root path — for example
 // WithBasePath("/admin") produces "/admin/health", "/admin/health/sse", etc.
 //
-// The prefix is applied to whatever routes are currently configured. When
-// combined with WithRoutes, call WithBasePath last so it prefixes the custom
-// routes; calling WithRoutes after WithBasePath replaces the prefixed set.
+// The prefix is stored and applied once after all options run, so the order
+// of WithBasePath relative to WithRoutes does not matter (the historical
+// ordering footgun is gone).
 func WithBasePath(prefix string) Option {
 	return func(cfg *Config) {
-		prefix = strings.TrimSuffix(prefix, "/")
-		if prefix == "" {
-			return
-		}
-
-		r := cfg.Routes
-		out := Routes{
-			Dashboard: prefix + r.Dashboard,
-			SSE:       prefix + r.SSE,
-			Favicon:   prefix + r.Favicon,
-			Liveness:  prefix + r.Liveness,
-			Readiness: prefix + r.Readiness,
-			Startup:   prefix + r.Startup,
-		}
-
-		// An empty Metrics route is meaningful ("disabled") — don't turn it
-		// into the bare prefix.
-		if r.Metrics != "" {
-			out.Metrics = prefix + r.Metrics
-		}
-
-		// Same for Trend/Export: empty means disabled, and they only
-		// register when WithTrend is configured anyway.
-		if r.Trend != "" {
-			out.Trend = prefix + r.Trend
-		}
-
-		if r.Export != "" {
-			out.Export = prefix + r.Export
-		}
-
-		cfg.Routes = out
+		cfg.BasePath = strings.TrimSuffix(prefix, "/")
 	}
+}
+
+// resolveRoutes applies cfg.BasePath to cfg.Routes. Empty routes stay
+// empty ("disabled") and never become the bare prefix.
+func (c *Config) resolveRoutes() {
+	if c.BasePath == "" {
+		return
+	}
+
+	prefix := c.BasePath
+	r := c.Routes
+
+	out := Routes{
+		Dashboard:  prefix + r.Dashboard,
+		SSE:        prefix + r.SSE,
+		Favicon:    prefix + r.Favicon,
+		Liveness:   prefix + r.Liveness,
+		Readiness:  prefix + r.Readiness,
+		Startup:    prefix + r.Startup,
+		Introspect: prefix + r.Introspect,
+	}
+
+	// Empty Metrics route is meaningful ("disabled") — don't turn it into
+	// the bare prefix. Same for Trend/Export/Introspect.
+	if r.Metrics != "" {
+		out.Metrics = prefix + r.Metrics
+	}
+
+	if r.Trend != "" {
+		out.Trend = prefix + r.Trend
+	}
+
+	if r.Export != "" {
+		out.Export = prefix + r.Export
+	}
+
+	if r.Introspect != "" {
+		out.Introspect = prefix + r.Introspect
+	}
+
+	c.Routes = out
 }
 
 // WithIntrospection enables the introspection endpoint served at

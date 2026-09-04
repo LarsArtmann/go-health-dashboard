@@ -116,7 +116,11 @@ func TestIntrospection_NeverLeaksCheckData(t *testing.T) {
 
 	for _, leak := range []string{"cache", "queue", `"error"`, `"fail"`} {
 		if strings.Contains(w.Body.String(), leak) {
-			t.Errorf("introspection body contains check-derived data %q:\n%s", leak, w.Body.String())
+			t.Errorf(
+				"introspection body contains check-derived data %q:\n%s",
+				leak,
+				w.Body.String(),
+			)
 		}
 	}
 }
