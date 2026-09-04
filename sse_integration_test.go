@@ -267,35 +267,43 @@ func TestWithMaxSSEConnections_ZeroAllowsUnlimited(t *testing.T) {
 	defer cleanup()
 
 	const clients = 3
-	resps := make([]*http.Response, 0, clients)
-	streams := make([]*sseStream, 0, clients)
 
-	for range clients {
-		resp, stream := connectSSE(
-			t,
-			server,
-		) //nolint:bodyclose // all bodies close in the deferred loop below
-		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("client %d: want 200, got %d", len(resps), resp.StatusCode)
-		}
-
-		resps = append(resps, resp)
-		streams = append(streams, stream)
+	// Keep every client open: admission (never 503) is proven by the
+	// SubscriberCount reaching `clients` while all streams are live.
+	type sseClient struct {
+		resp   *http.Response
+		stream *sseStream
 	}
 
+	open := make([]sseClient, 0, clients)
+
 	defer func() {
-		for _, resp := range resps {
-			_ = resp.Body.Close()
+		for _, c := range open {
+			_ = c.resp.Body.Close()
 		}
 	}()
 
-	// Every client receives its initial patch.
-	for _, stream := range streams {
+	for range clients {
+		resp, stream := connectSSE(t, server) //nolint:bodyclose // every body closes in the deferred cleanup above
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("client %d: want 200, got %d", len(open), resp.StatusCode)
+		}
+
 		stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+		open = append(open, sseClient{resp: resp, stream: stream})
 	}
 
-	if count := dash.SubscriberCount(); count != clients {
-		t.Fatalf("SubscriberCount with %d clients: want %d, got %d", clients, clients, count)
+	deadline := time.Now().Add(3 * time.Second)
+	for dash.SubscriberCount() != clients {
+		if time.Now().After(deadline) {
+			t.Fatalf(
+				"SubscriberCount with %d clients: want %d, got %d",
+				clients,
+				clients,
+				dash.SubscriberCount(),
+			)
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
