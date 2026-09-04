@@ -64,6 +64,13 @@ prefer `dashboard.Register(injector, probe, opts...)` over `dashboard.New`.
 `do.HealthCheck` cascades include it automatically — see the package
 documentation and the `lifecycle_test.go` suite for the exact contracts.
 
+## Releasing
+
+Maintainers cut releases by following `docs/release-checklist.md` —
+reconcile, re-head the CHANGELOG, bump the `Version` const in the same
+commit as the annotated tag, run every gate, then push and verify the
+proxy, CI, and the GitHub Release page.
+
 ## Reporting Issues
 
 Please use GitHub Issues to report bugs or request features.
