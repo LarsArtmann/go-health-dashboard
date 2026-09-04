@@ -2,7 +2,7 @@
 
 Real-time health dashboard that composes [go-health](https://github.com/larsartmann/go-health) (health-checking SDK), [templ-components](https://github.com/larsartmann/templ-components) (UI rendering), [go-datastar](https://github.com/larsartmann/go-datastar) (Datastar SSE patch protocol), and [go-sse](https://github.com/larsartmann/go-sse) (SSE transport). The dashboard lives at a dedicated route (`/health`) and uses Datastar SSE for real-time updates. `/health` serves HTML by default but returns JSON when the client sends `Accept: application/json`. Kubernetes probe endpoints (`/healthz`, `/readyz`, `/startupz`) are JSON-only.
 
-**Module**: `github.com/larsartmann/go-health-dashboard` · **Package**: `dashboard` · **Go**: 1.26.5 · **Status**: v0.5.0
+**Module**: `github.com/larsartmann/go-health-dashboard` · **Package**: `dashboard` · **Go**: 1.26.5 · **Status**: v0.6.0
 
 ---
 
@@ -143,8 +143,8 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - SSE tested with short-timeout context (handler blocks for streaming). Verifies `text/event-stream` content-type and `datastar-patch-elements` event type. Never request `/health/sse` through a plain `httptest.ResponseRecorder` without a timeout — the streaming handler blocks forever and the package hits the 10-minute `go test` timeout.
 - Change detection tested via `TestFingerprintChecks_Deterministic` and `TestFingerprintChecks_DetectsChanges`.
 - Trend rendering tests poll with `waitForBody` (25ms interval, 3s deadline) instead of fixed sleeps; SSE disconnect tests poll `SubscriberCount()` the same way. Patches are asserted CSP-clean (no `style=`) via `TestSSE_PatchContentHasNoInlineStyles` (PushAlways for a multi-patch stream).
-- Fuzz targets run as seed tests in `go test`; fuzz properly with `GOEXPERIMENT=jsonv2 go test -fuzz FuzzWantsJSON -fuzztime 30s .` (and `FuzzHealthResponseSerialization`).
-- Browser tests need a Chrome binary: `GO_HEALTH_DASHBOARD_CHROME=/path/to/chromium go test -run TestBrowser_CSPCleanRuntime`. Screenshot capture additionally needs `SCREENSHOT_OUTPUT=docs/screenshot.png`.
+- Fuzz: seven targets (see `.github/workflows/fuzz.yml`) run as seed tests in plain `go test`; fuzz properly with `GOEXPERIMENT=jsonv2 go test -fuzz <Target> -fuzztime 60s .`.
+- Browser tests need Chrome: the devShell provides it (`GO_HEALTH_DASHBOARD_CHROME` is set to nix chromium), so `nix develop -c go test -run TestBrowser` just works; CI installs Chrome in the browser job. Screenshot capture additionally needs `SCREENSHOT_OUTPUT=docs/screenshot.png`.
 - Lifecycle tests in `lifecycle_test.go`: `HealthCheck` before/after Start/Shutdown, `Register` participation in `do.HealthCheck`/`do.Shutdown` cascades, idempotent `Shutdown`.
 - Benchmarks: `BenchmarkHandler_HTMLRendering`.
 
@@ -153,12 +153,9 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 ## Gotchas
 
 - **GOEXPERIMENT=jsonv2 is required** — The go-sse dependency uses `encoding/json/v2`. Set `GOEXPERIMENT=jsonv2` for all Go commands. The flake.nix devShell does this automatically.
-- **Metrics output is not byte-frozen anymore** — the latency histogram
-  `_sum`/counts change per pusher tick; `TestMetrics_ChecksSortedForDeterministicOutput`
-  strips `dashboard_health_check_duration_seconds*` lines before comparing.
-  Sorted check names remain the guaranteed-stable part.
+- **Metrics output is not byte-frozen** — the latency histogram `_sum`/counts change per tick; `TestMetrics_ChecksSortedForDeterministicOutput` strips `dashboard_health_check_duration_seconds*` lines before comparing. Sorted check names stay stable.
 - **Browser tests serialize via `browserSerial` mutex** — headless-Chrome startups are heavyweight; parallel launches on loaded machines pushed startup past the announce timeout (now 45s). New browser tests must go through `startHeadlessChrome`, which takes the lock. The axe audit downloads axe-core from cdnjs at test setup and skips when offline.
-- **gopls needs the same env** — Without it, gopls shows stale `json.Marshal requires go1.27` diagnostics that the real linter does not. `.vscode/settings.json` (committed) sets `gopls.build.env` to `GOEXPERIMENT=jsonv2` + `GOWORK=off`; trust `nix run .#lint` over editor squiggles when they disagree.
+- **gopls stdversion warnings dismissed** — gopls flags `json.Unmarshal requires go1.27` identically with AND without `GOEXPERIMENT=jsonv2` (gopls v0.23.0); `json.Unmarshal` is legitimate on go1.26 under the experiment. Dismissed via `analyses.stdversion: false` in `.vscode/settings.json` (which also sets the gopls env). Trust `nix run .#lint` over editor squiggles; re-check on gopls upgrade (ROADMAP).
 - **GOWORK=off in devShell** — The parent `~/projects/go.work` includes all sibling repos. The flake.nix sets `GOWORK=off` to prevent workspace interference.
 - **templ generate before build** — `*_templ.go` files must be regenerated when `.templ` sources change. The flake.nix runs `templ generate` as a pre-build step.
 - **Probe and Dashboard must be Started** — Call `probe.Start(ctx)` and `dash.Start(ctx)` before serving traffic. Without Start, `CachedResponse()` returns a zero-value Response and the pusher goroutine isn't running.
@@ -168,27 +165,8 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **Two datastar packages** — `github.com/larsartmann/templ-components/datastar` (UI components: LiveRegion, SDKScript) and `github.com/larsartmann/go-datastar` (SSE protocol: ElementsFromTempl, WithModeInner). Import the latter as `dstar` to avoid name collision. A third package, `github.com/larsartmann/go-datastar/static`, embeds the real SDK JS bundle — use it in tests for hermetic browser runs.
 - **Datastar SDK requires `script-src 'unsafe-eval'`** — the SDK compiles `data-*` expressions with the `Function` constructor. Under a strict CSP without it, the bundle throws `Error: GenerateExpression` during init and the SSE connection never opens (discovered by `browser_test.go`). Nonce-based script delivery still works; styles stay clean with `WithCSSPath`.
 - **Headless Chrome must be launched manually in tests** — this machine's Chromium binds the DevTools listener to IPv6 `[::1]` and never announces a websocket with `--remote-debugging-port=0`. `startHeadlessChrome` (browser_test.go) picks a concrete free port, parses the `DevTools listening on ...` stderr line, and hands it to `chromedp.NewRemoteAllocator`. The profile dir is removed with a bounded retry because renderer children outlive the browser process.
-- **Bisect wall `071c251..HEAD` (audited 2026-09-04)** — five pushed
-  auto-daemon commits do not compile; pushed history is immutable. Use
-  `git bisect skip` on: `fb9d0de` (status.go type mismatch),
-  `72783fc` (missing `sync/atomic` import), `61f18a3` (duplicate `time`
-  import in trend.go), `49f4eb9` (webhookNotifier/di.go mid-move),
-  `ed2b759` (wantsJSON duplicated across the dashboard.go split). Root
-  cause class: the auto-commit daemon snapshots mid-edit trees — run a
-  fast `go build ./...` before walking away from a half-wired state.
-  Full audit record: `docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
-- **templ-components is pinned at v1.11.0 on purpose** — v1.12.0's
-  LiveRegion busy-script renders `nonce=""` unguarded (upstream
-  templ-components#7, still unfixed at v1.12.0), breaking no-nonce and
-  strict-CSP renders; the pin also freezes the audited Datastar SDK
-  bundle (go-datastar v0.4.0). An undocumented `go get` sweep to
-  v1.12.0 / go-datastar v0.5.0 landed 2026-09-04 and failed three
-  CSP-invariant tests (`TestCSP_NoNonceRendersWithoutNonce`,
-  `TestCSP_EmptyNonceRendersWithoutNonce`,
-  `TestCSP_WithoutDatastarSrcUsesCDN`); it was reverted twice on
-  2026-09-04 (`8cf2c62`, then a re-land re-reverted). UI-dependency
-  bumps must run the browser suite before landing — the unit suite
-  alone cannot see these regressions.
+- **Bisect wall `071c251..HEAD`** — five auto-daemon mid-edit commits do not compile (immutable history); `git bisect skip` them. Root cause class: the daemon snapshots half-wired trees — run `go build ./...` before walking away. Full audit: `docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
+- **UI dependencies are pinned and guarded** — templ-components v1.11.0 + go-datastar v0.4.0 (sub-modules included): v1.12.0's LiveRegion busy-script renders `nonce=""` (upstream templ-components#7) and the v0.5.0 SDK bundle is unaudited. Undocumented sweeps have landed four times; `scripts/check-ui-pins.sh` (CI Build+Test steps) now fails loudly on any movement. UI bumps require a green browser suite — the unit suite cannot see these regressions. Removal condition is documented in the script header.
 - **Env toggles validate before use** — the example's `safeBasePath` is the
   pattern: any value read from an environment variable that reaches a route
   or a log line gets validated/normalized first (log-injection defense).

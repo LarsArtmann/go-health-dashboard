@@ -155,10 +155,14 @@ Raw ideas:
   verify not already shipped upstream, then adopt
 - Deprecate `WithNonce` in favor of `WithNonceExtractor` (long-term)
 - `nix run .#ci` local mirror of the GitHub Actions steps
-- Investigate why 14 gopls stdversion warnings persist despite the committed
-  `.vscode/settings.json` (tooling split brain)
-- Consider signing tags (release hardening) + Keep-a-Changelog compare links
-  in CHANGELOG footers
+- Re-check the gopls stdversion false positive on a future gopls release
+  (dismissed 2026-09-04 via `analyses.stdversion: false` in
+  `.vscode/settings.json`: the warning fires identically with and without
+  `GOEXPERIMENT=jsonv2` on gopls v0.23.0 even though `json.Unmarshal` is
+  fully supported on go1.26 under the experiment; golangci-lint — the
+  authoritative gate — does not enable stdversion)
+- Sign release tags (`tag.gpgSign`, documented in `docs/release-checklist.md`;
+  compare links shipped in the CHANGELOG footer 2026-09-04)
 
 ## Non-goals
 
