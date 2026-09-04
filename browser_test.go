@@ -1025,7 +1025,19 @@ func TestBrowser_AggregateCSPClean(t *testing.T) {
 		t.Fatalf("browser navigate: %v", err)
 	}
 
-	waitForSubscriber(t, s.dash)
+	if dash := s.dash; dash.SubscriberCount() == 0 {
+		deadline := time.Now().Add(20 * time.Second)
+
+		for dash.SubscriberCount() == 0 && time.Now().Before(deadline) {
+			time.Sleep(100 * time.Millisecond)
+		}
+
+		if dash.SubscriberCount() == 0 {
+			var html string
+			_ = chromedp.Run(ctx, chromedp.Evaluate(`document.body.innerHTML.slice(0, 600)`, &html))
+			t.Fatalf("aggregate page SSE never connected; console: %v; body: %s", errLog.all(), html)
+		}
+	}
 
 	var namespaced string
 	if err := chromedp.Run(ctx, chromedp.Evaluate(
@@ -1036,7 +1048,7 @@ func TestBrowser_AggregateCSPClean(t *testing.T) {
 	}
 
 	if namespaced != "yes" {
-		t.Error("aggregate page does not show the namespaced api/postgres check")
+		t.Errorf("aggregate page does not show the namespaced api/postgres check; console: %v", errLog.all())
 	}
 
 	// CSP-clean invariants, same as the single-probe page.
