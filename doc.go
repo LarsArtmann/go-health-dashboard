@@ -27,4 +27,23 @@
 // Browser visits http://localhost:8080/health and sees a live status dashboard
 // that updates in real-time via SSE. Kubelet hits http://localhost:8080/readyz
 // and gets the JSON readiness response.
+//
+// # DI Container Integration
+//
+// When the probe already runs in a samber/do injector (go-health requires
+// one), Register wires the dashboard into the same container. The dashboard
+// then participates in container-wide Shutdown and HealthCheck cascades —
+// no manual Start/Shutdown bookkeeping beyond starting the pusher:
+//
+//	dash := dashboard.Register(injector, probe)
+//	_ = dash.Start(ctx)
+//	defer do.Shutdown(injector) // cascades to the dashboard
+//
+// # Health Errors
+//
+// HealthCheck reports two sentinel-wrapped errors, both detectable via
+// errors.Is(err, dashboard.ErrPusherNotActive):
+//
+//	dashboard.ErrPusherNotStarted // Start has never been called
+//	dashboard.ErrPusherShutDown   // Shutdown has been called
 package dashboard

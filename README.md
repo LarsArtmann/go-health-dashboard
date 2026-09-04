@@ -115,7 +115,7 @@ dash := dashboard.New(probe,
     dashboard.WithMiddleware(myAuthMiddleware),                // Protect dashboard routes (see below)
     dashboard.WithShutdownDrain(5*time.Second),                // Wait for SSE clients on Shutdown
     dashboard.WithMaxConnectionLifetime(10*time.Minute),       // Recycle long-lived SSE streams
-    dashboard.WithRateLimit(100, time.Minute),                 // Token bucket on dashboard routes (429 beyond)
+    dashboard.WithRateLimit(100, time.Minute),                 // ONE shared bucket for all dashboard routes (429 beyond)
     dashboard.WithDescription("Status page for My Service"),   // Meta description + Open Graph tags
     dashboard.WithPublicMode(),                                // Anonymize check names/errors in HTML + metrics
     dashboard.WithDatastarSrc("/static/datastar.js"),          // Self-hosted Datastar SDK (CSP 'self')
@@ -128,6 +128,11 @@ dash := dashboard.New(probe,
     }),
 )
 ```
+
+`WithRateLimit` configures a **single shared token bucket** across all
+dashboard-owned routes (dashboard HTML, SSE, favicon, metrics, trend,
+export) — not one bucket per route. Kubernetes probe endpoints are never
+limited.
 
 ## Protecting the Dashboard
 

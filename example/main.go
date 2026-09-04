@@ -14,6 +14,8 @@
 //	DEMO_AUTH=<token>            require "Authorization: Bearer <token>" on dashboard routes
 //	DEMO_RATELIMIT=<n>/<window>  e.g. 30/1m — token-bucket limit on dashboard routes
 //	DEMO_DRAIN=5s                graceful SSE drain window on shutdown
+//	DEMO_PUBLIC=1                public status-page mode (WithPublicMode)
+//	DEMO_BASE_PATH=/status       mount the dashboard under a sub-path (WithBasePath)
 //	PORT=8080                    listen address
 package main
 
@@ -95,6 +97,16 @@ func main() {
 
 		opts = append(opts, dashboard.WithRateLimit(maxReqs, window))
 		log.Printf("rate limit: enabled on dashboard routes")
+	}
+
+	if os.Getenv("DEMO_PUBLIC") != "" {
+		opts = append(opts, dashboard.WithPublicMode())
+		log.Println("public mode: check names and errors anonymized (DEMO_PUBLIC set)")
+	}
+
+	if basePath := os.Getenv("DEMO_BASE_PATH"); basePath != "" {
+		opts = append(opts, dashboard.WithBasePath(basePath))
+		log.Printf("base path: dashboard mounted under %s (DEMO_BASE_PATH set)", basePath)
 	}
 
 	// Register the dashboard in the injector so it participates in

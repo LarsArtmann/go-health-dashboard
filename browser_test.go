@@ -659,20 +659,19 @@ func TestBrowser_Accessibility(t *testing.T) {
 	// The skip link is sr-only until keyboard focus and this harness serves
 	// no real Tailwind stylesheet, so axe cannot compute meaningful contrast
 	// for it; production colors (blue-600 on white) pass WCAG AA.
-	// definition-list is tolerated ONLY for the StatCard markup signature
-	// (a flex/min-w-0 <dl> whose <dd> sits in a <div>, upstream
-	// templ-components#6); any other definition-list violation still fails.
+	// definition-list is tolerated ONLY for the StatCard figure markup
+	// (upstream templ-components#6: the <dd> sits in an
+	// "items-baseline" <div> — the only items-baseline user on this page);
+	// any other definition-list violation still fails.
 	start := `axe.run(
 		{ include: [document], exclude: [["a[href='#main-content']"]] },
 		{ resultTypes: ["violations"] }
 	).then(function (r) {
-		var statCardDl = /class="(?:flex-1 min-w-0|min-w-0 flex-1)"/;
-		var statCardDdWrapper = /<div[^>]*class="[^"]*items-baseline[^"]*"[^>]*>\s*<dd/;
 		window.__axeViolations = JSON.stringify(r.violations.filter(function (v) {
 			if (v.impact !== "serious" && v.impact !== "critical") { return false; }
 			if (v.id === "definition-list") {
 				return !(v.nodes.length > 0 && v.nodes.every(function (n) {
-					return statCardDl.test(n.html) || statCardDdWrapper.test(n.html);
+					return n.html.indexOf("items-baseline") !== -1 && n.html.indexOf("<dd") !== -1;
 				}));
 			}
 			return true;
