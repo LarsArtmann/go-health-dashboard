@@ -64,6 +64,9 @@ per-file suites.
 
 ### Key Design Decisions
 
+Recorded ADRs: `docs/adr/0001-dashboard-file-split.md` (options/handlers/history
+layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
+
 - **Prober interface on the consumer side** — `dashboard.New` takes a narrow `Prober`
   interface (`CachedResponse`, `RefreshInterval`, the three handler getters), not
   `*health.Probe`. Structural typing keeps every existing caller compiling, and

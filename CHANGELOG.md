@@ -489,3 +489,13 @@ development have been removed.
   (randomized order), causing `PushOnChange` to broadcast every tick.
   Replaced by `fingerprintChecks` which sorts keys before concatenating
   (`status.go:215`)
+
+[Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.3.1...v0.4.0
+[0.3.1]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/01277d3...v0.1.0
+[0.1.0-alpha]: https://github.com/LarsArtmann/go-health-dashboard/releases/tag/v0.1.0-alpha
