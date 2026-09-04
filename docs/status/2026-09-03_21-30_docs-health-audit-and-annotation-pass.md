@@ -40,32 +40,32 @@ HTML; the user explicitly requested `.md` at a `.md` path, so Markdown was used.
 
 ## b) PARTIALLY DONE
 
-1. **CONTRIBUTING.md** — flagged by two reports (browser-test how-to, `Register`/DI
+1. ~~**CONTRIBUTING.md** — flagged by two reports (browser-test how-to, `Register`/DI
    mention). I filed it in TODO_LIST instead of doing the ~20-minute edit while I was
    already editing docs. Works: nothing — file untouched. Remaining: the edit.
-   Blocker: none, pure prioritization failure. Effort: S.
-2. **doc.go examples** — `Register` + `ErrPusherNotActive` Quick Start additions
+   Blocker: none, pure prioritization failure. Effort: S.~~ done at `db8621f` (sweep) + coverage-floor note added 2026-09-04
+2. ~~**doc.go examples** — `Register` + `ErrPusherNotActive` Quick Start additions
    (04-42 f21/f22). README got the Register note; doc.go did not. Remaining: doc.go
-   edit only. Effort: S.
+   edit only. Effort: S.~~ done at `db8621f`
 3. **Screenshot regeneration docs (sweep f15)** — dark screenshot now embedded with a
    capture-note; the **light** screenshot still has no caption and there is no
    documented regenerate one-liner. Effort: S.
-4. **Coverage floor** — baseline recorded (76.9%) but no CI floor or artifact upload
+4. ~~**Coverage floor** — baseline recorded (76.9%) but no CI floor or artifact upload
    (retro f9/f14). Blocker: artifact upload wants a verified `actions/upload-artifact`
-   SHA first. Effort: M.
-5. **Harvest depth** — 24 of ~30 verified-open candidates routed into TODO_LIST/ROADMAP.
+   SHA first. Effort: M.~~ done at `db8621f` (verified-SHA upload + 75% floor)
+5. ~~**Harvest depth** — 24 of ~30 verified-open candidates routed into TODO_LIST/ROADMAP.
    Six were left unrouted **without a documented decision** (CSV fuzz target,
    RecommendedCSP fuzz target, keyboard-nav a11y smoke, metrics-under-strict-CSP browser
    test, "protect probes via network policy" note, unchecked `injector.Shutdown()` in
-   `lifecycle_test.go`). Blocker: none — see g.3. Effort: S.
+   `lifecycle_test.go`). Blocker: none — see g.3. Effort: S.~~ resolved at `c7e4f13` — all six routed to ROADMAP; the injector.Shutdown check already existed (lifecycle_test.go:119)
 6. **AGENTS.md size** — grew ~1 KB in a pass that should also have pruned toward the
    15 KB budget (now ~21 KB, "acceptable" band). Remaining: prune pass. Effort: M.
 7. **execution-complete annotations** — lightest touch of the six reports (one inline
    pointer). Its build-tag bullet is the standing open item and got no explicit marker
    (the retro + sweep carry the full dispositions). Effort: S.
-8. **04-41 residual ideas** — `BenchmarkHealthCheck`, Dashboard self-monitoring test,
+8. ~~**04-41 residual ideas** — `BenchmarkHealthCheck`, Dashboard self-monitoring test,
    `do.Package`, shutdown-ordering test verified still open but **not routed** to
-   ROADMAP. Effort: S.
+   ROADMAP. Effort: S.~~ resolved at `c7e4f13` — routed to the ROADMAP DI-surface bullet
 9. **Local browser suite** — skipped in my final verification run (no
    `GO_HEALTH_DASHBOARD_CHROME` in my shell); I relied on CI's green browser job from
    today instead. Works: CI proof. Missing: local confirmation. Effort: S.
@@ -75,28 +75,28 @@ HTML; the user explicitly requested `.md` at a `.md` path, so Markdown was used.
 _(Deliberately untouched this session — all now tracked in the rebuilt TODO_LIST /
 ROADMAP, none silently dropped)_
 
-1. **Release cut** (v0.4.0 vs v0.3.2) — waiting on the release-policy question (g.1);
-   `[Unreleased]` batch is fully written and ready to re-head.
-2. **CI hardening cluster** — fuzz.yml `workflow_dispatch` validation, golangci-lint pin
+1. ~~**Release cut** (v0.4.0 vs v0.3.2) — waiting on the release-policy question (g.1);
+   `[Unreleased]` batch is fully written and ready to re-head.~~ done — v0.4.0 (`8f63d85`) and v0.5.0 (`ed650bf`) shipped; the v0.6.0 batch is a TODO_LIST row
+2. ~~**CI hardening cluster** — fuzz.yml `workflow_dispatch` validation, golangci-lint pin
    (`version: latest` today), templ CLI pin (`@latest` ×4 today), concurrency group,
-   issue-on-failure for nightly fuzz, coverage artifact.
-3. **Code-quality refactors** — split `dashboard.go` (~700 lines), extract
+   issue-on-failure for nightly fuzz, coverage artifact.~~ done at `db8621f` (fuzz dispatch verified: run 33896794771)
+3. ~~**Code-quality refactors** — split `dashboard.go` (~700 lines), extract
    `history.go`, dedupe trend/export JSON mapping, `TrendHandler` 503 message,
    `BenchmarkDashboard_PatchRender` rename (verified: it serves full HTML), inline
-   `maxRequestsInvalid`.
-4. **Testing-gap items** — two flaky `time.Sleep`s in `sse_integration_test.go`
+   `maxRequestsInvalid`.~~ done at `db8621f`
+4. ~~**Testing-gap items** — two flaky `time.Sleep`s in `sse_integration_test.go`
    (`:265`, `:492` — verified still present), `WithMaxSSEConnections(0)` test,
-   probe-not-started SSE test, `style=` patch assertion, sentinel state split.
-5. **Upstream work** — PR to templ-components for the StatCard `<dl>` fix (+ goldens),
-   then remove the repo's axe rule-level tolerance.
-6. **Example toggles** — `DEMO_PUBLIC=1`, `DEMO_BASE_PATH=/status`.
-7. **Bisectability audit** of `071c251..HEAD` (the `72783fc` wall is documented in
-   AGENTS.md; the full 58-commit audit is not done).
+   probe-not-started SSE test, `style=` patch assertion, sentinel state split.~~ done at `db8621f`
+5. ~~**Upstream work** — PR to templ-components for the StatCard `<dl>` fix (+ goldens),
+   then remove the repo's axe rule-level tolerance.~~ open — TODO_LIST rows for #6 and #7 (added 2026-09-04)
+6. ~~**Example toggles** — `DEMO_PUBLIC=1`, `DEMO_BASE_PATH=/status`.~~ done at `db8621f`
+7. ~~**Bisectability audit** of `071c251..HEAD` (the `72783fc` wall is documented in
+   AGENTS.md; the full 58-commit audit is not done).~~ done 2026-09-04 — 91 commits audited, 86 build; audit archived
 8. **Next Pareto planning pass** — the rebuilt TODO_LIST is the input universe.
-9. **Unrouted brainstorm items** (b.5) — pending the g.3 decision.
-10. **ARCHIVE moves** — deliberately none: every non-archived `2026-0*` file retains
+9. ~~**Unrouted brainstorm items** (b.5) — pending the g.3 decision.~~ resolved at `c7e4f13` — routed
+10. ~~**ARCHIVE moves** — deliberately none: every non-archived `2026-0*` file retains
     genuinely open items (blocked decisions, upstream PR, flaky tests), and the skill
-    requires _every_ item resolved before `git mv` to `archived/`.
+    requires _every_ item resolved before `git mv` to `archived/`.~~ done 2026-09-04 docs-health pass — 6 status + 4 planning files archived after inline disposition
 
 ## d) TOTALLY FUCKED UP
 
@@ -163,6 +163,13 @@ ROADMAP, none silently dropped)_
 _Brainstorm ranked by impact; HARVEST with routing rigor before treating as
 commitments. Items 1–24 already live in `TODO_LIST.md` (harvested today); 25–50 are
 new observations from this session awaiting the g.3 decision or refined routing._
+
+**Dispositioned 2026-09-04:** items 1–21 and 23–24 shipped (v0.4.0/v0.5.0 cycle +
+2026-09-04 sweep — see CHANGELOG); 22 open (TODO_LIST upstream row); 25–32 done or
+routed at `c7e4f13`/today (CONTRIBUTING, doc.go, route-or-record, screenshots →
+ROADMAP, 04-41 residuals → ROADMAP DI bullet); 33–50 executed (the lint gate is
+now standard), routed to ROADMAP, or superseded. Canonical backlog:
+`TODO_LIST.md` + `ROADMAP.md`.
 
 | #  | Task                                                                                                                                                                               | Impact | Effort | Category      |
 | -- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------ | ------------- |

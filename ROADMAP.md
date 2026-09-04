@@ -19,6 +19,7 @@ Raw ideas:
 - Rate limiter response headers: `X-RateLimit-Limit` / `X-RateLimit-Remaining`
   / `X-RateLimit-Reset` (basic 429 + Retry-After shipped in v0.3.x cycle)
 - Optional jitter on `WithMaxConnectionLifetime` to avoid reconnect herds
+- Retry-After header on 503s during the shutdown-drain window
 - Watchdog gauge `dashboard_pusher_last_tick_seconds` and an opt-in
   auto-restart hook (current watchdog is report-only by design)
 - Request logging middleware option (slog) for dashboard routes

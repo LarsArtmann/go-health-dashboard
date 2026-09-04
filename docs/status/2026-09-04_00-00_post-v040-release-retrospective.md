@@ -43,21 +43,21 @@ execution, and the incidents found on the way.
 
 ## c) NOT STARTED (carried, still open)
 
-- Verify CI in the actual runner: ci.yml browser job green on a push;
+- ~~Verify CI in the actual runner: ci.yml browser job green on a push;
   fuzz.yml via workflow_dispatch. Both workflows exist but have never
-  been observed executing.
-- `nix run .#coverage` baseline + CI floor; `nix run .#vulncheck` after
-  the prometheus/common + chromedp dependency additions.
-- Version-const vs. git-tag guard (stale-const bug has bitten twice).
-- Document the broken-bisect commit `72783fc` in AGENTS.md (confirmed
-  non-compiling; pushed history, can't rewrite).
-- README drift: dark screenshot embed, `WithDescription`/`WithPublicMode`
-  option rows, histogram mention in the Prometheus section.
-- AGENTS.md file inventory: csp.go, ratelimit.go, trend.go, metrics.go
-  and the new test files are missing from the architecture list.
-- Fresh TODO_LIST cycle plan (list is all-DONE; next session needs a plan).
-- Decision-record doc for the Q3 finding (the false premise + the three
-  real options) so it survives into the next cycle.
+  been observed executing.~~ partially — fuzz verified (run 33896794771) and browser job green (run 33763955031, 2026-09-03); the new ci.yml jobs await the push (v0.6.0 TODO_LIST row)
+- ~~`nix run .#coverage` baseline + CI floor; `nix run .#vulncheck` after
+  the prometheus/common + chromedp dependency additions.~~ done — floor + artifact at `db8621f`; vulncheck clean in the 2026-09-03 pass
+- ~~Version-const vs. git-tag guard (stale-const bug has bitten twice).~~ done at `db8621f`
+- ~~Document the broken-bisect commit `72783fc` in AGENTS.md (confirmed
+  non-compiling; pushed history, can't rewrite).~~ done — AGENTS bisect wall lists all five SHAs; full audit archived
+- ~~README drift: dark screenshot embed, `WithDescription`/`WithPublicMode`
+  option rows, histogram mention in the Prometheus section.~~ done in the 2026-09-03 docs-health pass
+- ~~AGENTS.md file inventory: csp.go, ratelimit.go, trend.go, metrics.go
+  and the new test files are missing from the architecture list.~~ done 2026-09-03 (a9) + re-audited 2026-09-04 (`381d64e`)
+- ~~Fresh TODO_LIST cycle plan (list is all-DONE; next session needs a plan).~~ done at `c7e4f13` (rebuilt with open rows only)
+- ~~Decision-record doc for the Q3 finding (the false premise + the three
+  real options) so it survives into the next cycle.~~ superseded — the integration-over-federation plan (archived) + ROADMAP Open Question carry the decision
 
 ## d) TOTALLY FUCKED UP
 
@@ -118,6 +118,12 @@ execution, and the incidents found on the way.
    release prep or committing within seconds of every edit.
 
 ## f) 50 THINGS TO DO NEXT (carried + new, deduplicated)
+
+> **Dispositioned 2026-09-04:** 1–14 struck above. 15–19 and 31–40 routed to
+> ROADMAP (fuzz/browser/a11y clusters, hardening ideas); 20–21 shipped (`db8621f`);
+> 22–30 shipped across the v0.4.0 cycle and the 2026-09-04 sweep; 41–50 shipped in
+> the 2026-09-03 pass and the sweep (screenshots, options rows, inventory, pins,
+> concurrency). Canonical backlog: `TODO_LIST.md` + `ROADMAP.md`.
 
 Release & history
 
