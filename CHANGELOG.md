@@ -28,6 +28,11 @@ opt-in introspection endpoint exposes the running configuration.
   Opt-in; configuration metadata only (never check results or names);
   passes through the same middleware and rate limiting as other
   dashboard-owned routes.
+- `WithPushOnChangeTTL(n)`: in PushOnChange mode, re-assert the
+  unchanged state every n-th tick so a client that missed an event
+  self-heals instead of showing stale state until the next real change.
+- `WithTimelineMaxAge(d)`: hide timeline entries older than d from the
+  timeline card (trend/export keep the full history).
 - `WithRateLimit` 429 responses now negotiate: JSON clients receive
   `{"error": …, "retry_after": <seconds>}` (mirroring the Retry-After
   header); HTML clients keep the plain-text body.

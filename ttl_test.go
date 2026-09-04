@@ -60,7 +60,7 @@ func TestShouldBroadcast_TTLDisabled(t *testing.T) {
 		t.Fatal("first tick should broadcast")
 	}
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		if p.shouldBroadcast(resp) {
 			t.Fatalf("tick %d should be silent without TTL", i+2)
 		}
@@ -84,7 +84,11 @@ func TestPopulateHistory_TimelineMaxAge(t *testing.T) {
 	populateHistory(&vm, buffer, time.Hour)
 
 	if len(vm.Timeline) != 2 {
-		t.Fatalf("want 2 recent timeline entries after 1h cap, got %d: %+v", len(vm.Timeline), vm.Timeline)
+		t.Fatalf(
+			"want 2 recent timeline entries after 1h cap, got %d: %+v",
+			len(vm.Timeline),
+			vm.Timeline,
+		)
 	}
 
 	if vm.Timeline[0].Status != "warn" || vm.Timeline[1].Status != "pass" {
