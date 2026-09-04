@@ -81,6 +81,10 @@ dash := dashboard.Register(injector, probe, dashboard.WithTitle("My Service"))
 `Register` stores the Dashboard in the injector, so `do.Shutdown(injector)`
 and `do.HealthCheck[*Dashboard](injector)` cascade to it automatically.
 
+No samber/do in your app? go-health's `NewWithHealthCheck(fn, opts...)`
+builds a probe from a plain function — use it with `dashboard.New` +
+`Start`/`Shutdown` as shown above; only `Register` needs an injector.
+
 ## Routes
 
 | Path              | Method | Content-Type                  | What It Does                                                                                                              |

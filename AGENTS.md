@@ -202,6 +202,16 @@ per-file suites.
 Provides `Probe`, `Response`, `Check`, `Status` (v0.1.1 in go.mod). The dashboard is a pure consumer — zero changes needed to go-health:
 
 - `Probe.CachedResponse() Response` — reads atomic cache, overlays shutdown flag
+- `SanitizeResponse(Response) Response` — replaces invalid UTF-8 with U+FFFD;
+  the dashboard applies it once at the response choke point (`currentResponse`)
+  so every write seam (JSON, webhook, SSE, metrics, CSV) stays valid under
+  jsonv2 semantics
+- `NewWithHealthCheck(fn HealthCheckFunc, opts...)` — constructs a probe from
+  a plain function, no samber/do injector involved (non-do apps use it +
+  `dashboard.New` + `Start`/`Shutdown`; only `Register` needs the injector)
+- `Probe.Status()`/`Alive()`/`Ready()`/`AwaitReady()` — cheap cached accessors
+  available to consumers; the dashboard deliberately reads `CachedResponse`
+  so the view, metrics, and change detection share one snapshot
 - `Probe.RefreshInterval() time.Duration` — returns configured refresh interval
 - `Probe.LivenessHandler()`, `Probe.ReadinessHandler()`, `Probe.StartupHandler()` — JSON HTTP handlers
 - `aggregate` sub-package (since v0.1.0) — `aggregate.New(sources...)` merges N probes into

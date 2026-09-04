@@ -201,6 +201,13 @@ a verified CSP helper.
 
 ### Fixed
 
+- Every dashboard write seam (the `/health` JSON response, webhook
+  payloads, SSE patches, metrics, CSV export) now sanitizes the probe
+  snapshot via go-health's `SanitizeResponse`, applied once at the
+  dashboard's response choke point: service-supplied error strings can
+  carry invalid UTF-8, which previously leaked raw bytes into
+  jsonv2-encoded JSON output; those bytes are now replaced with U+FFFD
+  (`integration_test.go` proves the fix fails without the change).
 - `fingerprintChecks` delimiter collision: a check name containing `:` or
   `;` could alias a different split of the same bytes across name, status,
   and error (e.g. name `a:b` with status `c` collided with name `a` and

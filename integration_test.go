@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
@@ -370,5 +371,53 @@ func TestDashboard_RendersAggregateOfTwoProbes(t *testing.T) {
 
 	if ready.StatusCode != http.StatusOK {
 		t.Fatalf("GET /readyz status = %d, want 200 (warn stays 200)", ready.StatusCode)
+	}
+}
+
+// TestJSON_SanitizesInvalidUTF8FromStubProber proves the dashboard sanitizes
+// the probe snapshot before any write seam consumes it: service-supplied
+// fields (check errors, version strings) may contain invalid UTF-8, and
+// go-health's SanitizeResponse replaces those bytes with U+FFFD. The
+// dashboard's response choke point (currentResponse) applies it, so the JSON
+// response — and, by the same path, webhook payloads, SSE patches, metrics,
+// and CSV export — stays valid under jsonv2 semantics even for hostile
+// upstream bytes.
+func TestJSON_SanitizesInvalidUTF8FromStubProber(t *testing.T) {
+	t.Parallel()
+
+	garbage := "connection reset by \xff\xfe peer"
+	resp := health.Response{
+		Status:  health.StatusFail,
+		Version: "1.\xc3(0",
+		Checks: map[string]health.Check{
+			"db": {Status: health.StatusFail, Error: garbage},
+		},
+	}
+
+	dash := dashboard.New(newStubProber(resp))
+
+	w := doRequestWithAccept(t, dash.Handler(), "/health", "application/json")
+
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want 503 for fail", w.Code)
+	}
+
+	body := w.Body.String()
+	if !utf8.ValidString(body) {
+		t.Error("served JSON contains invalid UTF-8; want sanitized output")
+	}
+	if !strings.Contains(body, "\uFFFD") {
+		t.Error("served JSON does not contain U+FFFD replacement for invalid bytes")
+	}
+	if strings.Contains(body, "\xff") || strings.Contains(body, "\xfe") {
+		t.Error("served JSON leaks raw invalid bytes")
+	}
+
+	var back health.Response
+	if err := json.Unmarshal([]byte(body), &back); err != nil {
+		t.Fatalf("served JSON does not round-trip: %v", err)
+	}
+	if got := back.Checks["db"].Error; !strings.Contains(got, "\uFFFD") {
+		t.Errorf("check error after round-trip = %q, want U+FFFD substitution", got)
 	}
 }
