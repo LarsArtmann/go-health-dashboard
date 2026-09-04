@@ -48,6 +48,7 @@ func (d *Dashboard) IntrospectionHandler() http.Handler {
 		w.Header().Set("Cache-Control", "no-cache")
 
 		routes := map[string]string{}
+
 		for name, path := range map[string]string{
 			"dashboard": d.cfg.Routes.Dashboard,
 			"sse":       d.cfg.Routes.SSE,
@@ -62,6 +63,7 @@ func (d *Dashboard) IntrospectionHandler() http.Handler {
 		}
 
 		strategy := "none"
+
 		switch {
 		case d.cfg.NonceExtractor != nil:
 			strategy = "per-request"

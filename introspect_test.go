@@ -31,6 +31,50 @@ func TestIntrospection_ServesResolvedConfig(t *testing.T) {
 		t.Errorf("Content-Type: want application/json, got %q", ct)
 	}
 
+	doc := decodeIntrospection(t, w.Body.Bytes())
+
+	if doc.Version != dashboard.Version {
+		t.Errorf("version: want %q, got %q", dashboard.Version, doc.Version)
+	}
+
+	if doc.GoVersion == "" {
+		t.Error("go_version is empty")
+	}
+
+	for _, route := range []string{"dashboard", "sse", "trend", "export", "metrics"} {
+		if doc.Routes[route] == "" {
+			t.Errorf("routes.%s missing for an enabled feature", route)
+		}
+	}
+
+	if doc.Modes.TrendSamples != 42 {
+		t.Errorf("modes.trend_samples: want 42, got %d", doc.Modes.TrendSamples)
+	}
+}
+
+// introspectionDoc mirrors the JSON shape served by IntrospectionHandler.
+type introspectionDoc struct {
+	Version   string            `json:"version"`
+	GoVersion string            `json:"go_version"`
+	Routes    map[string]string `json:"routes"`
+	Limits    struct {
+		MaxSSEConnections int    `json:"max_sse_connections"`
+		RateLimitEnabled  bool   `json:"rate_limit_enabled"`
+		ShutdownDrain     string `json:"shutdown_drain"`
+	} `json:"limits"`
+	Modes struct {
+		PushMode      string `json:"push_mode"`
+		PublicMode    bool   `json:"public_mode"`
+		Metrics       bool   `json:"metrics"`
+		Webhook       bool   `json:"webhook"`
+		TrendSamples  int    `json:"trend_samples"`
+		NonceStrategy string `json:"nonce_strategy"`
+	} `json:"modes"`
+}
+
+func decodeIntrospection(t *testing.T, body []byte) introspectionDoc {
+	t.Helper()
+
 	var doc struct {
 		Version   string            `json:"version"`
 		GoVersion string            `json:"go_version"`
