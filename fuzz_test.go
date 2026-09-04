@@ -272,8 +272,8 @@ func validUTF8(s string) string {
 // only exercise response-derived surfaces (no goroutines, no handlers).
 type fuzzProber struct{}
 
-func (fuzzProber) CachedResponse() health.Response { return health.Response{} }
-func (fuzzProber) RefreshInterval() time.Duration  { return time.Second }
+func (fuzzProber) CachedResponse() health.Response    { return health.Response{} }
+func (fuzzProber) RefreshInterval() time.Duration     { return time.Second }
 func (fuzzProber) LivenessHandler() http.HandlerFunc  { return nil }
 func (fuzzProber) ReadinessHandler() http.HandlerFunc { return nil }
 func (fuzzProber) StartupHandler() http.HandlerFunc   { return nil }
@@ -313,7 +313,7 @@ func FuzzCSVExport(f *testing.F) {
 		"pass\nfail",
 		"pass\r\nfail",
 		`"quoted"`,
-		"unicode ✓ 状態",
+		"unicode ✓ café",
 		"pass;injection",
 		strings.Repeat("x", 300),
 	} {
@@ -397,7 +397,7 @@ func FuzzWebhookPayload(f *testing.F) {
 		{"api", "connection refused", "fail"},
 		{"", "", "pass"},
 		{"check\"quote", "err\nwith newline", "warn"},
-		{"日本語", "utf8 ✓", "pass"},
+		{"café", "utf8 ✓", "pass"},
 		{"a,b", `{"json":"injection"}`, "fail"},
 		{strings.Repeat("n", 200), strings.Repeat("e", 500), "warn"},
 	} {
@@ -405,7 +405,7 @@ func FuzzWebhookPayload(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, name, errText, status string, public bool) {
-		n := newWebhookNotifier(Config{WebhookURL: "http://fuzz.invalid/hook", PublicMode: public})
+		notifier := newWebhookNotifier(Config{WebhookURL: "http://fuzz.invalid/hook", PublicMode: public})
 		resp := health.Response{
 			Status: health.Status(validUTF8(status)),
 			Checks: map[string]health.Check{
@@ -413,7 +413,7 @@ func FuzzWebhookPayload(f *testing.F) {
 			},
 		}
 
-		payload := n.buildPayload(resp)
+		payload := notifier.buildPayload(resp)
 		body, err := json.Marshal(payload, json.Deterministic(true))
 		if err != nil {
 			t.Fatalf("marshal failed for name=%q err=%q status=%q public=%v: %v", name, errText, status, public, err)
