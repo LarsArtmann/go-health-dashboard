@@ -81,8 +81,8 @@ jobs:
         run: |
           total=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | tr -d '%')
           echo "total coverage: ${total}%"
-          awk -v t="$total" 'BEGIN { exit !(t >= 75) }' || {
-            echo "::error::coverage ${total}% is below the 75% floor (baseline 76.9%)"
+          awk -v t="$total" 'BEGIN { exit !(t >= 78) }' || {
+            echo "::error::coverage ${total}% is below the 78% floor (baseline 83.4%)"
             exit 1
           }
 

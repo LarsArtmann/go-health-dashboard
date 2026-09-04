@@ -247,6 +247,35 @@ func TestTrendEndpoints_DisabledWithoutTrend(t *testing.T) {
 	}
 }
 
+// TestTrendEndpoints_503WhenPusherNotStarted covers the nil-pusher branch:
+// a dashboard that was constructed but never started must answer both trend
+// endpoints with 503 and a message that distinguishes "not started" from
+// "trend not enabled".
+func TestTrendEndpoints_503WhenPusherNotStarted(t *testing.T) {
+	t.Parallel()
+
+	injector := do.New()
+	provideHealthy(injector, "database")
+	invoke[*healthyService](t, injector, "database")
+
+	probe := health.New(injector, health.WithRefreshInterval(time.Hour))
+
+	dash := dashboard.New(probe, dashboard.WithTrend(10))
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	for _, path := range []string{"/health/trend", "/health/export"} {
+		w := doRequest(t, mux, path)
+		if w.Code != http.StatusServiceUnavailable {
+			t.Errorf("%s without Start: want 503, got %d", path, w.Code)
+		}
+		if !strings.Contains(w.Body.String(), "pusher is not active") {
+			t.Errorf("%s 503 body should name the inactive pusher: %s", path, w.Body.String())
+		}
+	}
+}
+
 func TestMetrics_LatencyHistogram(t *testing.T) {
 	t.Parallel()
 
