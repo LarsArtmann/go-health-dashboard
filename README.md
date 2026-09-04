@@ -246,6 +246,23 @@ The dashboard uses [Datastar](https://data-star.dev) for real-time DOM updates:
 
 By default, `PushOnChange` mode only sends updates when the health status actually changes — minimizing SSE traffic for NOC monitors that stay connected for long periods.
 
+The `Updated <time>` stamp in the page header shows the **observation time of
+the last trend sample** (not the render time) when `WithTrend` is enabled, so
+the page never looks fresher than the underlying data.
+
+`dash.HealthCheck(ctx)` powers samber/do health cascades and returns a small
+sentinel family you can branch on:
+
+```go
+if err := dash.HealthCheck(ctx); err != nil {
+    switch {
+    case errors.Is(err, dashboard.ErrPusherNotStarted): // Start never called
+    case errors.Is(err, dashboard.ErrPusherShutDown):   // Shutdown called
+    case errors.Is(err, dashboard.ErrPusherStale):      // push loop wedged
+    }
+}
+```
+
 ## Build
 
 **Requires `GOEXPERIMENT=jsonv2`** (the go-sse dependency uses `encoding/json/v2`).
@@ -283,6 +300,8 @@ All toggles are optional — plain `go run ./example` works too.
 | `DEMO_AUTH=<token>`  | Bearer-token middleware on dashboard routes (`WithMiddleware`) |
 | `DEMO_RATELIMIT=n/w` | Token-bucket rate limit, e.g. `30/1m` (`WithRateLimit`)        |
 | `DEMO_DRAIN=5s`      | Graceful SSE drain window on shutdown (`WithShutdownDrain`)    |
+| `DEMO_PUBLIC=1`      | Public mode — anonymized check names (`WithPublicMode`)        |
+| `DEMO_BASE_PATH=/status` | Mount the dashboard under `/status` (`WithBasePath`)       |
 | `PORT`               | Listen port (default 8080)                                     |
 
 The example includes mock services: one always healthy, one flapping (alternates
@@ -304,6 +323,15 @@ pass/fail every 15s), and one always failing. Watch the dashboard update live.
 | [templ-components](https://github.com/larsartmann/templ-components) | LiveRegion, SDKScript, Alert, Table, Badge, Card |
 | [go-datastar](https://github.com/larsartmann/go-datastar)           | Datastar SSE patch protocol (ElementsFromTempl)  |
 | [go-sse](https://github.com/larsartmann/go-sse)                     | SSE transport (Broadcaster, Stream)              |
+
+Tested version matrix (`go.mod` is the live source of truth):
+
+| Dependency       | Version | Note                                                 |
+| ---------------- | ------- | ---------------------------------------------------- |
+| go-health        | v0.1.1  | `aggregate` package needs v0.1.0+                    |
+| templ-components | v1.11.0 | pinned — v1.12.0 busy-script nonce bug (upstream #7) |
+| go-datastar      | v0.4.0  | audited SDK bundle; needs CSP `unsafe-eval`          |
+| go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                       |
 
 ## Dark Mode
 
