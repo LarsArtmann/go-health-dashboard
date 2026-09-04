@@ -26,6 +26,9 @@ nix run .#vulncheck  # govulncheck
 nix fmt              # format code (gofumpt, goimports, golines, nixfmt)
 ```
 
+CI enforces a **75% coverage floor** on the race/coverage job (baseline
+76.9%). Check locally with `nix run .#coverage` before pushing.
+
 Without Nix, prefix all Go commands with `GOEXPERIMENT=jsonv2` and run
 `templ generate` before building.
 

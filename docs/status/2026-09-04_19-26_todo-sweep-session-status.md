@@ -70,13 +70,13 @@ bisect wall).
    remove the tolerance here + bump) — the only remaining TODO_LIST item.
 2. v0.6.0 release (this batch is additive: 2 new sentinels, tests, CI) —
    CHANGELOG `[Unreleased]` is ready to re-head.
-3. FEATURES.md refresh — count is now STALE: says "154 functions across 19
-   files", reality is **166 across 20** (verified `rg -c`).
-4. README demo-toggle table rows for `DEMO_PUBLIC` / `DEMO_BASE_PATH` —
-   example code got them; the README table did NOT (drift introduced this
-   session, caught in this review).
-5. HARVEST of this report's section (f) into TODO_LIST/ROADMAP
-   (per status-report skill, the loop closes only after that).
+3. ~~FEATURES.md refresh — count is now STALE: says "154 functions across 19~~ done (done at 381d64e (FEATURES now says 166 functions / 20 files))
+   ~~files", reality is **166 across 20** (verified `rg -c`).~~
+4. ~~README demo-toggle table rows for `DEMO_PUBLIC` / `DEMO_BASE_PATH` —~~ done (done at 381d64e (README demo-toggle rows added))
+   ~~example code got them; the README table did NOT (drift introduced this~~
+   ~~session, caught in this review).~~
+5. ~~HARVEST of this report's section (f) into TODO_LIST/ROADMAP~~ done (done at c7e4f13 (routed into TODO_LIST Next Up + ROADMAP Themes 2-5))
+   ~~(per status-report skill, the loop closes only after that).~~
 
 ## d) TOTALLY FUCKED UP
 
@@ -124,83 +124,83 @@ green, vet green, flake check green). Honest failures this session:
 
 **CI / Release (highest impact)**
 
-1. Push master → observe all new CI jobs (version-guard, floor, artifact,
-   concurrency, pins) on a real runner
-2. Cut v0.6.0: re-head CHANGELOG, bump `Version` const in the same commit
-   as the tag, push `--follow-tags`, verify proxy
-3. Rehearse fuzz issue-on-failure with a deliberately failing run on a
-   scratch branch; close the rehearsal issue
-4. Add `templ generate` drift check to CI (fail if generated files differ
-   from `.templ` sources — would have caught view_templ churn)
-5. Add `actionlint` step to CI for both workflow files
-6. Add `nix flake check` to CI
-7. Add Chrome/Chromium to the flake devShell so browser tests run locally
-8. Dependabot/renovate for GitHub Action SHA bumps (pins rot otherwise)
-9. Upload browser screenshots as CI artifacts for visual diffs
-10. Go version matrix (1.26.x latest two patches) on the test job
-11. Nightly fuzztime budget review (4×60s → target 300s on hottest target)
-12. Coverage: push total > 80% (currently ~77%); then raise floor to 78%
+1. ~~Push master → observe all new CI jobs (version-guard, floor, artifact,~~ done (open - pushing is step one of the v0.6.0 TODO_LIST row (c7e4f13))
+   ~~concurrency, pins) on a real runner~~
+2. ~~Cut v0.6.0: re-head CHANGELOG, bump `Version` const in the same commit~~ done (routed - v0.6.0 cut is a TODO_LIST Next Up row (c7e4f13))
+   ~~as the tag, push `--follow-tags`, verify proxy~~
+3. ~~Rehearse fuzz issue-on-failure with a deliberately failing run on a~~ done (routed - ROADMAP Theme 5 CI cluster (c7e4f13))
+   ~~scratch branch; close the rehearsal issue~~
+4. ~~Add `templ generate` drift check to CI (fail if generated files differ~~ done (routed - ROADMAP Theme 5 CI cluster)
+   ~~from `.templ` sources — would have caught view_templ churn)~~
+5. ~~Add `actionlint` step to CI for both workflow files~~ done (routed - ROADMAP Theme 5 CI cluster)
+6. ~~Add `nix flake check` to CI~~ done (routed - ROADMAP Theme 5 CI cluster)
+7. ~~Add Chrome/Chromium to the flake devShell so browser tests run locally~~ done (routed - ROADMAP Theme 5 devShell Chrome)
+8. ~~Dependabot/renovate for GitHub Action SHA bumps (pins rot otherwise)~~ done (routed - ROADMAP Theme 5 CI cluster)
+9. ~~Upload browser screenshots as CI artifacts for visual diffs~~ done (routed - ROADMAP Theme 5 CI cluster)
+10. ~~Go version matrix (1.26.x latest two patches) on the test job~~ done (routed - ROADMAP Theme 5 CI cluster)
+11. ~~Nightly fuzztime budget review (4×60s → target 300s on hottest target)~~ done (routed - ROADMAP Theme 5 fuzztime review)
+12. ~~Coverage: push total > 80% (currently ~77%); then raise floor to 78%~~ done (routed - ROADMAP Theme 5 coverage)
 
 **Code**
-13. templ-components#6 upstream PR: fix + goldens in sibling repo, then
-remove axe tolerance here + bump dependency
-14. Validate base path inside `WithBasePath` itself (export the validator;
-library users get the same injection safety the example got)
-15. Introspection endpoint (JSON: enabled routes, limits, modes) for ops
-16. Rate-limit 429 body: include Retry-After as JSON for API clients
-17. Verify no heartbeat-goroutine leak on Shutdown/broadcaster close
-18. `?since=` filter for /health/trend
-19. NDJSON export format option
-20. Consider opt-in structured logging hook (currently zero-logging by
-design — keep, but give operators a firehose option)
-21. Per-check latency histogram series in metrics (currently total only)
-22. Embedded Datastar SDK serving helper (WithCSSPath analog) so
-CSP-'self' deployments don't hand-roll static wiring
-23. Fuzz `safeBasePath`-equivalent once it moves into the library
-24. PushMode: consider PushOnChange with TTL (re-assert state every N)
-25. Timeline card: cap by age as well as count (5 entries can span days)
+13. ~~templ-components#6 upstream PR: fix + goldens in sibling repo, then~~ done (open - TODO_LIST upstream PR row (with the new #7 task))
+~~remove axe tolerance here + bump dependency~~
+14. ~~Validate base path inside `WithBasePath` itself (export the validator;~~ done (routed - ROADMAP Theme 5 API ergonomics)
+~~library users get the same injection safety the example got)~~
+15. ~~Introspection endpoint (JSON: enabled routes, limits, modes) for ops~~ done (routed - ROADMAP Theme 3 introspection endpoint)
+16. ~~Rate-limit 429 body: include Retry-After as JSON for API clients~~ done (routed - ROADMAP Theme 3 rate-limit 429 body)
+17. ~~Verify no heartbeat-goroutine leak on Shutdown/broadcaster close~~ done (routed - ROADMAP Theme 5 (heartbeat-goroutine leak check))
+18. ~~`?since=` filter for /health/trend~~ done (routed - ROADMAP Theme 3 (?since= incremental polling))
+19. ~~NDJSON export format option~~ done (routed - ROADMAP Theme 3 NDJSON export)
+20. ~~Consider opt-in structured logging hook (currently zero-logging by~~ done (routed - ROADMAP Theme 1 logging middleware option)
+~~design — keep, but give operators a firehose option)~~
+21. ~~Per-check latency histogram series in metrics (currently total only)~~ done (routed - ROADMAP Theme 3 per-check latency series)
+22. ~~Embedded Datastar SDK serving helper (WithCSSPath analog) so~~ done (routed - ROADMAP Theme 4 embedded SDK helper)
+~~CSP-'self' deployments don't hand-roll static wiring~~
+23. ~~Fuzz `safeBasePath`-equivalent once it moves into the library~~ done (routed - ROADMAP Theme 5 fuzz cluster (safeBasePath once in-library))
+24. ~~PushMode: consider PushOnChange with TTL (re-assert state every N)~~ done (routed - ROADMAP Theme 3 PushMode TTL)
+25. ~~Timeline card: cap by age as well as count (5 entries can span days)~~ done (routed - ROADMAP Theme 3 timeline age cap)
 
 **Testing**
-26. Browser golden-screenshot diff test (catch visual drift)
-27. Unit-test the version-guard grep logic (script drift protection)
-28. `WithTrend(1)` boundary test
-29. `ExportHandler` with `Accept: text/csv;q=0.8` negotiation test
-30. Race-stress: 50 concurrent SSE clients vs SubscriberCount consistency
-31. Property test: fingerprintChecks determinism across map iteration
-32. Webhook: delivery ordering test under concurrent transitions
-33. Mutation-test spot check on change-detection (fingerprint) logic
+26. ~~Browser golden-screenshot diff test (catch visual drift)~~ done (routed - ROADMAP Theme 5 golden-screenshot diff)
+27. ~~Unit-test the version-guard grep logic (script drift protection)~~ done (routed - ROADMAP Theme 5 version-guard unit test)
+28. ~~`WithTrend(1)` boundary test~~ done (routed - ROADMAP Theme 5 boundary tests)
+29. ~~`ExportHandler` with `Accept: text/csv;q=0.8` negotiation test~~ done (routed - ROADMAP Theme 5 boundary tests)
+30. ~~Race-stress: 50 concurrent SSE clients vs SubscriberCount consistency~~ done (routed - ROADMAP Theme 5 race-stress)
+31. ~~Property test: fingerprintChecks determinism across map iteration~~ done (covered - FuzzFingerprintChecks pins determinism + single-field distinguishability (fuzz_test.go))
+32. ~~Webhook: delivery ordering test under concurrent transitions~~ done (routed - ROADMAP Theme 5 webhook ordering test)
+33. ~~Mutation-test spot check on change-detection (fingerprint) logic~~ done (routed - ROADMAP Theme 5 mutation spot check)
 
 **Docs**
-34. FEATURES.md refresh: 166 funcs / 20 files; new sections for sentinels,
-stamp semantics
-35. README: add `DEMO_PUBLIC` / `DEMO_BASE_PATH` rows to the demo toggles
-table (drift fix)
-36. README: document `Updated` stamp semantics + sentinel `errors.Is` usage
-37. Compatibility matrix in README (go-health / templ-components /
-go-datastar / go-sse versions)
-38. docs/DOMAIN_LANGUAGE.md: probe, pusher, broadcast, fingerprint,
-sample, transition, drain
-39. ADR: dashboard.go split + sentinel family design record
-40. Annotate the post-v0.4.0 retrospective (b4 drift note: TODO_LIST was
-not updated with v0.4.0 DONE row — partially stale now, sweep landed)
-41. doc.go: webhook + public-mode combo example
-42. CONTRIBUTING: mention `nix run .#coverage` and the 75% floor
-43. Cross-link bisect audit record from TODO_LIST and AGENTS (done for
-AGENTS; TODO_LIST link missing)
-44. AGENTS.md: document the `safeBasePath` pattern (log-injection defense)
-as the repo's env-toggle convention
+34. ~~FEATURES.md refresh: 166 funcs / 20 files; new sections for sentinels,~~ done at `381d64e`
+~~stamp semantics~~
+35. ~~README: add `DEMO_PUBLIC` / `DEMO_BASE_PATH` rows to the demo toggles~~ done at `381d64e`
+~~table (drift fix)~~
+36. ~~README: document `Updated` stamp semantics + sentinel `errors.Is` usage~~ done at `381d64e`
+37. ~~Compatibility matrix in README (go-health / templ-components /~~ done at `381d64e`
+~~go-datastar / go-sse versions)~~
+38. ~~docs/DOMAIN_LANGUAGE.md: probe, pusher, broadcast, fingerprint,~~ done (done - terms present since the 2026-09-03 docs-health pass)
+~~sample, transition, drain~~
+39. ~~ADR: dashboard.go split + sentinel family design record~~ done (routed - ROADMAP Theme 5 ADR)
+40. ~~Annotate the post-v0.4.0 retrospective (b4 drift note: TODO_LIST was~~ done (done - 2026-09-04 docs-health pass)
+~~not updated with v0.4.0 DONE row — partially stale now, sweep landed)~~
+41. ~~doc.go: webhook + public-mode combo example~~ done (routed - ROADMAP Theme 5 doc.go examples)
+42. ~~CONTRIBUTING: mention `nix run .#coverage` and the 75% floor~~ done (done - CONTRIBUTING coverage-floor note added 2026-09-04)
+43. ~~Cross-link bisect audit record from TODO_LIST and AGENTS (done for~~ done at `c7e4f13`
+~~AGENTS; TODO_LIST link missing)~~
+44. ~~AGENTS.md: document the `safeBasePath` pattern (log-injection defense)~~ done (done - AGENTS env-toggle (safeBasePath) convention note added 2026-09-04)
+~~as the repo's env-toggle convention~~
 
 **Process / hygiene**
-45. HARVEST this section (f) into TODO_LIST/ROADMAP via docs-health
-46. Sweep stale `docs/status/` reports: annotate superseded items
-47. Decide + record the two remaining BLOCKED questions (build-tag gating,
-fingerprint stability) — need user decision
-48. Investigate why 14 gopls stdversion warnings persist despite committed
-`.vscode/settings.json` (tooling split brain)
-49. Pre-commit-equivalent: a flake app `check` that runs build+vet+lint in
-one shot for pre-walkaway use (daemon mid-edit snapshot prevention)
-50. Consider signing tags (release hardening) + `CHANGELOG` link refs
-section (Keep-a-Changelog compare links missing)
+45. ~~HARVEST this section (f) into TODO_LIST/ROADMAP via docs-health~~ done at `c7e4f13`
+46. ~~Sweep stale `docs/status/` reports: annotate superseded items~~ done (done - 2026-09-04 docs-health pass archived 6 fully-done status reports + 4 planning docs)
+47. ~~Decide + record the two remaining BLOCKED questions (build-tag gating,~~ done (open - BLOCKED rows in TODO_LIST need user decision)
+~~fingerprint stability) — need user decision~~
+48. ~~Investigate why 14 gopls stdversion warnings persist despite committed~~ done (routed - ROADMAP Theme 5 gopls investigation)
+~~`.vscode/settings.json` (tooling split brain)~~
+49. ~~Pre-commit-equivalent: a flake app `check` that runs build+vet+lint in~~ done (routed - ROADMAP Theme 5 local CI mirror)
+~~one shot for pre-walkaway use (daemon mid-edit snapshot prevention)~~
+50. ~~Consider signing tags (release hardening) + `CHANGELOG` link refs~~ done (routed - ROADMAP Theme 5 tag signing + compare links)
+~~section (Keep-a-Changelog compare links missing)~~
 
 ## g) QUESTIONS (cannot answer myself)
 

@@ -36,14 +36,14 @@ Companion docs: `docs/status/archived/2026-09-03_v03x-cycle-execution-complete.m
 
 ## b) PARTIALLY DONE
 
-1. **Trend sparkline transition _markers_ (M22 visual)** — data shipped
-   (`/health/trend` transitions), the SVG markers were not drawn. The plan
-   asked for the visual; I downgraded it to data-level and re-labeled it.
+1. ~~**Trend sparkline transition _markers_ (M22 visual)** — data shipped~~ done (routed - ROADMAP Theme 3 transition-markers idea)
+   ~~(`/health/trend` transitions), the SVG markers were not drawn. The plan~~
+   ~~asked for the visual; I downgraded it to data-level and re-labeled it.~~
 2. ~~**promtool flake app + devShell package (M6)** — impossible as planned~~ **Won't implement — nixpkgs prometheus 3.x ships no promtool; conformance anchored on the official parser instead.**
    ~~(nixpkgs prometheus 3.x ships no promtool; separate package doesn't~~
    ~~exist). Documented deviation; the promtool test is opt-in via PATH.~~
-3. **templ-components#6** — issue filed with source-verified diagnosis, but
-   no upstream PR with the actual fix + golden-file updates.
+3. ~~**templ-components#6** — issue filed with source-verified diagnosis, but~~ done (open - TODO_LIST upstream PR row)
+   ~~no upstream PR with the actual fix + golden-file updates.~~
 4. ~~**Dark screenshot usage** — captured to `docs/screenshot-dark.png` but~~ done (embedded in README Dark Mode section 2026-09-03)
    ~~NOT embedded anywhere (README Dark Mode section still references only~~
    ~~prose; light screenshot remains the only embed).~~
@@ -51,31 +51,31 @@ Companion docs: `docs/status/archived/2026-09-03_v03x-cycle-execution-complete.m
    ~~fuzz.yml nightly have never been observed executing on GitHub Actions.~~
    ~~fuzz.yml has workflow_dispatch (not triggered); ci.yml changes ride on~~
    ~~pushes whose Action runs I did not check.~~
-6. **Refresh stamp fidelity** — implemented as _render_ time, not
-   _observation_ time. On the initial HTML the data can be up to one
-   probe interval older than the stamped clock. Works, slightly dishonest
-   label.
-7. **axe `definition-list` tolerance** — filters the whole rule ID, not the
-   specific StatCard nodes. Any FUTURE real `<dl>` bug of ours would be
-   silently tolerated until the upstream fix lands and we remove the
-   exclusion.
+6. ~~**Refresh stamp fidelity** — implemented as _render_ time, not~~ done at `db8621f`
+   ~~_observation_ time. On the initial HTML the data can be up to one~~
+   ~~probe interval older than the stamped clock. Works, slightly dishonest~~
+   ~~label.~~
+7. ~~**axe `definition-list` tolerance** — filters the whole rule ID, not the~~ done (done at db8621f (scoped to the StatCard signature); upstream templ-components#6 still open)
+   ~~specific StatCard nodes. Any FUTURE real `<dl>` bug of ours would be~~
+   ~~silently tolerated until the upstream fix lands and we remove the~~
+   ~~exclusion.~~
 
 ## c) NOT STARTED
 
-1. Next release cut — the CHANGELOG `[Unreleased]` section now holds a
-   full feature batch (CSP helper, SSE hardening, trend/export endpoints,
-   public mode, OG, histogram) while `Version` still reads `0.3.1`.
+1. ~~Next release cut — the CHANGELOG `[Unreleased]` section now holds a~~ done (done - 8f63d85 (v0.4.0), then ed650bf (v0.5.0))
+   ~~full feature batch (CSP helper, SSE hardening, trend/export endpoints,~~
+   ~~public mode, OG, histogram) while `Version` still reads `0.3.1`.~~
 2. ~~Coverage baseline (`nix run .#coverage` was never run this session) and~~ done (coverage baseline 76.9% recorded 2026-09-03; CI floor tracked in TODO_LIST)
    ~~any coverage floor in CI.~~
 3. ~~`nix run .#vulncheck` — not run after adding `prometheus/common` (test~~ done (nix run .#vulncheck — no vulnerabilities 2026-09-03)
    ~~dep) and chromedp bump.~~
-4. Version-const guard test — the stale-`Version`-in-tag bug has now
-   happened TWICE in this repo's history (v0.2.0 era and the v0.3.0 stray
-   tag); no CI guard exists.
+4. ~~Version-const guard test — the stale-`Version`-in-tag bug has now~~ done at `db8621f`
+   ~~happened TWICE in this repo's history (v0.2.0 era and the v0.3.0 stray~~
+   ~~tag); no CI guard exists.~~
 5. ~~A fresh TODO_LIST cycle — the "Next Up" table is 100% DONE; the next~~ done (TODO_LIST rebuilt via docs-health pass 2026-09-03)
    ~~session starts with no plan (needs a new pareto pass).~~
-6. Bisectability audit of the 58 session commits (see d-1; one broken
-   commit confirmed by inspection, full audit not performed).
+6. ~~Bisectability audit of the 58 session commits (see d-1; one broken~~ done (done - 91-commit audit 2026-09-04 (docs/status/archived/2026-09-04_19-15_bisectability-audit.md); five SHAs in AGENTS.md)
+   ~~commit confirmed by inspection, full audit not performed).~~
 7. ~~Spikes remain spikes — federation and WebSocket intentionally not~~ done (intentionally unimplemented — documented in ROADMAP Design Spikes)
    ~~implemented (documented rationale); not "owed" work, listed for~~
    ~~completeness.~~

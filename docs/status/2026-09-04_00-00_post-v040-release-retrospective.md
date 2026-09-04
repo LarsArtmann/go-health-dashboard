@@ -26,20 +26,20 @@ execution, and the incidents found on the way.
 
 ## b) PARTIALLY DONE
 
-1. **Q3 itself** — not implemented: the premise ("go-sse supports both")
-   is false, so "we should too" has no direct implementation. Escalated
-   back with three real options (accept / fork / upstream request). This
-   is correct behavior, but the item is open, not done.
-2. **templ-components #6 and #7** — filed with verified diagnoses; no
-   upstream PRs carrying the fixes yet; the v1.12.0 pin and the axe
-   `definition-list` tolerance both stay until those land.
-3. **The previous retrospective's 50-item list** — only item 5 (fingerprint
-   compat note) and item 4's count fix were touched this segment; the
-   other ~46 remain open and are carried forward below.
-4. **Release hygiene vs. the concurrent session** — the v0.4.0 release
-   notes document the pin, but TODO_LIST was not updated with a v0.4.0
-   DONE row and the older completion report still reads as v0.3.1-era.
-   Point-in-time docs, minor drift.
+1. ~~**Q3 itself** — not implemented: the premise ("go-sse supports both")~~ done (closed as a decision - premise was false; the live question is ROADMAP Open Questions (GOEXPERIMENT/jsonv2))
+   ~~is false, so "we should too" has no direct implementation. Escalated~~
+   ~~back with three real options (accept / fork / upstream request). This~~
+   ~~is correct behavior, but the item is open, not done.~~
+2. ~~**templ-components #6 and #7** — filed with verified diagnoses; no~~ done (open - both PRs are TODO_LIST rows (as of 2026-09-04))
+   ~~upstream PRs carrying the fixes yet; the v1.12.0 pin and the axe~~
+   ~~`definition-list` tolerance both stay until those land.~~
+3. ~~**The previous retrospective's 50-item list** — only item 5 (fingerprint~~ done (executed in bulk - v0.4.0/v0.5.0 cycle + the 2026-09-04 sweep landed the bulk (see the 19-26 sweep report a-table and CHANGELOG))
+   ~~compat note) and item 4's count fix were touched this segment; the~~
+   ~~other ~46 remain open and are carried forward below.~~
+4. ~~**Release hygiene vs. the concurrent session** — the v0.4.0 release~~ done (resolved at c7e4f13 - TODO_LIST rebuilt; the drift note is stale)
+   ~~notes document the pin, but TODO_LIST was not updated with a v0.4.0~~
+   ~~DONE row and the older completion report still reads as v0.3.1-era.~~
+   ~~Point-in-time docs, minor drift.~~
 
 ## c) NOT STARTED (carried, still open)
 
@@ -121,31 +121,31 @@ execution, and the incidents found on the way.
 
 Release & history
 
-1. Watch the v0.4.0 CI run end-to-end (browser job included) and fix what
-   breaks on the runner.
-2. Dispatch fuzz.yml once via workflow_dispatch to validate the nightly.
-3. Verify bisectability of 071c251..HEAD; document `72783fc` as a known
-   non-building commit in AGENTS.md.
-4. Version-const vs. git-tag guard in CI (stale-const bug: twice bitten).
-5. Refresh TODO_LIST: v0.4.0 DONE row + harvest a new "Next Up".
-6. Write the Q3 decision record (false premise + options) into
-   docs/planning/.
+1. ~~Watch the v0.4.0 CI run end-to-end (browser job included) and fix what~~ done (pending push - the v0.6.0 TODO_LIST row includes watching the new CI jobs on a real runner)
+   ~~breaks on the runner.~~
+2. ~~Dispatch fuzz.yml once via workflow_dispatch to validate the nightly.~~ done (done - workflow_dispatch run 33896794771 succeeded)
+3. ~~Verify bisectability of 071c251..HEAD; document `72783fc` as a known~~ done (done - 91-commit bisect audit 2026-09-04; five SHAs in AGENTS.md)
+   ~~non-building commit in AGENTS.md.~~
+4. ~~Version-const vs. git-tag guard in CI (stale-const bug: twice bitten).~~ done at `db8621f`
+5. ~~Refresh TODO_LIST: v0.4.0 DONE row + harvest a new "Next Up".~~ done (done at c7e4f13 (TODO_LIST rebuilt))
+6. ~~Write the Q3 decision record (false premise + options) into~~ done (superseded - decision context lives in the integration-over-federation plan (archived) and ROADMAP Open Questions)
+   ~~docs/planning/.~~
 
 Upstream
-7. PR the fix for templ-components#7 (guard in liveRegionBusyScript) —
-same owner, fastest path to lifting the pin.
-8. PR the fix for templ-components#6 (StatCard `<dl>` structure + goldens).
-9. After #7 lands: bump templ-components, drop the pin, note it in the
-CHANGELOG.
-10. After #6 lands: remove the axe `definition-list` tolerance.
-11. go-sse: decide and execute — request upstream build-tag/dual-mode
-support, fork, or formally accept jsonv2 (document the decision).
-12. Keep templ-components bumps blocked on the browser suite (policy from
-this incident).
+7. ~~PR the fix for templ-components#7 (guard in liveRegionBusyScript) —~~ done (open - TODO_LIST upstream PR row)
+~~same owner, fastest path to lifting the pin.~~
+8. ~~PR the fix for templ-components#6 (StatCard `<dl>` structure + goldens).~~ done (open - TODO_LIST upstream PR row)
+9. ~~After #7 lands: bump templ-components, drop the pin, note it in the~~ done (open - blocked on upstream #7)
+~~CHANGELOG.~~
+10. ~~After #6 lands: remove the axe `definition-list` tolerance.~~ done (open - blocked on upstream #6)
+11. ~~go-sse: decide and execute — request upstream build-tag/dual-mode~~ done (open - ROADMAP Open Question (GOEXPERIMENT/jsonv2))
+~~support, fork, or formally accept jsonv2 (document the decision).~~
+12. ~~Keep templ-components bumps blocked on the browser suite (policy from~~ done (adopted - the pin + browser-suite policy is now an AGENTS.md gotcha)
+~~this incident).~~
 
 Tests & verification
-13. Run `nix run .#coverage`; record baseline; add CI coverage floor.
-14. Run `nix run .#vulncheck` (post prometheus/common + chromedp adds).
+13. ~~Run `nix run .#coverage`; record baseline; add CI coverage floor.~~ done at `db8621f`
+14. ~~Run `nix run .#vulncheck` (post prometheus/common + chromedp adds).~~ done (done in the 2026-09-03 docs-health pass - no vulnerabilities)
 15. Fuzz target for the CSV exporter.
 16. Fuzz target for `RecommendedCSP` (injection attempts).
 17. Public-mode leak-scanner test (grep rendered HTML for real service

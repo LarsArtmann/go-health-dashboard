@@ -185,6 +185,11 @@ per-file suites.
   `TestCSP_WithoutDatastarSrcUsesCDN`); it was reverted same day
   (`8cf2c62`). UI-dependency bumps must run the browser suite before
   landing — the unit suite alone cannot see these regressions.
+- **Env toggles validate before use** — the example's `safeBasePath` is the
+  pattern: any value read from an environment variable that reaches a route
+  or a log line gets validated/normalized first (log-injection defense).
+  Copy it for new `DEMO_*` toggles and for library code absorbing example
+  logic.
 - **go-health marks non-critical failing checks `warn`, not `fail`** — only critical services produce `fail` per-check statuses (and overall fail). `setupDashboardWithFailures` yields cache/queue `warn` checks with overall `warn`; metrics tests assert accordingly.
 
 ---
