@@ -65,23 +65,6 @@ func (h *historyBuffer) snapshot() []sample {
 	return append(out, h.samples[:h.next]...)
 }
 
-// latest returns the most recent sample, or false when nothing is recorded.
-func (h *historyBuffer) latest() (sample, bool) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	if !h.full && h.next == 0 {
-		return sample{}, false
-	}
-
-	idx := h.next - 1
-	if idx < 0 {
-		idx = len(h.samples) - 1
-	}
-
-	return h.samples[idx], true
-}
-
 // statusTransition is one flip in the recorded status history.
 type statusTransition struct {
 	At   time.Time

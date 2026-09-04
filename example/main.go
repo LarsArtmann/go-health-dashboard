@@ -66,6 +66,48 @@ func main() {
 
 	// Assemble the option set from environment toggles so every feature can
 	// be demonstrated without code changes.
+	dash := dashboard.Register(injector, probe, buildOptions()...)
+
+	if err := dash.Start(ctx); err != nil {
+		log.Fatalf("dash.Start: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	addr := ":" + envOrDefault("PORT", "8080")
+	log.Printf("dashboard: http://localhost%s/health", addr)
+	log.Printf("readiness: http://localhost%s/readyz", addr)
+
+	server := &http.Server{
+		Addr:              addr,
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	// Run the server until ctx is cancelled (SIGINT/SIGTERM), then shut down
+	// gracefully: stop accepting new connections, wait for in-flight requests,
+	// then let the deferred injector.Shutdown() cascade to all services.
+	go func() {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("server: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+	log.Println("shutting down...")
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("server.Shutdown: %v", err)
+	}
+}
+
+// buildOptions assembles the demo option set from environment toggles so
+// every feature can be demonstrated without code changes.
+func buildOptions() []dashboard.Option {
 	opts := []dashboard.Option{
 		dashboard.WithTitle("Demo Service"),
 		dashboard.WithShutdownDrain(parseDuration("DEMO_DRAIN")),
@@ -104,50 +146,36 @@ func main() {
 		log.Println("public mode: check names and errors anonymized (DEMO_PUBLIC set)")
 	}
 
-	if basePath := os.Getenv("DEMO_BASE_PATH"); basePath != "" {
-		opts = append(opts, dashboard.WithBasePath(basePath))
-		log.Printf("base path: dashboard mounted under %s (DEMO_BASE_PATH set)", basePath)
-	}
-
-	// Register the dashboard in the injector so it participates in
-	// do.Shutdown and do.HealthCheck cascades automatically.
-	dash := dashboard.Register(injector, probe, opts...)
-
-	if err := dash.Start(ctx); err != nil {
-		log.Fatalf("dash.Start: %v", err)
-	}
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	addr := ":" + envOrDefault("PORT", "8080")
-	log.Printf("dashboard: http://localhost%s/health", addr)
-	log.Printf("readiness: http://localhost%s/readyz", addr)
-
-	server := &http.Server{
-		Addr:              addr,
-		Handler:           mux,
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-
-	// Run the server until ctx is cancelled (SIGINT/SIGTERM), then shut down
-	// gracefully: stop accepting new connections, wait for in-flight requests,
-	// then let the deferred injector.Shutdown() cascade to all services.
-	go func() {
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("server: %v", err)
+	if spec := os.Getenv("DEMO_BASE_PATH"); spec != "" {
+		basePath, err := safeBasePath(spec)
+		if err != nil {
+			log.Fatalf("DEMO_BASE_PATH: %v", err)
 		}
-	}()
 
-	<-ctx.Done()
-	log.Println("shutting down...")
-
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer shutdownCancel()
-
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Printf("server.Shutdown: %v", err)
+		opts = append(opts, dashboard.WithBasePath(basePath))
+		log.Println("base path: dashboard routes mounted under the DEMO_BASE_PATH prefix")
 	}
+
+	return opts
+}
+
+// safeBasePath validates an env-provided base path: it must be a plain URL
+// path prefix (leading slash, no whitespace or control characters) so a
+// hostile DEMO_BASE_PATH cannot inject anything into logs or routes.
+func safeBasePath(spec string) (string, error) {
+	if !strings.HasPrefix(spec, "/") {
+		return "", fmt.Errorf("want a path starting with /, got %q", spec)
+	}
+
+	for _, r := range spec {
+		safe := r == '/' || r == '_' || r == '-' || r == '.' ||
+			(r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
+		if !safe {
+			return "", fmt.Errorf("unsupported character %q", r)
+		}
+	}
+
+	return spec, nil
 }
 
 // healthChecker is the interface samber/do uses for health checks.

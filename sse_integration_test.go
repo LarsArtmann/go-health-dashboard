@@ -267,17 +267,20 @@ func TestWithMaxSSEConnections_ZeroAllowsUnlimited(t *testing.T) {
 	defer cleanup()
 
 	const clients = 3
-	resps := make([]*http.Response, clients)
-	streams := make([]*sseStream, clients)
+	resps := make([]*http.Response, 0, clients)
+	streams := make([]*sseStream, 0, clients)
 
-	for i := range resps {
-		resp, stream := connectSSE(t, server)
+	for range clients {
+		resp, stream := connectSSE(
+			t,
+			server,
+		) //nolint:bodyclose // all bodies close in the deferred loop below
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("client %d: want 200, got %d", i, resp.StatusCode)
+			t.Fatalf("client %d: want 200, got %d", len(resps), resp.StatusCode)
 		}
 
-		resps[i] = resp
-		streams[i] = stream
+		resps = append(resps, resp)
+		streams = append(streams, stream)
 	}
 
 	defer func() {

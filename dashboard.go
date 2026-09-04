@@ -141,6 +141,7 @@ func (d *Dashboard) Start(ctx context.Context) error {
 
 	d.push.Store(p)
 	d.started.Store(true)
+
 	go p.start(ctx)
 
 	return nil
