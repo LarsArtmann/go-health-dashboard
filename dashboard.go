@@ -95,6 +95,11 @@ func New(probe Prober, opts ...Option) *Dashboard {
 	}
 
 	cfg.resolveRoutes()
+
+	if cfg.EmbeddedDatastarSDK {
+		cfg.DatastarSrc = cfg.Routes.DatastarJS
+	}
+
 	cfg.PushInterval = resolvePushInterval(cfg.PushInterval, probe)
 
 	d := &Dashboard{

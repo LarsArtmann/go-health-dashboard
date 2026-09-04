@@ -12,6 +12,7 @@ type Routes struct {
 	Trend      string // Status history JSON endpoint (default: /health/trend; only registered with WithTrend)
 	Export     string // Status history export endpoint, JSON/CSV (default: /health/export; only registered with WithTrend)
 	Introspect string // Introspection endpoint, JSON config document (default: /health/introspect; only registered with WithIntrospection)
+	DatastarJS string // Self-hosted Datastar SDK script served from the embedded bundle (default: /health/datastar.js; only registered with WithEmbeddedDatastarSDK)
 }
 
 // DefaultRoutes returns conventional paths for the dashboard and Kubernetes
@@ -29,5 +30,6 @@ func DefaultRoutes() Routes {
 		Trend:      "/health/trend",
 		Export:     "/health/export",
 		Introspect: "/health/introspect",
+		DatastarJS: "/health/datastar.js",
 	}
 }

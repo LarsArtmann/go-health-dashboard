@@ -61,6 +61,11 @@ type Config struct {
 	// all options run (see resolveRoutes). Empty means no prefix.
 	BasePath string
 
+	// EmbeddedDatastarSDK registers Routes.DatastarJS serving the pinned
+	// SDK bundle from the go-datastar/static embed, and points the HTML's
+	// script src at it. Set via WithEmbeddedDatastarSDK.
+	EmbeddedDatastarSDK bool
+
 	// RateLimitRequests and RateLimitWindow configure a shared token
 	// bucket across all dashboard-owned routes. Zero disables rate
 	// limiting (default). Probe endpoints are never limited.
@@ -356,6 +361,10 @@ func (c *Config) resolveRoutes() {
 		out.Introspect = prefix + r.Introspect
 	}
 
+	if r.DatastarJS != "" {
+		out.DatastarJS = prefix + r.DatastarJS
+	}
+
 	c.Routes = out
 }
 
@@ -368,5 +377,19 @@ func (c *Config) resolveRoutes() {
 func WithIntrospection() Option {
 	return func(c *Config) {
 		c.Introspection = true
+	}
+}
+
+// WithEmbeddedDatastarSDK serves the pinned Datastar SDK from the
+// go-datastar/static embed at Routes.DatastarJS (default
+// /health/datastar.js) and points the dashboard's script tag at it. This
+// removes both the CDN dependency and the CSP exception it would need: the
+// script becomes same-origin, so `script-src 'self'` (plus the
+// 'unsafe-eval' the SDK itself requires for expression compilation)
+// is sufficient. The served bytes are exactly the audited bundle from the
+// pinned go-datastar version.
+func WithEmbeddedDatastarSDK() Option {
+	return func(c *Config) {
+		c.EmbeddedDatastarSDK = true
 	}
 }

@@ -28,6 +28,11 @@ opt-in introspection endpoint exposes the running configuration.
   Opt-in; configuration metadata only (never check results or names);
   passes through the same middleware and rate limiting as other
   dashboard-owned routes.
+- `WithEmbeddedDatastarSDK()` + `GET /health/datastar.js`
+  (`Routes.DatastarJS`, empty disables): serves the pinned SDK bundle
+  from the `go-datastar/static` embed and points the dashboard's script
+  tag at it. Same-origin script means `script-src 'self'` is sufficient
+  (the SDK's own `unsafe-eval` requirement remains); no CDN dependency.
 
 ## [0.6.0] - 2026-09-04
 
