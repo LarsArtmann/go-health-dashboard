@@ -187,6 +187,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      - uses: cachix/install-nix-action@b85815f71a6de0ddee80b8a80a98d43f4bcc66c7 # v31
+
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
@@ -199,15 +201,18 @@ jobs:
       - name: Install templ CLI
         run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
 
-      - name: templ generate drift check
+      # Canonical generated-file form is `templ generate` output AFTER
+      # treefmt (gofumpt regroups the templ-generated imports). So the
+      # drift check regenerates, formats, and fails on ANY resulting diff:
+      # this catches stale generated files and unformatted files at once.
+      - name: templ generate + fmt drift check
         run: |
           templ generate ./...
-          if ! git diff --exit-code -- '*_templ.go'; then
-            echo "::error::templ generate produced diffs — a committed *_templ.go is stale; run 'templ generate' and commit the result"
+          nix fmt
+          if ! git diff --exit-code; then
+            echo "::error::templ generate + nix fmt produced diffs — commit the result of 'templ generate' followed by 'nix fmt'"
             exit 1
           fi
-
-      - uses: cachix/install-nix-action@b85815f71a6de0ddee80b8a80a98d43f4bcc66c7 # v31
 
       - name: nix flake check
         run: nix flake check

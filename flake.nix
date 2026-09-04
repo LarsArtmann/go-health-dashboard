@@ -72,15 +72,18 @@
               pkgs.gosec
               pkgs.templ
               pkgs.trash-cli
+              pkgs.chromium
             ];
 
             GOWORK = "off";
             GOEXPERIMENT = "jsonv2";
+            GO_HEALTH_DASHBOARD_CHROME = "${pkgs.chromium}/bin/chromium";
 
             shellHook = ''
               echo "go-health-dashboard dev shell — $(go version)"
               echo "GOEXPERIMENT=$GOEXPERIMENT (required for go-sse dependency)"
               echo "GOWORK=off (ignore parent workspace)"
+              echo "GO_HEALTH_DASHBOARD_CHROME=$GO_HEALTH_DASHBOARD_CHROME (browser suite)"
             '';
           };
 
