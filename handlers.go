@@ -157,7 +157,7 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 	}
 
 	if p := d.push.Load(); p != nil && p.history != nil {
-		populateHistory(&vm, p.history)
+		populateHistory(&vm, p.history, d.cfg.TimelineMaxAge)
 	}
 
 	return vm

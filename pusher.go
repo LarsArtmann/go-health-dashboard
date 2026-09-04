@@ -49,6 +49,8 @@ type pusher struct {
 	connections   atomic.Int64
 	lastBroadcast atomic.Int64
 	history       *historyBuffer
+	ttl           int
+	ticks         int
 
 	mu              sync.Mutex
 	lastStatus      health.Status
@@ -74,6 +76,7 @@ func newPusher(d *Dashboard) *pusher {
 		retry:       d.cfg.RetryInterval,
 		maxLifetime: d.cfg.MaxConnectionLifetime,
 		history:     history,
+		ttl:         d.cfg.PushOnChangeTTL,
 	}
 }
 
@@ -146,7 +149,7 @@ func (p *pusher) renderPatch(resp health.Response) (sse.Event, bool) {
 	vm.ShowStatCards = !p.dashboard.cfg.HideStatCards
 
 	if p.history != nil {
-		populateHistory(&vm, p.history)
+		populateHistory(&vm, p.history, p.dashboard.cfg.TimelineMaxAge)
 	}
 
 	content := dashboardContent(vm)
@@ -182,8 +185,20 @@ func (p *pusher) shouldBroadcast(resp health.Response) bool {
 	if resp.Status != p.lastStatus || fp != p.lastFingerprint {
 		p.lastStatus = resp.Status
 		p.lastFingerprint = fp
+		p.ticks = 0
 
 		return true
+	}
+
+	// PushOnChangeTTL: re-assert the unchanged state every n-th tick so
+	// clients that missed an event self-heal.
+	if p.ttl > 0 {
+		p.ticks++
+		if p.ticks >= p.ttl {
+			p.ticks = 0
+
+			return true
+		}
 	}
 
 	return false

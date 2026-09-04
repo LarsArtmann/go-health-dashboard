@@ -66,6 +66,15 @@ type Config struct {
 	// script src at it. Set via WithEmbeddedDatastarSDK.
 	EmbeddedDatastarSDK bool
 
+	// PushOnChangeTTL re-asserts the current state every n-th push tick in
+	// PushOnChange mode, even when nothing changed, so a client that
+	// missed an event self-heals. Zero (default) disables re-assertion.
+	PushOnChangeTTL int
+
+	// TimelineMaxAge drops timeline entries older than this duration.
+	// Zero (default) keeps every recorded transition.
+	TimelineMaxAge time.Duration
+
 	// RateLimitRequests and RateLimitWindow configure a shared token
 	// bucket across all dashboard-owned routes. Zero disables rate
 	// limiting (default). Probe endpoints are never limited.
@@ -391,5 +400,30 @@ func WithIntrospection() Option {
 func WithEmbeddedDatastarSDK() Option {
 	return func(c *Config) {
 		c.EmbeddedDatastarSDK = true
+	}
+}
+
+// WithPushOnChangeTTL re-asserts the current health state every n-th push
+// tick in PushOnChange mode, even when nothing changed. A client that
+// missed an event (proxy timeout, tab throttling) self-heals on the next
+// re-assertion instead of showing stale state until the next real change.
+// Values below 2 are ignored (1 would degenerate to PushAlways). Zero (the
+// default) disables re-assertion.
+func WithPushOnChangeTTL(n int) Option {
+	return func(c *Config) {
+		if n >= 2 {
+			c.PushOnChangeTTL = n
+		}
+	}
+}
+
+// WithTimelineMaxAge hides timeline entries older than d from the timeline
+// card (the trend/export endpoints keep the full history). Zero (the
+// default) keeps every recorded transition.
+func WithTimelineMaxAge(d time.Duration) Option {
+	return func(c *Config) {
+		if d > 0 {
+			c.TimelineMaxAge = d
+		}
 	}
 }
