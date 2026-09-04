@@ -57,8 +57,10 @@ sentinels (both wrap the existing `ErrPusherNotActive`, so existing
 
 - `fuzz.yml` executed end-to-end via `workflow_dispatch` on a real
   runner (run 33896794771, success).
-- Bisectability audit `071c251..HEAD`: every commit builds (see
-  `docs/status/` for the audit record).
+- Bisectability audit `071c251..HEAD` (91 commits): 86 build, 5
+  auto-daemon mid-edit snapshots do not — all five documented in
+  AGENTS.md for `git bisect skip`
+  (`docs/status/2026-09-04_19-15_bisectability-audit.md`).
 
 ## [0.5.0] - 2026-09-04
 

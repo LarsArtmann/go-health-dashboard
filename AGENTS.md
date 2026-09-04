@@ -164,11 +164,15 @@ per-file suites.
 - **Two datastar packages** — `github.com/larsartmann/templ-components/datastar` (UI components: LiveRegion, SDKScript) and `github.com/larsartmann/go-datastar` (SSE protocol: ElementsFromTempl, WithModeInner). Import the latter as `dstar` to avoid name collision. A third package, `github.com/larsartmann/go-datastar/static`, embeds the real SDK JS bundle — use it in tests for hermetic browser runs.
 - **Datastar SDK requires `script-src 'unsafe-eval'`** — the SDK compiles `data-*` expressions with the `Function` constructor. Under a strict CSP without it, the bundle throws `Error: GenerateExpression` during init and the SSE connection never opens (discovered by `browser_test.go`). Nonce-based script delivery still works; styles stay clean with `WithCSSPath`.
 - **Headless Chrome must be launched manually in tests** — this machine's Chromium binds the DevTools listener to IPv6 `[::1]` and never announces a websocket with `--remote-debugging-port=0`. `startHeadlessChrome` (browser_test.go) picks a concrete free port, parses the `DevTools listening on ...` stderr line, and hands it to `chromedp.NewRemoteAllocator`. The profile dir is removed with a bounded retry because renderer children outlive the browser process.
-- **Bisect wall in the v0.3.x cycle range** — one pushed auto-daemon commit
-  (`72783fc`) does not compile (missing `sync/atomic` import); pushed history
-  is immutable. Use `git bisect skip` when bisecting across that range. Root
-  cause class: the auto-commit daemon snapshots mid-edit trees — run a fast
-  `go build ./...` before walking away from a half-wired state.
+- **Bisect wall `071c251..HEAD` (audited 2026-09-04)** — five pushed
+  auto-daemon commits do not compile; pushed history is immutable. Use
+  `git bisect skip` on: `fb9d0de` (status.go type mismatch),
+  `72783fc` (missing `sync/atomic` import), `61f18a3` (duplicate `time`
+  import in trend.go), `49f4eb9` (webhookNotifier/di.go mid-move),
+  `ed2b759` (wantsJSON duplicated across the dashboard.go split). Root
+  cause class: the auto-commit daemon snapshots mid-edit trees — run a
+  fast `go build ./...` before walking away from a half-wired state.
+  Full audit record: `docs/status/2026-09-04_19-15_bisectability-audit.md`.
 - **go-health marks non-critical failing checks `warn`, not `fail`** — only critical services produce `fail` per-check statuses (and overall fail). `setupDashboardWithFailures` yields cache/queue `warn` checks with overall `warn`; metrics tests assert accordingly.
 
 ---

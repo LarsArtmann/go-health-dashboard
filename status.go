@@ -88,7 +88,7 @@ type viewModel struct {
 	// History holds recent overall-status samples for the trend sparkline
 	// (pass=1, warn=0.5, fail=0, oldest first). Nil when the trend is
 	// disabled (default) or no samples recorded yet.
-	History []float64
+	History  []float64
 	Timeline []TimelineEntry
 	// LastUpdated is the "Updated <time>" stamp. With trend history enabled
 	// it is the observation time of the most recent sample (when the health

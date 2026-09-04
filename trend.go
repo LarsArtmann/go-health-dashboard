@@ -59,13 +59,21 @@ func jsonTransitions(transitions []statusTransition) []jsonTransition {
 // down), while a nil history means trend recording is not enabled.
 func trendUnavailable(w http.ResponseWriter, push *pusher, history *historyBuffer) bool {
 	if push == nil {
-		http.Error(w, "dashboard: SSE pusher is not active (call Start before serving traffic)", http.StatusServiceUnavailable)
+		http.Error(
+			w,
+			"dashboard: SSE pusher is not active (call Start before serving traffic)",
+			http.StatusServiceUnavailable,
+		)
 
 		return true
 	}
 
 	if history == nil {
-		http.Error(w, "dashboard: trend history is not enabled (set WithTrend)", http.StatusServiceUnavailable)
+		http.Error(
+			w,
+			"dashboard: trend history is not enabled (set WithTrend)",
+			http.StatusServiceUnavailable,
+		)
 
 		return true
 	}

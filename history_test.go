@@ -158,7 +158,13 @@ func TestPopulateHistory_LastUpdatedIsLastSampleTime(t *testing.T) {
 	observed := time.Date(2026, 9, 4, 12, 30, 15, 0, time.UTC)
 
 	h := newHistoryBuffer(4)
-	h.record(sample{At: observed.Add(-2 * time.Second), Value: trendPassValue, Status: string(health.StatusPass)})
+	h.record(
+		sample{
+			At:     observed.Add(-2 * time.Second),
+			Value:  trendPassValue,
+			Status: string(health.StatusPass),
+		},
+	)
 	h.record(sample{At: observed, Value: trendWarnValue, Status: string(health.StatusWarn)})
 
 	vm := viewModel{LastUpdated: "would-be-render-time"}
@@ -166,7 +172,11 @@ func TestPopulateHistory_LastUpdatedIsLastSampleTime(t *testing.T) {
 
 	want := observed.UTC().Format(updatedStampFormat)
 	if vm.LastUpdated != want {
-		t.Errorf("LastUpdated: want %q (last sample observation time), got %q", want, vm.LastUpdated)
+		t.Errorf(
+			"LastUpdated: want %q (last sample observation time), got %q",
+			want,
+			vm.LastUpdated,
+		)
 	}
 }
 
