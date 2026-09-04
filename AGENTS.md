@@ -182,9 +182,10 @@ per-file suites.
   v1.12.0 / go-datastar v0.5.0 landed 2026-09-04 and failed three
   CSP-invariant tests (`TestCSP_NoNonceRendersWithoutNonce`,
   `TestCSP_EmptyNonceRendersWithoutNonce`,
-  `TestCSP_WithoutDatastarSrcUsesCDN`); it was reverted same day
-  (`8cf2c62`). UI-dependency bumps must run the browser suite before
-  landing — the unit suite alone cannot see these regressions.
+  `TestCSP_WithoutDatastarSrcUsesCDN`); it was reverted twice on
+  2026-09-04 (`8cf2c62`, then a re-land re-reverted). UI-dependency
+  bumps must run the browser suite before landing — the unit suite
+  alone cannot see these regressions.
 - **Env toggles validate before use** — the example's `safeBasePath` is the
   pattern: any value read from an environment variable that reaches a route
   or a log line gets validated/normalized first (log-injection defense).

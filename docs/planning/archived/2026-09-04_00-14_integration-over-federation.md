@@ -22,7 +22,7 @@ v0.5.0 (`Prober`, `WithWebhook`/`WithWebhookHeaders`, e2e tests),
 `docs/integrations.md` cookbook, cross-repo docs, both releases
 proxy-verified. Two in-flight scope additions beyond the original table: the
 dashboard v0.5.0 release itself, and the follow-on status report
-(`docs/status/archived/2026-09-04_11-23_integration-over-federation-cross-repo-shipped.md`).
+(`docs/status/2026-09-04_11-23_integration-over-federation-cross-repo-shipped.md`).
 Out-of-scope table below held as written. Frozen design contracts held.
 
 **Decisions made (from strategy discussion):**

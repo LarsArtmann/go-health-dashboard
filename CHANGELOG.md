@@ -62,6 +62,9 @@ sentinels (both wrap the existing `ErrPusherNotActive`, so existing
   tests failed. Pins restored to templ-components v1.11.0 and
   go-datastar v0.4.0 (`8cf2c62`); the bumps can re-land once upstream
   ships the nonce guard and the browser suite validates the bundle.
+  A second sweep re-landed the same bumps later that day and was
+  re-reverted; go-health's own v0.1.1 → v0.1.2 patch bump (separate,
+  suite green) stays.
 
 ### Verified
 

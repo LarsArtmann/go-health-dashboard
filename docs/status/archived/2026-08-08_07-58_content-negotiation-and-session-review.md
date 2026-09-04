@@ -72,7 +72,7 @@ The example compiles and starts (logs "dashboard: http://localhost:8080/health")
 | 2  | ~~**`.golangci.yml` config file**~~           | golangci-lint runs clean with defaults (0 issues), but no project config exists.                                                                                                | ✅ DONE — 276-line config, 80+ linters, 0 issues      |
 | 3  | ~~**flake.lock regeneration**~~               | flake.nix was changed (added `GOWORK=off`) but `nix flake lock` was never run.                                                                                                  | ✅ DONE — `nix flake check` passes, lock is current   |
 | 4  | ~~**SSE change-detection integration test**~~ | PushOnChange has unit tests for `fingerprintChecks` but no end-to-end test that starts a pusher, changes health status, and verifies the broadcast arrives (or doesn't).        | ✅ DONE — `sse_integration_test.go`, 10 tests         |
-| 5  | ~~**Stale docs cleanup**~~                    | `docs/status/archived/2026-08-08_03-36_initial-implementation-review.md` describes old architecture. `docs/feedback/new/2026-08-08_seven-planning-mistakes.md` still in `new/`. | ✅ DONE — annotated + archived by docs-health session |
+| 5  | ~~**Stale docs cleanup**~~                    | `docs/status/archived/2026-08-08_03-36_initial-implementation-review.md` describes old architecture. `docs/feedback/archived/2026-08-08_seven-planning-mistakes.md` still in `new/`. | ✅ DONE — annotated + archived by docs-health session |
 | 6  | ~~**`WithCSSPath` option**~~                  | Production users can't swap Tailwind CDN for compiled CSS.                                                                                                                      | ✅ DONE — `dashboard.go:77`                           |
 | 7  | ~~**Dark mode toggle UI**~~                   | `layout.Base` includes theme script but no toggle button is rendered.                                                                                                           | ✅ DONE — `view.templ:36`, ThemeToggle                |
 | 8  | ~~**Favicon served**~~                        | `layout.Base` references `/favicon.svg` but none is served.                                                                                                                     | ✅ DONE — `favicon.go:13`, embedded SVG               |
@@ -85,7 +85,7 @@ The example compiles and starts (logs "dashboard: http://localhost:8080/health")
 
 ### D1. I contradicted the feedback document without flagging it
 
-The **entire point** of the previous session's rewrite was to fix mistake #3 from `docs/feedback/new/2026-08-08_seven-planning-mistakes.md`: "Content negotiation when separate routes are simpler." The previous session deliberately **removed** content negotiation and replaced it with dedicated routes.
+The **entire point** of the previous session's rewrite was to fix mistake #3 from `docs/feedback/archived/2026-08-08_seven-planning-mistakes.md`: "Content negotiation when separate routes are simpler." The previous session deliberately **removed** content negotiation and replaced it with dedicated routes.
 
 Then the user said "If I send application/json to /health I want JSON back!" and I **immediately implemented content negotiation without a single word of pushback, tradeoff analysis, or questioning whether this re-introduces the exact mistake that was just fixed.**
 
@@ -218,7 +218,7 @@ The LICENSE file says "PROPRIETARY LICENSE — Copyright (c) 2026 Lars. All righ
 
 ### G2. Content negotiation: Was re-introducing it intentional?
 
-The feedback document (`docs/feedback/new/2026-08-08_seven-planning-mistakes.md`) identified content negotiation as mistake #3. The previous session removed it. This session, you asked for it back. I implemented it without questioning whether this re-introduces the original problem. Is this a deliberate reversal of the feedback decision, or did the feedback document's reasoning not apply to this specific case?
+The feedback document (`docs/feedback/archived/2026-08-08_seven-planning-mistakes.md`) identified content negotiation as mistake #3. The previous session removed it. This session, you asked for it back. I implemented it without questioning whether this re-introduces the original problem. Is this a deliberate reversal of the feedback decision, or did the feedback document's reasoning not apply to this specific case?
 
 ### G3. Replace directives: Keep for now or tag upstream repos?
 

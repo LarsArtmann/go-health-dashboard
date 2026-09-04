@@ -150,7 +150,7 @@ The rewrite was comprehensive. No features are half-implemented.
 
 ### D2: Old status report and feedback file still in place
 
-The `docs/status/archived/2026-08-08_03-36_initial-implementation-review.md` describes the old architecture (content negotiation, HTMX polling, etc.) and is now completely stale. The `docs/feedback/new/2026-08-08_seven-planning-mistakes.md` was processed but still sits in `new/`. Both should be annotated or moved.
+The `docs/status/archived/2026-08-08_03-36_initial-implementation-review.md` describes the old architecture (content negotiation, HTMX polling, etc.) and is now completely stale. The `docs/feedback/archived/2026-08-08_seven-planning-mistakes.md` was processed but still sits in `new/`. Both should be annotated or moved.
 
 ### D3: gopls diagnostics show stale errors
 
@@ -190,7 +190,7 @@ The LSP diagnostics in the editor still show errors referencing deleted files (`
 6. **Regenerate `flake.lock`** — Run `nix flake lock` after flake.nix changes.
 7. **Test `nix build`** — Verify the Nix build works with GOWORK=off.
 8. **Move old status report** — Annotate `docs/status/archived/2026-08-08_03-36_initial-implementation-review.md` as superseded.
-9. **Process feedback file** — Move `docs/feedback/new/2026-08-08_seven-planning-mistakes.md` to `docs/feedback/`.
+9. **Process feedback file** — Move `docs/feedback/archived/2026-08-08_seven-planning-mistakes.md` to `docs/feedback/`.
 
 ### High Priority
 
