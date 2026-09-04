@@ -659,15 +659,23 @@ func TestBrowser_Accessibility(t *testing.T) {
 	// The skip link is sr-only until keyboard focus and this harness serves
 	// no real Tailwind stylesheet, so axe cannot compute meaningful contrast
 	// for it; production colors (blue-600 on white) pass WCAG AA.
-	// definition-list: StatCard wraps each dd in a div without its dt —
-	// upstream templ-components markup, tracked for an upstream fix.
+	// definition-list is tolerated ONLY for the StatCard markup signature
+	// (a flex/min-w-0 <dl> whose <dd> sits in a <div>, upstream
+	// templ-components#6); any other definition-list violation still fails.
 	start := `axe.run(
 		{ include: [document], exclude: [["a[href='#main-content']"]] },
 		{ resultTypes: ["violations"] }
 	).then(function (r) {
+		var statCardDl = /class="(?:flex-1 min-w-0|min-w-0 flex-1)"/;
+		var statCardDdWrapper = /<div[^>]*class="[^"]*items-baseline[^"]*"[^>]*>\s*<dd/;
 		window.__axeViolations = JSON.stringify(r.violations.filter(function (v) {
 			if (v.impact !== "serious" && v.impact !== "critical") { return false; }
-			return v.id !== "definition-list";
+			if (v.id === "definition-list") {
+				return !(v.nodes.length > 0 && v.nodes.every(function (n) {
+					return statCardDl.test(n.html) || statCardDdWrapper.test(n.html);
+				}));
+			}
+			return true;
 		}).map(function (v) { return v.id + ":" + v.impact + ":" + v.nodes.length + ":" + v.nodes.map(function (n) { return n.html; }).join(" | ").slice(0, 200); }));
 	}).catch(function (e) {
 		window.__axeViolations = "AXE_ERROR: " + e;
