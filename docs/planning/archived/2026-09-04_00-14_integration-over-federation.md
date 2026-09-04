@@ -16,6 +16,15 @@ semantic mapping is where the incidents live (1076+ lost ingests to one case bug
 11-day healthz blackout). The library owns these semantics programmatically — this plan
 exports them once.
 
+**EXECUTED 2026-09-04 — plan fully delivered.** Every micro task A1–F4
+shipped the same day: go-health v0.1.0 (`aggregate` + test suite), dashboard
+v0.5.0 (`Prober`, `WithWebhook`/`WithWebhookHeaders`, e2e tests),
+`docs/integrations.md` cookbook, cross-repo docs, both releases
+proxy-verified. Two in-flight scope additions beyond the original table: the
+dashboard v0.5.0 release itself, and the follow-on status report
+(`docs/status/archived/2026-09-04_11-23_integration-over-federation-cross-repo-shipped.md`).
+Out-of-scope table below held as written. Frozen design contracts held.
+
 **Decisions made (from strategy discussion):**
 
 1. **Federation is dead.** Remote pulling duplicates Kuma/Gatus/Grafana. Never build it here.
