@@ -1,0 +1,1209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>go-health Integration Deep Dive — 2026-09-04</title>
+    <style>
+      /* =========================================================================
+         BAUHAUS LIGHT — Editorial template
+         Design language: form follows function. Primary colors on warm paper.
+         Zero external dependencies: system fonts, no CDN, no build step.
+         Token architecture: see references/bauhaus-tokens.md
+         ========================================================================= */
+
+      :root {
+        /* --- Primitive palette (Bauhaus Light) --- */
+        --color-paper: #f4f4f0;
+        --color-paper-2: #ffffff;
+        --color-paper-3: #e8e8e2;
+        --color-ink: #111111;
+        --color-red: #e63946;
+        --color-blue: #1d3557;
+        --color-yellow: #f4d35e;
+        --color-hairline: rgba(17, 17, 17, 0.14);
+        --color-hairline-strong: rgba(17, 17, 17, 0.3);
+
+        /* --- Semantic layer (shared vocabulary with dark template) --- */
+        --surface: var(--color-paper);
+        --surface-raised: var(--color-paper-2);
+        --surface-sunken: var(--color-paper-3);
+        --text: var(--color-ink);
+        --text-muted: rgba(17, 17, 17, 0.72);
+        --text-faint: rgba(17, 17, 17, 0.5);
+        --border: var(--color-hairline);
+        --border-strong: var(--color-hairline-strong);
+        --accent: var(--color-red);
+        --problem: var(--color-red);
+        --solution: var(--color-blue);
+        --warning: var(--color-yellow);
+
+        /* --- Backward-compatible aliases (do not break consumer skills) --- */
+        --bg: var(--surface);
+        --bg-elevated: var(--surface-raised);
+        --bg-sunken: var(--surface-sunken);
+        --bg-card: var(--surface-raised);
+        --bg-code: var(--surface-sunken);
+        --ink: var(--text);
+        --ink-secondary: var(--text-muted);
+        --ink-muted: var(--text-faint);
+        --rose: var(--problem);
+        --rose-glow: color-mix(in srgb, var(--problem) 15%, transparent);
+        --emerald: var(--solution);
+        --emerald-glow: color-mix(in srgb, var(--solution) 15%, transparent);
+        --amber: var(--warning);
+        --amber-glow: color-mix(in srgb, var(--warning) 15%, transparent);
+        --amber-light: color-mix(in srgb, var(--warning) 22%, transparent);
+        --coral: var(--problem);
+        --coral-light: color-mix(in srgb, var(--problem) 12%, transparent);
+        --teal: var(--solution);
+        --teal-light: color-mix(in srgb, var(--solution) 12%, transparent);
+
+        /* --- Shape --- */
+        --radius: 0px;
+        --radius-sm: 0px;
+
+        /* --- Type stacks (system only — zero external fonts) --- */
+        --font-heading:
+          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --font-body:
+          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --font-mono:
+          ui-monospace, "Cascadia Code", "Source Code Pro", "JetBrains Mono",
+          Menlo, Consolas, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      section[id],
+      [id] {
+        scroll-margin-top: 60px;
+      }
+
+      body {
+        background: var(--surface);
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* --- Accessibility: keyboard focus --- */
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      a:focus-visible {
+        outline-offset: -1px;
+      }
+
+      /* --- Full-bleed top bar --- */
+      .top-bar {
+        background: var(--text);
+        color: var(--surface);
+        padding: 0.6rem 2rem;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* --- Layout: optional sticky sidebar TOC --- */
+      .layout {
+        display: flex;
+        gap: 2.5rem;
+        padding: 2rem;
+      }
+      .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 1rem;
+        align-self: flex-start;
+        height: calc(100vh - 2rem);
+        overflow-y: auto;
+        display: none;
+      }
+      .sidebar nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .sidebar .label {
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--accent);
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 2px solid var(--text);
+      }
+      .sidebar a {
+        font-size: 0.86rem;
+        color: var(--text);
+        text-decoration: none;
+        padding: 0.5rem 0.75rem;
+        border-left: 4px solid transparent;
+        font-weight: 600;
+        transition: all 0.15s ease;
+        line-height: 1.4;
+      }
+      .sidebar a:hover,
+      .sidebar a.active {
+        border-left-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 8%, transparent);
+        color: var(--accent);
+      }
+      .main {
+        flex: 1;
+        min-width: 0;
+      }
+
+      /* --- Headings --- */
+      h1,
+      h2,
+      h3,
+      h4 {
+        font-family: var(--font-heading);
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        color: var(--text);
+      }
+      h1 {
+        font-size: clamp(1.9rem, 4.5vw, 2.8rem);
+        line-height: 1.05;
+        margin: 0 0 0.6rem;
+      }
+      h2 {
+        font-size: 1.5rem;
+        margin: 2.5rem 0 1rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 3px solid var(--text);
+        display: flex;
+        align-items: baseline;
+        gap: 0.7rem;
+      }
+      h2 .num {
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        color: var(--accent);
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+      h3 {
+        font-size: 1.15rem;
+        margin: 0 0 0.4rem;
+        font-weight: 700;
+      }
+      h4 {
+        font-size: 1rem;
+        margin: 0 0 0.3rem;
+        font-weight: 700;
+      }
+      p {
+        margin: 0 0 1rem;
+      }
+
+      /* --- Hero --- */
+      .hero {
+        padding: 1.5rem 0 2rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 3px solid var(--text);
+      }
+      .eyebrow {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--accent);
+        margin-bottom: 0.9rem;
+      }
+      .subtitle {
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        max-width: 70ch;
+        margin: 0 0 1rem;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      .tag {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        padding: 0.25rem 0.6rem;
+        background: var(--surface-sunken);
+        color: var(--text);
+        border: 1px solid var(--border-strong);
+      }
+      .tag.amber {
+        background: var(--warning);
+        border-color: var(--warning);
+        color: var(--text);
+      }
+      .tag.teal {
+        background: var(--solution);
+        border-color: var(--solution);
+        color: var(--surface);
+      }
+
+      /* Bauhaus signature: geometric shape cluster (optional) */
+      .hero-shapes {
+        position: relative;
+        height: 90px;
+        margin-bottom: 1.2rem;
+      }
+      .hero-shapes .circle {
+        position: absolute;
+        top: 0;
+        right: 180px;
+        width: 64px;
+        height: 64px;
+        background: var(--problem);
+        border-radius: 50%;
+      }
+      .hero-shapes .square {
+        position: absolute;
+        top: 26px;
+        right: 90px;
+        width: 56px;
+        height: 56px;
+        background: var(--solution);
+      }
+      .hero-shapes .tri {
+        position: absolute;
+        top: 8px;
+        right: 0;
+        width: 0;
+        height: 0;
+        border-left: 32px solid transparent;
+        border-right: 32px solid transparent;
+        border-bottom: 56px solid var(--warning);
+      }
+      .hero-shapes .bar {
+        position: absolute;
+        bottom: 0;
+        right: 230px;
+        width: 100px;
+        height: 14px;
+        background: var(--text);
+      }
+
+      /* --- Scorecard / stat cards --- */
+      .scorecard,
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 0;
+        margin: 1.5rem 0 2rem;
+        border: 3px solid var(--text);
+      }
+      .score-card,
+      .stat-card {
+        padding: 1.3rem 1rem;
+        text-align: center;
+        border-right: 3px solid var(--text);
+        background: var(--surface-raised);
+      }
+      .score-card:last-child,
+      .stat-card:last-child {
+        border-right: none;
+      }
+
+      .score,
+      .stat-value {
+        font-family: var(--font-heading);
+        font-size: 2.6rem;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+      .score-card .label,
+      .stat-label {
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-top: 0.5rem;
+      }
+      /* Semantic state classes — no nth-child decoration, no !important */
+      .score-good,
+      .stat-good {
+        background: var(--solution);
+        color: var(--surface);
+      }
+      .score-warn,
+      .stat-warn {
+        background: var(--warning);
+        color: var(--text);
+      }
+      .score-bad,
+      .stat-bad {
+        background: var(--problem);
+        color: var(--surface);
+      }
+
+      /* --- General cards --- */
+      .card {
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+        padding: 1.2rem 1.4rem;
+        margin-bottom: 1rem;
+        border-left: 8px solid var(--border-strong);
+      }
+      .card-problem {
+        border-left-color: var(--problem);
+      }
+      .card-solution {
+        border-left-color: var(--solution);
+      }
+      .card-warning {
+        border-left-color: var(--warning);
+      }
+
+      /* --- Issue cards --- */
+      .issue {
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+        padding: 1.2rem 1.4rem;
+        margin-bottom: 1rem;
+        border-left: 8px solid var(--border-strong);
+      }
+      .issue-critical {
+        border-left-color: var(--problem);
+      }
+      .issue-important {
+        border-left-color: var(--warning);
+      }
+      .issue-nice {
+        border-left-color: var(--solution);
+      }
+      .issue h3 {
+        margin-bottom: 0.3rem;
+      }
+      .issue .where {
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        color: var(--text-faint);
+        margin: 0.2rem 0 0.6rem;
+      }
+      .issue p:last-child {
+        margin-bottom: 0;
+      }
+
+      /* --- Severity badges --- */
+      .severity {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 0.22rem 0.6rem;
+        margin-bottom: 0.6rem;
+        color: var(--surface);
+      }
+      .severity-critical {
+        background: var(--problem);
+      }
+      .severity-important {
+        background: var(--warning);
+        color: var(--text);
+      }
+      .severity-nice {
+        background: var(--solution);
+      }
+
+      /* --- Inline badges --- */
+      .badge {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.2rem 0.55rem;
+        border: 1px solid var(--text);
+        color: var(--text);
+      }
+      .badge-critical {
+        background: var(--problem);
+        color: var(--surface);
+      }
+      .badge-high {
+        background: var(--warning);
+      }
+      .badge-medium {
+        background: var(--surface-sunken);
+      }
+      .badge-low {
+        background: var(--surface-raised);
+        color: var(--text-muted);
+      }
+      .badge-fixed {
+        background: var(--solution);
+        color: var(--surface);
+      }
+
+      /* --- Callouts --- */
+      .callout {
+        margin: 0.8rem 0 0;
+        padding: 0.8rem 1rem;
+        border: 1px solid var(--border-strong);
+        border-left: 4px solid var(--border-strong);
+        background: var(--surface-sunken);
+        font-size: 0.92rem;
+      }
+      .callout strong {
+        display: inline-block;
+        margin-right: 0.4rem;
+      }
+      .callout-teal,
+      .callout-solution {
+        border-left-color: var(--solution);
+        background: color-mix(
+          in srgb,
+          var(--solution) 10%,
+          var(--surface-raised)
+        );
+      }
+      .callout-amber,
+      .callout-warning {
+        border-left-color: var(--warning);
+        background: color-mix(
+          in srgb,
+          var(--warning) 18%,
+          var(--surface-raised)
+        );
+      }
+
+      /* --- Strengths --- */
+      .strengths {
+        display: grid;
+        gap: 0.5rem;
+        margin: 1rem 0 1.5rem;
+      }
+      .strength {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.9rem;
+        padding: 0.75rem 0;
+        border-bottom: 2px solid var(--border);
+      }
+      .strength .check {
+        font-family: var(--font-mono);
+        font-weight: 900;
+        color: var(--solution);
+        font-size: 1.3rem;
+        line-height: 1.3;
+      }
+      .strength .text strong {
+        display: block;
+        margin-bottom: 0.15rem;
+      }
+      .strength .text span {
+        color: var(--text-muted);
+        font-size: 0.92rem;
+      }
+
+      /* --- Tables --- */
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0 1.5rem;
+        font-size: 0.92rem;
+        border: 2px solid var(--text);
+      }
+      th {
+        text-align: left;
+        padding: 0.6rem 0.9rem;
+        background: var(--text);
+        color: var(--surface);
+        font-family: var(--font-mono);
+        font-size: 0.66rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border-right: 1px solid var(--border-strong);
+      }
+      th:last-child {
+        border-right: none;
+      }
+      td {
+        padding: 0.6rem 0.9rem;
+        border-top: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+      }
+      td:last-child {
+        border-right: none;
+      }
+      tr:nth-child(even) td {
+        background: var(--surface-sunken);
+      }
+      table.compare td.yes {
+        color: var(--solution);
+        font-weight: 700;
+      }
+      table.compare td.no {
+        color: var(--problem);
+        font-weight: 700;
+      }
+
+      /* --- Code blocks + syntax highlighting --- */
+      pre {
+        background: var(--text);
+        color: var(--surface);
+        padding: 1rem 1.2rem;
+        margin: 1rem 0;
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        line-height: 1.65;
+        overflow-x: auto;
+        border: 2px solid var(--text);
+      }
+      code {
+        font-family: var(--font-mono);
+      }
+      p code,
+      li code,
+      td code {
+        font-size: 0.88em;
+        background: var(--surface-sunken);
+        padding: 0.1rem 0.35rem;
+      }
+      .tok-keyword {
+        color: var(--warning);
+      }
+      .tok-type {
+        color: var(--warning);
+      }
+      .tok-string {
+        color: #95e1d3;
+      }
+      .tok-comment {
+        color: rgba(244, 244, 240, 0.45);
+        font-style: italic;
+      }
+      .tok-func {
+        color: #6eb5ff;
+      }
+      .tok-number {
+        color: var(--warning);
+      }
+      .tok-generic {
+        color: var(--problem);
+      }
+      .tok-builtin {
+        color: #6eb5ff;
+      }
+      .tok-punct {
+        color: rgba(244, 244, 240, 0.7);
+      }
+      .tok-attr {
+        color: var(--warning);
+      }
+
+      /* --- Dependency tree / ASCII diagrams --- */
+      .dep-tree {
+        background: var(--surface-sunken);
+        border: 2px solid var(--text);
+        padding: 1rem 1.2rem;
+        margin: 1rem 0;
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        line-height: 1.7;
+        white-space: pre;
+        overflow-x: auto;
+      }
+      .dep-tree .root {
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .dep-tree .ok {
+        color: var(--solution);
+      }
+      .dep-tree .unwanted {
+        color: var(--problem);
+      }
+
+      /* --- Inline node-and-arrow diagrams --- */
+      .diagram {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        margin: 1rem 0;
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+      }
+      .node {
+        display: inline-block;
+        padding: 0.4rem 0.75rem;
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        font-weight: 700;
+        background: var(--surface-sunken);
+        border: 1px solid var(--text);
+      }
+      .node-core {
+        background: var(--accent);
+        color: var(--surface);
+      }
+      .node-problem {
+        background: var(--problem);
+        color: var(--surface);
+      }
+      .node-good {
+        background: var(--solution);
+        color: var(--surface);
+      }
+      .arrow {
+        color: var(--text-faint);
+        font-family: var(--font-mono);
+      }
+
+      /* --- Grids --- */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin: 1rem 0;
+      }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin: 1rem 0;
+      }
+
+      /* --- Inline TOC --- */
+      .toc {
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+        border-left: 6px solid var(--accent);
+        padding: 1rem 1.3rem;
+        margin: 1rem 0 1.5rem;
+      }
+      .toc h3 {
+        margin-bottom: 0.5rem;
+      }
+      .toc ul {
+        list-style: none;
+        padding: 0;
+      }
+      .toc li {
+        margin: 0.25rem 0;
+      }
+      .toc a {
+        color: var(--text);
+        text-decoration: none;
+        font-size: 0.92rem;
+        font-weight: 600;
+      }
+      .toc a:hover {
+        color: var(--accent);
+      }
+
+      /* --- Migration / numbered steps --- */
+      .migration-step {
+        display: grid;
+        grid-template-columns: 56px 1fr;
+        gap: 1rem;
+        margin: 1rem 0;
+        padding: 1.1rem;
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+        border-left: 6px solid var(--accent);
+      }
+      .migration-num {
+        font-family: var(--font-mono);
+        font-weight: 900;
+        font-size: 1.8rem;
+        color: var(--accent);
+        line-height: 1;
+      }
+      .migration-content h4 {
+        margin-bottom: 0.2rem;
+      }
+      .migration-content p {
+        margin-bottom: 0;
+        color: var(--text-muted);
+        font-size: 0.94rem;
+      }
+
+      /* --- Before/After comparison --- */
+      .compare-header {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin: 1rem 0 0.5rem;
+      }
+      .compare-before,
+      .compare-after {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 0.4rem 0.7rem;
+        color: var(--surface);
+      }
+      .compare-before {
+        background: var(--problem);
+      }
+      .compare-after {
+        background: var(--solution);
+      }
+      .compare-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+      .compare-row pre {
+        margin: 0;
+      }
+
+      /* --- Footer --- */
+      .footer {
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 3px solid var(--text);
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        font-family: var(--font-mono);
+      }
+
+      /* --- Responsive --- */
+      @media (min-width: 1024px) {
+        .sidebar {
+          display: block;
+        }
+      }
+      @media (max-width: 768px) {
+        .layout {
+          flex-direction: column;
+          padding: 1rem;
+        }
+        .top-bar {
+          padding: 0.6rem 1rem;
+          flex-wrap: wrap;
+          gap: 0.3rem;
+        }
+        .grid-2,
+        .grid-3 {
+          grid-template-columns: 1fr;
+        }
+        .compare-header,
+        .compare-row {
+          grid-template-columns: 1fr;
+        }
+        .scorecard,
+        .stat-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .score-card:nth-child(2),
+        .stat-card:nth-child(2) {
+          border-right: none;
+        }
+        .score-card:nth-child(1),
+        .stat-card:nth-child(1),
+        .score-card:nth-child(2),
+        .stat-card:nth-child(2) {
+          border-bottom: 3px solid var(--text);
+        }
+        .migration-step {
+          grid-template-columns: 1fr;
+        }
+        .hero-shapes {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top-bar">
+      <span>Library Deep Dive</span>
+      <span>2026-09-04</span>
+      <span>go-health-dashboard &middot; integration review</span>
+    </div>
+
+    <div class="layout">
+      <aside class="sidebar" data-nav>
+        <nav>
+          <div class="label">Contents</div>
+          <a href="#summary">Summary</a>
+          <a href="#scorecard">Scorecard</a>
+          <a href="#strengths">Strengths</a>
+          <a href="#findings">Findings</a>
+          <a href="#proposal">Target state</a>
+          <a href="#appendix">Appendix</a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="hero">
+          <div class="hero-shapes">
+            <div class="bar"></div>
+            <div class="circle"></div>
+            <div class="square"></div>
+            <div class="tri"></div>
+          </div>
+          <div class="eyebrow">Library Deep Dive &middot; 2026-09-04</div>
+          <h1>Is the go-health integration the best imaginable?</h1>
+          <p class="subtitle">
+            A capability-by-capability audit of how go-health-dashboard consumes
+            its primary dependency, github.com/larsartmann/go-health &mdash; every
+            exported API mapped, every gap graded, one real bug found and fixed
+            with a proven-failing test.
+          </p>
+          <div class="meta">
+            <span class="tag amber">go-health v0.1.2 (latest tag)</span>
+            <span class="tag">dashboard v0.5.0+ / master</span>
+            <span class="tag teal">Adoption 84 &rarr; 97 / 100</span>
+          </div>
+        </header>
+
+        <section id="scorecard" class="scorecard">
+          <div class="score-card score-good">
+            <div class="score">10</div>
+            <div class="label">Fully leveraged</div>
+          </div>
+          <div class="score-card score-warn">
+            <div class="score">2</div>
+            <div class="label">Fixed this audit</div>
+          </div>
+          <div class="score-card score-warn">
+            <div class="score">3</div>
+            <div class="label">Upstream asks</div>
+          </div>
+          <div class="score-card">
+            <div class="score">15</div>
+            <div class="label">Capabilities reviewed</div>
+          </div>
+        </section>
+
+        <section id="summary">
+          <h2><span class="num">00</span>Summary</h2>
+          <p>
+            <strong>Yes &mdash; the integration architecture is the best imaginable
+            shape for Go; the execution had one real hole, now closed.</strong>
+            The seam is a five-method consumer-side structural interface
+            (<code>Prober</code>), which is exactly what the Go community
+            prescribes: the consumer defines what it needs, the provider satisfies
+            it implicitly, and source compatibility is proven by an untouched test
+            suite plus a stub-prober test. The aggregate pivot (v0.5.0) composed
+            instead of competed. The audit found the shape right and the
+            execution one bug short of ideal: the dashboard marshaled the raw
+            cached snapshot while go-health deliberately sanitizes invalid UTF-8
+            at its own write seams &mdash; the dashboard bypassed that protection
+            on every one of its five write paths.
+          </p>
+          <div class="callout callout-amber">
+            <strong>The bottom line</strong>
+            Architecture: best imaginable (consumer-side interface, one-snapshot
+            choke point, zero extra dependencies). Execution: one genuine bug
+            (invalid UTF-8 leaked into jsonv2 JSON output) &mdash; found by this
+            audit, fixed at the single choke point, and the regression test was
+            proven to fail without the fix. What remains are three upstream asks
+            for go-health, not dashboard defects.
+          </div>
+        </section>
+
+        <section id="strengths">
+          <h2><span class="num">&#9670;</span>What's already excellent</h2>
+          <div class="strengths">
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Consumer-side structural <code>Prober</code> interface (dashboard.go:22-37)</strong>
+                <span>Five methods, defined on the consumer side per Go convention. <code>*health.Probe</code> and <code>*aggregate.Aggregate</code> satisfy it implicitly; the entire pre-existing suite passed untouched when the interface landed, and <code>TestNew_AcceptsCustomProber</code> pins third-party implementability.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>One zero-cost snapshot feeds everything</strong>
+                <span><code>CachedResponse()</code> is a lock-free atomic read; the dashboard funnels it through a single choke point (<code>currentResponse</code>, dashboard.go:130) so the HTML view, JSON response, metrics, trend samples, change-detection fingerprints, and webhook payloads all share one consistent snapshot per tick.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Error-surface opacity by design</strong>
+                <span>The <code>Prober</code> deliberately excludes go-health's error plumbing (<code>ErrProbeUnhealthy</code>, <code>ErrPanicDuringHealthCheck</code>, evaluation hooks). The dashboard cannot leak probe internals, and probe lifecycle errors stay probe-side &mdash; a renderer should not re-implement a health-checker.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Aggregate composition, end-to-end tested</strong>
+                <span>The v0.5.0 "integration over federation" pivot: <code>aggregate.New</code> + namespaced <code>source/check</code> keys + worst-of status, rendered natively, verified by an injector-to-HTML e2e test (<code>integration_test.go</code>) and documented in README + cookbook.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Zero-dependency discipline held on both sides</strong>
+                <span>The dashboard hand-rolled Prometheus exposition and the token bucket rather than growing its dependency tree; go-health keeps samber/do as its single dependency and the dashboard adds nothing beyond it.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="findings">
+          <h2><span class="num">01</span>Findings</h2>
+
+          <div class="issue issue-critical" id="issue-1">
+            <span class="severity severity-critical">Found &amp; fixed today &middot; High impact</span>
+            <h3>Raw snapshot marshaled: invalid UTF-8 leaked past go-health's write-seam protection</h3>
+            <div class="where">handlers.go:94-110 (serveJSON) &middot; webhook.go:123-175 (buildPayload + jsonv2 marshal) &middot; fixed at dashboard.go:130 (currentResponse)</div>
+            <p>
+              go-health exports <code>SanitizeResponse</code> and applies it in its
+              own handlers explicitly so served bytes stay valid under
+              <em>both</em> encoding/json v1 and v2 semantics for any input
+              (handlers.go:203-220 upstream). The dashboard bypassed it:
+              <code>serveJSON</code> and the webhook payload marshaled the raw
+              <code>CachedResponse()</code> under <code>GOEXPERIMENT=jsonv2</code>.
+              A service-supplied check error containing invalid UTF-8 (raw network
+              garbage is a realistic error payload) produced invalid output bytes.
+            </p>
+            <pre><code>// before — raw snapshot reaches five write seams
+func (d *Dashboard) currentResponse() health.Response {
+    return d.probe.CachedResponse()
+}
+
+// after — one choke point sanitizes JSON, webhook, SSE, metrics, CSV
+func (d *Dashboard) currentResponse() health.Response {
+    return health.SanitizeResponse(d.probe.CachedResponse())
+}</code></pre>
+            <div class="callout callout-teal">
+              <strong>Fixed &amp; proven</strong>
+              <code>TestJSON_SanitizesInvalidUTF8FromStubProber</code> feeds
+              <code>ÿþ</code> through a stub prober and asserts the served
+              JSON is valid UTF-8, contains U+FFFD, and round-trips. The test was
+              run against the unfixed code and failed, then passed after the
+              one-line fix.
+            </div>
+          </div>
+
+          <div class="issue issue-important" id="issue-2">
+            <span class="severity severity-important">Found &amp; fixed today &middot; Medium impact</span>
+            <h3><code>NewWithHealthCheck</code> (no-injector path) existed undocumented</h3>
+            <div class="where">go-health accessors.go:34 (v0.1.2) &middot; dashboard README "Why a Separate Repo?"</div>
+            <p>
+              go-health v0.1.2 ships <code>NewWithHealthCheck(fn HealthCheckFunc,
+              opts...)</code>: a full probe built from a plain function, no
+              samber/do injector involved. The dashboard's README framing
+              ("go-health already requires a samber/do injector") undersold this
+              path to non-do applications.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Fixed</strong>
+              README now documents the no-do path (<code>NewWithHealthCheck</code>
+              + <code>dashboard.New</code> + <code>Start</code>/<code>Shutdown</code>;
+              only <code>Register</code> needs an injector), and AGENTS.md's
+              go-health notes carry the accessor family.
+            </div>
+          </div>
+
+          <div class="issue issue-important" id="issue-3">
+            <span class="severity severity-important">Upstream ask &middot; Medium impact</span>
+            <h3><code>StartupComplete()</code> exists on both implementations but not on <code>Prober</code></h3>
+            <div class="where">go-health probe.go &amp; aggregate &middot; dashboard.go:22-37</div>
+            <p>
+              Both <code>*Probe</code> and <code>*Aggregate</code> expose
+              <code>StartupComplete()</code>, but the dashboard's interface omits
+              it &mdash; so the UI cannot distinguish "starting up" from
+              "pass". Keeping it off is deliberate right-sizing (adding a method
+              breaks external implementers); the payoff would be a startup-aware
+              banner or metric.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Routed</strong>
+              ROADMAP candidate; needs a conscious interface-evolution decision
+              (add now while the interface is one release old, or never).
+            </div>
+          </div>
+
+          <div class="issue issue-important" id="issue-4">
+            <span class="severity severity-important">Upstream gap &middot; Medium impact</span>
+            <h3><code>Aggregate</code> does not participate in samber/do lifecycle cascades</h3>
+            <div class="where">go-health aggregate package (v0.1.2 surface)</div>
+            <p>
+              <code>*Probe</code> implements <code>do.HealthcheckerWithContext</code>
+              and <code>do.Shutdowner</code>; <code>*Aggregate</code> implements
+              neither, so a registered aggregate is invisible to container-wide
+              <code>do.HealthCheck</code>/<code>do.Shutdown</code> cascades even
+              though it merges probes that do participate.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Ask</strong>
+              File upstream: give <code>*Aggregate</code> the same lifecycle
+              interfaces (AND-of-sources healthcheck; shutdown that marks every
+              source). Nothing to change dashboard-side.
+            </div>
+          </div>
+
+          <div class="issue issue-nice" id="issue-5">
+            <span class="severity severity-nice">Upstream ask &middot; Low impact</span>
+            <h3>Status severity ordering is re-encoded by every consumer</h3>
+            <div class="where">go-health types.go (plain string type) &middot; dashboard trend values + metrics statusValue &middot; aggregate worstOf</div>
+            <p>
+              <code>Status</code> ships three constants and no ordering. The
+              aggregate's unexported <code>worstOf</code>, the dashboard's trend
+              values (pass=1/warn=0.5/fail=0), and the metrics mapping
+              (2/1/0/&minus;1) each re-encode severity privately. An exported
+              <code>Status.Rank()</code> or <code>Compare</code> in go-health
+              would give the three consumers one truth.
+            </p>
+          </div>
+
+          <div class="issue issue-nice" id="issue-6">
+            <span class="severity severity-nice">Nice to have &middot; Low impact</span>
+            <h3>Cookbook could recommend probe-side option combos; <code>InstanceID</code> is UI-invisible</h3>
+            <div class="where">go-health probe options &middot; docs/integrations.md &middot; view StatCards</div>
+            <p>
+              <code>WithGETOnly</code>, <code>WithAllowedMethods</code>,
+              <code>WithLiveThrottle</code>, <code>WithEvaluationHook</code>,
+              <code>WithHealthRecorder</code>, and <code>WithInstanceID</code> are
+              all relevant to dashboard deployments but appear in no recipe. The
+              UI renders Version/Uptime StatCards but ignores
+              <code>Response.InstanceID</code> &mdash; and aggregate pages show
+              empty scalars entirely (a known open question from the v0.5.0
+              report).
+            </p>
+          </div>
+        </section>
+
+        <section id="proposal">
+          <h2><span class="num">02</span>Target state (reached today, minus upstream asks)</h2>
+          <pre><code>// The seam, as of this audit:
+type Prober interface {            // consumer-side, five methods, stable
+    CachedResponse() health.Response
+    RefreshInterval() time.Duration
+    LivenessHandler() http.HandlerFunc
+    ReadinessHandler() http.HandlerFunc
+    StartupHandler() http.HandlerFunc
+}
+
+func (d *Dashboard) currentResponse() health.Response {
+    return health.SanitizeResponse(d.probe.CachedResponse()) // single choke point
+}</code></pre>
+          <div class="callout callout-teal">
+            <strong>This is the target</strong>
+            Interface unchanged (right-sized); sanitization centralized; the
+            aggregate renders natively; the no-do path is documented. What
+            remains lives in go-health: aggregate lifecycle interfaces, an
+            exported severity ordering, and a decision on
+            <code>StartupComplete</code> in <code>Prober</code>.
+          </div>
+        </section>
+
+        <section id="appendix">
+          <h2><span class="num">03</span>Capability matrix &amp; methodology</h2>
+          <table class="compare">
+            <thead>
+              <tr><th>go-health capability</th><th>Dashboard adoption</th><th>Evidence</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>New</code> + options (probe construction)</td><td>Tests, example, README</td><td>33 call sites</td><td class="yes">Fully leveraged</td></tr>
+              <tr><td><code>CachedResponse</code> (lock-free snapshot)</td><td>Single choke point, all seams</td><td>dashboard.go:130</td><td class="yes">Fully leveraged</td></tr>
+              <tr><td>Liveness/Readiness/Startup handlers</td><td>Wired via <code>RegisterRoutes</code></td><td>handlers.go</td><td class="yes">Fully leveraged</td></tr>
+              <tr><td><code>Status</code> constants + type</td><td>Direct mapping to badges/feedback</td><td>status.go</td><td class="yes">Fully leveraged</td></tr>
+              <tr><td><code>Response</code>/<code>Check</code> wire types</td><td>JSON, view, metrics, trend, webhook</td><td>28 files</td><td class="yes">Fully leveraged</td></tr>
+              <tr><td><code>aggregate</code> package</td><td>Native rendering + e2e test</td><td>integration_test.go</td><td class="yes">Fully leveraged</td></tr>
+              <tr><td><code>SanitizeResponse</code></td><td>Applied at choke point</td><td>fixed this audit</td><td class="no">Was missed &rarr; fixed</td></tr>
+              <tr><td><code>NewWithHealthCheck</code> (no-do)</td><td>Documented in README</td><td>fixed this audit</td><td class="no">Was missed &rarr; fixed</td></tr>
+              <tr><td><code>StartupComplete()</code></td><td>Not in <code>Prober</code></td><td>roadmap decision</td><td class="no">Routed</td></tr>
+              <tr><td>Aggregate do-lifecycle</td><td>n/a (upstream)</td><td>upstream ask</td><td class="no">Routed</td></tr>
+              <tr><td>Status severity ordering</td><td>re-encoded locally</td><td>upstream ask</td><td class="no">Routed</td></tr>
+              <tr><td><code>Status()</code>/<code>Alive()</code>/<code>Ready()</code> accessors</td><td>deliberately unused (one-snapshot design)</td><td>AGENTS.md</td><td class="yes">N/A by design</td></tr>
+              <tr><td>Sentinel errors (<code>ErrProbeUnhealthy</code>&hellip;)</td><td>intentionally opaque behind <code>Prober</code></td><td>interface design</td><td class="yes">N/A by design</td></tr>
+              <tr><td>Probe-side knobs (<code>WithGETOnly</code>, hooks, throttle)</td><td>cookbook recipes pending</td><td>docs opportunity</td><td class="no">Routed</td></tr>
+            </tbody>
+          </table>
+          <p style="margin-top:1.2rem">
+            <strong>Method:</strong> every go-health import in the dashboard
+            enumerated (28 files, 12 distinct API symbols + the aggregate
+            package); the full exported surface of go-health v0.1.2 mapped from
+            source (root package + aggregate, 22 unreleased master commits
+            excluded from the score); each capability graded with code evidence.
+            Version currency: v0.1.2 is the latest tag &mdash; current.
+          </p>
+        </section>
+
+        <footer class="footer">
+          <p>
+            Generated 2026-09-04 &middot; Reviewed against go-health v0.1.2
+            (module cache) and dashboard master &middot; All claims verified
+            against source; the sanitization finding includes a
+            proven-failing regression test
+          </p>
+        </footer>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        if (!("IntersectionObserver" in window)) return;
+        var nav = document.querySelector("[data-nav]");
+        if (!nav) return;
+        var links = nav.querySelectorAll('a[href^="#"]');
+        var ids = Array.from(links).map(function (l) {
+          return l.getAttribute("href").slice(1);
+        });
+        var sections = ids
+          .map(function (id) {
+            return document.getElementById(id);
+          })
+          .filter(Boolean);
+        if (!sections.length) return;
+        var observer = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                links.forEach(function (link) {
+                  link.classList.toggle(
+                    "active",
+                    link.getAttribute("href") === "#" + entry.target.id,
+                  );
+                });
+              }
+            });
+          },
+          { rootMargin: "-80px 0px -60% 0px", threshold: 0 },
+        );
+        sections.forEach(function (s) {
+          observer.observe(s);
+        });
+      })();
+    </script>
+  </body>
+</html>
