@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	health "github.com/larsartmann/go-health"
 )
@@ -265,4 +266,176 @@ func FuzzFingerprintChecks(
 // meaningful across encoders that legitimately transcode invalid bytes.
 func validUTF8(s string) string {
 	return strings.ToValidUTF8(s, "\uFFFD")
+}
+
+// fuzzProber is a minimal internal Prober stub for fuzz harnesses that
+// only exercise response-derived surfaces (no goroutines, no handlers).
+type fuzzProber struct{}
+
+func (fuzzProber) CachedResponse() health.Response { return health.Response{} }
+func (fuzzProber) RefreshInterval() time.Duration  { return time.Second }
+func (fuzzProber) LivenessHandler() http.HandlerFunc  { return nil }
+func (fuzzProber) ReadinessHandler() http.HandlerFunc { return nil }
+func (fuzzProber) StartupHandler() http.HandlerFunc   { return nil }
+
+// csvExportFor renders the current trend buffer through ExportHandler as
+// CSV. The pusher is never started, so no goroutines participate.
+func csvExportFor(t *testing.T, status string) string {
+	t.Helper()
+
+	d := New(fuzzProber{}, WithTrend(4))
+	d.push.Store(newPusher(d))
+
+	buf := d.push.Load().history
+	buf.record(sample{At: time.Date(2026, 9, 4, 12, 0, 0, 0, time.UTC), Value: 1, Status: "pass"})
+	buf.record(sample{At: time.Date(2026, 9, 4, 12, 0, 30, 0, time.UTC), Value: 0.5, Status: status})
+
+	rec := httptest.NewRecorder()
+	req := fuzzRequest("text/csv")
+	d.ExportHandler().ServeHTTP(rec, req)
+
+	return rec.Body.String()
+}
+
+// FuzzCSVExport exercises the CSV exporter with arbitrary status payloads.
+// Invariants: never panics, deterministic, always starts with the fixed
+// header, and clean statuses (no comma, quote, CR, or LF) render as exactly
+// three round-tripping fields per row.
+func FuzzCSVExport(f *testing.F) {
+	for _, seed := range []string{
+		"pass",
+		"warn",
+		"fail",
+		"unknown",
+		"",
+		"PASS",
+		"pass,extra",
+		"pass\nfail",
+		"pass\r\nfail",
+		`"quoted"`,
+		"unicode ✓ 状態",
+		"pass;injection",
+		strings.Repeat("x", 300),
+	} {
+		f.Add(seed)
+	}
+
+	f.Fuzz(func(t *testing.T, status string) {
+		first := csvExportFor(t, status)
+		if second := csvExportFor(t, status); first != second {
+			t.Fatalf("CSV export not deterministic for status %q", status)
+		}
+
+		lines := strings.Split(first, "\n")
+		if len(lines) == 0 || lines[0] != "timestamp,value,status" {
+			t.Fatalf("CSV header missing or wrong for status %q: %q", status, first)
+		}
+
+		clean := !strings.ContainsAny(status, ",\"\r\n")
+		if clean {
+			if len(lines) != 4 { // header + 2 rows + trailing newline
+				t.Fatalf("expected 4 lines for clean status %q, got %d: %q", status, len(lines), first)
+			}
+			fields := strings.Split(lines[2], ",")
+			if len(fields) != 3 || fields[2] != status {
+				t.Fatalf("row does not round-trip clean status %q: %q", status, lines[2])
+			}
+		}
+	})
+}
+
+// FuzzRecommendedCSP exercises the CSP builder with arbitrary nonce input.
+// Invariants: never panics, deterministic, always contains exactly the eight
+// directives, and the nonce appears only inside a 'nonce-…' source and only
+// when it matches the CSP base64 alphabet.
+func FuzzRecommendedCSP(f *testing.F) {
+	for _, seed := range []string{
+		"",
+		"abc123",
+		"4fpV0zKBFnDClJKBYXsinDHXOsB9DlCVxcwSoYQIEn0",
+		"with space",
+		"quote\"inside",
+		"semi;colon",
+		"new\nline",
+		"nonce-game",
+		"'nonce-evil'",
+		"<>",
+		"base64+/",
+		"a=b",
+	} {
+		f.Add(seed)
+	}
+
+	f.Fuzz(func(t *testing.T, nonce string) {
+		first := RecommendedCSP(nonce)
+		if second := RecommendedCSP(nonce); first != second {
+			t.Fatalf("RecommendedCSP not deterministic for nonce %q", nonce)
+		}
+
+		directives := strings.Split(first, "; ")
+		if len(directives) != 8 {
+			t.Fatalf("expected 8 directives for nonce %q, got %d: %q", nonce, len(directives), first)
+		}
+
+		matches := cspNonceValue.MatchString(nonce)
+		if !matches && nonce != "" && strings.Contains(first, nonce) {
+			t.Fatalf("invalid nonce %q leaked into CSP: %q", nonce, first)
+		}
+
+		stripped := strings.ReplaceAll(first, "'nonce-"+nonce+"'", "")
+		if matches && strings.Contains(stripped, nonce) {
+			t.Fatalf("nonce %q appears outside its nonce-source: %q", nonce, first)
+		}
+	})
+}
+
+// FuzzWebhookPayload exercises webhook payload construction and its
+// deterministic JSON encoding with arbitrary check names, errors, and
+// statuses. Invariants: never panics, encoding is valid JSON that
+// round-trips, masking holds in public mode, and ChangedAt is RFC3339.
+func FuzzWebhookPayload(f *testing.F) {
+	for _, seed := range [][3]string{
+		{"api", "connection refused", "fail"},
+		{"", "", "pass"},
+		{"check\"quote", "err\nwith newline", "warn"},
+		{"日本語", "utf8 ✓", "pass"},
+		{"a,b", `{"json":"injection"}`, "fail"},
+		{strings.Repeat("n", 200), strings.Repeat("e", 500), "warn"},
+	} {
+		f.Add(seed[0], seed[1], seed[2], false)
+	}
+
+	f.Fuzz(func(t *testing.T, name, errText, status string, public bool) {
+		n := newWebhookNotifier(Config{WebhookURL: "http://fuzz.invalid/hook", PublicMode: public})
+		resp := health.Response{
+			Status: health.Status(validUTF8(status)),
+			Checks: map[string]health.Check{
+				validUTF8(name): {Status: health.Status(validUTF8(status)), Error: validUTF8(errText)},
+			},
+		}
+
+		payload := n.buildPayload(resp)
+		body, err := json.Marshal(payload, json.Deterministic(true))
+		if err != nil {
+			t.Fatalf("marshal failed for name=%q err=%q status=%q public=%v: %v", name, errText, status, public, err)
+		}
+
+		var decoded map[string]any
+		if err := json.Unmarshal(body, &decoded); err != nil {
+			t.Fatalf("payload is not valid JSON: %v\n%s", err, body)
+		}
+
+		if _, err := time.Parse(time.RFC3339, payload.ChangedAt); err != nil {
+			t.Fatalf("ChangedAt not RFC3339: %q", payload.ChangedAt)
+		}
+
+		if public {
+			if errText != "" && strings.Contains(string(body), validUTF8(errText)) {
+				t.Fatalf("public mode leaked error text: %s", body)
+			}
+			if strings.Contains(string(body), validUTF8(name)) {
+				t.Fatalf("public mode leaked check name: %s", body)
+			}
+		}
+	})
 }

@@ -45,6 +45,15 @@ jobs:
       - name: Fuzz change-detection fingerprint
         run: go test -run '^$' -fuzz FuzzFingerprintChecks -fuzztime 60s .
 
+      - name: Fuzz CSV exporter
+        run: go test -run '^$' -fuzz FuzzCSVExport -fuzztime 60s .
+
+      - name: Fuzz CSP builder
+        run: go test -run '^$' -fuzz FuzzRecommendedCSP -fuzztime 60s .
+
+      - name: Fuzz webhook payload marshal
+        run: go test -run '^$' -fuzz FuzzWebhookPayload -fuzztime 60s .
+
       - name: Print crasher inputs
         if: failure()
         run: |
