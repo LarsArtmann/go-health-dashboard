@@ -125,6 +125,8 @@ Raw ideas:
   trailing slash, nested `/a/b`), SSE retry large values
 - Race-stress: 50 concurrent SSE clients vs `SubscriberCount` consistency;
   webhook delivery-ordering test under concurrent transitions
+- Verify no heartbeat-goroutine leak on Shutdown/broadcaster close;
+  fuzz the `safeBasePath` validator once it moves into the library
 - Benchmarks: `renderPatch` retry stamping; `BenchmarkHealthCheck`
 - Mutation-test spot check on change-detection (fingerprint) logic
 - DI-surface ideas (from the 04-41 NEXT-50, still open): example-binary e2e

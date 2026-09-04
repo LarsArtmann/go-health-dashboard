@@ -91,7 +91,7 @@ not re-verify after the commit. The docs are stale.
 
 ### 2. Status report annotated but not committed
 
-I annotated `docs/status/2026-08-09_04-21_todo-implementation-status.md`
+I annotated `docs/status/archived/2026-08-09_04-21_todo-implementation-status.md`
 with ✅ RESOLVED markers on all 5 defects in sections d and f. This is
 accurate. But the daemon committed it in the same batch, so the annotation
 is preserved.

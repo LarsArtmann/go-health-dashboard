@@ -4,7 +4,7 @@
 **Scope of this report**: the 2026-09-03/04 session that pivoted both repos from
 "federation ambitions" to "integrate, don't compete", shipped the `aggregate` package,
 the `Prober` interface, webhook push, the integration cookbook, and two releases.
-**Plan of record**: `docs/planning/2026-09-04_00-14_integration-over-federation.md`
+**Plan of record**: `docs/planning/archived/2026-09-04_00-14_integration-over-federation.md`
 
 ---
 
@@ -29,7 +29,7 @@ cookbook). All gates green: build, full tests, race, vet, lint (0 issues), proxy
 | Aggregate e2e test                   | 2 injectors → probes → aggregate → dashboard HTML renders `api/dependency` + `web/dependency`, worst-of warn banner, `/readyz` 200-on-warn verified.                                                                                                                               |
 | Integration cookbook                 | `docs/integrations.md`: semantics table, Prometheus/SigNoz PromQL incl. `target=0` and `{{$value}}` traps, Gatus YAML + Nix snippet, Kuma config, webhook payload contract + security notes.                                                                                       |
 | Cross-repo docs                      | go-health: CHANGELOG cut, AGENTS.md (aggregate architecture/design/gotchas, stale jsonv2 gotcha fixed), README "Aggregating Multiple Probes". dashboard: README (Integrations + Multi-Service sections), AGENTS.md (Prober, webhook, aggregate dependency notes), CHANGELOG 0.5.0. |
-| Plan file                            | `docs/planning/2026-09-04_00-14_integration-over-federation.md` — Pareto (1%/4%/20%), comprehensive + micro task tables, mermaid execution graph, frozen design contracts. Committed and pushed.                                                                                   |
+| Plan file                            | `docs/planning/archived/2026-09-04_00-14_integration-over-federation.md` — Pareto (1%/4%/20%), comprehensive + micro task tables, mermaid execution graph, frozen design contracts. Committed and pushed.                                                                                   |
 | Releases                             | go-health **v0.1.0** and dashboard **v0.5.0**: CHANGELOG-cut, annotated tags, pushed; consumer resolution verified in `/tmp` module (`go get` both, `go mod verify` clean).                                                                                                        |
 | Verification gates                   | Both repos: build ✓, full tests ✓, race ✓, vet ✓, golangci-lint 0 issues ✓.                                                                                                                                                                                                        |
 

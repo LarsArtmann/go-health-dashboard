@@ -58,7 +58,7 @@ that gets tagged**, not after.
 - The axe audit excludes the sr-only skip link from color-contrast (no real
   stylesheet in the harness) and tolerates the `definition-list` violation
   coming from templ-components `StatCard` — filed upstream, tracked in
-  `docs/planning/2026-09-03_issue-drafts.md`.
+  `docs/planning/archived/2026-09-03_issue-drafts.md`.
 - Browser tests serialize on a mutex: parallel headless-Chrome startups
   were timing out on loaded machines. Reliability over a little wall time.
 

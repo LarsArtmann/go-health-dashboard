@@ -2,8 +2,8 @@
 
 Date: 2026-09-03 12:32 CEST
 Scope: session execution from base `071c251` to `20ca12b` (58 commits).
-Companion docs: `docs/status/2026-09-03_v03x-cycle-execution-complete.md`
-(shipped-surface summary), `docs/planning/2026-09-03_v03-cycle-decisions-notes.md`
+Companion docs: `docs/status/archived/2026-09-03_v03x-cycle-execution-complete.md`
+(shipped-surface summary), `docs/planning/archived/2026-09-03_v03-cycle-decisions-notes.md`
 (decision rationale). THIS report is the critical self-review.
 
 ---
