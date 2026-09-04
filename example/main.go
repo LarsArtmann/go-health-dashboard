@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -48,8 +49,18 @@ func main() {
 	injector := do.New()
 	defer func() { _ = injector.Shutdown() }()
 
-	probe, shutdownProbe := buildProbe(ctx, injector)
-	defer shutdownProbe()
+	var probeBundle struct {
+		prober   dashboard.Prober
+		shutdown func()
+	}
+	if os.Getenv("DEMO_AGGREGATE") != "" {
+		probeBundle = buildAggregateProbe(ctx)
+	} else {
+		probeBundle = buildSingleProbe(ctx, injector)
+	}
+	defer probeBundle.shutdown()
+
+	probe := probeBundle.prober
 
 	// Assemble the option set from environment toggles so every feature can
 	// be demonstrated without code changes.
@@ -92,46 +103,47 @@ func main() {
 	}
 }
 
-// buildProbe constructs the health probe the dashboard renders. With
-// DEMO_AGGREGATE=1 it builds two independent probes (api + worker service
-// groups) and merges them with go-health's aggregate — demonstrating the
-// multi-service dashboard from AGENTS.md — otherwise it builds the classic
-// single probe. The returned shutdown func stops whichever probe was built.
-func buildProbe(ctx context.Context, injector *do.RootScope) (dashboard.Prober, func()) {
-	if os.Getenv("DEMO_AGGREGATE") == "" {
-		registerService(injector, "postgres", &alwaysHealthy{})
-		registerService(injector, "redis", &flappingService{failEvery: 15 * time.Second})
-		registerService(
-			injector,
-			"metrics-exporter",
-			&alwaysFailing{reason: "exporter endpoint unreachable"},
-		)
+// probeBundle pairs a ready prober with its shutdown func.
+type probeBundle struct {
+	prober   dashboard.Prober
+	shutdown func()
+}
 
-		probe := health.New(injector,
-			health.WithVersion("1.2.3"),
-			health.WithCriticalServices("postgres", "redis"),
-			health.WithRefreshInterval(2*time.Second),
-		)
+// buildSingleProbe builds the classic one-injector probe over the default
+// demo services.
+func buildSingleProbe(ctx context.Context, injector *do.RootScope) probeBundle {
+	registerService(injector, "postgres", &alwaysHealthy{})
+	registerService(injector, "redis", &flappingService{failEvery: 15 * time.Second})
+	registerService(
+		injector,
+		"metrics-exporter",
+		&alwaysFailing{reason: "exporter endpoint unreachable"},
+	)
 
-		if err := probe.Start(ctx); err != nil {
-			log.Fatalf("probe.Start: %v", err)
-		}
+	probe := health.New(injector,
+		health.WithVersion("1.2.3"),
+		health.WithCriticalServices("postgres", "redis"),
+		health.WithRefreshInterval(2*time.Second),
+	)
 
-		return probe, probe.Shutdown
+	if err := probe.Start(ctx); err != nil {
+		log.Fatalf("probe.Start: %v", err)
 	}
 
-	// Aggregate mode: two probes over disjoint service groups. Sources must
-	// have unique, slash-free names (go-health v0.1.3 contract).
+	return probeBundle{prober: probe, shutdown: probe.Shutdown}
+}
+
+// buildAggregateProbe builds two independent probes (api + worker service
+// groups) merged with go-health's aggregate — the multi-service dashboard
+// from AGENTS.md. Sources must have unique, slash-free names (go-health
+// v0.1.3 contract).
+func buildAggregateProbe(ctx context.Context) probeBundle {
 	apiInjector := do.New()
 	registerService(apiInjector, "postgres", &alwaysHealthy{})
 	registerService(apiInjector, "redis", &flappingService{failEvery: 15 * time.Second})
 
 	workerInjector := do.New()
-	registerService(
-		workerInjector,
-		"metrics-exporter",
-		&alwaysFailing{reason: "exporter endpoint unreachable"},
-	)
+	registerService(workerInjector, "metrics-exporter", &alwaysFailing{reason: "exporter endpoint unreachable"})
 
 	apiProbe := health.New(apiInjector,
 		health.WithVersion("1.2.3"),
@@ -157,9 +169,12 @@ func buildProbe(ctx context.Context, injector *do.RootScope) (dashboard.Prober, 
 		log.Fatalf("worker probe.Start: %v", err)
 	}
 
-	return agg, func() {
-		apiProbe.Shutdown()
-		workerProbe.Shutdown()
+	return probeBundle{
+		prober: agg,
+		shutdown: func() {
+			apiProbe.Shutdown()
+			workerProbe.Shutdown()
+		},
 	}
 }
 
@@ -199,9 +214,14 @@ func buildOptions() []dashboard.Option {
 		log.Printf("rate limit: enabled on dashboard routes")
 	}
 
-	if url := os.Getenv("DEMO_WEBHOOK"); url != "" {
-		opts = append(opts, dashboard.WithWebhook(url))
-		log.Printf("webhook: transitions POST to %s (DEMO_WEBHOOK set)", url)
+	if raw := os.Getenv("DEMO_WEBHOOK"); raw != "" {
+		u, err := url.Parse(raw)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			log.Fatalf("DEMO_WEBHOOK: invalid webhook URL (want absolute http/https URL)")
+		}
+
+		opts = append(opts, dashboard.WithWebhook(u.String()))
+		log.Printf("webhook: transitions POST to %s (DEMO_WEBHOOK set)", u.Redacted())
 	}
 
 	if os.Getenv("DEMO_PUBLIC") != "" {

@@ -2,6 +2,7 @@ package dashboard_test
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -68,9 +69,8 @@ func TestAggregateSSE_ServesInitialStateStream(t *testing.T) {
 		t.Fatalf("Content-Type: want text/event-stream, got %q", ct)
 	}
 
-	buf := make([]byte, 4096)
-	read, _ := resp.Body.Read(buf)
-	firstChunk := string(buf[:read])
+	firstChunkBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	firstChunk := string(firstChunkBytes)
 
 	if !strings.Contains(firstChunk, "datastar-patch-elements") {
 		t.Fatalf("no datastar patch event in first read: %q", firstChunk)
