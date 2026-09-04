@@ -332,7 +332,7 @@ Tested version matrix (`go.mod` is the live source of truth):
 
 | Dependency       | Version | Note                                                 |
 | ---------------- | ------- | ---------------------------------------------------- |
-| go-health        | v0.1.1  | `aggregate` package needs v0.1.0+                    |
+| go-health        | v0.1.3  | `aggregate` package needs v0.1.0+                    |
 | templ-components | v1.11.0 | pinned — v1.12.0 busy-script nonce bug (upstream #7) |
 | go-datastar      | v0.4.0  | audited SDK bundle; needs CSP `unsafe-eval`          |
 | go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                       |

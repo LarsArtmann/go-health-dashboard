@@ -199,7 +199,7 @@ per-file suites.
 
 ### go-health (`github.com/larsartmann/go-health`)
 
-Provides `Probe`, `Response`, `Check`, `Status` (v0.1.1 in go.mod). The dashboard is a pure consumer — zero changes needed to go-health:
+Provides `Probe`, `Response`, `Check`, `Status` (v0.1.3 in go.mod). The dashboard is a pure consumer — zero changes needed to go-health:
 
 - `Probe.CachedResponse() Response` — reads atomic cache, overlays shutdown flag
 - `SanitizeResponse(Response) Response` — replaces invalid UTF-8 with U+FFFD;
