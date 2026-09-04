@@ -5,6 +5,61 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+Hardening the pipeline, not the product: CI pins, a version-tag guard,
+event-driven SSE tests, and a stamp that tells the truth about when the
+health state was observed. No public API changes except two new error
+sentinels (both wrap the existing `ErrPusherNotActive`, so existing
+`errors.Is` checks keep working).
+
+### Added
+
+- CI `version-guard` job: fails when the `Version` const does not match
+  the latest git tag (the stale-const bug had bitten twice).
+- Coverage artifact upload plus a 75% coverage floor in the CI test job
+  (baseline 76.9%).
+- Nightly fuzz workflow opens a deduplicated GitHub issue on failure
+  (previously it only printed crashers into the void).
+- CI concurrency groups cancel superseded runs on the same branch.
+- `ErrPusherNotStarted` and `ErrPusherShutDown`: `HealthCheck` now
+  distinguishes "never started" from "shut down". Both wrap
+  `ErrPusherNotActive`.
+- Example toggles `DEMO_PUBLIC=1` (public mode) and
+  `DEMO_BASE_PATH=/status` (sub-path mounting).
+
+### Changed
+
+- CI pins: golangci-lint `v2.13.1` (was `latest`, matching the nixpkgs
+  version), templ CLI `v0.3.1020` (was `@latest`, matching go.mod).
+- The `Updated <time>` stamp now shows the last sample's observation
+  time when trend history is enabled, instead of the render time — the
+  initial HTML page could previously look up to one probe interval
+  fresher than reality.
+- `TrendHandler`/`ExportHandler` 503 messages now distinguish "pusher
+  not started" from "trend not enabled (set WithTrend)".
+- Source layout: `dashboard.go` split into `options.go` (Config/Option/
+  With*), `handlers.go` (HTTP handlers, routing, middleware), and
+  `history.go` (sample ring buffer + view-model history population);
+  the sample→JSON mapping is shared by the trend/export endpoints.
+- Axe `definition-list` tolerance in the browser audit is scoped to the
+  StatCard figure markup (upstream templ-components#6); any other
+  definition-list violation now fails the test.
+- `BenchmarkDashboard_PatchRender` renamed to
+  `BenchmarkDashboard_FullHTML` — it measures the complete HTML page,
+  not an SSE patch.
+- Docs: `doc.go` gained `Register` and error-sentinel examples;
+  CONTRIBUTING.md explains browser/screenshot tests and the DI
+  registration path; README documents the rate limiter's shared-bucket
+  semantics.
+
+### Verified
+
+- `fuzz.yml` executed end-to-end via `workflow_dispatch` on a real
+  runner (run 33896794771, success).
+- Bisectability audit `071c251..HEAD`: every commit builds (see
+  `docs/status/` for the audit record).
+
 ## [0.5.0] - 2026-09-04
 
 Integrate, don't compete. The dashboard now feeds monitoring platforms

@@ -36,12 +36,15 @@ Single-package library (`dashboard`) with these source files:
 doc.go           — Package doc comment
 status.go        — Status mapping (health.Status → BadgeType, FeedbackType, text), viewModel, checkRow, checkGroup, groupChecks, rowsToTableRows, fingerprintChecks, statusValue
 routes.go        — Routes struct (Dashboard, SSE, Favicon, Liveness, Readiness, Startup, Metrics), DefaultRoutes()
-dashboard.go     — Dashboard struct, Config, Option type, New(), all With* options, Handler(), SSEHandler(), MetricsHandler(), SubscriberCount(), RegisterRoutes(mux), wrap(), Start(), Shutdown(), HealthCheck()
+dashboard.go     — Dashboard struct, Version const, Prober interface, New(), resolvePushInterval, Start(), Shutdown(), error sentinels (ErrPusherNotActive/NotStarted/ShutDown/Stale), HealthCheck()
+options.go       — Config, Option type, all With* option functions, default constants
+handlers.go      — Handler() (HTML/JSON content negotiation), wantsJSON, serveJSON, SSEHandler(), SubscriberCount(), buildData, RegisterRoutes(mux), wrap()
+history.go       — sample, historyBuffer ring buffer, statusTransition, populateHistory (trend values + timeline + Updated stamp)
 di.go            — Register(injector, probe, opts...) for samber/do container integration
-pusher.go        — pusher struct (with atomic connection counter), PushMode enum, sample/historyBuffer ring buffer, start goroutine, broadcast, shouldBroadcast (change detection), renderPatch, sseHandler
+pusher.go        — pusher struct (with atomic connection counter), PushMode enum, start goroutine, broadcast, shouldBroadcast (change detection), renderPatch, sseHandler
 webhook.go       — webhookNotifier: change-only JSON transition pushes (WithWebhook), public-mode masking, bounded in-flight goroutines
 metrics.go       — Hand-rolled Prometheus text exposition 0.0.4 (WithMetrics), latency histogram, label escaping, deterministic sorted output
-trend.go         — TrendHandler (/health/trend: samples + transitions JSON) and ExportHandler (/health/export: JSON/CSV)
+trend.go         — TrendHandler (/health/trend: samples + transitions JSON) and ExportHandler (/health/export: JSON/CSV); shared jsonSamples/jsonTransitions wire mapping and the not-started vs not-enabled 503s
 csp.go           — RecommendedCSP(nonce): the verified strict CSP policy (no unsafe-inline; unsafe-eval for the Datastar SDK)
 ratelimit.go     — Hand-rolled token bucket for WithRateLimit (429 + Retry-After; probes exempt)
 favicon.go       — Embedded SVG favicon + FaviconHandler()
@@ -87,9 +90,17 @@ per-file suites.
   runtime deps), and the pusher watchdog in `HealthCheck` (`ErrPusherStale`
   after 3 silent intervals; report-only, never restarts).
 - **History samples carry timestamps** — `sample{At,Value,Status}` in the
-  pusher ring buffer powers `/health/trend` (samples + transitions),
-  `/health/export` (JSON/CSV), the Status Changes timeline card, and the
-  `Updated <time>` stamp. Transitions are derived on demand, not stored.
+  history ring buffer (history.go) powers `/health/trend` (samples +
+  transitions), `/health/export` (JSON/CSV), the Status Changes timeline
+  card, and the `Updated <time>` stamp — the stamp shows the LAST
+  sample's observation time (not render time) whenever trend history is
+  enabled, so a freshly connected browser can't look fresher than
+  reality. Transitions are derived on demand, not stored.
+- **Pusher-down errors are a sentinel family** — `ErrPusherNotStarted`
+  and `ErrPusherShutDown` both wrap `ErrPusherNotActive`; `errors.Is`
+  against the parent keeps working. The distinction comes from a
+  `started atomic.Bool` on Dashboard (both states have a nil pusher
+  pointer, so the pointer alone can't tell them apart).
 - **Public mode anonymizes presentation only** — `WithPublicMode` masks
   check names/errors in the HTML and metrics labels; the `/health` JSON
   response and kubelet probes intentionally stay verbatim.
@@ -127,7 +138,7 @@ per-file suites.
 - Services use `do.HealthcheckerWithContext` interface, registered via `do.ProvideNamed`.
 - SSE tested with short-timeout context (handler blocks for streaming). Verifies `text/event-stream` content-type and `datastar-patch-elements` event type. Never request `/health/sse` through a plain `httptest.ResponseRecorder` without a timeout — the streaming handler blocks forever and the package hits the 10-minute `go test` timeout.
 - Change detection tested via `TestFingerprintChecks_Deterministic` and `TestFingerprintChecks_DetectsChanges`.
-- Trend rendering tests poll with `waitForBody` (25ms interval, 3s deadline) instead of fixed sleeps.
+- Trend rendering tests poll with `waitForBody` (25ms interval, 3s deadline) instead of fixed sleeps; SSE disconnect tests poll `SubscriberCount()` the same way. Patches are asserted CSP-clean (no `style=`) via `TestSSE_PatchContentHasNoInlineStyles` (PushAlways for a multi-patch stream).
 - Fuzz targets run as seed tests in `go test`; fuzz properly with `GOEXPERIMENT=jsonv2 go test -fuzz FuzzWantsJSON -fuzztime 30s .` (and `FuzzHealthResponseSerialization`).
 - Browser tests need a Chrome binary: `GO_HEALTH_DASHBOARD_CHROME=/path/to/chromium go test -run TestBrowser_CSPCleanRuntime`. Screenshot capture additionally needs `SCREENSHOT_OUTPUT=docs/screenshot.png`.
 - Lifecycle tests in `lifecycle_test.go`: `HealthCheck` before/after Start/Shutdown, `Register` participation in `do.HealthCheck`/`do.Shutdown` cascades, idempotent `Shutdown`.
