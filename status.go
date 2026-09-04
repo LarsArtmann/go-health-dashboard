@@ -88,14 +88,21 @@ type viewModel struct {
 	// History holds recent overall-status samples for the trend sparkline
 	// (pass=1, warn=0.5, fail=0, oldest first). Nil when the trend is
 	// disabled (default) or no samples recorded yet.
-	History     []float64
-	Timeline    []TimelineEntry
+	History []float64
+	Timeline []TimelineEntry
+	// LastUpdated is the "Updated <time>" stamp. With trend history enabled
+	// it is the observation time of the most recent sample (when the health
+	// state was actually seen); without it, the render time.
 	LastUpdated string
 	Description string
 	// ShowStatCards renders the version/uptime/latency card grid.
 	// Enabled by default; disabled via WithHideStatCards.
 	ShowStatCards bool
 }
+
+// updatedStampFormat is the wall-clock format of the viewModel LastUpdated
+// stamp. UTC is used so the stamp is stable across server timezones.
+const updatedStampFormat = "15:04:05 MST"
 
 // buildViewModel transforms a health.Response into a template-ready viewModel.
 // Checks are sorted alphabetically by name and grouped by severity:
@@ -112,7 +119,7 @@ func buildViewModel(resp health.Response, title, sseURL string) viewModel {
 	}
 
 	return viewModel{
-		LastUpdated:   time.Now().UTC().Format("15:04:05 MST"),
+		LastUpdated:   time.Now().UTC().Format(updatedStampFormat),
 		Title:         title,
 		Status:        resp.Status,
 		FeedbackType:  feedbackType,

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	health "github.com/larsartmann/go-health"
 )
 
 // Handler returns an http.HandlerFunc that serves the health dashboard with

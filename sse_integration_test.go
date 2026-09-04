@@ -248,6 +248,138 @@ func TestSSE_PushOnChange_DetectsRecovery(t *testing.T) {
 	stream.waitFor(t, isHealthyEvent, 2*time.Second)
 }
 
+// --- Connection limit tests ---.
+
+// WithMaxSSEConnections(0) is the default: unlimited. Several clients must
+// all be admitted (HTTP 200 + a first patch), never rejected with 503.
+func TestWithMaxSSEConnections_ZeroAllowsUnlimited(t *testing.T) {
+	t.Parallel()
+
+	svc := &toggleService{}
+	svc.healthy.Store(true)
+
+	server, dash, cleanup := setupSSEServer(
+		t,
+		50*time.Millisecond,
+		svc,
+		dashboard.WithMaxSSEConnections(0),
+	)
+	defer cleanup()
+
+	const clients = 3
+	resps := make([]*http.Response, clients)
+	streams := make([]*sseStream, clients)
+
+	for i := range resps {
+		resp, stream := connectSSE(t, server)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("client %d: want 200, got %d", i, resp.StatusCode)
+		}
+
+		resps[i] = resp
+		streams[i] = stream
+	}
+
+	defer func() {
+		for _, resp := range resps {
+			_ = resp.Body.Close()
+		}
+	}()
+
+	// Every client receives its initial patch.
+	for _, stream := range streams {
+		stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+	}
+
+	if count := dash.SubscriberCount(); count != clients {
+		t.Fatalf("SubscriberCount with %d clients: want %d, got %d", clients, clients, count)
+	}
+}
+
+// A dashboard whose probe was never started still serves SSE: the zero-value
+// response renders as an unknown/degraded status instead of panicking or 500.
+func TestSSE_ProbeNotStarted_ServesDegradedRender(t *testing.T) {
+	t.Parallel()
+
+	injector := do.New()
+	provideToggleService(injector, "db", &toggleService{})
+
+	// Intentionally NOT calling probe.Start.
+	probe := health.New(injector,
+		health.WithCriticalServices("db"),
+		health.WithRefreshInterval(50*time.Millisecond),
+	)
+	defer probe.Shutdown()
+
+	dash := dashboard.New(probe, dashboard.WithPushInterval(50*time.Millisecond))
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	if err := dash.Start(ctx); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+	defer dash.Shutdown()
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// HTML path renders degraded instead of erroring.
+	healthResp, err := http.Get(server.URL + "/health")
+	if err != nil {
+		t.Fatalf("GET /health with unstarted probe: %v", err)
+	}
+
+	body, _ := io.ReadAll(healthResp.Body)
+	_ = healthResp.Body.Close()
+
+	if healthResp.StatusCode != http.StatusOK {
+		t.Errorf("GET /health with unstarted probe: want 200, got %d", healthResp.StatusCode)
+	}
+
+	if !strings.Contains(string(body), "Updated") {
+		t.Error("degraded HTML render missing the Updated stamp")
+	}
+
+	// SSE path still streams an initial (degraded) patch.
+	resp, stream := connectSSE(t, server)
+	defer func() { _ = resp.Body.Close() }()
+
+	stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+}
+
+// SSE patches replace the health region via inner HTML — they must never
+// carry inline style attributes (CSP-clean output invariant).
+func TestSSE_PatchContentHasNoInlineStyles(t *testing.T) {
+	t.Parallel()
+
+	svc := &toggleService{}
+	svc.healthy.Store(true)
+
+	// PushAlways so the stream carries multiple patches to inspect, not
+	// just the initial one (PushOnChange stays silent without changes).
+	server, _, cleanup := setupSSEServer(
+		t,
+		50*time.Millisecond,
+		svc,
+		dashboard.WithPushMode(dashboard.PushAlways),
+	)
+	defer cleanup()
+
+	resp, stream := connectSSE(t, server)
+	defer func() { _ = resp.Body.Close() }()
+
+	for range 3 {
+		evt := stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+		if strings.Contains(evt, "style=") {
+			t.Errorf("SSE patch contains an inline style attribute:\n%.500s", evt)
+		}
+	}
+}
+
 // --- T8: SSE resilience tests ---.
 
 func TestSSE_ClientDisconnectDoesNotLeakGoroutines(t *testing.T) {
@@ -256,13 +388,21 @@ func TestSSE_ClientDisconnectDoesNotLeakGoroutines(t *testing.T) {
 	svc := &toggleService{}
 	svc.healthy.Store(true)
 
-	server, _, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
+	server, dash, cleanup := setupSSEServer(t, 50*time.Millisecond, svc)
 	defer cleanup()
 
 	resp, _ := connectSSE(t, server)
 	_ = resp.Body.Close()
 
-	time.Sleep(100 * time.Millisecond)
+	// Event-driven: wait until the server has actually released the
+	// connection instead of guessing with a fixed sleep.
+	deadline := time.Now().Add(3 * time.Second)
+	for dash.SubscriberCount() != 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("SSE connection was not released after client disconnect")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 
 	healthResp, err := http.Get(server.URL + "/health")
 	if err != nil {
@@ -489,10 +629,14 @@ func TestSSE_SubscriberCount_TracksConnections(t *testing.T) {
 	}
 
 	_ = resp1.Body.Close()
-	time.Sleep(100 * time.Millisecond)
 
-	if count := dash.SubscriberCount(); count != 1 {
-		t.Fatalf("after disconnecting 1: want 1, got %d", count)
+	// Event-driven: poll the counter instead of sleeping a fixed interval.
+	deadline := time.Now().Add(3 * time.Second)
+	for dash.SubscriberCount() != 1 {
+		if time.Now().After(deadline) {
+			t.Fatalf("after disconnecting 1: want 1, got %d", dash.SubscriberCount())
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 

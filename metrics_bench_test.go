@@ -79,7 +79,10 @@ func BenchmarkMetrics_Exposition(b *testing.B) {
 	}
 }
 
-func BenchmarkDashboard_PatchRender(b *testing.B) {
+// BenchmarkDashboard_FullHTML measures the full-page /health render (with
+// trend history enabled). Despite the name PatchRender suggested, the
+// benchmark served the complete HTML document, not just an SSE patch.
+func BenchmarkDashboard_FullHTML(b *testing.B) {
 	bench := newBenchMux(b, dashboard.WithTrend(120))
 	defer bench.cleanup()
 

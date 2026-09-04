@@ -236,7 +236,7 @@ func parseRateLimit(spec string) (int, time.Duration, error) {
 	}
 
 	maxReqs, err := strconv.Atoi(countStr)
-	if err != nil || maxRequestsInvalid(maxReqs) {
+	if err != nil || maxReqs < 1 {
 		return 0, 0, fmt.Errorf("invalid request count %q", countStr)
 	}
 
@@ -247,5 +247,3 @@ func parseRateLimit(spec string) (int, time.Duration, error) {
 
 	return maxReqs, window, nil
 }
-
-func maxRequestsInvalid(n int) bool { return n < 1 }

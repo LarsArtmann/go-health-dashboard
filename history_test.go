@@ -151,3 +151,34 @@ func samplesToValues(samples []sample) []float64 {
 
 	return values
 }
+
+func TestPopulateHistory_LastUpdatedIsLastSampleTime(t *testing.T) {
+	t.Parallel()
+
+	observed := time.Date(2026, 9, 4, 12, 30, 15, 0, time.UTC)
+
+	h := newHistoryBuffer(4)
+	h.record(sample{At: observed.Add(-2 * time.Second), Value: trendPassValue, Status: string(health.StatusPass)})
+	h.record(sample{At: observed, Value: trendWarnValue, Status: string(health.StatusWarn)})
+
+	vm := viewModel{LastUpdated: "would-be-render-time"}
+	populateHistory(&vm, h)
+
+	want := observed.UTC().Format(updatedStampFormat)
+	if vm.LastUpdated != want {
+		t.Errorf("LastUpdated: want %q (last sample observation time), got %q", want, vm.LastUpdated)
+	}
+}
+
+func TestPopulateHistory_EmptyBufferKeepsRenderTime(t *testing.T) {
+	t.Parallel()
+
+	h := newHistoryBuffer(4)
+
+	vm := viewModel{LastUpdated: "render-time"}
+	populateHistory(&vm, h)
+
+	if vm.LastUpdated != "render-time" {
+		t.Errorf("empty history must not touch LastUpdated, got %q", vm.LastUpdated)
+	}
+}

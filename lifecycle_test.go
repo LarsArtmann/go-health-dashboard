@@ -206,3 +206,48 @@ func TestHealthCheck_ErrorIsDetectable(t *testing.T) {
 		t.Fatalf("errors.Is(err, ErrPusherNotActive) = false, want true (err: %v)", err)
 	}
 }
+
+func TestHealthCheck_NotStarted_ReturnsNotStartedSentinel(t *testing.T) {
+	t.Parallel()
+
+	injector := do.New()
+	defer injector.Shutdown()
+
+	provideHealthy(injector, "db")
+	invoke[*healthyService](t, injector, "db")
+
+	dash := dashboard.New(health.New(injector))
+
+	err := dash.HealthCheck(t.Context())
+	if err == nil {
+		t.Fatal("expected error before Start, got nil")
+	}
+
+	if !errors.Is(err, dashboard.ErrPusherNotStarted) {
+		t.Errorf("errors.Is(err, ErrPusherNotStarted) = false, want true (err: %v)", err)
+	}
+
+	if errors.Is(err, dashboard.ErrPusherShutDown) {
+		t.Errorf("not-started error must not match ErrPusherShutDown (err: %v)", err)
+	}
+}
+
+func TestHealthCheck_AfterShutdown_ReturnsShutDownSentinel(t *testing.T) {
+	t.Parallel()
+
+	setup := setupDashboard(t)
+	setup.cleanup()
+
+	err := setup.dash.HealthCheck(t.Context())
+	if err == nil {
+		t.Fatal("expected error after Shutdown, got nil")
+	}
+
+	if !errors.Is(err, dashboard.ErrPusherShutDown) {
+		t.Errorf("errors.Is(err, ErrPusherShutDown) = false, want true (err: %v)", err)
+	}
+
+	if errors.Is(err, dashboard.ErrPusherNotStarted) {
+		t.Errorf("shut-down error must not match ErrPusherNotStarted (err: %v)", err)
+	}
+}
