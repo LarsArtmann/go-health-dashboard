@@ -287,7 +287,7 @@ func TestWithMaxSSEConnections_ZeroAllowsUnlimited(t *testing.T) {
 		resp, stream := connectSSE(
 			t,
 			server,
-		) //nolint:bodyclose // every body closes in the deferred cleanup above
+		)
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("client %d: want 200, got %d", len(open), resp.StatusCode)
 		}
