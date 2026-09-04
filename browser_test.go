@@ -3,6 +3,7 @@ package dashboard_test
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -732,4 +733,223 @@ func waitForJS(t *testing.T, ctx context.Context, predicate, valueExpr string, r
 
 		time.Sleep(100 * time.Millisecond)
 	}
+}
+
+// browserStaticHandlers wires the minimal static assets the strict-CSP
+// harness pages reference (compiled CSS stand-in + embedded SDK).
+func browserStaticHandlers(t *testing.T, s *probeSetup) {
+	t.Helper()
+
+	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		_, _ = w.Write([]byte("body { margin: 0; }"))
+	})
+	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(dstarstatic.Bytes())
+	})
+}
+
+// TestBrowser_KeyboardNavigation walks the page with real Tab keystrokes
+// and asserts the focus ring stays on visible, meaningful targets in a
+// sane order: it must reach at least two distinct interactive elements,
+// never die on <body>, and every stop must be visible with a non-none
+// focus outline (Chrome's default ring — the harness loads no Tailwind).
+func TestBrowser_KeyboardNavigation(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-kbd-nonce"
+
+	s := setupDashboard(t,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+	)
+	defer s.cleanup()
+
+	browserStaticHandlers(t, s)
+
+	server := httptest.NewServer(s.mux)
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+
+	const describeFocus = `(() => {
+		const a = document.activeElement;
+		if (!a || a === document.body) { return "body"; }
+		const r = a.getBoundingClientRect();
+		const cs = getComputedStyle(a);
+		return [a.tagName, a.id || a.getAttribute("aria-label") || a.textContent.trim().slice(0, 30),
+			Math.round(r.width) + "x" + Math.round(r.height),
+			cs.outlineStyle + "/" + cs.outlineWidth].join("|");
+	})()`
+
+	var desc string
+	var stops []string
+	visibleWithOutline := 0
+
+	if err := chromedp.Run(ctx,
+		chromedp.Evaluate(`document.activeElement && document.activeElement.blur(); "ok"`, &desc),
+	); err != nil {
+		t.Fatalf("blur initial focus: %v", err)
+	}
+
+	for i := range 15 {
+		if err := chromedp.Run(ctx, chromedp.KeyEvent("\t")); err != nil {
+			t.Fatalf("tab keypress %d: %v", i, err)
+		}
+		if err := chromedp.Run(ctx, chromedp.Evaluate(describeFocus, &desc)); err != nil {
+			t.Fatalf("describe focus after tab %d: %v", i, err)
+		}
+		stops = append(stops, desc)
+		if desc == "body" {
+			continue
+		}
+		parts := strings.SplitN(desc, "|", 4)
+		if len(parts) == 4 {
+			size := parts[2]
+			w, h := 0, 0
+			if _, err := fmt.Sscanf(size, "%dx%d", &w, &h); err == nil && w > 0 && h > 0 {
+				if !strings.HasPrefix(parts[3], "none/") {
+					visibleWithOutline++
+				}
+			}
+		}
+	}
+
+	distinct := map[string]bool{}
+	bodyDeadEnds := 0
+	for _, stop := range stops {
+		if stop == "body" {
+			bodyDeadEnds++
+
+			continue
+		}
+		distinct[stop] = true
+	}
+
+	if len(distinct) < 2 {
+		t.Errorf(
+			"keyboard walk reached %d distinct interactive targets (%d body dead ends), want >= 2; stops: %v",
+			len(distinct),
+			bodyDeadEnds,
+			stops,
+		)
+	}
+
+	if visibleWithOutline < 2 {
+		t.Errorf("only %d focused targets were visible with a focus outline, want >= 2; stops: %v",
+			visibleWithOutline, stops)
+	}
+
+	assertNoBrowserErrors(t, errLog)
+}
+
+// TestBrowser_MetricsUnderStrictCSP fetches /health/metrics from inside
+// the strict-CSP dashboard page: same-origin fetch must be allowed by
+// connect-src 'self', the scrape must parse as Prometheus exposition, and
+// the CSP sandbox must stay silent (no console errors).
+func TestBrowser_MetricsUnderStrictCSP(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-metrics-nonce"
+
+	s := setupDashboard(t,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithMetrics(true),
+	)
+	defer s.cleanup()
+
+	browserStaticHandlers(t, s)
+
+	server := httptest.NewServer(s.mux)
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+
+	fetch := `(() => {
+		fetch("/health/metrics")
+			.then(function (r) { return r.text(); })
+			.then(function (text) { window.__scrape = text; })
+			.catch(function (e) { window.__scrape = "FETCH_ERROR:" + e; });
+		return "started";
+	})()`
+
+	var status string
+	if err := chromedp.Run(ctx, chromedp.Evaluate(fetch, &status)); err != nil {
+		t.Fatalf("metrics fetch evaluate: %v", err)
+	}
+
+	var scrape string
+	waitForJS(
+		t,
+		ctx,
+		`window.__scrape !== undefined`,
+		`window.__scrape === undefined ? "pending" : (String(window.__scrape).indexOf("FETCH_ERROR") === 0 ? window.__scrape : "loaded")`,
+		&scrape,
+	)
+
+	if scrape == "pending" {
+		t.Fatal("in-page metrics fetch never completed")
+	}
+
+	if scrape != "loaded" {
+		t.Fatalf("in-page metrics fetch failed under strict CSP: %s", scrape)
+	}
+
+	var body string
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.__scrape`, &body)); err != nil {
+		t.Fatalf("read scrape text: %v", err)
+	}
+
+	if !strings.Contains(body, "dashboard_health") {
+		t.Errorf(
+			"scrape does not look like dashboard exposition (no dashboard_health series): %.200s",
+			body,
+		)
+	}
+
+	assertNoBrowserErrors(t, errLog)
 }
