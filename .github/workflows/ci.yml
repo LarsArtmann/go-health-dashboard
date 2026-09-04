@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, master]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   GOEXPERIMENT: jsonv2
 
@@ -21,7 +25,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Install templ CLI
-        run: go install github.com/a-h/templ/cmd/templ@latest
+        run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
 
       - name: Generate templ files
         run: templ generate ./...
@@ -48,8 +52,23 @@ jobs:
       - name: Test with race detector and coverage
         run: go test ./... -count=1 -race -timeout=60s -covermode=atomic -coverprofile=coverage.out
 
+      - name: Coverage floor
+        run: |
+          total=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | tr -d '%')
+          echo "total coverage: ${total}%"
+          awk -v t="$total" 'BEGIN { exit !(t >= 75) }' || {
+            echo "::error::coverage ${total}% is below the 75% floor (baseline 76.9%)"
+            exit 1
+          }
+
       - name: Coverage summary
         run: go tool cover -func=coverage.out | tail -1
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: coverage
+          path: coverage.out
 
   browser:
     name: Browser (runtime CSP)
@@ -62,7 +81,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Install templ CLI
-        run: go install github.com/a-h/templ/cmd/templ@latest
+        run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
 
       - name: Generate templ files
         run: templ generate ./...
@@ -88,14 +107,14 @@ jobs:
           go-version-file: go.mod
 
       - name: Install templ CLI
-        run: go install github.com/a-h/templ/cmd/templ@latest
+        run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
 
       - name: Generate templ files
         run: templ generate ./...
 
       - uses: golangci/golangci-lint-action@db9de0fc1a667e1a49d2291a1a042dff081d78f6 # v9
         with:
-          version: latest
+          version: v2.13.1
           args: ./...
 
   vulncheck:
@@ -109,7 +128,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Install templ CLI
-        run: go install github.com/a-h/templ/cmd/templ@latest
+        run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
 
       - name: Generate templ files
         run: templ generate ./...
@@ -118,3 +137,21 @@ jobs:
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
+
+  version-guard:
+    name: Version const matches latest tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Compare Version const to latest git tag
+        run: |
+          const_version=$(grep -E 'const Version = ' dashboard.go | sed -E 's/.*"([^"]+)".*/\1/')
+          tag_version=$(git describe --tags --abbrev=0 | sed 's/^v//')
+          echo "Version const: ${const_version} | latest tag: ${tag_version}"
+          if [ "$const_version" != "$tag_version" ]; then
+            echo "::error::Version const (${const_version}) does not match latest git tag (${tag_version}). Bump the const in the same commit as the tag."
+            exit 1
+          fi
