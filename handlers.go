@@ -198,6 +198,10 @@ func (d *Dashboard) RegisterRoutes(mux *http.ServeMux) {
 		mux.Handle(routes.Export, d.wrap(d.applyRateLimit(d.ExportHandler())))
 	}
 
+	if d.cfg.Introspection && routes.Introspect != "" {
+		mux.Handle(routes.Introspect, d.wrap(d.applyRateLimit(d.IntrospectionHandler())))
+	}
+
 	mux.HandleFunc(routes.Liveness, d.probe.LivenessHandler())
 	mux.HandleFunc(routes.Readiness, d.probe.ReadinessHandler())
 	mux.HandleFunc(routes.Startup, d.probe.StartupHandler())

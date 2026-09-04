@@ -34,6 +34,7 @@ type Config struct {
 	Middleware        func(http.Handler) http.Handler
 	MetricsEnabled    bool
 	TrendSamples      int
+	Introspection     bool
 	HideStatCards     bool
 
 	// ShutdownDrain bounds how long Shutdown waits for connected SSE
@@ -341,5 +342,17 @@ func WithBasePath(prefix string) Option {
 		}
 
 		cfg.Routes = out
+	}
+}
+
+// WithIntrospection enables the introspection endpoint served at
+// Routes.Introspect (default /health/introspect) by RegisterRoutes. The
+// endpoint returns the dashboard's resolved configuration — routes,
+// limits, modes, versions — as JSON. It exposes route paths and feature
+// flags but never check results or check names; gate it with
+// WithMiddleware if that disclosure matters in your environment.
+func WithIntrospection() Option {
+	return func(c *Config) {
+		c.Introspection = true
 	}
 }
