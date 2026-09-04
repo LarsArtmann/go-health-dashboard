@@ -391,6 +391,9 @@ Both are flaky-test bait under CI load.
 ## g) Questions I CANNOT figure out myself
 
 ### 1. Should I fix the daemon's code or leave it?
+**ANSWERED:** pushed history is immutable — the five non-building daemon snapshots are documented for `git bisect skip` in AGENTS.md (2026-09-04 bisect audit); the build-before-walkaway rule is adopted to stop new ones.
+
+
 
 The auto-git daemon committed `di.go`, `lifecycle_test.go`, `HealthCheck`,
 `Register`, and significant `example/main.go` changes. These contain a
@@ -405,6 +408,9 @@ I lean toward (a) since it's in the committed tree and consumers will use
 it, but I want your call since I didn't author it.
 
 ### 2. Is the samber/do integration wanted at all?
+**ANSWERED:** yes — shipped in v0.3.0 and documented across README, doc.go, FEATURES, and AGENTS.md; lifecycle tests cover the cascades.
+
+
 
 The daemon added `Register()`, `HealthCheck()`, and lifecycle interface
 implementations. This couples the dashboard library to `samber/do/v2` as a
@@ -414,6 +420,9 @@ Should this DI integration stay, or should it be behind a build tag /
 separate subpackage to keep the core library DI-agnostic?
 
 ### 3. Should v0.3.0 be tagged now?
+**ANSWERED (retrospectively):** the stray v0.3.0 tag forced the cycle to ship as v0.3.1 (`d453c52`); the re-head-in-the-tag-commit lesson lives in `docs/planning/archived/2026-09-03_v03-cycle-decisions-notes.md`.
+
+
 
 The working tree has: a breaking API change (`RegisterRoutes` signature),
 3 new features (SSE reconnection, sub-path mounting, DI integration), and

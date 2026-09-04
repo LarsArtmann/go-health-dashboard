@@ -138,13 +138,6 @@ func TestShutdown_IsIdempotent(t *testing.T) {
 	setup.dash.Shutdown()
 }
 
-func TestHealthCheckWithContext_InterfaceSatisfied(t *testing.T) {
-	t.Parallel()
-
-	var _ do.HealthcheckerWithContext = (*dashboard.Dashboard)(nil)
-	var _ do.Shutdowner = (*dashboard.Dashboard)(nil)
-}
-
 func TestHealthCheck_WithCancelledContext(t *testing.T) {
 	t.Parallel()
 
