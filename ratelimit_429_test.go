@@ -77,8 +77,6 @@ func TestSSE_Drain503CarriesRetryAfter(t *testing.T) {
 	s := setupDashboard(t, dashboard.WithShutdownDrain(drain))
 	defer s.cleanup()
 
-	waitForSubscriber(t, s.dash)
-
 	s.dash.Shutdown()
 
 	w := doRequest(t, s.mux, "/health/sse")
@@ -86,14 +84,14 @@ func TestSSE_Drain503CarriesRetryAfter(t *testing.T) {
 		t.Fatalf("SSE after shutdown: want 503, got %d", w.Code)
 	}
 
-	ra := w.Header().Get("Retry-After")
-	if ra == "" {
+	retryAfterHeader := w.Header().Get("Retry-After")
+	if retryAfterHeader == "" {
 		t.Fatal("Retry-After missing on drain-window 503")
 	}
 
-	seconds, err := strconv.Atoi(ra)
+	seconds, err := strconv.Atoi(retryAfterHeader)
 	if err != nil {
-		t.Fatalf("Retry-After not integer seconds: %q", ra)
+		t.Fatalf("Retry-After not integer seconds: %q", retryAfterHeader)
 	}
 
 	if seconds < 1 || seconds > int(drain.Seconds()) {

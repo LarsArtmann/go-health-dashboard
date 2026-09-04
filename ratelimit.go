@@ -79,6 +79,7 @@ func (d *Dashboard) applyRateLimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !limiter.Allow() {
 			w.Header().Set("Retry-After", strconv.Itoa(limiter.retryAfter()))
+
 			if wantsJSON(r) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusTooManyRequests)

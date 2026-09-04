@@ -28,6 +28,13 @@ opt-in introspection endpoint exposes the running configuration.
   Opt-in; configuration metadata only (never check results or names);
   passes through the same middleware and rate limiting as other
   dashboard-owned routes.
+- `WithRateLimit` 429 responses now negotiate: JSON clients receive
+  `{"error": …, "retry_after": <seconds>}` (mirroring the Retry-After
+  header); HTML clients keep the plain-text body.
+- During a configured shutdown drain, new SSE connections receive 503
+  with a `Retry-After` header pointing past the drain window, so
+  well-behaved clients reconnect instead of hammering a draining
+  server.
 - `WithEmbeddedDatastarSDK()` + `GET /health/datastar.js`
   (`Routes.DatastarJS`, empty disables): serves the pinned SDK bundle
   from the `go-datastar/static` embed and points the dashboard's script

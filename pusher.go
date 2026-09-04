@@ -201,19 +201,24 @@ func (p *pusher) atCapacity(w http.ResponseWriter) bool {
 	return true
 }
 
+// writeSSEUnavailable answers a new SSE connection while no pusher is
+// running. A configured shutdown drain makes the 503 temporary, so the
+// response carries Retry-After pointing past the drain window.
+func (d *Dashboard) writeSSEUnavailable(w http.ResponseWriter) {
+	if d.cfg.ShutdownDrain > 0 {
+		w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(d.cfg.ShutdownDrain.Seconds()))))
+	}
+
+	http.Error(w, "dashboard: SSE push is not active", http.StatusServiceUnavailable)
+}
+
 // sseHandler upgrades to an SSE connection, sends the initial state as a
 // Datastar patch, then forwards broadcaster events to the client. Blocks
 // until the client disconnects or the pusher shuts down.
 func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
 	push := d.push.Load()
 	if push == nil {
-		// A configured shutdown drain means the 503 is temporary: tell
-		// well-behaved clients to come back after the drain window.
-		if d.cfg.ShutdownDrain > 0 {
-			w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(d.cfg.ShutdownDrain.Seconds()))))
-		}
-
-		http.Error(w, "dashboard: SSE push is not active", http.StatusServiceUnavailable)
+		d.writeSSEUnavailable(w)
 
 		return
 	}
