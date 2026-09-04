@@ -55,10 +55,13 @@ func TestEmbeddedSDK_DisabledByDefault(t *testing.T) {
 func TestEmbeddedSDK_RespectsBasePath(t *testing.T) {
 	t.Parallel()
 
-	d := dashboard.New(newStubProber(health.Response{}), dashboard.WithEmbeddedDatastarSDK(), dashboard.WithBasePath("/admin"))
+	d := dashboard.New(
+		newStubProber(health.Response{}),
+		dashboard.WithEmbeddedDatastarSDK(),
+		dashboard.WithBasePath("/admin"),
+	)
 
 	if got := d.Routes().DatastarJS; got != "/admin/health/datastar.js" {
 		t.Fatalf("DatastarJS: want /admin/health/datastar.js, got %q", got)
 	}
 }
-
