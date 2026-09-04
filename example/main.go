@@ -167,15 +167,23 @@ func safeBasePath(spec string) (string, error) {
 		return "", fmt.Errorf("want a path starting with /, got %q", spec)
 	}
 
-	for _, r := range spec {
-		safe := r == '/' || r == '_' || r == '-' || r == '.' ||
-			(r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
-		if !safe {
-			return "", fmt.Errorf("unsupported character %q", r)
-		}
+	if strings.ContainsFunc(spec, func(r rune) bool { return !isBasePathRune(r) }) {
+		return "", fmt.Errorf("unsupported character in %q (want [A-Za-z0-9/_.-])", spec)
 	}
 
 	return spec, nil
+}
+
+// isBasePathRune reports whether r may appear in a base path prefix.
+func isBasePathRune(r rune) bool {
+	switch {
+	case r == '/' || r == '_' || r == '-' || r == '.':
+		return true
+	case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+		return true
+	default:
+		return false
+	}
 }
 
 // healthChecker is the interface samber/do uses for health checks.
