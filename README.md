@@ -293,16 +293,16 @@ GOEXPERIMENT=jsonv2 DEMO_TREND=1 DEMO_METRICS=1 DEMO_AUTH=my-token DEMO_RATELIMI
 
 All toggles are optional — plain `go run ./example` works too.
 
-| Variable             | Effect                                                         |
-| -------------------- | -------------------------------------------------------------- |
-| `DEMO_TREND=1`       | Health trend sparkline (`WithTrend`)                           |
-| `DEMO_METRICS=1`     | Prometheus endpoint at `/health/metrics` (`WithMetrics`)       |
-| `DEMO_AUTH=<token>`  | Bearer-token middleware on dashboard routes (`WithMiddleware`) |
-| `DEMO_RATELIMIT=n/w` | Token-bucket rate limit, e.g. `30/1m` (`WithRateLimit`)        |
-| `DEMO_DRAIN=5s`      | Graceful SSE drain window on shutdown (`WithShutdownDrain`)    |
-| `DEMO_PUBLIC=1`      | Public mode — anonymized check names (`WithPublicMode`)        |
-| `DEMO_BASE_PATH=/status` | Mount the dashboard under `/status` (`WithBasePath`)       |
-| `PORT`               | Listen port (default 8080)                                     |
+| Variable                 | Effect                                                         |
+| ------------------------ | -------------------------------------------------------------- |
+| `DEMO_TREND=1`           | Health trend sparkline (`WithTrend`)                           |
+| `DEMO_METRICS=1`         | Prometheus endpoint at `/health/metrics` (`WithMetrics`)       |
+| `DEMO_AUTH=<token>`      | Bearer-token middleware on dashboard routes (`WithMiddleware`) |
+| `DEMO_RATELIMIT=n/w`     | Token-bucket rate limit, e.g. `30/1m` (`WithRateLimit`)        |
+| `DEMO_DRAIN=5s`          | Graceful SSE drain window on shutdown (`WithShutdownDrain`)    |
+| `DEMO_PUBLIC=1`          | Public mode — anonymized check names (`WithPublicMode`)        |
+| `DEMO_BASE_PATH=/status` | Mount the dashboard under `/status` (`WithBasePath`)           |
+| `PORT`                   | Listen port (default 8080)                                     |
 
 The example includes mock services: one always healthy, one flapping (alternates
 pass/fail every 15s), and one always failing. Watch the dashboard update live.

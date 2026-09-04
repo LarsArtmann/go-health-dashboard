@@ -193,16 +193,16 @@ if !errors.Is(err, err) {
 ## g) QUESTIONS I CANNOT ANSWER MYSELF
 
 1. **Should the Dashboard appear in its own health table?**
-**ROUTED 2026-09-04:** design decision parked on ROADMAP (self-monitoring decision, Pipeline/Testing theme). No behavior change shipped.
+   **ROUTED 2026-09-04:** design decision parked on ROADMAP (self-monitoring decision, Pipeline/Testing theme). No behavior change shipped.
 
- When registered via `do.ProvideValue`, go-health's Probe iterates the injector and may discover the Dashboard as a health-checkable service. This would make the dashboard monitor its own SSE pusher health — which is either a cool self-monitoring feature or a confusing recursive display. I cannot determine the intended UX without your input. (I can test this empirically, but the _design decision_ is yours.)
+When registered via `do.ProvideValue`, go-health's Probe iterates the injector and may discover the Dashboard as a health-checkable service. This would make the dashboard monitor its own SSE pusher health — which is either a cool self-monitoring feature or a confusing recursive display. I cannot determine the intended UX without your input. (I can test this empirically, but the _design decision_ is yours.)
 
 2. **Should `Shutdown()` expose graceful drain?**
-**ANSWERED:** shipped as the opt-in `WithShutdownDrain(d)` in v0.4.0 (`8f63d85`) — no breaking signature change; `Shutdown()` keeps its shape and drains only when configured.
+   **ANSWERED:** shipped as the opt-in `WithShutdownDrain(d)` in v0.4.0 (`8f63d85`) — no breaking signature change; `Shutdown()` keeps its shape and drains only when configured.
 
- The broadcaster has both `Close()` (instant, current) and `Shutdown(ctx) error` (graceful drain). Switching to graceful drain would require either changing `Shutdown()` to `Shutdown(ctx) error` (breaking API change) or adding a new method. I cannot decide this without knowing your API stability constraints for v0.2.x vs v0.3.0.
+The broadcaster has both `Close()` (instant, current) and `Shutdown(ctx) error` (graceful drain). Switching to graceful drain would require either changing `Shutdown()` to `Shutdown(ctx) error` (breaking API change) or adding a new method. I cannot decide this without knowing your API stability constraints for v0.2.x vs v0.3.0.
 
 3. **Is `Register` the right abstraction, or should it be a `WithInjector` option?**
-**ANSWERED:** `Register` stayed (documented in README/doc.go/AGENTS.md); the `WithInjector` alternative is routed to ROADMAP (DI-surface ideas).
+   **ANSWERED:** `Register` stayed (documented in README/doc.go/AGENTS.md); the `WithInjector` alternative is routed to ROADMAP (DI-surface ideas).
 
- I chose a standalone function to keep `New()` decoupled from DI. But some consumers might prefer `dashboard.New(probe, dashboard.WithInjector(injector))` as a single-call API. This is a taste question I can't resolve without knowing your preferred integration style.
+I chose a standalone function to keep `New()` decoupled from DI. But some consumers might prefer `dashboard.New(probe, dashboard.WithInjector(injector))` as a single-call API. This is a taste question I can't resolve without knowing your preferred integration style.

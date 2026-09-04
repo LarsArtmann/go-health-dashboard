@@ -6,12 +6,12 @@ require (
 	github.com/a-h/templ v0.3.1020
 	github.com/chromedp/cdproto v0.0.0-20260714215040-dc233986426f
 	github.com/chromedp/chromedp v0.16.0
-	github.com/larsartmann/go-datastar v0.4.0
-	github.com/larsartmann/go-datastar/static v0.4.0
+	github.com/larsartmann/go-datastar v0.5.0
+	github.com/larsartmann/go-datastar/static v0.5.0
 	github.com/larsartmann/go-health v0.1.2
 	github.com/larsartmann/go-sse v0.6.0
-	github.com/larsartmann/templ-components v1.11.0
-	github.com/larsartmann/templ-components/datastar v1.11.0
+	github.com/larsartmann/templ-components v1.12.0
+	github.com/larsartmann/templ-components/datastar v1.12.0
 	github.com/larsartmann/templ-components/utils v1.12.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.71.0

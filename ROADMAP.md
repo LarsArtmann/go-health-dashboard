@@ -68,8 +68,8 @@ Raw ideas:
   service names), optional redaction of the `/health` JSON (which stays
   verbatim today — documented in AGENTS.md)
 - Webhook delivery observability: `dashboard_webhook_deliveries_total{result}`
-  + duration histogram behind `WithMetrics` (deliveries are silently
-  best-effort today — "it didn't arrive" is undebuggable)
+  - duration histogram behind `WithMetrics` (deliveries are silently
+    best-effort today — "it didn't arrive" is undebuggable)
 - Webhook hardening: HMAC signing (`WithWebhookSecret` → `X-Signature`)
   and a payload `"schema":1` version field before external consumers
   freeze the format (see Open Questions)
