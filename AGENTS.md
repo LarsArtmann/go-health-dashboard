@@ -73,16 +73,12 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   go-health v0.1.0's `aggregate.Aggregate` satisfies it, so one dashboard renders N
   in-process probes (namespaced `source/check` keys, worst-of status) with zero
   dashboard knowledge of the aggregate type.
-- **Webhooks are change-only and best-effort** — `WithWebhook` fires when the status or
-  check fingerprint changes, independent of PushMode (PushAlways never spams a webhook);
-  the initial state is announced on Start, mirroring the SSE initial patch. One
-  goroutine per fire, 10s timeout, bounded in-flight, no retries, no logging
-  (zero-logging policy; the URL may embed a secret). Receivers own thresholds and dedup.
-- **SSE-first, Datastar-powered** — The dashboard uses Datastar SSE for real-time updates. The Datastar SDK handles SSE connections, reconnection, and DOM patching client-side. The `datastar.LiveRegion` component wraps the health content with `data-init="@get('/health/sse')"`.
-- **Content negotiation on `/health`** — Browsers get the HTML dashboard by default. `Accept: application/json` returns the full health response as JSON (200 for pass/warn, 503 for fail). Kubelet probe endpoints (`/healthz`, `/readyz`, `/startupz`) are JSON-only.
+- **Webhooks are change-only and best-effort** — fire on status/fingerprint change, independent of PushMode; initial state announced on Start. One goroutine per fire, 10s timeout, bounded in-flight, no retries, no logging (the URL may embed a secret). Receivers own thresholds and dedup.
+- **SSE-first, Datastar-powered** — the Datastar SDK handles connections, reconnection, and DOM patching client-side; `datastar.LiveRegion` wraps the health content with `data-init="@get('/health/sse')"`.
+- **Content negotiation on `/health`** — HTML by default; `Accept: application/json` returns the full health response (200 pass/warn, 503 fail). Kubelet probes (`/healthz`, `/readyz`, `/startupz`) are JSON-only.
 - **Status mapping: direct constants** — go-health uses `pass`/`warn`/`fail`. We map directly to `BadgeType` constants and `FeedbackType` constants (not the deprecated `AlertType` alias).
-- **Broadcaster fan-out (internal detail)** — One pusher goroutine reads `probe.CachedResponse()`, renders a Datastar patch, and broadcasts the `sse.Event` to all connected SSE clients via `sse.Broadcaster[sse.Event]`. This is an implementation detail, not user-facing.
-- **PushOnChange default** — Only broadcasts when the overall status or any individual check result changes. Uses `fingerprintChecks` with sorted keys for deterministic change detection.
+- **Broadcaster fan-out (internal)** — one pusher goroutine renders patches and broadcasts to N SSE clients via `sse.Broadcaster[sse.Event]`; an implementation detail.
+- **PushOnChange default** — broadcast only on overall-status or check-result change; `fingerprintChecks` with sorted keys, length-prefixed fields for determinism.
 - **CachedResponse for zero-cost reads** — Dashboard reads `probe.CachedResponse()` which reads the atomic `p.latest` pointer. Lock-free.
 - **No HTMX loaded** — `layout.Base` is called with `HTMXVersion: ""` to disable HTMX injection. Datastar handles all real-time.
 - **`atomic.Pointer[pusher]` for safe concurrent access** — The `Dashboard.push` field is an `atomic.Pointer[pusher]`, not a bare `*pusher`. `Start()` calls `Store(p)`, `Shutdown()` calls `Swap(nil)`, and `sseHandler()` calls `Load()`. This prevents the data race that would occur when `Shutdown()` nils the pointer while `sseHandler()` reads it.
@@ -93,13 +89,7 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   `ratelimit.go`; golang.org/x/time/rate deliberately not used — zero
   runtime deps), and the pusher watchdog in `HealthCheck` (`ErrPusherStale`
   after 3 silent intervals; report-only, never restarts).
-- **History samples carry timestamps** — `sample{At,Value,Status}` in the
-  history ring buffer (history.go) powers `/health/trend` (samples +
-  transitions), `/health/export` (JSON/CSV), the Status Changes timeline
-  card, and the `Updated <time>` stamp — the stamp shows the LAST
-  sample's observation time (not render time) whenever trend history is
-  enabled, so a freshly connected browser can't look fresher than
-  reality. Transitions are derived on demand, not stored.
+- **History samples carry timestamps** — `sample{At,Value,Status}` in the ring powers `/health/trend`, `/health/export` (JSON/CSV), the timeline card, and the `Updated` stamp; transitions derived on demand.
 - **Pusher-down errors are a sentinel family** — `ErrPusherNotStarted`
   and `ErrPusherShutDown` both wrap `ErrPusherNotActive`; `errors.Is`
   against the parent keeps working. The distinction comes from a
@@ -110,17 +100,17 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   response and kubelet probes intentionally stay verbatim.
 - **SSE connection limit** — When `WithMaxSSEConnections(n)` is set, the pusher tracks active connections via `atomic.Int64` and returns HTTP 503 when the limit is exceeded. Default is 0 (unlimited).
 - **Dark mode toggle** — The dashboard header includes a `layout.ThemeToggle` button that toggles the `dark` class on `<html>`. The preference is persisted in `localStorage` and respects the OS `prefers-color-scheme` on first visit.
-- **Per-request nonce extraction** — `WithNonceExtractor(func(*http.Request) string)` enables per-request CSP nonces instead of a fixed construction-time nonce. When set, `Handler()` calls the extractor on each request; the result takes precedence over `WithNonce`. Falls back to `WithNonce` when the extractor returns empty. The SSE pusher doesn't use nonces (patches are inner-HTML replacements with no scripts).
-- **No httputil dependency** — The dashboard accepts nonce _values_ (strings), not nonce _infrastructure_. Consumers wire their own nonce middleware (e.g., `httputil.Nonce`) and pass `httputil.NonceFromRequest` as the extractor. This keeps the rendering library decoupled from any specific HTTP middleware stack.
-- **CSP-clean render output** — The `/health` page renders only Tailwind utility classes: every inline `<script>` carries the nonce (asserted by `TestRender_AllScriptsCarryNonce`), and there are zero `<style>` blocks or inline `style=` attributes (asserted by `TestRender_NoInlineStyles`). This means the `/health` route needs no `style-src 'unsafe-inline'`; a consumer's global CSP may still keep it for other routes.
-- **Single source of truth for routes** — `RegisterRoutes(mux)` reads from `Config.Routes` (set via `WithRoutes`, `WithBasePath`, or defaults). Previously took a separate `routes` parameter that could diverge from `Config.Routes`, causing broken SSE URL references in the HTML.
-- **WithMiddleware protects dashboard-owned routes only** — `WithMiddleware(fn)` wraps `/health`, `/health/sse`, `/favicon.svg`, and the metrics endpoint with the consumer's middleware (typically auth). The kubelet probe endpoints are deliberately NOT wrapped: the kubelet cannot authenticate, and gating probes breaks liveness/readiness. The dashboard accepts a middleware function, not auth infrastructure — same philosophy as nonce handling.
-- **Prometheus metrics are hand-rolled and opt-in** — `WithMetrics(true)` + `Routes.Metrics` (default `/health/metrics`, empty = disabled). `metrics.go` writes text exposition 0.0.4 directly to avoid a client_golang dependency. Output is deterministic: check series sorted by name; label values escaped (`\\`, `"`, newline). `WithBasePath` prefixes a non-empty Metrics route but leaves empty Metrics empty.
-- **Trend sparkline rides the existing push loop** — `WithTrend(n)` gives the pusher a mutex-guarded `historyBuffer` ring (n samples). Every tick records a sample (pass=1, warn=0.5, fail=0, unknown=0) BEFORE change detection, so samples accrue even in PushOnChange mode. `renderPatch` and `buildData` snapshot it into `viewModel.History`; the card renders only with ≥2 samples. Values plot with Min=0/Max=1 so the line never auto-rescales.
-- **Runtime CSP is verified in a headless browser** — `browser_test.go` launches Chromium (env `GO_HEALTH_DASHBOARD_CHROME`, or PATH lookup; skips when absent), serves the page self-hosted (compiled CSS + `go-datastar/static` embedded SDK) under a strict CSP, waits for the SSE connection (proves the SDK ran), and asserts the runtime DOM has zero `<style>` elements and zero styled elements besides `<html>` (whose `color-scheme` the theme script sets via CSSOM — CSP-safe by spec).
+- **Per-request nonce extraction** — `WithNonceExtractor(func(*http.Request) string)` computes the CSP nonce per request; it takes precedence over `WithNonce` and falls back to it when returning empty. SSE patches don't use nonces (pure inner-HTML replacements).
+- **No httputil dependency** — the dashboard accepts nonce _values_, not nonce _infrastructure_; consumers wire their own middleware (e.g. pass `httputil.NonceFromRequest`) and the library stays decoupled.
+- **CSP-clean render output** — every inline `<script>` carries the nonce (`TestRender_AllScriptsCarryNonce`); zero `<style>` blocks or `style=` attributes (`TestRender_NoInlineStyles`), so `/health` needs no `style-src 'unsafe-inline'`.
+- **Single source of truth for routes** — `RegisterRoutes(mux)` reads `Config.Routes` (set via `WithRoutes`/`WithBasePath`/defaults), so the HTML-referenced SSE URL always matches the registered handler.
+- **WithMiddleware protects dashboard-owned routes only** — wraps `/health`, `/health/sse`, `/favicon.svg`, and metrics; kubelet probes stay unwrapped (the kubelet cannot authenticate; gating breaks liveness/readiness). Middleware function in, same philosophy as nonce handling.
+- **Prometheus metrics are hand-rolled and opt-in** — `WithMetrics(true)` + `Routes.Metrics` (default `/health/metrics`, empty = disabled). Text exposition 0.0.4 written directly (no client_golang); deterministic sorted output with escaped label values; `WithBasePath` prefixes a non-empty Metrics route only.
+- **Trend sparkline rides the existing push loop** — `WithTrend(n)` gives the pusher a mutex-guarded ring; every tick records a sample (pass=1, warn=0.5, fail=0) BEFORE change detection, so history accrues even in PushOnChange mode; the card renders only with ≥2 samples; values plot Min=0/Max=1.
+- **Runtime CSP is verified in a headless browser** — `browser_test.go` serves the page self-hosted (compiled CSS + embedded SDK) under strict CSP, waits for the SSE connection, and asserts the runtime DOM has zero `<style>` elements and no styled elements besides `<html>` (theme script uses CSSOM, CSP-safe by spec).
 - **SSE reconnection via retry field** — `WithRetryInterval(d)` sets the SSE `retry` field on every event, telling the browser how long to wait before reconnecting. The handler always sends current state on connect, so reconnecting clients immediately see the latest health — no event replay needed.
 - **Sub-path mounting via WithBasePath** — `WithBasePath("/admin")` prefixes all routes in `Config.Routes`. Combined with `RegisterRoutes(mux)` reading from `Config`, this ensures the HTML-referenced SSE URL always matches the registered handler.
-- **samber/do lifecycle integration** — The Dashboard implements `do.HealthcheckerWithContext` and `do.Shutdowner`, verified by compile-time assertions in `dashboard.go`. `HealthCheck(ctx)` returns an error when the SSE pusher is not active (not started or shut down). The `Register(injector, probe, opts...)` function creates a Dashboard and registers it via `do.ProvideValue` so it participates in `do.Shutdown` and `do.HealthCheck` cascades automatically. Consumers who already have a samber/do injector (required by go-health) get lifecycle management for free.
+- **samber/do lifecycle integration** — `Dashboard` implements `do.HealthcheckerWithContext` and `do.Shutdowner` (compile-time asserted). `Register(injector, probe, opts...)` stores it via `do.ProvideValue`, so consumers with an injector get `do.Shutdown`/`do.HealthCheck` cascades for free.
 
 ### Data Flow
 
