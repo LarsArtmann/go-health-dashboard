@@ -17,7 +17,7 @@ import (
 // CI enforces that this matches the latest git tag (the version-guard job
 // in .github/workflows/ci.yml). When cutting a release, bump this const in
 // the same commit you tag.
-const Version = "0.5.0"
+const Version = "0.6.0"
 
 // Prober is the minimal health-probe surface the dashboard renders. It is
 // satisfied by *health.Probe (the common case) and by go-health's

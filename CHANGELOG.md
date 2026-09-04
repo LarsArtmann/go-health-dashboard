@@ -5,13 +5,29 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.6.0] - 2026-09-04
 
-Hardening the pipeline, not the product: CI pins, a version-tag guard,
-event-driven SSE tests, and a stamp that tells the truth about when the
-health state was observed. No public API changes except two new error
+Integrity and watchtowers. Every dashboard write seam now sanitizes the
+probe snapshot; error sentinels distinguish pusher states; the CI
+pipeline gained dependency pins, a version-tag guard, and a coverage
+floor; and the `Updated` stamp tells the truth about when the health
+state was observed. No public API changes except two new error
 sentinels (both wrap the existing `ErrPusherNotActive`, so existing
 `errors.Is` checks keep working).
+
+### Compatibility
+
+- New error sentinels `ErrPusherNotStarted` and `ErrPusherShutDown`
+  both wrap the existing `ErrPusherNotActive` — `errors.Is(err,
+  ErrPusherNotActive)` keeps matching.
+- The `Updated <time>` stamp now shows the last sample's observation
+  time when trend history is enabled (previously the render time).
+  Anything scraping the rendered HTML sees the newer, more honest
+  timestamp.
+- The dependency bump to `github.com/larsartmann/go-health v0.1.3`
+  adopts the strict aggregate source-name contract: source names must
+  not contain `/`. Dashboard source names like `api` or `web` are
+  unaffected.
 
 ### Added
 
@@ -52,8 +68,8 @@ sentinels (both wrap the existing `ErrPusherNotActive`, so existing
   CONTRIBUTING.md explains browser/screenshot tests and the DI
   registration path; README documents the rate limiter's shared-bucket
   semantics.
-- `go.mod`: `github.com/larsartmann/go-health` v0.1.0 → v0.1.1 (patch
-  bump, no API change).
+- `go.mod`: `github.com/larsartmann/go-health` v0.1.0 → v0.1.3 (patch
+  bumps; v0.1.3 enforces the strict aggregate source-name contract).
 - Restored the UI dependency pins after an undocumented `go get` sweep
   moved templ-components to v1.12.0 and go-datastar to v0.5.0: v1.12.0
   re-introduces the LiveRegion busy-script `nonce=""` regression
@@ -63,8 +79,18 @@ sentinels (both wrap the existing `ErrPusherNotActive`, so existing
   go-datastar v0.4.0 (`8cf2c62`); the bumps can re-land once upstream
   ships the nonce guard and the browser suite validates the bundle.
   A second sweep re-landed the same bumps later that day and was
-  re-reverted; go-health's own v0.1.1 → v0.1.2 patch bump (separate,
-  suite green) stays.
+  re-reverted; go-health's own patch bumps (v0.1.1 → v0.1.2, then a
+  deliberate v0.1.3 for the strict source-name contract) stay.
+
+### Fixed
+
+- Every dashboard write seam (the `/health` JSON response, webhook
+  payloads, SSE patches, metrics, CSV export) now sanitizes the probe
+  snapshot via go-health's `SanitizeResponse`, applied once at the
+  dashboard's response choke point: service-supplied error strings can
+  carry invalid UTF-8, which previously leaked raw bytes into
+  jsonv2-encoded JSON output; those bytes are now replaced with U+FFFD
+  (`integration_test.go` proves the fix fails without the change).
 
 ### Verified
 
@@ -201,13 +227,6 @@ a verified CSP helper.
 
 ### Fixed
 
-- Every dashboard write seam (the `/health` JSON response, webhook
-  payloads, SSE patches, metrics, CSV export) now sanitizes the probe
-  snapshot via go-health's `SanitizeResponse`, applied once at the
-  dashboard's response choke point: service-supplied error strings can
-  carry invalid UTF-8, which previously leaked raw bytes into
-  jsonv2-encoded JSON output; those bytes are now replaced with U+FFFD
-  (`integration_test.go` proves the fix fails without the change).
 - `fingerprintChecks` delimiter collision: a check name containing `:` or
   `;` could alias a different split of the same bytes across name, status,
   and error (e.g. name `a:b` with status `c` collided with name `a` and
