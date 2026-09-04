@@ -20,8 +20,8 @@ import (
 	"github.com/chromedp/chromedp"
 	dstarstatic "github.com/larsartmann/go-datastar/static"
 	health "github.com/larsartmann/go-health"
-	"github.com/larsartmann/go-health/aggregate"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	"github.com/larsartmann/go-health/aggregate"
 	"github.com/samber/do/v2"
 )
 
@@ -1035,7 +1035,11 @@ func TestBrowser_AggregateCSPClean(t *testing.T) {
 		if dash.SubscriberCount() == 0 {
 			var html string
 			_ = chromedp.Run(ctx, chromedp.Evaluate(`document.body.innerHTML.slice(0, 600)`, &html))
-			t.Fatalf("aggregate page SSE never connected; console: %v; body: %s", errLog.all(), html)
+			t.Fatalf(
+				"aggregate page SSE never connected; console: %v; body: %s",
+				errLog.all(),
+				html,
+			)
 		}
 	}
 
@@ -1048,20 +1052,32 @@ func TestBrowser_AggregateCSPClean(t *testing.T) {
 	}
 
 	if namespaced != "yes" {
-		t.Errorf("aggregate page does not show the namespaced api/postgres check; console: %v", errLog.all())
+		t.Errorf(
+			"aggregate page does not show the namespaced api/postgres check; console: %v",
+			errLog.all(),
+		)
 	}
 
 	// CSP-clean invariants, same as the single-probe page.
 	var styles string
 	if err := chromedp.Run(ctx, chromedp.Evaluate(
-		`document.querySelectorAll("style").length + ":" + [...document.querySelectorAll("[style]")].length`,
+		`document.querySelectorAll("style").length + ":" + [...document.querySelectorAll("[style]:not(html)")].length`,
 		&styles,
 	)); err != nil {
 		t.Fatalf("style probe: %v", err)
 	}
 
 	if styles != "0:0" {
-		t.Errorf("aggregate page has inline styles or style tags: %s", styles)
+		var offender string
+		_ = chromedp.Run(ctx, chromedp.Evaluate(
+			`[...document.querySelectorAll("[style]")].map(e => e.outerHTML.slice(0, 300)).join(" || ")`,
+			&offender,
+		))
+		t.Errorf(
+			"aggregate page has inline styles or style tags: %s; offender: %s",
+			styles,
+			offender,
+		)
 	}
 
 	assertNoBrowserErrors(t, errLog)

@@ -20,6 +20,8 @@ import (
 // patch for an aggregate prober over plain HTTP before any browser is
 // involved.
 func TestAggregateSSE_ServesInitialStateStream(t *testing.T) {
+	t.Parallel()
+
 	apiInjector := do.New()
 	provideHealthy(apiInjector, "postgres")
 	invoke[*healthyService](t, apiInjector, "postgres")
@@ -67,13 +69,14 @@ func TestAggregateSSE_ServesInitialStateStream(t *testing.T) {
 	}
 
 	buf := make([]byte, 4096)
-	n, _ := resp.Body.Read(buf)
+	read, _ := resp.Body.Read(buf)
+	firstChunk := string(buf[:read])
 
-	if !strings.Contains(string(buf[:n]), "datastar-patch-elements") {
-		t.Fatalf("no datastar patch event in first read: %q", string(buf[:n]))
+	if !strings.Contains(firstChunk, "datastar-patch-elements") {
+		t.Fatalf("no datastar patch event in first read: %q", firstChunk)
 	}
 
-	if !strings.Contains(string(buf[:n]), "api/postgres") {
-		t.Errorf("initial patch missing namespaced check: %q", string(buf[:n]))
+	if !strings.Contains(firstChunk, "api/postgres") {
+		t.Errorf("initial patch missing namespaced check: %q", firstChunk)
 	}
 }

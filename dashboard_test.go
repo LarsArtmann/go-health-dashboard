@@ -916,15 +916,16 @@ func TestWithRoutes_AfterWithBasePath(t *testing.T) {
 
 // setupDashboardWithProber is setupDashboard for an arbitrary Prober — used
 // by the aggregate browser test to render a merged multi-probe page.
-func setupDashboardWithProber(t *testing.T, probe dashboard.Prober, opts ...dashboard.Option) *probeSetup {
+func setupDashboardWithProber(
+	t *testing.T,
+	probe dashboard.Prober,
+	opts ...dashboard.Option,
+) *probeSetup {
 	t.Helper()
 
 	dash := dashboard.New(probe, opts...)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := dash.Start(ctx); err != nil {
+	if err := dash.Start(t.Context()); err != nil {
 		t.Fatalf("dash.Start: %v", err)
 	}
 

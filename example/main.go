@@ -36,8 +36,8 @@ import (
 	"time"
 
 	health "github.com/larsartmann/go-health"
-	"github.com/larsartmann/go-health/aggregate"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	"github.com/larsartmann/go-health/aggregate"
 	"github.com/samber/do/v2"
 )
 
@@ -127,7 +127,11 @@ func buildProbe(ctx context.Context, injector *do.RootScope) (dashboard.Prober, 
 	registerService(apiInjector, "redis", &flappingService{failEvery: 15 * time.Second})
 
 	workerInjector := do.New()
-	registerService(workerInjector, "metrics-exporter", &alwaysFailing{reason: "exporter endpoint unreachable"})
+	registerService(
+		workerInjector,
+		"metrics-exporter",
+		&alwaysFailing{reason: "exporter endpoint unreachable"},
+	)
 
 	apiProbe := health.New(apiInjector,
 		health.WithVersion("1.2.3"),
