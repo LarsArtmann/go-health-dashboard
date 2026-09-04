@@ -114,7 +114,7 @@ if !errors.Is(err, err) {
 ### Process-Level
 
 9. ~~**Read the skill's references** — The skill has `references/samber-do-best-practices-report.md` and `references/anti-pattern-examples.md`. I loaded the SKILL.md but never read these. May have missed nuance.~~ **Won't implement — session-process note - the shipped integration passed subsequent review and gates.**
-10. **Test the example binary** — The example compiles but was never run to verify the dashboard actually renders and the graceful shutdown works end-to-end.
+10. ~~**Test the example binary** — The example compiles but was never run to verify the dashboard actually renders and the graceful shutdown works end-to-end.~~ routed to ROADMAP 2026-09-04 docs-health pass (example-binary e2e run)
 
 ---
 
@@ -127,73 +127,82 @@ if !errors.Is(err, err) {
 3. ~~Run `nix run .#lint` and fix all violations~~ done (golangci-lint 0 issues at HEAD; CI Lint job green 2026-09-03)
 4. ~~Run `nix fmt` to format all new/changed files~~ done (treefmt enforced by nix flake check — clean)
 5. ~~Run `nix flake check` to validate the flake~~ done (green (v0.3.x cycle and 2026-09-03))
-6. Update `doc.go` Quick Start with `Register` example
-7. Verify whether Dashboard appears in its own health table when registered (test it)
-8. If it does appear, decide: keep (feature) or filter (confusing)
+6. ~~Update `doc.go` Quick Start with `Register` example~~ done at `db8621f`
+7. ~~Verify whether Dashboard appears in its own health table when registered (test it)~~ routed to ROADMAP 2026-09-04 docs-health pass (self-monitoring)
+8. ~~If it does appear, decide: keep (feature) or filter (confusing)~~ routed to ROADMAP 2026-09-04 docs-health pass (self-monitoring decision)
 
 ### Medium Priority
 
 9. ~~Explore `ShutdownerWithContext` for graceful SSE drain~~ done (resolved as WithShutdownDrain option (3022fbf) — bounded drain inside Shutdown instead of a context-aware Shutdowner interface)
-10. Add benchmark: `BenchmarkHealthCheck`
-11. Add benchmark: `BenchmarkRegister`
-12. Consider `do.Package` wrapper for one-call injection
-13. Add integration test: full lifecycle via `Register` → `Start` → serve → `do.Shutdown`
-14. Add integration test: `do.HealthCheck[*Dashboard]` in a realistic container with other services
+10. ~~Add benchmark: `BenchmarkHealthCheck`~~ routed to ROADMAP 2026-09-04 docs-health pass (benchmarks)
+11. ~~Add benchmark: `BenchmarkRegister`~~ routed to ROADMAP 2026-09-04 docs-health pass (benchmarks)
+12. ~~Consider `do.Package` wrapper for one-call injection~~ routed to ROADMAP 2026-09-04 docs-health pass (DI surface)
+13. ~~Add integration test: full lifecycle via `Register` → `Start` → serve → `do.Shutdown`~~ done - lifecycle_test.go cascade coverage
+14. ~~Add integration test: `do.HealthCheck[*Dashboard]` in a realistic container with other services~~ done - lifecycle_test.go container-cascade coverage
 15. ~~Test the example binary end-to-end (start, curl `/health`, curl `/readyz`, send SIGTERM)~~ done (example v2 functionally smoke-tested over HTTP (401/200/metrics/probes) in the v0.3.x cycle)
-16. Document the shutdown ordering in the example (why probe before injector)
-17. Consider `WithInjector` option as alternative to `Register` (evaluate and dismiss or implement)
-18. Add `Provider` function (lazy variant using `do.Provide` instead of `do.ProvideValue`) — evaluate tradeoff
-19. Review whether `Register` should return `(*Dashboard, func())` for cleanup without injector
-20. Add godoc examples for `Register` and `HealthCheck`
+16. ~~Document the shutdown ordering in the example (why probe before injector)~~ routed to ROADMAP 2026-09-04 docs-health pass (shutdown-ordering docs/test)
+17. ~~Consider `WithInjector` option as alternative to `Register` (evaluate and dismiss or implement)~~ routed to ROADMAP 2026-09-04 docs-health pass (API ergonomics)
+18. ~~Add `Provider` function (lazy variant using `do.Provide` instead of `do.ProvideValue`) — evaluate tradeoff~~ routed to ROADMAP 2026-09-04 docs-health pass (API ergonomics)
+19. ~~Review whether `Register` should return `(*Dashboard, func())` for cleanup without injector~~ **Won't implement** - Register already hands lifecycle to the injector; a second cleanup path would duplicate ownership.
+20. ~~Add godoc examples for `Register` and `HealthCheck`~~ routed to ROADMAP 2026-09-04 docs-health pass (doc.go examples)
 
 ### Documentation
 
 21. ~~Update `FEATURES.md` with DI lifecycle integration as a feature~~ done (FEATURES row added 2026-09-03 (samber/do lifecycle under Configuration))
 22. ~~Update `CHANGELOG.md` with the new `Register`, `HealthCheck`, lifecycle interfaces~~ done (v0.3.0 CHANGELOG section documents Register, HealthCheck, and the lifecycle interfaces)
 23. ~~Add section to AGENTS.md about the `ShutdownReport` gotcha (always non-nil)~~ done (present in AGENTS.md samber/do dependency notes)
-24. Document that `HealthCheck` ignores context intentionally (fast atomic read)
-25. Add architecture decision record for "why `ProvideValue` not `Provide`"
+24. ~~Document that `HealthCheck` ignores context intentionally (fast atomic read)~~ routed to ROADMAP 2026-09-04 docs-health pass (docs)
+25. ~~Add architecture decision record for "why `ProvideValue` not `Provide`"~~ routed to ROADMAP 2026-09-04 docs-health pass (ProvideValue-vs-Provide ADR)
 
 ### Testing Improvements
 
-26. Add test: `HealthCheck` concurrent calls (100 goroutines)
-27. Add test: `Register` with nil injector panics with clear message
-28. Add test: `Register` with nil probe panics with clear message
-29. Add test: multiple `Register` calls on same injector (override behavior)
-30. Add test: `do.Shutdown` cascade order (Dashboard before or after other services?)
-31. Add test: `Register` + `Start` + `Shutdown` + `Start` again (restart after shutdown)
-32. Add test: `HealthCheck` during active SSE connections (returns nil)
-33. Add test: `SubscriberCount` after `Register` + `Start`
+26. ~~Add test: `HealthCheck` concurrent calls (100 goroutines)~~ routed to ROADMAP 2026-09-04 docs-health pass (robustness tests)
+27. ~~Add test: `Register` with nil injector panics with clear message~~ routed to ROADMAP 2026-09-04 docs-health pass (robustness tests)
+28. ~~Add test: `Register` with nil probe panics with clear message~~ routed to ROADMAP 2026-09-04 docs-health pass (robustness tests)
+29. ~~Add test: multiple `Register` calls on same injector (override behavior)~~ routed to ROADMAP 2026-09-04 docs-health pass (robustness tests)
+30. ~~Add test: `do.Shutdown` cascade order (Dashboard before or after other services?)~~ routed to ROADMAP 2026-09-04 docs-health pass (robustness tests)
+31. ~~Add test: `Register` + `Start` + `Shutdown` + `Start` again (restart after shutdown)~~ routed to ROADMAP 2026-09-04 docs-health pass (robustness tests)
+32. ~~Add test: `HealthCheck` during active SSE connections (returns nil)~~ routed to ROADMAP 2026-09-04 docs-health pass (robustness tests)
+33. ~~Add test: `SubscriberCount` after `Register` + `Start`~~ routed to ROADMAP 2026-09-04 docs-health pass (robustness tests)
 
 ### Code Quality
 
-34. Review `di.go` for naming — is `Register` the best name or should it be `RegisterDashboard`?
-35. Consider whether `di.go` should be named `container.go` or `injector.go`
-36. Add `//go:generate` instruction if needed
+34. ~~Review `di.go` for naming — is `Register` the best name or should it be `RegisterDashboard`?~~ **Won't implement** - `Register` is the documented API name (README, AGENTS.md, doc.go).
+35. ~~Consider whether `di.go` should be named `container.go` or `injector.go`~~ **Won't implement** - di.go is single-purpose; rename churn without value.
+36. ~~Add `//go:generate` instruction if needed~~ **Won't implement** - no generate directives needed.
 37. ~~Run `govulncheck` (`nix run .#vulncheck`) — never ran it~~ done (nix run .#vulncheck — no vulnerabilities 2026-09-03)
 38. ~~Run `go vet` (`nix run .#vet`) — never ran it separately~~ done (go vet clean at HEAD)
 39. ~~Check coverage: `nix run .#coverage` — measure lifecycle test coverage~~ done (coverage baseline 76.9% recorded 2026-09-03)
-40. Consider whether `HealthCheck` should also check probe health (not just pusher)
+40. ~~Consider whether `HealthCheck` should also check probe health (not just pusher)~~ routed to ROADMAP 2026-09-04 docs-health pass (HealthCheck-probe aggregation)
 
 ### Future Features
 
-41. `WithInjector` option for auto-registration during `New`
-42. `Dashboard.RegisterNamed(injector, name, opts...)` for multiple dashboard instances
-43. Health check aggregation: Dashboard.HealthCheck calls probe.HealthCheck
-44. `do.Healthcheck` integration: expose pusher metrics (connection count, broadcast count)
-45. SSE connection health as a named service in the injector
-46. Consider `samber-do-auditlog` integration for registration/shutdown observability
-47. Explore child scopes for per-tenant dashboard isolation
-48. Add `Dashboard.Explain()` method using `do.Explain` output format
-49. Consider provider function pattern: `func Provider(probe *health.Probe, opts ...Option) func(do.Injector) (*Dashboard, error)`
-50. Evaluate whether the Dashboard should implement `do.Healthchecker` (no-context variant) in addition to `HealthcheckerWithContext`
+41. ~~`WithInjector` option for auto-registration during `New`~~ routed to ROADMAP 2026-09-04 docs-health pass (DI surface)
+42. ~~`Dashboard.RegisterNamed(injector, name, opts...)` for multiple dashboard instances~~ routed to ROADMAP 2026-09-04 docs-health pass (DI surface - RegisterNamed multi-instance)
+43. ~~Health check aggregation: Dashboard.HealthCheck calls probe.HealthCheck~~ routed to ROADMAP 2026-09-04 docs-health pass (HealthCheck-probe aggregation)
+44. ~~`do.Healthcheck` integration: expose pusher metrics (connection count, broadcast count)~~ routed to ROADMAP 2026-09-04 docs-health pass (pusher-metrics exposure)
+45. ~~SSE connection health as a named service in the injector~~ routed to ROADMAP 2026-09-04 docs-health pass (DI surface - SSE health as a named service)
+46. ~~Consider `samber-do-auditlog` integration for registration/shutdown observability~~ routed to ROADMAP 2026-09-04 docs-health pass (auditlog observability)
+47. ~~Explore child scopes for per-tenant dashboard isolation~~ routed to ROADMAP 2026-09-04 docs-health pass (DI surface - child scopes)
+48. ~~Add `Dashboard.Explain()` method using `do.Explain` output format~~ routed to ROADMAP 2026-09-04 docs-health pass (DI surface - Explain output)
+49. ~~Consider provider function pattern: `func Provider(probe *health.Probe, opts ...Option) func(do.Injector) (*Dashboard, error)`~~ routed to ROADMAP 2026-09-04 docs-health pass (DI surface - provider-func pattern)
+50. ~~Evaluate whether the Dashboard should implement `do.Healthchecker` (no-context variant) in addition to `HealthcheckerWithContext`~~ routed to ROADMAP 2026-09-04 docs-health pass (DI surface - do.Healthchecker variant)
 
 ---
 
 ## g) QUESTIONS I CANNOT ANSWER MYSELF
 
-1. **Should the Dashboard appear in its own health table?** When registered via `do.ProvideValue`, go-health's Probe iterates the injector and may discover the Dashboard as a health-checkable service. This would make the dashboard monitor its own SSE pusher health — which is either a cool self-monitoring feature or a confusing recursive display. I cannot determine the intended UX without your input. (I can test this empirically, but the _design decision_ is yours.)
+1. **Should the Dashboard appear in its own health table?**
+**ROUTED 2026-09-04:** design decision parked on ROADMAP (self-monitoring decision, Pipeline/Testing theme). No behavior change shipped.
 
-2. **Should `Shutdown()` expose graceful drain?** The broadcaster has both `Close()` (instant, current) and `Shutdown(ctx) error` (graceful drain). Switching to graceful drain would require either changing `Shutdown()` to `Shutdown(ctx) error` (breaking API change) or adding a new method. I cannot decide this without knowing your API stability constraints for v0.2.x vs v0.3.0.
+ When registered via `do.ProvideValue`, go-health's Probe iterates the injector and may discover the Dashboard as a health-checkable service. This would make the dashboard monitor its own SSE pusher health — which is either a cool self-monitoring feature or a confusing recursive display. I cannot determine the intended UX without your input. (I can test this empirically, but the _design decision_ is yours.)
 
-3. **Is `Register` the right abstraction, or should it be a `WithInjector` option?** I chose a standalone function to keep `New()` decoupled from DI. But some consumers might prefer `dashboard.New(probe, dashboard.WithInjector(injector))` as a single-call API. This is a taste question I can't resolve without knowing your preferred integration style.
+2. **Should `Shutdown()` expose graceful drain?**
+**ANSWERED:** shipped as the opt-in `WithShutdownDrain(d)` in v0.4.0 (`8f63d85`) — no breaking signature change; `Shutdown()` keeps its shape and drains only when configured.
+
+ The broadcaster has both `Close()` (instant, current) and `Shutdown(ctx) error` (graceful drain). Switching to graceful drain would require either changing `Shutdown()` to `Shutdown(ctx) error` (breaking API change) or adding a new method. I cannot decide this without knowing your API stability constraints for v0.2.x vs v0.3.0.
+
+3. **Is `Register` the right abstraction, or should it be a `WithInjector` option?**
+**ANSWERED:** `Register` stayed (documented in README/doc.go/AGENTS.md); the `WithInjector` alternative is routed to ROADMAP (DI-surface ideas).
+
+ I chose a standalone function to keep `New()` decoupled from DI. But some consumers might prefer `dashboard.New(probe, dashboard.WithInjector(injector))` as a single-call API. This is a taste question I can't resolve without knowing your preferred integration style.

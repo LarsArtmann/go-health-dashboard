@@ -127,6 +127,15 @@ Raw ideas:
   webhook delivery-ordering test under concurrent transitions
 - Benchmarks: `renderPatch` retry stamping; `BenchmarkHealthCheck`
 - Mutation-test spot check on change-detection (fingerprint) logic
+- DI-surface ideas (from the 04-41 NEXT-50, still open): example-binary e2e
+  run, `BenchmarkRegister`, `do.Package` wrapper, `WithInjector` evaluation,
+  lazy `Provider` variant, the self-monitoring decision (should a registered
+  Dashboard appear in its own health table?), robustness tests (nil
+  injector/probe panics, double-`Register` override, restart-after-shutdown,
+  cascade order, `HealthCheck` under live SSE, `SubscriberCount` after
+  `Register`), HealthCheck↔probe aggregation, pusher-metrics exposure,
+  `RegisterNamed` multi-instance, child scopes, `Explain()` output, the
+  `do.Healthchecker` no-context variant, and the ProvideValue-vs-Provide ADR
 - Decide the Dashboard self-monitoring question (a registered Dashboard may
   appear in its own health table): feature or filter?
 - Shutdown-ordering test for the example (pusher alive vs broadcaster closed)

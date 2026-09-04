@@ -222,79 +222,79 @@ Both are flaky-test bait under CI load.
 
 ### Architecture & API Design
 
-1. **`HealthCheck` is a binary liveness check, not a health check** — It
-   only verifies the pusher pointer is non-nil. It doesn't check if the
-   pusher goroutine is actually alive, if the broadcaster is healthy, or if
-   the probe is returning fresh data. A pusher goroutine that's deadlocked
-   would pass this check. Consider: check last-broadcast timestamp, or
-   heartbeat the goroutine.
+1. ~~**`HealthCheck` is a binary liveness check, not a health check** — It~~ **Won't implement — the binary pass/fail shape is do.HealthcheckerWithContext's contract; richer granularity is not representable in the interface.**
+   ~~only verifies the pusher pointer is non-nil. It doesn't check if the~~
+   ~~pusher goroutine is actually alive, if the broadcaster is healthy, or if~~
+   ~~the probe is returning fresh data. A pusher goroutine that's deadlocked~~
+   ~~would pass this check. Consider: check last-broadcast timestamp, or~~
+   ~~heartbeat the goroutine.~~
 
-2. **`Register` hides `Start()` from the DI lifecycle** — `Register` calls
-   `New()` + `do.ProvideValue()`, but the consumer still must call
-   `dash.Start(ctx)` manually. A true DI integration would wire Start into
-   the container lifecycle (e.g., a startup hook). As-is, it's a
-   half-measure: Shutdown cascades but Start doesn't.
+2. ~~**`Register` hides `Start()` from the DI lifecycle** — `Register` calls~~ done (routed to ROADMAP Register auto-start idea 2026-09-04)
+   ~~`New()` + `do.ProvideValue()`, but the consumer still must call~~
+   ~~`dash.Start(ctx)` manually. A true DI integration would wire Start into~~
+   ~~the container lifecycle (e.g., a startup hook). As-is, it's a~~
+   ~~half-measure: Shutdown cascades but Start doesn't.~~
 
-3. **`ErrPusherNotActive` message says "not active" but the condition is
-   `nil`** — The pusher pointer is nil before `Start()` and after
-   `Shutdown()`. The error message doesn't distinguish these states. A
-   consumer debugging "why is HealthCheck failing?" can't tell if they
-   forgot to Start or if something Shut it down.
+3. ~~**`ErrPusherNotActive` message says "not active" but the condition is~~ done at `db8621f`
+   ~~`nil`** — The pusher pointer is nil before `Start()` and after~~
+   ~~`Shutdown()`. The error message doesn't distinguish these states. A~~
+   ~~consumer debugging "why is HealthCheck failing?" can't tell if they~~
+   ~~forgot to Start or if something Shut it down.~~
 
-4. **`di.go` is a 34-line file for one function** — This could be a method
-   or just documented in `dashboard.go`. A separate file for a single
-   convenience function adds navigation overhead without organizational
-   benefit. (Counterpoint: it cleanly separates the `do/v2` import, which is
-   optional for consumers who don't use DI.)
+4. ~~**`di.go` is a 34-line file for one function** — This could be a method~~ **Won't implement — single-purpose 34-line DI file is the right size; splitting adds indirection.**
+   ~~or just documented in `dashboard.go`. A separate file for a single~~
+   ~~convenience function adds navigation overhead without organizational~~
+   ~~benefit. (Counterpoint: it cleanly separates the `do/v2` import, which is~~
+   ~~optional for consumers who don't use DI.)~~
 
 ### Testing
 
-5. **No test for `WithMaxSSEConnections(0)` means unlimited** — Still open
-   from the prior session. Zero means unlimited but no test verifies this.
+5. ~~**No test for `WithMaxSSEConnections(0)` means unlimited** — Still open~~ done at `db8621f`
+   ~~from the prior session. Zero means unlimited but no test verifies this.~~
 
-6. **No test for SSE handler when probe hasn't started** — `sseHandler`
-   loads the pusher but `currentResponse()` reads `probe.CachedResponse()`
-   which returns a zero-value `health.Response` when the probe hasn't
-   started. Degraded state untested.
+6. ~~**No test for SSE handler when probe hasn't started** — `sseHandler`~~ done at `db8621f`
+   ~~loads the pusher but `currentResponse()` reads `probe.CachedResponse()`~~
+   ~~which returns a zero-value `health.Response` when the probe hasn't~~
+   ~~started. Degraded state untested.~~
 
-7. **No integration test for the full DI lifecycle** — The lifecycle tests
-   verify interface satisfaction and method behavior, but none wire a full
-   `Register → Start → HealthCheck → Shutdown` flow through an actual HTTP
-   server. The example does this but isn't tested.
+7. ~~**No integration test for the full DI lifecycle** — The lifecycle tests~~ done (done - lifecycle_test.go covers Register-Start-Serve-Shutdown plus container cascades)
+   ~~verify interface satisfaction and method behavior, but none wire a full~~
+   ~~`Register → Start → HealthCheck → Shutdown` flow through an actual HTTP~~
+   ~~server. The example does this but isn't tested.~~
 
-8. **`TestHealthCheckWithContext_InterfaceSatisfied` is redundant** — It
-   duplicates the compile-time assertions already in `dashboard.go:176-178`.
-   If the interface isn't satisfied, the package won't compile. The test
-   adds no value.
+8. ~~**`TestHealthCheckWithContext_InterfaceSatisfied` is redundant** — It~~ done (done 2026-09-04 - duplicate test deleted; dashboard.go:70-71 compile-time assertions are the stronger check)
+   ~~duplicates the compile-time assertions already in `dashboard.go:176-178`.~~
+   ~~If the interface isn't satisfied, the package won't compile. The test~~
+   ~~adds no value.~~
 
 ### Documentation
 
-9. **`di.go` has no mention in doc.go** — The package doc's Quick Start
-   shows `dashboard.New()` but not `dashboard.Register()`. Consumers using
-   samber/do (required by go-health) would benefit from seeing the DI path.
+9. ~~**`di.go` has no mention in doc.go** — The package doc's Quick Start~~ done at `db8621f`
+   ~~shows `dashboard.New()` but not `dashboard.Register()`. Consumers using~~
+   ~~samber/do (required by go-health) would benefit from seeing the DI path.~~
 
-10. **`ErrPusherNotActive` is not in doc.go** — It's a public sentinel error
-    that consumers should use with `errors.Is`. Package doc should mention
-    it.
+10. ~~**`ErrPusherNotActive` is not in doc.go** — It's a public sentinel error~~ done at `db8621f`
+    ~~that consumers should use with `errors.Is`. Package doc should mention~~
+    ~~it.~~
 
-11. **CHANGELOG/FEATURES don't mention the DI integration** — The biggest
-    feature addition this commit, and it's invisible in the changelog.
+11. ~~**CHANGELOG/FEATURES don't mention the DI integration** — The biggest~~ done (done - FEATURES samber/do row; CHANGELOG 0.3.0 section)
+    ~~feature addition this commit, and it's invisible in the changelog.~~
 
-12. **README.md should show `Register()` as the recommended path** — Since
-    go-health already requires samber/do, the dashboard's `Register()` is the
-    natural entry point. README still shows `New()` only.
+12. ~~**README.md should show `Register()` as the recommended path** — Since~~ done (done - README Register section)
+    ~~go-health already requires samber/do, the dashboard's `Register()` is the~~
+    ~~natural entry point. README still shows `New()` only.~~
 
 ### Process
 
-13. **I should have re-run the metrics after the daemon committed** — I
-    verified test count (78) and coverage (79.7%) before the daemon's commit.
-    After the commit, the actuals are 89 and 80.0%. I wrote stale numbers to
-    CHANGELOG and FEATURES because I didn't re-check.
+13. ~~**I should have re-run the metrics after the daemon committed** — I~~ **Won't implement — process note - superseded by the build-before-walkaway rule in AGENTS.md.**
+    ~~verified test count (78) and coverage (79.7%) before the daemon's commit.~~
+    ~~After the commit, the actuals are 89 and 80.0%. I wrote stale numbers to~~
+    ~~CHANGELOG and FEATURES because I didn't re-check.~~
 
-14. **I should have reviewed every file in the daemon's commit** — The
-    `dc8b8fd` commit touched 34 files. I reviewed the diff for 2 (the ones
-    with lint issues). I should have reviewed all of them, especially the
-    new source files (`di.go`, `lifecycle_test.go`).
+14. ~~**I should have reviewed every file in the daemon's commit** — The~~ **Won't implement — process note - mitigated by the 2026-09-04 bisect audit + the build rule.**
+    ~~`dc8b8fd` commit touched 34 files. I reviewed the diff for 2 (the ones~~
+    ~~with lint issues). I should have reviewed all of them, especially the~~
+    ~~new source files (`di.go`, `lifecycle_test.go`).~~
 
 ---
 
@@ -318,12 +318,12 @@ Both are flaky-test bait under CI load.
 
 ### High — fix remaining timing issues
 
-11. **Fix `sse_integration_test.go:560`** — SubscriberCount test
-    `time.Sleep(100ms)` → event-driven wait
-12. **Fix `sse_integration_test.go:285`** — PushOnChange test
-    `time.Sleep(100ms)` → event-driven wait
-13. **Fix `lifecycle_test.go` unchecked `injector.Shutdown()` calls** —
-    wrap with `_ =` or check the `*do.ShutdownReport`
+11. ~~**Fix `sse_integration_test.go:560`** — SubscriberCount test~~ done at `db8621f`
+    ~~`time.Sleep(100ms)` → event-driven wait~~
+12. ~~**Fix `sse_integration_test.go:285`** — PushOnChange test~~ done at `db8621f`
+    ~~`time.Sleep(100ms)` → event-driven wait~~
+13. ~~**Fix `lifecycle_test.go` unchecked `injector.Shutdown()` calls** —~~ done (done - lifecycle_test.go:119-121 asserts the Shutdown report)
+    ~~wrap with `_ =` or check the `*do.ShutdownReport`~~
 
 ### Medium — improve DI integration quality
 
@@ -331,31 +331,31 @@ Both are flaky-test bait under CI load.
     ~~nil-ness~~
 15. ~~**Consider `Register` auto-start** — wire `Start()` into container~~ done (routed to ROADMAP raw ideas 2026-09-03)
     ~~lifecycle instead of leaving it manual~~
-16. **Distinguish "not started" from "shut down"** in `ErrPusherNotActive`
-    or add `ErrPusherAlreadyShutdown`
-17. **Add `TestWithMaxSSEConnections_ZeroAllowsUnlimited`** — verify zero =
-    unlimited
-18. **Add test for SSE handler when probe hasn't started** — degraded state
-19. **Remove `TestHealthCheckWithContext_InterfaceSatisfied`** — redundant
-    with compile-time assertions
-20. **Add full DI lifecycle integration test** — Register → Start →
-    HealthCheck → HTTP request → Shutdown
-21. **Add `Register()` to doc.go Quick Start** — show the DI path
-22. **Add `ErrPusherNotActive` to doc.go** — document the sentinel error
+16. ~~**Distinguish "not started" from "shut down"** in `ErrPusherNotActive`~~ done at `db8621f`
+    ~~or add `ErrPusherAlreadyShutdown`~~
+17. ~~**Add `TestWithMaxSSEConnections_ZeroAllowsUnlimited`** — verify zero =~~ done at `db8621f`
+    ~~unlimited~~
+18. ~~**Add test for SSE handler when probe hasn't started** — degraded state~~ done at `db8621f`
+19. ~~**Remove `TestHealthCheckWithContext_InterfaceSatisfied`** — redundant~~ done (done 2026-09-04 - test deleted; dashboard.go:70-71 compile-time assertions supersede it)
+    ~~with compile-time assertions~~
+20. ~~**Add full DI lifecycle integration test** — Register → Start →~~ done (done - lifecycle_test.go container-cascade coverage)
+    ~~HealthCheck → HTTP request → Shutdown~~
+21. ~~**Add `Register()` to doc.go Quick Start** — show the DI path~~ done at `db8621f`
+22. ~~**Add `ErrPusherNotActive` to doc.go** — document the sentinel error~~ done at `db8621f`
 23. ~~**Update README.md** — show `Register()` as recommended for samber/do~~ done (README Register note added 2026-09-03)
     ~~users~~
 
 ### Lower — polish and hardening
 
 24. ~~**Bump `Version` to "0.3.0"** — breaking change + major features~~ done at `d453c52`
-25. **Add `WithRetryInterval` sub-millisecond validation** — 500µs silently
-    becomes 0ms
-26. **Consider `WithBasePath` resolution in `New()`** — store BasePath as a
-    field, resolve after all options run (eliminates ordering footgun)
-27. **Add `WithBasePath("/")` and `WithBasePath("")` edge case tests**
-28. **Add benchmark for `renderPatch` with retry field** — per-event stamping
-    overhead
-29. **Add `style=` assertion to SSE nonce test** — not just `<script>`
+25. ~~**Add `WithRetryInterval` sub-millisecond validation** — 500µs silently~~ **Won't implement — 0<d<1ms collapses to 0 after the >0 guard (options.go, pusher.go:162); retry omitted is the browser default.**
+    ~~becomes 0ms~~
+26. ~~**Consider `WithBasePath` resolution in `New()`** — store BasePath as a~~ done (routed to ROADMAP API ergonomics 2026-09-04 (BasePath resolved post-options))
+    ~~field, resolve after all options run (eliminates ordering footgun)~~
+27. ~~**Add `WithBasePath("/")` and `WithBasePath("")` edge case tests**~~ done (routed to ROADMAP WithBasePath edge cases 2026-09-04)
+28. ~~**Add benchmark for `renderPatch` with retry field** — per-event stamping~~ done (routed to ROADMAP benchmarks 2026-09-04)
+    ~~overhead~~
+29. ~~**Add `style=` assertion to SSE nonce test** — not just `<script>`~~ done at `db8621f`
 30. ~~**Update ROADMAP.md** — mark DI integration as done if listed~~ done (DI shipped (v0.3.0); ROADMAP tracks the Register auto-start follow-up)
 31. ~~**Review `example/main.go` signal handling** — daemon rewrote it~~ done at `50f2bcc`
     ~~significantly, verify correctness~~
@@ -363,7 +363,7 @@ Both are flaky-test bait under CI load.
     ~~code (`di.go`) may change the module graph~~
 33. ~~**Run `go mod tidy`** — ensure dependencies are clean after `di.go`~~ done (go mod tidy clean (CI green))
 34. ~~**Verify `nix run .#vulncheck`** — not run this session~~ done (nix run .#vulncheck — no vulnerabilities 2026-09-03)
-35. **Add CONTRIBUTING.md mention of `Register()` and DI pattern**
+35. ~~**Add CONTRIBUTING.md mention of `Register()` and DI pattern**~~ done at `db8621f`
 
 ### Pre-existing (from prior sessions, still open)
 
@@ -379,7 +379,7 @@ Both are flaky-test bait under CI load.
 45. ~~Health history / sparkline (Low, TODO_LIST.md)~~ done at `d453c52`
 46. ~~UI flexibility options (Low, TODO_LIST.md)~~ done at `d453c52`
 47. ~~Headless-browser CSP test (Low, TODO_LIST.md)~~ done at `d453c52`
-48. Build-tag gating for example/lifecycle (BLOCKED, TODO_LIST.md)
+48. ~~Build-tag gating for example/lifecycle (BLOCKED, TODO_LIST.md)~~ done (still BLOCKED - tracked in TODO_LIST.md (needs user decision))
 
 ### User decisions needed (see section g)
 
