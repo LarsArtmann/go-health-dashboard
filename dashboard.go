@@ -57,6 +57,9 @@ type Dashboard struct {
 	latency *latencyHistogram
 	notify  *webhookNotifier
 
+	// webhookStats accumulates delivery outcomes for the metrics endpoint.
+	webhookStats *webhookDeliveryStats
+
 	// started records whether Start has ever been called, so HealthCheck
 	// can distinguish "never started" from "shut down" (both have a nil
 	// pusher pointer).
@@ -103,10 +106,15 @@ func New(probe Prober, opts ...Option) *Dashboard {
 	cfg.PushInterval = resolvePushInterval(cfg.PushInterval, probe)
 
 	d := &Dashboard{
-		probe:   probe,
-		cfg:     cfg,
-		latency: newLatencyHistogram(),
-		notify:  newWebhookNotifier(cfg),
+		probe:        probe,
+		cfg:          cfg,
+		latency:      newLatencyHistogram(),
+		webhookStats: &webhookDeliveryStats{duration: *newLatencyHistogram()},
+		notify:       newWebhookNotifier(cfg),
+	}
+
+	if d.notify != nil {
+		d.notify.stats = d.webhookStats
 	}
 
 	if cfg.RateLimitRequests > 0 && cfg.RateLimitWindow > 0 {

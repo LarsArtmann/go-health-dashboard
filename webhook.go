@@ -39,7 +39,31 @@ const webhookMaxInFlight = 8
 //
 // Each fire runs in its own goroutine bounded by webhookTimeout, so a slow
 // receiver can never block or wedge the SSE push loop.
+// webhookDeliveryStats accumulates delivery outcomes for the metrics
+// endpoint (WithMetrics). All methods are concurrency-safe; a nil receiver
+// records nothing.
+type webhookDeliveryStats struct {
+	ok       atomic.Uint64
+	err      atomic.Uint64
+	duration latencyHistogram
+}
+
+func (s *webhookDeliveryStats) record(ok bool, seconds float64) {
+	if s == nil {
+		return
+	}
+
+	if ok {
+		s.ok.Add(1)
+	} else {
+		s.err.Add(1)
+	}
+
+	s.duration.observe(seconds)
+}
+
 type webhookNotifier struct {
+	stats *webhookDeliveryStats
 	url     string
 	headers map[string]string
 	public  bool
@@ -146,14 +170,20 @@ func (n *webhookNotifier) post(resp health.Response) {
 		req.Header.Set(k, v)
 	}
 
+	start := time.Now()
+
 	httpResp, err := n.client.Do(req)
 	if err != nil {
+		n.stats.record(false, time.Since(start).Seconds())
+
 		return
 	}
 	defer httpResp.Body.Close()
 
 	// Drain so the connection returns to the pool.
 	_, _ = io.Copy(io.Discard, httpResp.Body)
+
+	n.stats.record(httpResp.StatusCode >= 200 && httpResp.StatusCode < 300, time.Since(start).Seconds())
 }
 
 // buildPayload snapshots resp for the wire. Public mode masks check names to
