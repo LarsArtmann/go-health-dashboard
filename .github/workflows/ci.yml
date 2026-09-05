@@ -62,7 +62,9 @@ jobs:
         run: templ generate ./...
 
       - name: Test with race detector and coverage
-        run: go test ./... -count=1 -race -timeout=60s -covermode=atomic -coverprofile=coverage.out
+        # Coverage is scoped to the library package: the example carries
+        # no tests and its demo-only statements would dilute the floor.
+        run: go test . -count=1 -race -timeout=60s -covermode=atomic -coverprofile=coverage.out
 
       - name: FEATURES test-count drift guard
         run: |
