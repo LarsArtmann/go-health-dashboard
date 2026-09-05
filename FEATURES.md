@@ -59,6 +59,8 @@
 | ---------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `Prober` interface (consumer-side) | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go:28` — `New`/`Register` accept any `Prober`; `*health.Probe` and go-health's `*aggregate.Aggregate` both satisfy it; `integration_test.go` stub-prober test |
 | Multi-probe aggregate rendering    | 🟢 `FULLY_FUNCTIONAL` | via go-health `aggregate` — namespaced `source/check` checks, worst-of status rendered natively; end-to-end test in `integration_test.go`                                |
+| Example aggregate demo    | 🟢 `FULLY_FUNCTIONAL` | `DEMO_AGGREGATE=1` — two-probe go-health aggregate with namespaced `source/check` rows (verified: `api/postgres`, `worker/metrics-exporter`)        |
+| Example webhook demo      | 🟢 `FULLY_FUNCTIONAL` | `DEMO_WEBHOOK=<url>` — transitions POST to a validated http/https receiver (env-validated, never logged)                                             |
 | Integration cookbook               | 🟢 `FULLY_FUNCTIONAL` | `docs/integrations.md` — validated Prometheus/SigNoz PromQL (incl. `target=0` and `{{$value}}` traps), Gatus, Uptime Kuma, webhook payload contract                      |
 
 ## CSP & Security

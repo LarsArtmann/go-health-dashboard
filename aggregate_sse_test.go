@@ -10,10 +10,9 @@ import (
 	"time"
 
 	health "github.com/larsartmann/go-health"
+	dashboard "github.com/larsartmann/go-health-dashboard"
 	"github.com/larsartmann/go-health/aggregate"
 	"github.com/samber/do/v2"
-
-	dashboard "github.com/larsartmann/go-health-dashboard"
 )
 
 // TestAggregateSSE_ServesInitialStateStream is a diagnostic for the
