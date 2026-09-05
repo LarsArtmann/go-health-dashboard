@@ -215,13 +215,13 @@ func buildOptions() []dashboard.Option {
 	}
 
 	if raw := os.Getenv("DEMO_WEBHOOK"); raw != "" {
-		u, err := url.Parse(raw)
-		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-			log.Fatalf("DEMO_WEBHOOK: invalid webhook URL (want absolute http/https URL)")
+		webhookURL, safeLog, err := safeWebhookURL(raw)
+		if err != nil {
+			log.Fatalf("DEMO_WEBHOOK: %v", err)
 		}
 
-		opts = append(opts, dashboard.WithWebhook(u.String()))
-		log.Printf("webhook: transitions POST to %s (DEMO_WEBHOOK set)", u.Redacted())
+		opts = append(opts, dashboard.WithWebhook(webhookURL))
+		log.Printf("webhook: transitions POST to %s (DEMO_WEBHOOK set)", safeLog)
 	}
 
 	if os.Getenv("DEMO_PUBLIC") != "" {
@@ -240,6 +240,25 @@ func buildOptions() []dashboard.Option {
 	}
 
 	return opts
+}
+
+// safeWebhookURL validates an env-provided webhook endpoint: it must be an
+// absolute http/https URL. It returns the canonical URL for WithWebhook and
+// a credentials-free form safe to log.
+func safeWebhookURL(spec string) (string, string, error) {
+	parsed, err := url.Parse(spec)
+	if err != nil {
+		return "", "", fmt.Errorf("invalid webhook URL: %w", err)
+	}
+
+	if (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+		return "", "", errors.New("webhook URL must be an absolute http/https URL")
+	}
+
+	canonical := parsed.String()
+	safeLog := parsed.Scheme + "://" + parsed.Host + parsed.Path
+
+	return canonical, safeLog, nil
 }
 
 // safeBasePath validates an env-provided base path: it must be a plain URL
