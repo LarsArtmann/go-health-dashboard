@@ -143,7 +143,11 @@ func buildAggregateProbe(ctx context.Context) probeBundle {
 	registerService(apiInjector, "redis", &flappingService{failEvery: 15 * time.Second})
 
 	workerInjector := do.New()
-	registerService(workerInjector, "metrics-exporter", &alwaysFailing{reason: "exporter endpoint unreachable"})
+	registerService(
+		workerInjector,
+		"metrics-exporter",
+		&alwaysFailing{reason: "exporter endpoint unreachable"},
+	)
 
 	apiProbe := health.New(apiInjector,
 		health.WithVersion("1.2.3"),
@@ -215,13 +219,15 @@ func buildOptions() []dashboard.Option {
 	}
 
 	if raw := os.Getenv("DEMO_WEBHOOK"); raw != "" {
-		webhookURL, safeLog, err := safeWebhookURL(raw)
+		webhookURL, err := safeWebhookURL(raw)
 		if err != nil {
 			log.Fatalf("DEMO_WEBHOOK: %v", err)
 		}
 
 		opts = append(opts, dashboard.WithWebhook(webhookURL))
-		log.Printf("webhook: transitions POST to %s (DEMO_WEBHOOK set)", safeLog)
+		// The URL itself is never logged — it may embed a bearer secret,
+		// mirroring the library's zero-logging delivery policy.
+		log.Printf("webhook: transitions POST to the configured receiver (DEMO_WEBHOOK set)")
 	}
 
 	if os.Getenv("DEMO_PUBLIC") != "" {
@@ -243,22 +249,20 @@ func buildOptions() []dashboard.Option {
 }
 
 // safeWebhookURL validates an env-provided webhook endpoint: it must be an
-// absolute http/https URL. It returns the canonical URL for WithWebhook and
-// a credentials-free form safe to log.
-func safeWebhookURL(spec string) (string, string, error) {
+// absolute http/https URL. It returns the canonical URL for WithWebhook.
+func safeWebhookURL(spec string) (string, error) {
 	parsed, err := url.Parse(spec)
 	if err != nil {
-		return "", "", fmt.Errorf("invalid webhook URL: %w", err)
+		return "", fmt.Errorf("invalid webhook URL: %w", err)
 	}
 
 	if (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
-		return "", "", errors.New("webhook URL must be an absolute http/https URL")
+		return "", errors.New("webhook URL must be an absolute http/https URL")
 	}
 
 	canonical := parsed.String()
-	safeLog := parsed.Scheme + "://" + parsed.Host + parsed.Path
 
-	return canonical, safeLog, nil
+	return canonical, nil
 }
 
 // safeBasePath validates an env-provided base path: it must be a plain URL
