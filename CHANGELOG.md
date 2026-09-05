@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.1] — 2026-09-05
+
+### Fixed
+
+- Follow templ-components v1.13.1+: `DatastarVersion1_0_2` was renamed to
+  `DatastarVersion1_0_3` (the name-matches-value truth pin) and the old name
+  now exists only as a deprecated literal compat alias. The dashboard pins
+  `DatastarVersion1_0_3` explicitly and requires
+  `templ-components/datastar v1.13.2`.
 ## [Unreleased]
 
 Route ergonomics and observability groundwork: the WithBasePath
