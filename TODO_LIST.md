@@ -17,12 +17,12 @@
 
 ### Remaining from the v0.6.0 cycle plan
 
-| Task | Status | Impact | Effort | Notes |
-| ---- | ------ | ------ | ------ | ----- |
-| F5: per-check latency series + NDJSON export | 🔴 `TODO` | Low | 60min | `docs/planning/2026-09-04_22-27_v060-release-and-hardening-cycle.md` — two features: per-check latency histogram labels + `?format=ndjson` on the export endpoint |
-| F8: 20-source aggregate load test | 🔴 `TODO` | Low | 60min | Depends on the F7 harness; record numbers in `docs/research/` |
-| F11: `WithGrouping(BySource)` per-service cards | 🔴 `TODO` | Med | 90min | View-model grouping for aggregate pages |
-| U3: lift templ-components pin after #7 ships upstream | 🟡 `BLOCKED` | High | 45min | PR templ-components#8 open (LiveRegion nonce guard); blocked on upstream merge + release, then browser-validate + drop pin-guard |
+| Task                                                  | Status       | Impact | Effort | Notes                                                                                                                                                             |
+| ----------------------------------------------------- | ------------ | ------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F5: per-check latency series + NDJSON export          | 🔴 `TODO`    | Low    | 60min  | `docs/planning/2026-09-04_22-27_v060-release-and-hardening-cycle.md` — two features: per-check latency histogram labels + `?format=ndjson` on the export endpoint |
+| F8: 20-source aggregate load test                     | 🔴 `TODO`    | Low    | 60min  | Depends on the F7 harness; record numbers in `docs/research/`                                                                                                     |
+| F11: `WithGrouping(BySource)` per-service cards       | 🔴 `TODO`    | Med    | 90min  | View-model grouping for aggregate pages                                                                                                                           |
+| U3: lift templ-components pin after #7 ships upstream | 🟡 `BLOCKED` | High   | 45min  | PR templ-components#8 open (LiveRegion nonce guard); blocked on upstream merge + release, then browser-validate + drop pin-guard                                  |
 
 ### Release
 
