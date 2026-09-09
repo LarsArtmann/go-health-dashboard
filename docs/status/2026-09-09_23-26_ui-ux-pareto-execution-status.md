@@ -1,12 +1,12 @@
 # Status Report — UI/UX Pareto Plan Execution (Phases A–D) and Release Prep
 
-| | |
-| --- | --- |
-| **Date** | 2026-09-09 23:26 (CEST) |
-| **Session scope** | Execution of `docs/planning/2026-09-09_19-21_dashboard-ui-ux-pareto.md`: all four phases (A–D, 39 micro-tasks), preceded by an unplanned UI-pin-ceremony intervention |
-| **Repo state** | `master` @ `db2775b`, pushed. 24 commits since the plan landed (4 authored feat/fix commits, ~20 auto-daemon snapshots) |
+|                         |                                                                                                                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Date**                | 2026-09-09 23:26 (CEST)                                                                                                                                               |
+| **Session scope**       | Execution of `docs/planning/2026-09-09_19-21_dashboard-ui-ux-pareto.md`: all four phases (A–D, 39 micro-tasks), preceded by an unplanned UI-pin-ceremony intervention |
+| **Repo state**          | `master` @ `db2775b`, pushed. 24 commits since the plan landed (4 authored feat/fix commits, ~20 auto-daemon snapshots)                                               |
 | **Gates at write time** | Unit suite ✅ · race ✅ · lint 0 ✅ · vet ✅ · vulncheck ✅ · `nix flake check` ✅ · UI pins ✅ · browser suite ✅ locally. **CI on master: partially red** — see (d) |
-| **Version** | `0.7.0` const bumped, **not tagged** → version-guard job red (pending decision) |
+| **Version**             | `0.7.0` const bumped, **not tagged** → version-guard job red (pending decision)                                                                                       |
 
 ---
 
@@ -26,12 +26,12 @@
 ## b) PARTIALLY DONE
 
 1. **D6 "test consolidation; coverage floor holds".** New tests were added and organized, but no consolidation pass ran and **coverage was never measured this session** (`nix run .#coverage` not executed). Remaining: run coverage, compare against the pre-session floor, dedupe overlapping assertions. Effort: S.
-2. **T9 "mobile table stacking".** I proved overflow *containment* (no page-level horizontal scroll at 375px) but did not implement actual row stacking/visual adaptation — the plan's "name wraps, columns stack" is only satisfied by the existing `break-all`/`overflow-x-auto` behavior. Visual design decision needed first. Effort: M.
+2. **T9 "mobile table stacking".** I proved overflow _containment_ (no page-level horizontal scroll at 375px) but did not implement actual row stacking/visual adaptation — the plan's "name wraps, columns stack" is only satisfied by the existing `break-all`/`overflow-x-auto` behavior. Visual design decision needed first. Effort: M.
 3. **Copy affordance for raw names (B6).** Upstream CopyButton was verified and rejected (CSP/nonce reasoning in the Phase B commit); the raw key is recoverable via title attr + visible mono line + select-text. What remains: a product decision on whether a patch-safe copy mechanism is wanted. Effort: M if wanted.
 4. **Axe on filtered state (part of C5).** The filter browser test asserts zero browser errors and correct narrowing, but axe was not re-run on the filtered DOM (plan C5 explicitly said "axe re-run on filtered state"). Effort: S.
 5. **PersistCollapse end-to-end verification (D4).** Markup and script presence are tested, and the script's patch re-apply logic is implemented, but no browser test toggles → patch → asserts state restoration. Effort: S.
 6. **Degraded screenshots (D8).** Fresh healthy light+dark screenshots captured; the plan's "healthy+degraded fixtures" — degraded is missing (needs a failing/warning fixture server in the screenshot harness). Effort: S.
-7. **Pin-guard removal condition (ceremony decision).** The original header said "delete this guard once #7 ships + browser suite validates"; both happened, but I *rewrote* the guard to the new pins instead of deleting it, arguing four historical sweeps justify keeping a guard. Deviation from the documented condition — defensible, but not signed off. Effort: decision only.
+7. **Pin-guard removal condition (ceremony decision).** The original header said "delete this guard once #7 ships + browser suite validates"; both happened, but I _rewrote_ the guard to the new pins instead of deleting it, arguing four historical sweeps justify keeping a guard. Deviation from the documented condition — defensible, but not signed off. Effort: decision only.
 8. **[Unreleased] CHANGELOG section (route ergonomics).** Still unreleased and now sandwiched between 0.7.0 and 0.6.0; needs an explicit ship-or-fold decision as part of tagging. Effort: S (decision + edit).
 
 ## c) NOT STARTED
@@ -58,7 +58,7 @@
    - Renamed `PublicMode` → `publicMode` in options.go via a multiedit slip (would have broken the public-mode build); caught by reviewing the diff, reverted immediately.
    - Injected a stray `_ = resp` no-op into `pusher.go` `broadcast()` while intending to edit `renderPatch`.
    - Wrapped the Version StatCard in the latency tooltip copy during the D3 edit.
-   Severity: none shipped, but each burned a verification cycle and all three were pure carelessness during multiedit batching.
+     Severity: none shipped, but each burned a verification cycle and all three were pure carelessness during multiedit batching.
 7. **Repeated `rg -rn` misuse.** The `-r` flag is REPLACE; I mangled search output at least three times this session (including once copying the exact gotcha documented in AGENTS.md). Cost: repeated re-verifications. This is a personal tooling habit that needs a hard override (alias `rg` without `-r` or stop stacking flags).
 8. **A test built on a false model of my own feature.** `TestGroupCountBadges_RenderInCardTitles` asserted a badge for the healthy group — which renders as a collapsible summary, not a card, so no badge exists. Failed once, then rebuilt the fixture around a 1-row warning card. Root cause: wrote the assertion from the plan text instead of the actual render structure.
 9. **Placeholder-quality first draft committed to disk.** My initial `collapse_test.go` write contained a broken half-implemented helper (`setupDashboardWithHealthyServices` returning nil, an unreachable assertion). Rewrote immediately, but if the session had been interrupted there, a non-compiling artifact would have landed via the daemon. Root cause: drafted in the write tool instead of thinking first.
@@ -71,7 +71,7 @@
 3. **Spike-then-code for runtime DSLs.** The Datastar attribute-syntax failure cost a full browser-test cycle. Improvement: for anything the SDK interprets (`data-*` expressions), grep the pinned bundle BEFORE writing markup — codify as a checklist line in the UI-pins ceremony.
 4. **Multiedit discipline.** Three accidental edits came from batching large old/new strings. Improvement: for application code, prefer single-purpose edits and re-read the diff (`git diff <file>`) immediately after each multiedit before moving on.
 5. **Daemon-race resilience.** One verified fix vanished between edit and test because a daemon snapshot landed in between. Improvement: after any edit, `rg`-verify the marker line exists before launching the test; never trust "edit succeeded" across a daemon commit boundary.
-6. **CI drift guards need session-closing runs.** I learned about the FEATURES drift guard from CI *after* pushing. Improvement: before pushing any session that adds tests or docs, run the exact guard formulas locally (`grep -oE` over FEATURES, version-vs-tag check) — they are cheap and deterministic.
+6. **CI drift guards need session-closing runs.** I learned about the FEATURES drift guard from CI _after_ pushing. Improvement: before pushing any session that adds tests or docs, run the exact guard formulas locally (`grep -oE` over FEATURES, version-vs-tag check) — they are cheap and deterministic.
 7. **Upstream component vetting checklist.** Two upstream components were rejected mid-phase for CSP-incompatible script emission (CopyButton, Tooltip). Improvement: document a "script-emitting component" vetting note in AGENTS.md dependency section (per-button scripts, unconditional nonce attributes) so the next consumer doesn't repeat the analysis.
 8. **Mobile "verification" vs "design intent".** I tested containment, the plan wanted stacking. Improvement: when a plan task says "verify + fix", split it — the fix half needs a visual/design decision that shouldn't be improvised at 375px in a headless browser.
 9. **Lint after each phase, not at phase close.** gci/golines/gosmopolitan findings surfaced repeatedly at gate time. Improvement: `nix fmt` + `nix run .#lint` after every micro-task batch (the plan already said this; I batched too aggressively).
@@ -79,58 +79,58 @@
 
 ## f) 50 things to get done next (ranked by impact; HARVEST input for TODO_LIST/ROADMAP)
 
-| # | Task | Impact | Effort | Category |
-|---|------|--------|--------|----------|
-| 1 | Tag `v0.7.0` (annotated) and push `--follow-tags` to green the version-guard job | Critical | S | Release |
-| 2 | Decide ship-or-fold for the `[Unreleased]` route-ergonomics CHANGELOG section during the tag | High | S | Documentation |
-| 3 | Bump CV's `go-health-dashboard` pin to v0.7.0 and deploy to cv.home.lan | Critical | M | Feature |
-| 4 | Visually verify the new UI on the live 60-row cv.home.lan page (collapse, names, filter, pill) | High | S | Quality |
-| 5 | Add PersistCollapse browser interaction test (toggle → SSE patch → state re-applied) | High | S | Quality |
-| 6 | Run `nix run .#coverage`, compare to pre-session floor, record the baseline in the plan/docs | High | S | Quality |
-| 7 | Update `/health/introspect` to expose `HealthyGroupCollapseThreshold` + `PersistCollapse` | High | S | Bug |
-| 8 | Re-run axe on the filtered DOM state (plan C5 leftover) | High | S | Quality |
-| 9 | Degraded screenshot fixture (failing/warning services) for docs | Medium | S | Documentation |
-| 10 | File the upstream go-health `Check.Since`/`Duration` issue from the draft (after a final verify-before-filing pass) | Medium | S | Documentation |
-| 11 | Comment on upstream templ-components#6 with v1.13.x `dlitem` evidence; note our carve-out's removal condition | Medium | S | Documentation |
-| 12 | Example app: add `DEMO_` toggles demonstrating collapse threshold, persistence, embedded-SDK filter | Medium | S | Feature |
-| 13 | Aggregate-mode browser test exercising the new UI with 2+ merged probes | Medium | M | Quality |
-| 14 | Mobile: design decision then implementation of true row stacking vs current overflow-x (plan T9's original intent) | Medium | M | Feature |
-| 15 | Decide on a patch-safe copy affordance for raw check keys (see question 3) | Medium | M | Feature |
-| 16 | Public-mode filter test: masked names remain searchable and non-identifying | Medium | S | Quality |
-| 17 | Interplay tests: RetryAlways × `WithMaxSSEConnections` (rejected clients retry forever?) | High | M | Quality |
-| 18 | Interplay test: RetryAlways × rate limiting (429 + Retry-After respected by the SDK retry loop?) | High | M | Quality |
-| 19 | Interplay test: RetryAlways × shutdown drain (drained clients reconnect after restart) | High | M | Quality |
-| 20 | Consolidate duplicated browser-test boilerplate (static handlers, chrome lifecycle) into helpers | Medium | M | Cleanup |
-| 21 | Re-baseline `BenchmarkHandler_HTMLRendering` after the render grew (filter exprs, pill, persistence) | Medium | S | Quality |
-| 22 | Extract the three inline page scripts (pill, persistence, theme) into one nonce'd bootstrap to cut duplicate tags | Low | M | Cleanup |
-| 23 | Pill polish: equal-width states to avoid layout shift; consider title attr with last transition time | Low | S | Feature |
-| 24 | Track upstream#6 fix → drop the axe carve-out (note in FEATURES Known Gaps so it isn't forgotten) | Medium | S | Cleanup |
-| 25 | Add `view.templ` split for pill/persistence if the file keeps growing (see ADR-0001 file-split rationale) | Low | M | Cleanup |
-| 26 | Real fuzz session: `-fuzztime 60s` on `FuzzShortDisplayName` + existing targets (CI runs seeds only) | Medium | S | Quality |
-| 27 | Keyboard pass: jump link and export links reachable and labeled (extend TestBrowser_KeyboardNewControls) | Medium | S | Quality |
-| 28 | Verify CV's CSP middleware accepts the pill/persistence scripts (per-request nonce via extractor path) | High | S | Quality |
-| 29 | Add `shortDisplayName` handling decision for generics (`pkg.Type[T]`) with a real-world example before it bites | Low | S | Cleanup |
-| 30 | Storage sync: persistence script should listen to `storage` events for cross-tab consistency | Low | S | Feature |
-| 31 | `docs/DOMAIN_LANGUAGE.md` — dashboard terms (check, group, probe, source/check, collapsing) are now load-bearing in UI copy | Low | M | Documentation |
-| 32 | Plan doc annotation: mark phases A–D executed with commit hashes (point-in-time doc hygiene) | Low | S | Documentation |
-| 33 | Zero-count edge: badge pluralization helper is unreachable at 0 — assert that groups never render empty (property test) | Low | S | Quality |
-| 34 | Dark-mode contrast check of new pill/badge/link colors (axe covers some; manual pass on the live page) | Low | S | Quality |
-| 35 | `check-ui-pins.sh`: reconcile header "REMOVAL CONDITION" with the keep-the-guard decision (get sign-off) | Medium | S | Cleanup |
-| 36 | AGENTS.md: document the "script-emitting upstream component" vetting pattern (CopyButton/Tooltip lessons) | Medium | S | Documentation |
-| 37 | AGENTS.md: add "update pin guard in the same change as any dep bump" to the pin ceremony text | High | S | Documentation |
-| 38 | `rg -r` pitfall: install an `ripgrep` config (`--no-require...`) or alias to make `-r` misuse impossible | Low | S | Cleanup |
-| 39 | Delete stale plan references to v1.11.0/v0.4.0 pins in the Pareto plan header (annotate as superseded) | Low | S | Documentation |
-| 40 | Consider `aria-live` region announcements for filter result counts (screen-reader UX for narrowing) | Low | M | Feature |
-| 41 | `.gitignore`/perms: `docs/screenshot-dark.png` is written 0600 while light is 0644 — normalize in the capture helper | Low | S | Cleanup |
-| 42 | Evaluate `prefers-reduced-motion` for the chevron rotation on CollapsibleSection (upstream handles it; verify end-to-end) | Low | S | Quality |
-| 43 | Add a CHANGELOG "Unreleased" section convention note so the next bumper doesn't rediscover the layout | Low | S | Documentation |
-| 44 | Re-verify `wantsJSON` untouched by UI work (regression guard exists? if not, add one) | Low | S | Quality |
-| 45 | Consider exposing collapse/persistence settings through the example's config.yaml for dogfooding | Low | S | Feature |
-| 46 | Harvest CV review items H1–H7: mark which this release addresses (signal starvation partially mitigated by visibility work) | Medium | S | Documentation |
-| 47 | CI: confirm the browser job runs on PRs, not just pushes (release checklist assumes it) | Medium | S | Quality |
-| 48 | Add a session-closing local gate script (`scripts/pre-push-checks.sh`) encoding the drift-guard formulas + version check | Medium | S | Cleanup |
-| 49 | `view.templ` render output snapshot test (golden file) so accidental markup churn is reviewable | Medium | M | Quality |
-| 50 | Decide and document whether `LastUpdatedTime`/age should appear in JSON responses for parity (currently HTML-only by design) | Low | S | Documentation |
+| #  | Task                                                                                                                         | Impact   | Effort | Category      |
+| -- | ---------------------------------------------------------------------------------------------------------------------------- | -------- | ------ | ------------- |
+| 1  | Tag `v0.7.0` (annotated) and push `--follow-tags` to green the version-guard job                                             | Critical | S      | Release       |
+| 2  | Decide ship-or-fold for the `[Unreleased]` route-ergonomics CHANGELOG section during the tag                                 | High     | S      | Documentation |
+| 3  | Bump CV's `go-health-dashboard` pin to v0.7.0 and deploy to cv.home.lan                                                      | Critical | M      | Feature       |
+| 4  | Visually verify the new UI on the live 60-row cv.home.lan page (collapse, names, filter, pill)                               | High     | S      | Quality       |
+| 5  | Add PersistCollapse browser interaction test (toggle → SSE patch → state re-applied)                                         | High     | S      | Quality       |
+| 6  | Run `nix run .#coverage`, compare to pre-session floor, record the baseline in the plan/docs                                 | High     | S      | Quality       |
+| 7  | Update `/health/introspect` to expose `HealthyGroupCollapseThreshold` + `PersistCollapse`                                    | High     | S      | Bug           |
+| 8  | Re-run axe on the filtered DOM state (plan C5 leftover)                                                                      | High     | S      | Quality       |
+| 9  | Degraded screenshot fixture (failing/warning services) for docs                                                              | Medium   | S      | Documentation |
+| 10 | File the upstream go-health `Check.Since`/`Duration` issue from the draft (after a final verify-before-filing pass)          | Medium   | S      | Documentation |
+| 11 | Comment on upstream templ-components#6 with v1.13.x `dlitem` evidence; note our carve-out's removal condition                | Medium   | S      | Documentation |
+| 12 | Example app: add `DEMO_` toggles demonstrating collapse threshold, persistence, embedded-SDK filter                          | Medium   | S      | Feature       |
+| 13 | Aggregate-mode browser test exercising the new UI with 2+ merged probes                                                      | Medium   | M      | Quality       |
+| 14 | Mobile: design decision then implementation of true row stacking vs current overflow-x (plan T9's original intent)           | Medium   | M      | Feature       |
+| 15 | Decide on a patch-safe copy affordance for raw check keys (see question 3)                                                   | Medium   | M      | Feature       |
+| 16 | Public-mode filter test: masked names remain searchable and non-identifying                                                  | Medium   | S      | Quality       |
+| 17 | Interplay tests: RetryAlways × `WithMaxSSEConnections` (rejected clients retry forever?)                                     | High     | M      | Quality       |
+| 18 | Interplay test: RetryAlways × rate limiting (429 + Retry-After respected by the SDK retry loop?)                             | High     | M      | Quality       |
+| 19 | Interplay test: RetryAlways × shutdown drain (drained clients reconnect after restart)                                       | High     | M      | Quality       |
+| 20 | Consolidate duplicated browser-test boilerplate (static handlers, chrome lifecycle) into helpers                             | Medium   | M      | Cleanup       |
+| 21 | Re-baseline `BenchmarkHandler_HTMLRendering` after the render grew (filter exprs, pill, persistence)                         | Medium   | S      | Quality       |
+| 22 | Extract the three inline page scripts (pill, persistence, theme) into one nonce'd bootstrap to cut duplicate tags            | Low      | M      | Cleanup       |
+| 23 | Pill polish: equal-width states to avoid layout shift; consider title attr with last transition time                         | Low      | S      | Feature       |
+| 24 | Track upstream#6 fix → drop the axe carve-out (note in FEATURES Known Gaps so it isn't forgotten)                            | Medium   | S      | Cleanup       |
+| 25 | Add `view.templ` split for pill/persistence if the file keeps growing (see ADR-0001 file-split rationale)                    | Low      | M      | Cleanup       |
+| 26 | Real fuzz session: `-fuzztime 60s` on `FuzzShortDisplayName` + existing targets (CI runs seeds only)                         | Medium   | S      | Quality       |
+| 27 | Keyboard pass: jump link and export links reachable and labeled (extend TestBrowser_KeyboardNewControls)                     | Medium   | S      | Quality       |
+| 28 | Verify CV's CSP middleware accepts the pill/persistence scripts (per-request nonce via extractor path)                       | High     | S      | Quality       |
+| 29 | Add `shortDisplayName` handling decision for generics (`pkg.Type[T]`) with a real-world example before it bites              | Low      | S      | Cleanup       |
+| 30 | Storage sync: persistence script should listen to `storage` events for cross-tab consistency                                 | Low      | S      | Feature       |
+| 31 | `docs/DOMAIN_LANGUAGE.md` — dashboard terms (check, group, probe, source/check, collapsing) are now load-bearing in UI copy  | Low      | M      | Documentation |
+| 32 | Plan doc annotation: mark phases A–D executed with commit hashes (point-in-time doc hygiene)                                 | Low      | S      | Documentation |
+| 33 | Zero-count edge: badge pluralization helper is unreachable at 0 — assert that groups never render empty (property test)      | Low      | S      | Quality       |
+| 34 | Dark-mode contrast check of new pill/badge/link colors (axe covers some; manual pass on the live page)                       | Low      | S      | Quality       |
+| 35 | `check-ui-pins.sh`: reconcile header "REMOVAL CONDITION" with the keep-the-guard decision (get sign-off)                     | Medium   | S      | Cleanup       |
+| 36 | AGENTS.md: document the "script-emitting upstream component" vetting pattern (CopyButton/Tooltip lessons)                    | Medium   | S      | Documentation |
+| 37 | AGENTS.md: add "update pin guard in the same change as any dep bump" to the pin ceremony text                                | High     | S      | Documentation |
+| 38 | `rg -r` pitfall: install an `ripgrep` config (`--no-require...`) or alias to make `-r` misuse impossible                     | Low      | S      | Cleanup       |
+| 39 | Delete stale plan references to v1.11.0/v0.4.0 pins in the Pareto plan header (annotate as superseded)                       | Low      | S      | Documentation |
+| 40 | Consider `aria-live` region announcements for filter result counts (screen-reader UX for narrowing)                          | Low      | M      | Feature       |
+| 41 | `.gitignore`/perms: `docs/screenshot-dark.png` is written 0600 while light is 0644 — normalize in the capture helper         | Low      | S      | Cleanup       |
+| 42 | Evaluate `prefers-reduced-motion` for the chevron rotation on CollapsibleSection (upstream handles it; verify end-to-end)    | Low      | S      | Quality       |
+| 43 | Add a CHANGELOG "Unreleased" section convention note so the next bumper doesn't rediscover the layout                        | Low      | S      | Documentation |
+| 44 | Re-verify `wantsJSON` untouched by UI work (regression guard exists? if not, add one)                                        | Low      | S      | Quality       |
+| 45 | Consider exposing collapse/persistence settings through the example's config.yaml for dogfooding                             | Low      | S      | Feature       |
+| 46 | Harvest CV review items H1–H7: mark which this release addresses (signal starvation partially mitigated by visibility work)  | Medium   | S      | Documentation |
+| 47 | CI: confirm the browser job runs on PRs, not just pushes (release checklist assumes it)                                      | Medium   | S      | Quality       |
+| 48 | Add a session-closing local gate script (`scripts/pre-push-checks.sh`) encoding the drift-guard formulas + version check     | Medium   | S      | Cleanup       |
+| 49 | `view.templ` render output snapshot test (golden file) so accidental markup churn is reviewable                              | Medium   | M      | Quality       |
+| 50 | Decide and document whether `LastUpdatedTime`/age should appear in JSON responses for parity (currently HTML-only by design) | Low      | S      | Documentation |
 
 ## g) Three questions I cannot answer myself
 

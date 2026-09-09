@@ -395,11 +395,9 @@ templ connectionPill(nonce string) {
 			Offline
 		</span>
 	</span>
-	<script
-		if nonce != "" {
-			nonce={ nonce }
-		}
-	>
+	<script if nonce != "" {
+	nonce={ nonce }
+}>
 		(function () {
 			'use strict';
 			if (window.__healthConnInit) { return; }
@@ -429,11 +427,9 @@ templ connectionPill(nonce string) {
 // region; the toggle listener uses capture because the toggle event does
 // not bubble.
 templ collapsePersistence(nonce string) {
-	<script
-		if nonce != "" {
-			nonce={ nonce }
-		}
-	>
+	<script if nonce != "" {
+	nonce={ nonce }
+}>
 		(function () {
 			'use strict';
 			if (window.__healthCollapseInit) { return; }
