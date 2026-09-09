@@ -1259,7 +1259,7 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 	var stored string
 
 	if err := chromedp.Run(ctx, chromedp.Evaluate(
-		`localStorage.getItem("health-dashboard-healthy-collapsed") || ""`,
+		`localStorage.getItem("health-healthy-group-collapsed") || ""`,
 		&stored,
 	)); err != nil {
 		t.Fatalf("browser evaluate localStorage: %v", err)
