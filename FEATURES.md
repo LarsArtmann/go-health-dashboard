@@ -39,6 +39,8 @@
 | Header links (export/trend/metrics)          | 🟢 `FULLY_FUNCTIONAL` | `view.templ` — shown only when the endpoints are configured                                                                                                   |
 | Relative "updated" age                       | 🟢 `FULLY_FUNCTIONAL` | `status.go` `formatAge` — server-rendered next to absolute stamp (patch-safe, no script)                                                                      |
 | Collapse persistence (`WithPersistCollapse`) | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `collapsePersistence` — localStorage + re-apply after patches; opt-in                                                                            |
+| Source-grouped cards (`WithGrouping(GroupBySource)`) | 🟢 `FULLY_FUNCTIONAL` | `status.go` `groupChecksBySource` — one card per `source/check` prefix, worst-of status; severity mode stays the default |
+| SDK-less rendering (`WithNoDatastarRuntime`) | 🟢 `FULLY_FUNCTIONAL` | `options.go` — omits filter box + connection pill for custom patch clients (CV's mini-client); server-rendered behavior unaffected |
 | Long-error expansion                         | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `rowDetailsCell` — native `<details>` for 80+ rune errors, break-words                                                                           |
 | Graceful shutdown state display              | 🟢 `FULLY_FUNCTIONAL` | `status.go:111` — buildViewModel overrides banner to "Shutting Down"                                                                                          |
 | Dark mode toggle                             | 🟢 `FULLY_FUNCTIONAL` | `view.templ:36` — layout.ThemeToggle, nonce-aware, persisted in localStorage                                                                                  |
@@ -99,7 +101,7 @@
 | Kubernetes probe endpoints | 🟢 `FULLY_FUNCTIONAL` | Wired from probe handlers in `dashboard.go` `RegisterRoutes()`                                       |
 | JSON content on `/health`  | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` `wantsJSON()` — RFC 7231 q-value Accept negotiation; 200 pass/warn, 503 fail          |
 | Trend JSON endpoint        | 🟢 `FULLY_FUNCTIONAL` | `trend.go` — samples + transitions at `/health/trend` with `WithTrend`                               |
-| JSON/CSV export endpoint   | 🟢 `FULLY_FUNCTIONAL` | `trend.go` — `/health/export`, `?format=csv` or `Accept: text/csv`                                   |
+| JSON/CSV/NDJSON export endpoint | 🟢 `FULLY_FUNCTIONAL` | `trend.go` — `/health/export`, `?format=csv`, `Accept: text/csv`, or `?format=ndjson` (one object per line) |
 
 ## Configuration
 
@@ -151,7 +153,7 @@
 | flake.nix devShell       | 🟢 `FULLY_FUNCTIONAL` | GOWORK=off, GOEXPERIMENT=jsonv2, all tools                                                                                                                                                                                                                           |
 | templ generate workflow  | 🟢 `FULLY_FUNCTIONAL` | Pre-build step in all Nix apps                                                                                                                                                                                                                                       |
 | `.golangci.yml` config   | 🟢 `FULLY_FUNCTIONAL` | 80+ linters, pragmatic test/example exclusions, **0 issues**                                                                                                                                                                                                         |
-| Test suite               | 🟢 `FULLY_FUNCTIONAL` | 233 top-level test/benchmark/fuzz functions across 31 test files, all passing with `-race` (counted via `rg -c '^func (Test\|Benchmark\|Fuzz)' *_test.go`)                                                                                                           |
+| Test suite               | 🟢 `FULLY_FUNCTIONAL` | 236 top-level test/benchmark/fuzz functions across 32 test files, all passing with `-race` (counted via `rg -c '^func (Test\|Benchmark\|Fuzz)' *_test.go`)                                                                                                           |
 | CI/CD                    | 🟢 `FULLY_FUNCTIONAL` | `.github/workflows/ci.yml` — build, test-race+coverage (78% floor + artifact), lint, vulncheck, browser job, version-guard. all 7 jobs green on real runs 2026-09-04 (incl. new hygiene job, run 33919924925); 75→78% coverage floor raised 2026-09-04 (local 84.8%) |
 | Dependabot               | 🟢 `FULLY_FUNCTIONAL` | `.github/dependabot.yml` — Go modules + GitHub Actions                                                                                                                                                                                                               |
 | Example app              | 🟢 `FULLY_FUNCTIONAL` | `example/main.go` — DEMO_TREND/DEMO_METRICS/DEMO_AUTH/DEMO_RATELIMIT/DEMO_DRAIN/DEMO_PUBLIC/DEMO_BASE_PATH env toggles                                                                                                                                               |
