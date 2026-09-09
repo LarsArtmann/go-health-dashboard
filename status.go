@@ -236,7 +236,9 @@ func groupChecks(checks map[string]health.Check) []checkGroup {
 
 // shortDisplayName condenses a fully-qualified Go type name for table
 // display. The module path is the noise: a service registered as
+//
 //	*github.com/host/repo/internal/features/healthdash/handlers.Handlers
+//
 // reads as "handlers.Handlers", and "github.com/larsartmann/go-health.Probe"
 // as "go-health.Probe". Names that are already short ("database.Service"),
 // single words, and aggregate source/check keys pass through unchanged.

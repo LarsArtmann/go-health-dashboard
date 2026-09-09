@@ -496,7 +496,7 @@ func FuzzShortDisplayName(f *testing.F) {
 		".a",
 		"*/",
 		"a/b/c.d.e",
-		"🚀.服务",
+		"emoji-\U0001F680.name",
 		strings.Repeat("github.com/x/", 40) + "pkg.Type",
 	} {
 		f.Add(seed)

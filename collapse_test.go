@@ -84,7 +84,12 @@ func assertCollapseState(t *testing.T, s *probeSetup, wantCollapsed bool) string
 
 	hasOpen := strings.Contains(tag, " open")
 	if hasOpen == wantCollapsed {
-		t.Errorf("collapsed=%v but details open-attribute present=%v (tag %q)", wantCollapsed, hasOpen, tag)
+		t.Errorf(
+			"collapsed=%v but details open-attribute present=%v (tag %q)",
+			wantCollapsed,
+			hasOpen,
+			tag,
+		)
 	}
 
 	return body
