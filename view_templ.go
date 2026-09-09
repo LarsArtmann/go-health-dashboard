@@ -808,14 +808,14 @@ func dashboardContent(data viewModel) templ.Component {
 			}
 		}
 		if data.DatastarSrc != "" && len(data.Groups) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<p class=\"hidden text-sm text-gray-500 dark:text-gray-400\" data-filter-empty data-class:hidden=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<p class=\"hidden text-sm text-gray-500 dark:text-gray-400\" role=\"status\" data-filter-empty data-class:hidden=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var29 string
 			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.ResolveAttributeValue(filterEmptyExpr(data))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 281, Col: 121}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 285, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var29)
 			if templ_7745c5c3_Err != nil {
@@ -903,7 +903,7 @@ func groupRows(group checkGroup) templ.Component {
 			var templ_7745c5c3_Var32 string
 			templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.ResolveAttributeValue(filterHaystack(row))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 306, Col: 40}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 311, Col: 40}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var32)
 			if templ_7745c5c3_Err != nil {
@@ -916,7 +916,7 @@ func groupRows(group checkGroup) templ.Component {
 			var templ_7745c5c3_Var33 string
 			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.ResolveAttributeValue("$query !== '' && !" + jsStringLiteral(filterHaystack(row)) + ".includes($query.toLowerCase())")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 307, Col: 118}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 312, Col: 118}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var33)
 			if templ_7745c5c3_Err != nil {
@@ -1002,7 +1002,7 @@ func groupCountBadge(count int) templ.Component {
 		var templ_7745c5c3_Var37 string
 		templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.ResolveAttributeValue(fmt.Sprintf("%d service%s", count, pluralS(count)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 324, Col: 235}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 329, Col: 235}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var37)
 		if templ_7745c5c3_Err != nil {
@@ -1015,7 +1015,7 @@ func groupCountBadge(count int) templ.Component {
 		var templ_7745c5c3_Var38 string
 		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(count))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 325, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 330, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 		if templ_7745c5c3_Err != nil {
@@ -1067,7 +1067,7 @@ func serviceNameCell(row checkRow) templ.Component {
 		var templ_7745c5c3_Var40 string
 		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.ResolveAttributeValue(row.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 340, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 345, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var40)
 		if templ_7745c5c3_Err != nil {
@@ -1080,7 +1080,7 @@ func serviceNameCell(row checkRow) templ.Component {
 		var templ_7745c5c3_Var41 string
 		templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(row.displayName())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 340, Col: 98}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 345, Col: 98}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 		if templ_7745c5c3_Err != nil {
@@ -1132,7 +1132,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 			var templ_7745c5c3_Var43 string
 			templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(row.Error)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 351, Col: 72}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 356, Col: 72}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 			if templ_7745c5c3_Err != nil {
@@ -1150,7 +1150,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 			var templ_7745c5c3_Var44 string
 			templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(truncateError(row.Error))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 354, Col: 104}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 359, Col: 104}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 			if templ_7745c5c3_Err != nil {
@@ -1163,7 +1163,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 			var templ_7745c5c3_Var45 string
 			templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(row.Error)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 355, Col: 122}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 360, Col: 122}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 			if templ_7745c5c3_Err != nil {
@@ -1182,7 +1182,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 			var templ_7745c5c3_Var46 string
 			templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(row.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 359, Col: 100}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 364, Col: 100}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 			if templ_7745c5c3_Err != nil {
@@ -1241,7 +1241,7 @@ func connectionPill(nonce string) templ.Component {
 			templ_7745c5c3_Var47 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "<span class=\"inline-flex items-center gap-1.5 text-xs font-medium\" aria-live=\"polite\"><span id=\"conn-state-live\" class=\"inline-flex items-center gap-1.5 text-green-600 dark:text-green-400\"><span class=\"h-1.5 w-1.5 rounded-full bg-green-500\"></span> Live</span> <span id=\"conn-state-reconnecting\" hidden class=\"inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400\"><span class=\"h-1.5 w-1.5 rounded-full bg-amber-500\"></span> Reconnecting</span> <span id=\"conn-state-offline\" hidden class=\"inline-flex items-center gap-1.5 text-red-600 dark:text-red-400\"><span class=\"h-1.5 w-1.5 rounded-full bg-red-500\"></span> Offline</span></span><script")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "<span class=\"inline-flex items-center gap-1.5 text-xs font-medium\" aria-live=\"polite\"><span id=\"conn-state-live\" class=\"inline-flex min-w-24 items-center justify-center gap-1.5 text-green-600 dark:text-green-400\"><span class=\"h-1.5 w-1.5 rounded-full bg-green-500\"></span> Live</span> <span id=\"conn-state-reconnecting\" hidden class=\"inline-flex min-w-24 items-center justify-center gap-1.5 text-amber-600 dark:text-amber-400\"><span class=\"h-1.5 w-1.5 rounded-full bg-amber-500\"></span> Reconnecting</span> <span id=\"conn-state-offline\" hidden class=\"inline-flex min-w-24 items-center justify-center gap-1.5 text-red-600 dark:text-red-400\"><span class=\"h-1.5 w-1.5 rounded-full bg-red-500\"></span> Offline</span></span><script")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1253,7 +1253,7 @@ func connectionPill(nonce string) templ.Component {
 			var templ_7745c5c3_Var48 string
 			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.ResolveAttributeValue(nonce)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 402, Col: 14}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 407, Col: 14}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var48)
 			if templ_7745c5c3_Err != nil {
@@ -1311,7 +1311,7 @@ func collapsePersistence(nonce string) templ.Component {
 			var templ_7745c5c3_Var50 string
 			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.ResolveAttributeValue(nonce)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 434, Col: 14}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 439, Col: 14}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var50)
 			if templ_7745c5c3_Err != nil {
@@ -1322,7 +1322,7 @@ func collapsePersistence(nonce string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, ">\n\t\t(function () {\n\t\t\t'use strict';\n\t\t\tif (window.__healthCollapseInit) { return; }\n\t\t\twindow.__healthCollapseInit = true;\n\t\t\tvar KEY = 'health-healthy-group-collapsed';\n\t\t\tfunction apply() {\n\t\t\t\tvar d = document.querySelector('details[data-collapsible]');\n\t\t\t\tif (!d) { return; }\n\t\t\t\tvar stored;\n\t\t\t\ttry { stored = localStorage.getItem(KEY); } catch (err) { return; }\n\t\t\t\t// Only write when the state actually differs: setting\n\t\t\t\t// .open queues a mutation record even for an identical\n\t\t\t\t// value, which would feed this same observer forever.\n\t\t\t\tif (stored === 'open' && !d.open) { d.open = true; }\n\t\t\t\telse if (stored === 'closed' && d.open) { d.open = false; }\n\t\t\t}\n\t\t\tapply();\n\t\t\t// Store USER intent only. A `toggle` listener cannot distinguish a\n\t\t\t// user toggle from Datastar's patch merge, which syncs attributes\n\t\t\t// and thereby removes `open` — that merge-driven toggle used to\n\t\t\t// overwrite the stored choice with the server default. A click on\n\t\t\t// the summary always precedes a user toggle (mouse and keyboard),\n\t\t\t// and during click dispatch `details.open` still holds the\n\t\t\t// pre-toggle state, so the flipped value is stored synchronously.\n\t\t\tdocument.addEventListener('click', function (e) {\n\t\t\t\tvar target = e.target;\n\t\t\t\tvar summary = target && target.closest && target.closest('summary');\n\t\t\t\tif (!summary || !summary.parentElement ||\n\t\t\t\t\t!summary.parentElement.matches ||\n\t\t\t\t\t!summary.parentElement.matches('details[data-collapsible]')) { return; }\n\t\t\t\tvar details = summary.parentElement;\n\t\t\t\ttry {\n\t\t\t\t\tlocalStorage.setItem(KEY, details.open ? 'closed' : 'open');\n\t\t\t\t} catch (err) {}\n\t\t\t}, false);\n\t\t\t// The SDK dispatches its datastar-patch-* fetch events BEFORE the\n\t\t\t// patch is merged into the DOM, so applying on the event alone\n\t\t\t// always re-opens the replaced-away node. A scoped MutationObserver\n\t\t\t// reacts to the actual DOM change instead — deterministic for\n\t\t\t// inner-mode element patches — with the fetch event kept as a\n\t\t\t// belt-and-braces trigger.\n\t\t\tdocument.addEventListener('datastar-fetch', function (e) {\n\t\t\t\tvar t = e.detail && e.detail.type;\n\t\t\t\tif (t && t.indexOf('datastar-patch-') === 0) { apply(); }\n\t\t\t});\n\t\t\tif ('MutationObserver' in window) {\n\t\t\t\tvar selector = 'details[data-collapsible]';\n\t\t\t\tvar observer = new MutationObserver(function (records) {\n\t\t\t\t\tfor (var i = 0; i < records.length; i++) {\n\t\t\t\t\t\tvar record = records[i];\n\t\t\t\t\t\tif (record.type === 'attributes') {\n\t\t\t\t\t\t\tif (record.target.matches && record.target.matches(selector)) {\n\t\t\t\t\t\t\t\tapply();\n\t\t\t\t\t\t\t\treturn;\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\tcontinue;\n\t\t\t\t\t\t}\n\t\t\t\t\t\tvar added = record.addedNodes;\n\t\t\t\t\t\tfor (var j = 0; j < added.length; j++) {\n\t\t\t\t\t\t\tvar node = added[j];\n\t\t\t\t\t\t\tif (node.nodeType !== 1) { continue; }\n\t\t\t\t\t\t\tif ((node.matches && node.matches(selector)) ||\n\t\t\t\t\t\t\t\t(node.querySelector && node.querySelector(selector))) {\n\t\t\t\t\t\t\t\tapply();\n\t\t\t\t\t\t\t\treturn;\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t\t// Inner-mode patches merge the existing <details> in place and\n\t\t\t\t// sync its attributes — removing `open` — so both attribute\n\t\t\t\t// flips and inserted nodes must re-apply the stored state.\n\t\t\t\tobserver.observe(document.body, {\n\t\t\t\t\tchildList: true,\n\t\t\t\t\tsubtree: true,\n\t\t\t\t\tattributes: true,\n\t\t\t\t\tattributeFilter: ['open']\n\t\t\t\t});\n\t\t\t}\n\t\t})();\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, ">\n\t\t(function () {\n\t\t\t'use strict';\n\t\t\tif (window.__healthCollapseInit) { return; }\n\t\t\twindow.__healthCollapseInit = true;\n\t\t\tvar KEY = 'health-healthy-group-collapsed';\n\t\t\tfunction apply() {\n\t\t\t\tvar d = document.querySelector('details[data-collapsible]');\n\t\t\t\tif (!d) { return; }\n\t\t\t\tvar stored;\n\t\t\t\ttry { stored = localStorage.getItem(KEY); } catch (err) { return; }\n\t\t\t\t// Only write when the state actually differs: setting\n\t\t\t\t// .open queues a mutation record even for an identical\n\t\t\t\t// value, which would feed this same observer forever.\n\t\t\t\tif (stored === 'open' && !d.open) { d.open = true; }\n\t\t\t\telse if (stored === 'closed' && d.open) { d.open = false; }\n\t\t\t}\n\t\t\tapply();\n\t\t\t// Cross-tab consistency: another tab's collapse toggle writes the\n\t\t\t// same localStorage key, and the storage event tells this tab to\n\t\t\t// follow suit.\n\t\t\twindow.addEventListener('storage', function (e) {\n\t\t\t\tif (e.key === KEY) { apply(); }\n\t\t\t});\n\t\t\t// Store USER intent only. A `toggle` listener cannot distinguish a\n\t\t\t// user toggle from Datastar's patch merge, which syncs attributes\n\t\t\t// and thereby removes `open` — that merge-driven toggle used to\n\t\t\t// overwrite the stored choice with the server default. A click on\n\t\t\t// the summary always precedes a user toggle (mouse and keyboard),\n\t\t\t// and during click dispatch `details.open` still holds the\n\t\t\t// pre-toggle state, so the flipped value is stored synchronously.\n\t\t\tdocument.addEventListener('click', function (e) {\n\t\t\t\tvar target = e.target;\n\t\t\t\tvar summary = target && target.closest && target.closest('summary');\n\t\t\t\tif (!summary || !summary.parentElement ||\n\t\t\t\t\t!summary.parentElement.matches ||\n\t\t\t\t\t!summary.parentElement.matches('details[data-collapsible]')) { return; }\n\t\t\t\tvar details = summary.parentElement;\n\t\t\t\ttry {\n\t\t\t\t\tlocalStorage.setItem(KEY, details.open ? 'closed' : 'open');\n\t\t\t\t} catch (err) {}\n\t\t\t}, false);\n\t\t\t// The SDK dispatches its datastar-patch-* fetch events BEFORE the\n\t\t\t// patch is merged into the DOM, so applying on the event alone\n\t\t\t// always re-opens the replaced-away node. A scoped MutationObserver\n\t\t\t// reacts to the actual DOM change instead — deterministic for\n\t\t\t// inner-mode element patches — with the fetch event kept as a\n\t\t\t// belt-and-braces trigger.\n\t\t\tdocument.addEventListener('datastar-fetch', function (e) {\n\t\t\t\tvar t = e.detail && e.detail.type;\n\t\t\t\tif (t && t.indexOf('datastar-patch-') === 0) { apply(); }\n\t\t\t});\n\t\t\tif ('MutationObserver' in window) {\n\t\t\t\tvar selector = 'details[data-collapsible]';\n\t\t\t\tvar observer = new MutationObserver(function (records) {\n\t\t\t\t\tfor (var i = 0; i < records.length; i++) {\n\t\t\t\t\t\tvar record = records[i];\n\t\t\t\t\t\tif (record.type === 'attributes') {\n\t\t\t\t\t\t\tif (record.target.matches && record.target.matches(selector)) {\n\t\t\t\t\t\t\t\tapply();\n\t\t\t\t\t\t\t\treturn;\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\tcontinue;\n\t\t\t\t\t\t}\n\t\t\t\t\t\tvar added = record.addedNodes;\n\t\t\t\t\t\tfor (var j = 0; j < added.length; j++) {\n\t\t\t\t\t\t\tvar node = added[j];\n\t\t\t\t\t\t\tif (node.nodeType !== 1) { continue; }\n\t\t\t\t\t\t\tif ((node.matches && node.matches(selector)) ||\n\t\t\t\t\t\t\t\t(node.querySelector && node.querySelector(selector))) {\n\t\t\t\t\t\t\t\tapply();\n\t\t\t\t\t\t\t\treturn;\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t\t// Inner-mode patches merge the existing <details> in place and\n\t\t\t\t// sync its attributes — removing `open` — so both attribute\n\t\t\t\t// flips and inserted nodes must re-apply the stored state.\n\t\t\t\tobserver.observe(document.body, {\n\t\t\t\t\tchildList: true,\n\t\t\t\t\tsubtree: true,\n\t\t\t\t\tattributes: true,\n\t\t\t\t\tattributeFilter: ['open']\n\t\t\t\t});\n\t\t\t}\n\t\t})();\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

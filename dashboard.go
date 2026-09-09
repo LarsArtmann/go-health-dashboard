@@ -93,6 +93,7 @@ func New(probe Prober, opts ...Option) *Dashboard {
 		Routes:                        DefaultRoutes(),
 		HeartbeatInterval:             defaultHeartbeatInterval,
 		HealthyGroupCollapseThreshold: defaultHealthyGroupCollapseThreshold,
+		Grouping:                      GroupBySeverity,
 	}
 
 	for _, opt := range opts {

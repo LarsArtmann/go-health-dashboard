@@ -15,7 +15,7 @@ type introspectionDoc struct {
 	Version   string            `json:"version"`
 	GoVersion string            `json:"go_version"`
 	Routes    map[string]string `json:"routes"`
-	Limits struct {
+	Limits    struct {
 		MaxSSEConnections int    `json:"max_sse_connections"`
 		RateLimitEnabled  bool   `json:"rate_limit_enabled"`
 		ShutdownDrain     string `json:"shutdown_drain"`
@@ -99,7 +99,10 @@ func TestIntrospection_ServesResolvedConfig(t *testing.T) {
 	case doc.Modes.NonceStrategy != "none":
 		t.Errorf("modes.nonce_strategy: want none, got %q", doc.Modes.NonceStrategy)
 	case doc.Modes.HealthyGroupCollapseThreshold != 3:
-		t.Errorf("modes.healthy_group_collapse_threshold: want 3, got %d", doc.Modes.HealthyGroupCollapseThreshold)
+		t.Errorf(
+			"modes.healthy_group_collapse_threshold: want 3, got %d",
+			doc.Modes.HealthyGroupCollapseThreshold,
+		)
 	case !doc.Modes.PersistCollapse:
 		t.Error("modes.persist_collapse: want true after WithPersistCollapse")
 	case doc.Modes.PushOnChangeTTL != 2:

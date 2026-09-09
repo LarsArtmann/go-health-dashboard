@@ -1249,7 +1249,10 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 	}
 
 	if state != "closed" {
-		t.Fatalf("healthy group should start collapsed (threshold default 8 < 9 rows), got %q", state)
+		t.Fatalf(
+			"healthy group should start collapsed (threshold default 8 < 9 rows), got %q",
+			state,
+		)
 	}
 
 	if err := chromedp.Run(ctx, chromedp.Click("details summary", chromedp.ByQuery)); err != nil {
@@ -1291,7 +1294,11 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 				regionHTML: (document.getElementById('health-region') || {innerHTML:'NO_REGION'}).innerHTML.slice(0, 200)
 			});
 		})()`, &diag))
-		t.Fatalf("with WithPersistCollapse the expanded state must survive SSE patches, got %q; diag=%s", state, diag)
+		t.Fatalf(
+			"with WithPersistCollapse the expanded state must survive SSE patches, got %q; diag=%s",
+			state,
+			diag,
+		)
 	}
 
 	// A full reload must also honor the stored state.

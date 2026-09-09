@@ -43,11 +43,21 @@ func TestGroupChecksBySource_PartitionsAndRollsUp(t *testing.T) {
 		}
 
 		if groups[i].Status != expected.status {
-			t.Errorf("group %q status: want %s, got %s", expected.title, expected.status, groups[i].Status)
+			t.Errorf(
+				"group %q status: want %s, got %s",
+				expected.title,
+				expected.status,
+				groups[i].Status,
+			)
 		}
 
 		if len(groups[i].Rows) != expected.rows {
-			t.Errorf("group %q rows: want %d, got %d", expected.title, expected.rows, len(groups[i].Rows))
+			t.Errorf(
+				"group %q rows: want %d, got %d",
+				expected.title,
+				expected.rows,
+				len(groups[i].Rows),
+			)
 		}
 	}
 }
@@ -103,7 +113,10 @@ func TestApplyCollapsePolicy_SkipsSourceGrouping(t *testing.T) {
 	t.Parallel()
 
 	vm := buildViewModel(health.Response{Checks: sourceChecks()}, "T", "/sse", GroupBySource)
-	applyCollapsePolicy(&vm, 1) // threshold 1 with 2-row pass sources would collapse in severity mode
+	applyCollapsePolicy(
+		&vm,
+		1,
+	) // threshold 1 with 2-row pass sources would collapse in severity mode
 
 	if vm.HealthyCount != 0 {
 		t.Errorf("HealthyCount must stay 0 in source mode, got %d", vm.HealthyCount)
@@ -134,13 +147,61 @@ func TestStorageKey_NeverPersistsInSourceMode(t *testing.T) {
 	vm.PersistCollapse = true
 
 	if key := storageKey(vm); key != "" {
-		t.Errorf("storageKey in source mode: want empty (several pass sections must not share one key), got %q", key)
+		t.Errorf(
+			"storageKey in source mode: want empty (several pass sections must not share one key), got %q",
+			key,
+		)
 	}
 
-	severity := buildViewModel(health.Response{Checks: sourceChecks()}, "T", "/sse", GroupBySeverity)
+	severity := buildViewModel(
+		health.Response{Checks: sourceChecks()},
+		"T",
+		"/sse",
+		GroupBySeverity,
+	)
 	severity.PersistCollapse = true
 
 	if key := storageKey(severity); key != collapseStorageKeyName {
 		t.Errorf("storageKey in severity mode: want %q, got %q", collapseStorageKeyName, key)
+	}
+}
+
+// TestGroupChecks_NeverEmitEmptyGroups is the zero-count property guard:
+// no grouping mode may produce an empty group (the badge pluralization
+// helper and the healthy summary are unreachable at 0 by construction).
+// Sweeps deterministic edge maps plus pseudo-random subsets.
+func TestGroupChecks_NeverEmitEmptyGroups(t *testing.T) {
+	t.Parallel()
+
+	allStatuses := []health.Status{health.StatusPass, health.StatusWarn, health.StatusFail, "unknown"}
+
+	fixtures := []map[string]health.Check{
+		{},
+		{"only": {Status: health.StatusPass}},
+		{"a": {Status: health.StatusFail}, "b": {Status: health.StatusWarn}, "c": {Status: health.StatusPass}},
+	}
+
+	for i := 0; i < 50; i++ {
+		checks := map[string]health.Check{}
+		for j := 0; j <= i%7; j++ {
+			checks[string(rune('a'+j%26))+string(rune('a'+i%26))] = health.Check{
+				Status: allStatuses[(i+j)%len(allStatuses)],
+			}
+		}
+
+		fixtures = append(fixtures, checks)
+	}
+
+	for fixtureIndex, checks := range fixtures {
+		for _, mode := range []GroupMode{GroupBySeverity, GroupBySource} {
+			for _, group := range groupChecksBy(mode, checks) {
+				if len(group.Rows) == 0 {
+					t.Errorf(
+						"fixture %d mode %s: group %q has zero rows — empty groups must never render",
+						fixtureIndex, mode, group.Title,
+					)
+				}
+			}
+		}
 	}
 }

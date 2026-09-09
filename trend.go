@@ -172,7 +172,11 @@ func (d *Dashboard) ExportHandler() http.HandlerFunc {
 			for _, sample := range jsonSamples(samples) {
 				line, err := json.Marshal(sample)
 				if err != nil {
-					http.Error(w, "dashboard: failed to encode export", http.StatusInternalServerError)
+					http.Error(
+						w,
+						"dashboard: failed to encode export",
+						http.StatusInternalServerError,
+					)
 					return
 				}
 

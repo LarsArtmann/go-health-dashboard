@@ -278,7 +278,12 @@ templ dashboardContent(data viewModel) {
 			}
 		}
 		if data.DatastarSrc != "" && len(data.Groups) > 0 {
-			<p class="hidden text-sm text-gray-500 dark:text-gray-400" data-filter-empty data-class:hidden={ filterEmptyExpr(data) }>
+			<p
+				class="hidden text-sm text-gray-500 dark:text-gray-400"
+				role="status"
+				data-filter-empty
+				data-class:hidden={ filterEmptyExpr(data) }
+			>
 				No services match your filter.
 			</p>
 		}
@@ -385,15 +390,15 @@ const (
 // patched region, so its state survives SSE content updates.
 templ connectionPill(nonce string) {
 	<span class="inline-flex items-center gap-1.5 text-xs font-medium" aria-live="polite">
-		<span id="conn-state-live" class="inline-flex items-center gap-1.5 text-green-600 dark:text-green-400">
+		<span id="conn-state-live" class="inline-flex min-w-24 items-center justify-center gap-1.5 text-green-600 dark:text-green-400">
 			<span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
 			Live
 		</span>
-		<span id="conn-state-reconnecting" hidden class="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+		<span id="conn-state-reconnecting" hidden class="inline-flex min-w-24 items-center justify-center gap-1.5 text-amber-600 dark:text-amber-400">
 			<span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
 			Reconnecting
 		</span>
-		<span id="conn-state-offline" hidden class="inline-flex items-center gap-1.5 text-red-600 dark:text-red-400">
+		<span id="conn-state-offline" hidden class="inline-flex min-w-24 items-center justify-center gap-1.5 text-red-600 dark:text-red-400">
 			<span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
 			Offline
 		</span>
@@ -450,6 +455,12 @@ templ collapsePersistence(nonce string) {
 				else if (stored === 'closed' && d.open) { d.open = false; }
 			}
 			apply();
+			// Cross-tab consistency: another tab's collapse toggle writes the
+			// same localStorage key, and the storage event tells this tab to
+			// follow suit.
+			window.addEventListener('storage', function (e) {
+				if (e.key === KEY) { apply(); }
+			});
 			// Store USER intent only. A `toggle` listener cannot distinguish a
 			// user toggle from Datastar's patch merge, which syncs attributes
 			// and thereby removes `open` — that merge-driven toggle used to

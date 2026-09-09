@@ -157,7 +157,9 @@ func TestPublicMode_FilterHaystackStaysMaskedAndSearchable(t *testing.T) {
 	body := w.Body.String()
 
 	if !strings.Contains(body, `data-filter-row="check-`) {
-		t.Error("public mode should keep the filter working on masked check-N names, but no masked haystack rendered")
+		t.Error(
+			"public mode should keep the filter working on masked check-N names, but no masked haystack rendered",
+		)
 	}
 
 	for _, masked := range []string{"check-1", "check-2", "check-3"} {
@@ -167,5 +169,7 @@ func TestPublicMode_FilterHaystackStaysMaskedAndSearchable(t *testing.T) {
 		}
 	}
 
-	t.Error("no masked check-N name found in the filter haystack — the filter is effectively dead in public mode")
+	t.Error(
+		"no masked check-N name found in the filter haystack — the filter is effectively dead in public mode",
+	)
 }

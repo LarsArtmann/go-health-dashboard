@@ -455,6 +455,12 @@ func TestShortDisplayName(t *testing.T) {
 		{"versioned module", "samber/do/v2.injector", "v2.injector"},
 		{"aggregate key unchanged", "cv/database", "cv/database"},
 		{"source check unchanged", "source/check", "source/check"},
+		// Decision (2026-09-10): generic type parameters pass through —
+		// stripping "[T]" would lie about the type, and inventing a
+		// prettier form is not worth the fidelity loss. Real-world shape:
+		// a service registered as a generic type.
+		{"generic type param", "*github.com/x/repo/store.Store[string]", "store.Store[string]"},
+		{"generic stdlib", "sync.Map[string, int]", "sync.Map[string, int]"},
 		{"bare dot", ".", "."},
 		{"leading dot", ".weird", ".weird"},
 		{"trailing dot", "pkg.", "pkg."},

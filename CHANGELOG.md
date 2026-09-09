@@ -104,6 +104,20 @@ opt-in introspection endpoint exposes the running configuration.
   from the `go-datastar/static` embed and points the dashboard's script
   tag at it. Same-origin script means `script-src 'self'` is sufficient
   (the SDK's own `unsafe-eval` requirement remains); no CDN dependency.
+- `?format=ndjson` on the export endpoint: newline-delimited JSON, one
+  sample object per line (`application/x-ndjson`), for consumers that
+  stream or tail export data. Per-check latency histogram labels remain
+  blocked on go-health exposing per-check durations (tracked upstream).
+- `WithGrouping(GroupBySource)`: one card per aggregate `source/check`
+  prefix, worst-of status per card (fail > warn > pass), plain keys in a
+  fallback Services card. The healthy-group collapse policy and
+  persistence deliberately do not apply in source mode (no single
+  healthy group; several pass sections must not share one storage key),
+  and public mode masks source titles — topology is identifying.
+- Example toggles `DEMO_COLLAPSE=<n>`, `DEMO_PERSIST=1`,
+  `DEMO_EMBEDDED_SDK=1`, and `DEMO_GROUPING=source|severity` dogfood the
+  collapse threshold, persistence, the client-side filter, and source
+  grouping.
 
 ### Changed
 
