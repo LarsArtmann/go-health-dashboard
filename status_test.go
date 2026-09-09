@@ -3,6 +3,7 @@ package dashboard
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/display"
@@ -500,5 +501,35 @@ func TestGroupChecks_DerivesShortDisplayName(t *testing.T) {
 
 	if plain == nil || plain.Display != "database" {
 		t.Errorf("short name should pass through unchanged, got %+v", plain)
+	}
+}
+
+func TestFormatAge(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name string
+		at   time.Time
+		want string
+	}{
+		{"just now", now.Add(-5 * time.Second), "just now"},
+		{"future clamps", now.Add(5 * time.Minute), "just now"},
+		{"seconds", now.Add(-42 * time.Second), "just now"},
+		{"exactly a minute", now.Add(-61 * time.Second), "1m ago"},
+		{"minutes", now.Add(-3 * time.Minute), "3m ago"},
+		{"hours", now.Add(-2 * time.Hour), "2h ago"},
+		{"long", now.Add(-26 * time.Hour), "26h ago"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := formatAge(tt.at, now); got != tt.want {
+				t.Errorf("formatAge: want %q, got %q", tt.want, got)
+			}
+		})
 	}
 }

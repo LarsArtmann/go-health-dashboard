@@ -502,3 +502,89 @@ func TestLongErrors_ExpandViaDetails(t *testing.T) {
 		t.Error("full error text should be present in the expansion")
 	}
 }
+
+func TestPersistCollapse_MarkupOptIn(t *testing.T) {
+	t.Parallel()
+
+	t.Run("enabled renders storage key and script", func(t *testing.T) {
+		t.Parallel()
+
+		s := setupDashboard(t, dashboard.WithPersistCollapse())
+		defer s.cleanup()
+
+		w := doRequest(t, s.mux, "/health")
+		body := w.Body.String()
+
+		if !strings.Contains(body, "data-collapsible=\"health-healthy-group-collapsed\"") {
+			t.Error("collapsed section should carry the storage key attribute")
+		}
+
+		if !strings.Contains(body, "__healthCollapseInit") {
+			t.Error("persistence script should render when opted in")
+		}
+	})
+
+	t.Run("default omits persistence", func(t *testing.T) {
+		t.Parallel()
+
+		s := setupDashboard(t)
+		defer s.cleanup()
+
+		w := doRequest(t, s.mux, "/health")
+		body := w.Body.String()
+
+		if strings.Contains(body, "data-collapsible") {
+			t.Error("storage key attribute must be absent by default")
+		}
+
+		if strings.Contains(body, "__healthCollapseInit") {
+			t.Error("persistence script must be absent by default")
+		}
+	})
+}
+
+func TestHeaderLinks_BehindRoutePresence(t *testing.T) {
+	t.Parallel()
+
+	t.Run("trend and metrics enabled", func(t *testing.T) {
+		t.Parallel()
+
+		s := setupDashboard(t,
+			dashboard.WithTrend(30),
+			dashboard.WithMetrics(true),
+		)
+		defer s.cleanup()
+
+		w := doRequest(t, s.mux, "/health")
+		body := w.Body.String()
+
+		for _, want := range []string{
+			`href="/health/export?format=csv"`,
+			`href="/health/export"`,
+			`href="/health/trend"`,
+			`href="/health/metrics"`,
+		} {
+			if !strings.Contains(body, want) {
+				t.Errorf("header links should include %s", want)
+			}
+		}
+	})
+
+	t.Run("disabled by default", func(t *testing.T) {
+		t.Parallel()
+
+		s := setupDashboard(t)
+		defer s.cleanup()
+
+		w := doRequest(t, s.mux, "/health")
+		body := w.Body.String()
+
+		if strings.Contains(body, "Export CSV") {
+			t.Error("export link must not render when the trend is disabled")
+		}
+
+		if strings.Contains(body, `href="/health/metrics"`) {
+			t.Error("metrics link must not render when metrics are disabled")
+		}
+	})
+}

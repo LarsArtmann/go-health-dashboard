@@ -1543,3 +1543,90 @@ func TestBrowser_MobileViewport(t *testing.T) {
 
 	assertNoBrowserErrors(t, errLog)
 }
+
+// TestBrowser_KeyboardNewControls proves the new interactive controls are
+// keyboard-operable end-to-end: the filter input is reachable and typeable,
+// and the collapsed healthy group toggles with Enter alone (native
+// <details>/<summary> semantics) under a strict CSP.
+func TestBrowser_KeyboardNewControls(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-keyboard-nonce"
+
+	s := setupDashboardWithHealthyServices(t, 9,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithEmbeddedDatastarSDK(),
+	)
+	defer s.cleanup()
+
+	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		_, _ = w.Write([]byte("body { margin: 0; }"))
+	})
+
+	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(dstarstatic.Bytes())
+	})
+
+	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+
+	detailsState := `(function () {
+		var d = document.querySelector("details");
+		return d ? (d.open ? "open" : "closed") : "missing";
+	})()`
+
+	// Focus the summary directly (keyboard path) and toggle with Enter.
+	if err := chromedp.Run(ctx,
+		chromedp.Focus(`details summary`, chromedp.ByQuery),
+		chromedp.KeyEvent("Enter"),
+	); err != nil {
+		t.Fatalf("keyboard toggle: %v", err)
+	}
+
+	waitForJS(t, ctx, detailsState+` === "open"`, detailsState, nil)
+
+	// Focus the filter input and type through the keyboard; the signal
+	// updates through the real input events.
+	if err := chromedp.Run(ctx,
+		chromedp.Focus(`#health-filter`, chromedp.ByQuery),
+		chromedp.KeyEvent("svc-01"),
+	); err != nil {
+		t.Fatalf("keyboard filter focus: %v", err)
+	}
+
+	visibleRows := `(function () {
+		return [...document.querySelectorAll("tr[data-filter-row]")].filter(function (tr) {
+			return !tr.classList.contains("hidden");
+		}).length + "";
+	})()`
+
+	waitForJS(t, ctx, visibleRows+` === "1"`, visibleRows, nil)
+
+	assertNoBrowserErrors(t, errLog)
+}
