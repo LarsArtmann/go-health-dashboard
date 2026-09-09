@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"fmt"
+	"strconv"
 
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/datastar"
@@ -176,8 +177,9 @@ templ dashboardContent(data viewModel) {
 					}
 				} else {
 					@display.Card(display.CardProps{
-						Title:   group.Title,
-						Padding: display.CardPaddingNone,
+						Title:        group.Title,
+						Padding:      display.CardPaddingNone,
+						HeaderAction: groupCountBadge(len(group.Rows)),
 					}) {
 						@groupTable(group)
 					}
@@ -194,6 +196,29 @@ templ groupTable(group checkGroup) {
 		Rows:    rowsToTableRows(group.Rows),
 		Flush:   true,
 	})
+}
+
+// groupCountBadge renders the row count shown in a group card's header.
+templ groupCountBadge(count int) {
+	<span class={ "ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium tabular-nums", "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" } aria-label={ fmt.Sprintf("%d services", count) }>
+		{ strconv.Itoa(count) }
+	</span>
+}
+
+// serviceNameCell renders the Service column: the shortened display name,
+// with the raw check key recoverable via the title attribute.
+templ serviceNameCell(row checkRow) {
+	<span class="font-medium text-gray-900 dark:text-gray-100" title={ row.Name }>{ row.displayName() }</span>
+}
+
+// rowDetailsCell renders the Details column: the error text (or a dash),
+// plus the raw check key as a dim monospace line whenever it differs from
+// the shortened display name — full fidelity without giving up scannability.
+templ rowDetailsCell(row checkRow) {
+	<span class="text-gray-600 dark:text-gray-300">{ row.errorOrDash() }</span>
+	if row.Display != "" && row.Display != row.Name {
+		<span class="mt-0.5 block break-all font-mono text-xs text-gray-400 dark:text-gray-500">{ row.Name }</span>
+	}
 }
 
 // versionOrUnknown returns the version string or "unknown" when empty.

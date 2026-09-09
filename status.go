@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	health "github.com/larsartmann/go-health"
@@ -55,11 +56,14 @@ func mapStatusToText(s health.Status) string {
 	}
 }
 
-// checkRow is a single service row in the dashboard table.
+// checkRow is a single service row in the dashboard table. Name is the raw
+// check key (often a fully-qualified Go type name); Display is the shortened
+// form shown in the table (see shortDisplayName).
 type checkRow struct {
-	Name   string
-	Status health.Status
-	Error  string
+	Name    string
+	Display string
+	Status  health.Status
+	Error   string
 }
 
 // checkGroup groups checks by severity for card-based layout.
@@ -178,7 +182,12 @@ func groupChecks(checks map[string]health.Check) []checkGroup {
 	var failing, warning, healthy []checkRow
 
 	for name, check := range checks {
-		row := checkRow{Name: name, Status: check.Status, Error: check.Error}
+		row := checkRow{
+			Name:    name,
+			Display: shortDisplayName(name),
+			Status:  check.Status,
+			Error:   check.Error,
+		}
 
 		switch check.Status {
 		case health.StatusFail:
@@ -225,6 +234,31 @@ func groupChecks(checks map[string]health.Check) []checkGroup {
 	return groups
 }
 
+// shortDisplayName condenses a fully-qualified Go type name for table
+// display. The module path is the noise: a service registered as
+//	*github.com/host/repo/internal/features/healthdash/handlers.Handlers
+// reads as "handlers.Handlers", and "github.com/larsartmann/go-health.Probe"
+// as "go-health.Probe". Names that are already short ("database.Service"),
+// single words, and aggregate source/check keys pass through unchanged.
+// The raw name stays available on the row (title attribute and details
+// cell), so shortening is presentation-only and lossless.
+func shortDisplayName(raw string) string {
+	name := strings.TrimPrefix(raw, "*")
+
+	dot := strings.LastIndex(name, ".")
+	if dot <= 0 || dot == len(name)-1 {
+		return raw
+	}
+
+	pkgPath, typeName := name[:dot], name[dot+1:]
+
+	if slash := strings.LastIndex(pkgPath, "/"); slash >= 0 {
+		pkgPath = pkgPath[slash+1:]
+	}
+
+	return pkgPath + "." + typeName
+}
+
 // sortByName sorts check rows alphabetically by service name.
 func sortByName(rows []checkRow) {
 	sort.Slice(rows, func(i, j int) bool {
@@ -240,22 +274,39 @@ func badgeForStatus(s health.Status) display.BadgeProps {
 	}
 }
 
-// rowsToTableRows converts check rows to templ-components TableRows with
-// badge components in the status column.
+// displayName returns the shortened display name, falling back to the raw
+// name when no short form was derived.
+func (row checkRow) displayName() string {
+	if row.Display != "" {
+		return row.Display
+	}
+
+	return row.Name
+}
+
+// errorOrDash returns the check error text, or an em-dash placeholder when
+// the check has no error.
+func (row checkRow) errorOrDash() string {
+	if row.Error == "" {
+		return "—"
+	}
+
+	return row.Error
+}
+
+// rowsToTableRows converts check rows to templ-components TableRows: the
+// service column shows the short display name (raw key in the title
+// attribute and the details column), the status column a badge, and the
+// details column the error text plus the raw check key for full fidelity.
 func rowsToTableRows(rows []checkRow) []display.TableRow {
 	tableRows := make([]display.TableRow, 0, len(rows))
 
 	for _, row := range rows {
-		errorText := row.Error
-		if errorText == "" {
-			errorText = "—"
-		}
-
 		tableRows = append(tableRows, display.TableRow{
 			Cells: []display.TableCell{
-				{Text: row.Name},
+				{Content: serviceNameCell(row)},
 				{Content: display.Badge(badgeForStatus(row.Status))},
-				{Text: errorText},
+				{Content: rowDetailsCell(row)},
 			},
 		})
 	}
@@ -317,6 +368,7 @@ func anonymizeViewModel(vm *viewModel) {
 		for ri := range group.Rows {
 			row := &group.Rows[ri]
 			row.Name = fmt.Sprintf("check-%d", gi*100+ri+1)
+			row.Display = row.Name
 			row.Error = ""
 		}
 	}
