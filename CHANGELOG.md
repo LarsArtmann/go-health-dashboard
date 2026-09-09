@@ -5,6 +5,47 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] — 2026-09-09
+
+Dashboard UI/UX overhaul, executed as a Pareto plan
+(`docs/planning/2026-09-09_19-21_dashboard-ui-ux-pareto.md`): maximize
+operator signal-per-glance with the existing design system — no visual
+redesign, no dependency bumps, no CSP regressions.
+
+### Added
+
+- Healthy-group collapse: the healthy group renders as a native
+  `<details>` section with a count summary ("Healthy Services · 57 · all
+  pass") and collapses automatically at 8+ rows
+  (`WithHealthyGroupCollapse`, `WithHealthyGroupExpanded`). Failing and
+  warning groups keep their cards.
+- Human-readable service names: fully-qualified Go type names shorten to
+  the last package segment plus type (`handlers.Handlers`); the raw key
+  stays recoverable via the title attribute and a monospace line in the
+  details cell. Aggregate `source/check` keys pass through untouched.
+- Group count badges in card titles; the healthy group states its count
+  inline in the summary.
+- Client-side filter box (self-hosted-SDK setups): rows hide via
+  `data-class:hidden` matching short and raw names case-insensitively,
+  with a no-match hint.
+- Connection pill (live / reconnecting / offline) driven by Datastar
+  `datastar-fetch` lifecycle events.
+- Jump-to-problems anchor from the status banner to the first failing or
+  warning group.
+- Header links row surfacing the export/trend/metrics endpoints when
+  configured.
+- Relative "updated" age next to the absolute stamp (server-rendered,
+  patch-safe); the latency StatCard gained an honest hover tooltip.
+- `WithPersistCollapse`: opt-in localStorage persistence of the healthy
+  group's open/closed state, re-applied after every SSE patch.
+
+### Fixed
+
+- Stale browsers after a graceful server restart: the LiveRegion now
+  uses the SDK's `RetryAlways` retry mode. A clean stream EOF (what a
+  restart produces) previously disposed the connection silently and
+  every open dashboard stayed frozen until manually reloaded.
+
 ## [0.6.1] — 2026-09-05
 
 ### Fixed
@@ -549,7 +590,8 @@ development have been removed.
   Replaced by `fingerprintChecks` which sorts keys before concatenating
   (`status.go:215`)
 
-[Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.6.1...v0.7.0
 [0.6.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.3.1...v0.4.0

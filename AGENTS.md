@@ -2,7 +2,7 @@
 
 Real-time health dashboard that composes [go-health](https://github.com/larsartmann/go-health) (health-checking SDK), [templ-components](https://github.com/larsartmann/templ-components) (UI rendering), [go-datastar](https://github.com/larsartmann/go-datastar) (Datastar SSE patch protocol), and [go-sse](https://github.com/larsartmann/go-sse) (SSE transport). The dashboard lives at a dedicated route (`/health`) and uses Datastar SSE for real-time updates. `/health` serves HTML by default but returns JSON when the client sends `Accept: application/json`. Kubernetes probe endpoints (`/healthz`, `/readyz`, `/startupz`) are JSON-only.
 
-**Module**: `github.com/larsartmann/go-health-dashboard` · **Package**: `dashboard` · **Go**: 1.26.5 · **Status**: v0.6.0
+**Module**: `github.com/larsartmann/go-health-dashboard` · **Package**: `dashboard` · **Go**: 1.26.5 · **Status**: v0.7.0
 
 ---
 
@@ -74,7 +74,7 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   in-process probes (namespaced `source/check` keys, worst-of status) with zero
   dashboard knowledge of the aggregate type.
 - **Webhooks are change-only and best-effort** — fire on status/fingerprint change, independent of PushMode; initial state announced on Start. One goroutine per fire, 10s timeout, bounded in-flight, no retries, no logging (the URL may embed a secret). Receivers own thresholds and dedup.
-- **SSE-first, Datastar-powered** — the Datastar SDK handles connections, reconnection, and DOM patching client-side; `datastar.LiveRegion` wraps the health content with `data-init="@get('/health/sse')"`.
+- **SSE-first, Datastar-powered** — the Datastar SDK handles connections, reconnection, and DOM patching client-side; `datastar.LiveRegion` wraps the health content with `data-init="@get('/health/sse')"` and `Retry: RetryAlways` (the SDK treats a clean stream EOF — exactly what a graceful restart produces — as a completed request and never reconnects under the default retry mode, leaving browsers stale until reload; verified empirically and documented in templ-components/datastar `retry.go`).
 - **Content negotiation on `/health`** — HTML by default; `Accept: application/json` returns the full health response (200 pass/warn, 503 fail). Kubelet probes (`/healthz`, `/readyz`, `/startupz`) are JSON-only.
 - **Status mapping: direct constants** — go-health uses `pass`/`warn`/`fail`. We map directly to `BadgeType` constants and `FeedbackType` constants (not the deprecated `AlertType` alias).
 - **Broadcaster fan-out (internal)** — one pusher goroutine renders patches and broadcasts to N SSE clients via `sse.Broadcaster[sse.Event]`; an implementation detail.
@@ -157,6 +157,16 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **Headless Chrome must be launched manually in tests** — this machine's Chromium binds the DevTools listener to IPv6 `[::1]` and never announces a websocket with `--remote-debugging-port=0`. `startHeadlessChrome` (browser_test.go) picks a concrete free port, parses the `DevTools listening on ...` stderr line, and hands it to `chromedp.NewRemoteAllocator`. The profile dir is removed with a bounded retry because renderer children outlive the browser process.
 - **Bisect wall `071c251..HEAD`** — five auto-daemon mid-edit commits do not compile (immutable history); `git bisect skip` them. Root cause class: the daemon snapshots half-wired trees — run `go build ./...` before walking away. Full audit: `docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
 - **UI dependencies are pinned and guarded** — templ-components v1.13.0/v1.13.2 + go-datastar v0.5.0, re-audited 2026-09-09 with a green CSP browser suite (the #7 LiveRegion nonce guard is in v1.13.2; the v0.5.0 SDK bundle passed CSPCleanRuntime/LiveSSEPatch/Metrics/Aggregate). Undocumented sweeps have landed four times; `scripts/check-ui-pins.sh` (CI Build+Test steps) fails loudly on any movement. UI bumps require a dedicated change with a green browser suite — the unit suite cannot see these regressions. Known remaining upstream issue: StatCard figure `<dd>` markup is invalid HTML (templ-components#6); tolerated narrowly in `TestBrowser_Accessibility` until upstream fixes it.
+- **Datastar v1.0 attribute names are colon-keyed** — the SDK (pinned
+  v0.5.0 bundle) registers plugins by name and splits keys on `:`:
+  `data-bind="query"` (not the pre-1.0 `data-model`) and
+  `data-class:hidden="expr"` (not `data-class-hidden` — plugin names
+  contain hyphens, so hyphen-keyed class attributes silently match
+  nothing). Verified against the embedded bundle; the filter box and
+  collapse persistence depend on this. Also: patch application itself
+  dispatches `datastar-fetch` events with type `datastar-patch-*`, which
+  the connection pill maps to "live" (retry-success paths emit no
+  `started`/`finished`).
 - **Env toggles validate before use** — the example's `safeBasePath` is the
   pattern: any value read from an environment variable that reaches a route
   or a log line gets validated/normalized first (log-injection defense).

@@ -115,6 +115,9 @@ dash := dashboard.New(probe,
     dashboard.WithRetryInterval(2*time.Second),                // SSE reconnection delay (browser retry field)
     dashboard.WithTrend(60),                                   // Health trend sparkline (samples retained)
     dashboard.WithHideStatCards(),                             // Hide version/uptime/latency cards
+    dashboard.WithHealthyGroupCollapse(8),                     // Collapse healthy group at 8+ rows (default 8)
+    // dashboard.WithHealthyGroupExpanded(),                     // Never collapse the healthy group
+    dashboard.WithPersistCollapse(),                           // Remember collapse state in localStorage (opt-in)
     dashboard.WithMetrics(true),                               // Prometheus metrics at /health/metrics
     dashboard.WithMiddleware(myAuthMiddleware),                // Protect dashboard routes (see below)
     dashboard.WithShutdownDrain(5*time.Second),                // Wait for SSE clients on Shutdown
@@ -137,6 +140,31 @@ dash := dashboard.New(probe,
 dashboard-owned routes (dashboard HTML, SSE, favicon, metrics, trend,
 export) — not one bucket per route. Kubernetes probe endpoints are never
 limited.
+
+## Reading the Dashboard
+
+The page is organized for triage: **failures first, green last**.
+
+- **Status banner** — overall state at a glance: "All Systems Operational",
+  "Degraded — Non-Critical Issues", or "Unhealthy — Critical Failures". When
+  anything is failing, a **Jump to problems** link scrolls to the first
+  non-healthy group.
+- **Service tables** — grouped by severity (critical failures, non-critical
+  issues, healthy). Card titles carry row-count badges. Long check names are
+  shortened (`*github.com/org/repo/internal/.../handlers.Handlers` reads as
+  `handlers.Handlers`); the full key is in the table cell and on hover.
+- **Healthy group** — collapsed by default once 8+ services pass
+  (`WithHealthyGroupCollapse`); the summary line states the count. An SSE
+  patch re-applies the default state; `WithPersistCollapse` lets each
+  browser keep its choice.
+- **Filter** (self-hosted SDK setups) — type to narrow rows by short or raw
+  name, case-insensitive.
+- **Connection pill** — live / reconnecting / offline, driven by the SSE
+  stream's real lifecycle. The stream self-heals across server restarts.
+- **Header links** — Export CSV/JSON, trend history, and Prometheus metrics,
+  shown only when those endpoints are configured.
+- **Updated stamp** — absolute UTC time plus a coarse age; the stamp is the
+  time the health state was actually observed.
 
 ## Protecting the Dashboard
 

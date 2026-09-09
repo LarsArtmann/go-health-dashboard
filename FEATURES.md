@@ -29,7 +29,17 @@
 | StatCards (version, uptime, latency)   | 🟢 `FULLY_FUNCTIONAL` | `view.templ:39-47` — 3-card grid                                                                       |
 | StatCards hiding (`WithHideStatCards`) | 🟢 `FULLY_FUNCTIONAL` | Compact mode; banner and tables always render                                                          |
 | Health trend sparkline (`WithTrend`)   | 🟢 `FULLY_FUNCTIONAL` | `pusher.go` ring buffer + `view.templ` — `display.Sparkline`, pass=1/warn=0.5/fail=0                   |
-| Empty state                            | 🟢 `FULLY_FUNCTIONAL` | `view.templ:165` — "No registered services"                                                            |
+| Empty state                            | 🟢 `FULLY_FUNCTIONAL` | `view.templ` — "No services registered yet."                                                           |
+| Healthy-group collapse (native `<details>`) | 🟢 `FULLY_FUNCTIONAL` | `status.go` `applyCollapsePolicy` + `view.templ` — default threshold 8 (`WithHealthyGroupCollapse`/`WithHealthyGroupExpanded`); patches re-derive server-side |
+| Short display names for checks         | 🟢 `FULLY_FUNCTIONAL` | `status.go` `shortDisplayName` — module path dropped, raw key in title attr + details cell; public mode masks both |
+| Group count badges                     | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `groupCountBadge` — card header badges; healthy group states count in summary             |
+| Client-side filter (self-hosted SDK)   | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `groupRows` — `data-bind` query signal + `data-class:hidden` rows; no-match hint          |
+| Connection pill (live/reconnecting/offline) | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `connectionPill` — `datastar-fetch` events; stream self-heals via `RetryAlways`      |
+| Jump-to-problems anchor                | 🟢 `FULLY_FUNCTIONAL` | `view.templ` — banner link to `#group-problems` when failing/warning groups exist                      |
+| Header links (export/trend/metrics)    | 🟢 `FULLY_FUNCTIONAL` | `view.templ` — shown only when the endpoints are configured                                            |
+| Relative "updated" age                 | 🟢 `FULLY_FUNCTIONAL` | `status.go` `formatAge` — server-rendered next to absolute stamp (patch-safe, no script)               |
+| Collapse persistence (`WithPersistCollapse`) | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `collapsePersistence` — localStorage + re-apply after patches; opt-in                |
+| Long-error expansion                   | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `rowDetailsCell` — native `<details>` for 80+ rune errors, break-words                    |
 | Graceful shutdown state display        | 🟢 `FULLY_FUNCTIONAL` | `status.go:111` — buildViewModel overrides banner to "Shutting Down"                                   |
 | Dark mode toggle                       | 🟢 `FULLY_FUNCTIONAL` | `view.templ:36` — layout.ThemeToggle, nonce-aware, persisted in localStorage                           |
 | Favicon endpoint                       | 🟢 `FULLY_FUNCTIONAL` | `favicon.go:13` — embedded SVG green-heart, served at `/favicon.svg`                                   |
