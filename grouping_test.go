@@ -180,15 +180,16 @@ func TestGroupChecks_NeverEmitEmptyGroups(t *testing.T) {
 		"unknown",
 	}
 
-	fixtures := []map[string]health.Check{
-		{},
-		{"only": {Status: health.StatusPass}},
-		{
+	fixtures := make([]map[string]health.Check, 0, 53)
+	fixtures = append(fixtures,
+		map[string]health.Check{},
+		map[string]health.Check{"only": {Status: health.StatusPass}},
+		map[string]health.Check{
 			"a": {Status: health.StatusFail},
 			"b": {Status: health.StatusWarn},
 			"c": {Status: health.StatusPass},
 		},
-	}
+	)
 
 	for i := range 50 {
 		checks := map[string]health.Check{}

@@ -177,6 +177,7 @@ func (d *Dashboard) ExportHandler() http.HandlerFunc {
 						"dashboard: failed to encode export",
 						http.StatusInternalServerError,
 					)
+
 					return
 				}
 

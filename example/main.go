@@ -249,6 +249,16 @@ func buildOptions() []dashboard.Option {
 		log.Println("base path: dashboard routes mounted under the DEMO_BASE_PATH prefix")
 	}
 
+	opts = appendUIGrowthOptions(opts)
+
+	return opts
+}
+
+// appendUIGrowthOptions appends the 0.7.x UI toggles: collapse threshold,
+// collapse persistence, embedded SDK (client-side filter), and grouping
+// mode. Env values are validated before any reaches a log line, following
+// the log-injection defense the other DEMO_ toggles use.
+func appendUIGrowthOptions(opts []dashboard.Option) []dashboard.Option {
 	if raw := os.Getenv("DEMO_COLLAPSE"); raw != "" {
 		threshold, err := strconv.Atoi(raw)
 		if err != nil || threshold < 0 {
