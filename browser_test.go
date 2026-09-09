@@ -1380,6 +1380,49 @@ func TestBrowser_FilterInteract(t *testing.T) {
 
 	waitForJS(t, ctx, visibleRows+` === "1"`, visibleRows, nil)
 
+	// Plan C5 leftover: re-run the accessibility audit on the FILTERED
+	// state, not just the full page — hiding rows via data-class must not
+	// introduce violations (e.g. a dangling no-match region or removed
+	// table semantics).
+	axeBytes := fetchAxeCore(t)
+
+	s.mux.HandleFunc("/static/axe.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(axeBytes)
+	})
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+		if (window.axe) { return; }
+		var el = document.createElement("script");
+		el.src = "/static/axe.js";
+		document.head.appendChild(el);
+	})()`, nil)); err != nil {
+		t.Fatalf("axe inject: %v", err)
+	}
+
+	waitForJS(t, ctx, `window.axe !== undefined`, `typeof window.axe`, nil)
+
+	var filteredAudit string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`axe.run(
+		{ include: [document] },
+		{ resultTypes: ["violations"] }
+	).then(function (r) {
+		window.__filteredAxe = JSON.stringify(r.violations.filter(function (v) {
+			return v.impact === "serious" || v.impact === "critical";
+		}).map(function (v) { return v.id + ":" + v.nodes.length; }));
+	}).catch(function (e) {
+		window.__filteredAxe = "AXE_ERROR: " + e;
+	})`, nil)); err != nil {
+		t.Fatalf("axe run: %v", err)
+	}
+
+	waitForJS(t, ctx, `window.__filteredAxe !== undefined`, `window.__filteredAxe`, &filteredAudit)
+
+	if filteredAudit != "[]" {
+		t.Errorf("axe on the filtered DOM found serious/critical violations: %s", filteredAudit)
+	}
+
 	// chromedp.SetValue cannot set an empty string, so clear via JS and
 	// dispatch the input event data-bind listens on.
 	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
@@ -1560,6 +1603,105 @@ func dumpFetchEvents(ctx context.Context) string {
 	_ = chromedp.Run(ctx, chromedp.Evaluate(`JSON.stringify(window.__fetchEvents || [])`, &events))
 
 	return events
+}
+
+// TestBrowser_RetryAlwaysRidesOutMaxConnections proves the client-side
+// interplay of RetryAlways with WithMaxSSEConnections: with the limit held
+// by one tab, a second tab's SSE requests are rejected with 503 and the SDK
+// keeps retrying without user action; once the holding tab disconnects, the
+// waiting tab connects and renders live state. The same non-200 retry path
+// in the SDK bundle serves 429 rate-limit responses (verified in the pinned
+// v0.5.0 bundle: any non-200 under retry=always schedules a retry), so this
+// also documents the RetryAlways × rate-limit interplay.
+func TestBrowser_RetryAlwaysRidesOutMaxConnections(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-retry-503-nonce"
+
+	s := setupDashboardWithHealthyServices(t, 4,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithPushMode(dashboard.PushAlways),
+		dashboard.WithPushInterval(200*time.Millisecond),
+		dashboard.WithMaxSSEConnections(1),
+	)
+	defer s.cleanup()
+
+	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		_, _ = w.Write([]byte("body { margin: 0; }"))
+	})
+
+	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(dstarstatic.Bytes())
+	})
+
+	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	tabA, cancelA := chromedp.NewContext(allocCtx)
+	defer cancelA()
+
+	errLogA := watchBrowserErrors(tabA)
+
+	if err := chromedp.Run(tabA, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("tab A navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+
+	if s.dash.SubscriberCount() != 1 {
+		t.Fatalf("connection limit 1: want exactly 1 subscriber, got %d", s.dash.SubscriberCount())
+	}
+
+	tabB, cancelB := chromedp.NewContext(allocCtx)
+	defer cancelB()
+
+	errLogB := watchBrowserErrors(tabB)
+
+	if err := chromedp.Run(tabB, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("tab B navigate: %v", err)
+	}
+
+	// Tab B's SSE requests get 503 for as long as tab A holds the only
+	// slot. The SDK must keep retrying (RetryAlways) without connecting.
+	time.Sleep(1500 * time.Millisecond)
+
+	if got := s.dash.SubscriberCount(); got != 1 {
+		t.Fatalf("tab B must not exceed the connection limit, subscribers = %d", got)
+	}
+
+	// Releasing tab A closes its SSE stream; tab B's pending retry should
+	// take the freed slot and render live state.
+	cancelA()
+
+	deadline := time.Now().Add(20 * time.Second)
+
+	for s.dash.SubscriberCount() == 0 {
+		if time.Now().After(deadline) {
+			t.Fatalf("tab B never connected after the slot freed (retry loop gave up?)")
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	waitForBodyText(t, tabB, "Healthy")
+
+	assertNoBrowserErrors(t, errLogA)
+	assertNoBrowserErrors(t, errLogB)
 }
 
 // TestBrowser_MobileViewport proves the dashboard is usable at a phone
