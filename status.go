@@ -100,6 +100,15 @@ type viewModel struct {
 	// it is the observation time of the most recent sample (when the health
 	// state was actually seen); without it, the render time.
 	LastUpdated string
+	// LastUpdatedTime is the machine timestamp behind LastUpdated, used to
+	// render the coarse "2m ago" age next to the absolute stamp.
+	LastUpdatedTime time.Time
+	// ExportURL, TrendURL, and MetricsURL are the non-empty endpoints
+	// surfaced in the header links row: export/history JSON, trend JSON, and
+	// Prometheus metrics. Empty means the endpoint is disabled.
+	ExportURL  string
+	TrendURL   string
+	MetricsURL string
 	Description string
 	// ShowStatCards renders the version/uptime/latency card grid.
 	// Enabled by default; disabled via WithHideStatCards.
@@ -113,6 +122,9 @@ type viewModel struct {
 	// paths (initial HTML and SSE patches) re-derive it, so a patch always
 	// restores the default collapse state.
 	HealthyCollapsed bool
+	// PersistCollapse enables the localStorage persistence script for the
+	// healthy group's open/closed state (WithPersistCollapse).
+	PersistCollapse bool
 }
 
 // updatedStampFormat is the wall-clock format of the viewModel LastUpdated
@@ -134,17 +146,18 @@ func buildViewModel(resp health.Response, title, sseURL string) viewModel {
 	}
 
 	return viewModel{
-		LastUpdated:   time.Now().UTC().Format(updatedStampFormat),
-		Title:         title,
-		Status:        resp.Status,
-		FeedbackType:  feedbackType,
-		StatusText:    statusText,
-		Version:       resp.Version,
-		Uptime:        resp.Uptime,
-		LatencyMs:     resp.TotalLatencyMs,
-		Groups:        groups,
-		SSEURL:        sseURL,
-		ShowStatCards: true,
+		LastUpdated:      time.Now().UTC().Format(updatedStampFormat),
+		LastUpdatedTime:  time.Now().UTC(),
+		Title:            title,
+		Status:           resp.Status,
+		FeedbackType:     feedbackType,
+		StatusText:       statusText,
+		Version:          resp.Version,
+		Uptime:           resp.Uptime,
+		LatencyMs:        resp.TotalLatencyMs,
+		Groups:           groups,
+		SSEURL:           sseURL,
+		ShowStatCards:    true,
 	}
 }
 
@@ -330,6 +343,21 @@ func truncateError(s string) string {
 	runes := []rune(s)
 
 	return string(runes[:errorSummaryMax]) + "…"
+}
+
+// formatAge renders a coarse human age for the Updated stamp: "just now",
+// "42s ago", "3m ago", or "2h ago". Future timestamps clamp to "just now".
+func formatAge(observation, now time.Time) string {
+	d := now.Sub(observation)
+
+	switch {
+	case d < time.Minute:
+		return "just now"
+	case d < time.Hour:
+		return fmt.Sprintf("%dm ago", int(d.Minutes()))
+	default:
+		return fmt.Sprintf("%dh ago", int(d.Hours()))
+	}
 }
 
 // sortByName sorts check rows alphabetically by service name.

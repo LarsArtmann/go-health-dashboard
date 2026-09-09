@@ -112,7 +112,9 @@ func populateHistory(vm *viewModel, buffer *historyBuffer, maxAge time.Duration)
 	vm.History = values
 
 	if len(samples) > 0 {
-		vm.LastUpdated = samples[len(samples)-1].At.UTC().Format(updatedStampFormat)
+		last := samples[len(samples)-1]
+		vm.LastUpdated = last.At.UTC().Format(updatedStampFormat)
+		vm.LastUpdatedTime = last.At.UTC()
 	}
 
 	transitions := buffer.transitions()

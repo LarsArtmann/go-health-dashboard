@@ -152,6 +152,10 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 	vm.FaviconURL = d.cfg.Routes.Favicon
 	vm.ShowStatCards = !d.cfg.HideStatCards
 	vm.Description = d.cfg.Description
+	vm.PersistCollapse = d.cfg.PersistCollapse
+	vm.ExportURL = d.exportURL()
+	vm.TrendURL = d.trendURL()
+	vm.MetricsURL = d.metricsURL()
 
 	if d.cfg.PublicMode {
 		anonymizeViewModel(&vm)

@@ -33,3 +33,33 @@ func DefaultRoutes() Routes {
 		DatastarJS: "/health/datastar.js",
 	}
 }
+
+// exportURL returns the status-history export endpoint when the trend is
+// enabled and the route is configured, otherwise empty (endpoint disabled).
+func (d *Dashboard) exportURL() string {
+	if d.cfg.TrendSamples > 0 && d.cfg.Routes.Export != "" {
+		return d.cfg.Routes.Export
+	}
+
+	return ""
+}
+
+// trendURL returns the trend-history endpoint when the trend is enabled and
+// the route is configured, otherwise empty (endpoint disabled).
+func (d *Dashboard) trendURL() string {
+	if d.cfg.TrendSamples > 0 && d.cfg.Routes.Trend != "" {
+		return d.cfg.Routes.Trend
+	}
+
+	return ""
+}
+
+// metricsURL returns the Prometheus metrics endpoint when metrics are
+// enabled and the route is configured, otherwise empty (endpoint disabled).
+func (d *Dashboard) metricsURL() string {
+	if d.cfg.MetricsEnabled && d.cfg.Routes.Metrics != "" {
+		return d.cfg.Routes.Metrics
+	}
+
+	return ""
+}

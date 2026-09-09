@@ -69,6 +69,12 @@ type Config struct {
 	// or disabled via WithHealthyGroupExpanded.
 	HealthyGroupCollapseThreshold int
 
+	// PersistCollapse stores the healthy group's open/closed state in the
+	// browser's localStorage and re-applies it after every SSE patch. Off
+	// by default: patches re-derive the collapse state server-side, which
+	// keeps every client consistent. Enable via WithPersistCollapse.
+	PersistCollapse bool
+
 	// BasePath is stored by WithBasePath and applied to Routes once after
 	// all options run (see resolveRoutes). Empty means no prefix.
 	BasePath string
@@ -162,6 +168,14 @@ func WithHealthyGroupCollapse(threshold int) Option {
 
 		c.HealthyGroupCollapseThreshold = threshold
 	}
+}
+
+// WithPersistCollapse stores the healthy group's open/closed state in
+// localStorage and re-applies it after every SSE patch, so an operator's
+// choice survives reconnects and restarts. Off by default: without it, an
+// SSE patch re-applies the server-derived default collapse state.
+func WithPersistCollapse() Option {
+	return func(c *Config) { c.PersistCollapse = true }
 }
 
 // WithHealthyGroupExpanded keeps the healthy group expanded regardless of

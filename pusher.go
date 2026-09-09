@@ -148,6 +148,10 @@ func (p *pusher) renderPatch(resp health.Response) (sse.Event, bool) {
 	vm.CSSPath = p.dashboard.cfg.CSSPath
 	vm.DatastarSrc = p.dashboard.cfg.DatastarSrc
 	vm.ShowStatCards = !p.dashboard.cfg.HideStatCards
+	vm.PersistCollapse = p.dashboard.cfg.PersistCollapse
+	vm.ExportURL = p.dashboard.exportURL()
+	vm.TrendURL = p.dashboard.trendURL()
+	vm.MetricsURL = p.dashboard.metricsURL()
 
 	if p.history != nil {
 		populateHistory(&vm, p.history, p.dashboard.cfg.TimelineMaxAge)
