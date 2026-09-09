@@ -15,6 +15,10 @@ const (
 	// defaultHeartbeatInterval is the SSE keepalive interval when
 	// WithHeartbeatInterval is not set.
 	defaultHeartbeatInterval = 15 * time.Second
+	// defaultHealthyGroupCollapseThreshold collapses the healthy group once
+	// it reaches this many rows. Chosen so small services stay scannable
+	// while large aggregates collapse instead of burying the page.
+	defaultHealthyGroupCollapseThreshold = 8
 )
 
 // Config holds construction-only configuration for a Dashboard.
@@ -56,6 +60,14 @@ type Config struct {
 	// and the metrics endpoint. Health JSON and probe endpoints are
 	// unaffected.
 	PublicMode bool
+
+	// HealthyGroupCollapseThreshold collapses the healthy group behind a
+	// native <details> element when at least this many checks are healthy,
+	// so a large all-green table never buries failures rendered above it.
+	// Zero keeps the group expanded always. Defaults to
+	// defaultHealthyGroupCollapseThreshold; set via WithHealthyGroupCollapse
+	// or disabled via WithHealthyGroupExpanded.
+	HealthyGroupCollapseThreshold int
 
 	// BasePath is stored by WithBasePath and applied to Routes once after
 	// all options run (see resolveRoutes). Empty means no prefix.
@@ -136,6 +148,26 @@ func WithTrend(samples int) Option {
 			c.TrendSamples = samples
 		}
 	}
+}
+
+// WithHealthyGroupCollapse collapses the healthy group behind a native
+// <details> element once at least threshold checks are healthy. The summary
+// line shows the count so the group stays glanceable; users can expand it
+// manually. A threshold of zero (or less) keeps the group expanded always.
+func WithHealthyGroupCollapse(threshold int) Option {
+	return func(c *Config) {
+		if threshold < 0 {
+			threshold = 0
+		}
+
+		c.HealthyGroupCollapseThreshold = threshold
+	}
+}
+
+// WithHealthyGroupExpanded keeps the healthy group expanded regardless of
+// size, for dashboards where the full healthy table is the point.
+func WithHealthyGroupExpanded() Option {
+	return WithHealthyGroupCollapse(0)
 }
 
 // WithHideStatCards hides the version/uptime/latency stat card grid.
