@@ -98,6 +98,15 @@ type viewModel struct {
 	// ShowStatCards renders the version/uptime/latency card grid.
 	// Enabled by default; disabled via WithHideStatCards.
 	ShowStatCards bool
+	// HealthyCount is the number of rows in the healthy group (0 when no
+	// healthy group exists). Rendered in the group's summary line.
+	HealthyCount int
+	// HealthyCollapsed collapses the healthy group behind a native
+	// <details> element on initial render. Derived from HealthyCount and
+	// the configured collapse threshold by applyCollapsePolicy; both render
+	// paths (initial HTML and SSE patches) re-derive it, so a patch always
+	// restores the default collapse state.
+	HealthyCollapsed bool
 }
 
 // updatedStampFormat is the wall-clock format of the viewModel LastUpdated
@@ -311,4 +320,37 @@ func anonymizeViewModel(vm *viewModel) {
 			row.Error = ""
 		}
 	}
+}
+
+// applyCollapsePolicy derives the healthy-group collapse state from the view
+// model's groups and the configured threshold: the group collapses when at
+// least threshold rows are healthy. A threshold of zero or less never
+// collapses. Both render paths (initial HTML and SSE patches) call this, so
+// a patch re-applies the default collapse state by design.
+func applyCollapsePolicy(vm *viewModel, threshold int) {
+	for _, group := range vm.Groups {
+		if group.Status == health.StatusPass {
+			vm.HealthyCount = len(group.Rows)
+
+			break
+		}
+	}
+
+	vm.HealthyCollapsed = threshold > 0 && vm.HealthyCount >= threshold
+}
+
+// healthyGroupSummary builds the healthy group's summary line, e.g.
+// "Healthy Services \u00b7 57 \u00b7 all pass". The "all pass" suffix is appended only
+// when every row in the group is a pass: unknown statuses are grouped as
+// healthy too and must not be claimed as passing.
+func healthyGroupSummary(group checkGroup) string {
+	summary := fmt.Sprintf("%s \u00b7 %d", group.Title, len(group.Rows))
+
+	for _, row := range group.Rows {
+		if row.Status != health.StatusPass {
+			return summary
+		}
+	}
+
+	return summary + " \u00b7 all pass"
 }

@@ -191,7 +191,7 @@ func TestCSP_WithoutDatastarSrcUsesCDN(t *testing.T) {
 		t.Error("Datastar CDN script should be rendered when DatastarSrc is not set")
 	}
 
-	if !strings.Contains(body, "starfederation/datastar@1.0.2/bundles/datastar.js") {
+	if !strings.Contains(body, "starfederation/datastar@1.0.3/bundles/datastar.js") {
 		t.Error("default Datastar CDN URL should point at the pinned Datastar bundle version")
 	}
 }
