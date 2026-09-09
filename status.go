@@ -1,11 +1,13 @@
 package dashboard
 
 import (
+	"encoding/json/v2"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/display"
@@ -259,6 +261,75 @@ func shortDisplayName(raw string) string {
 	}
 
 	return pkgPath + "." + typeName
+}
+
+// hasShortDisplay reports whether the row's raw key was shortened for
+// display — when false, the details column need not repeat it.
+func (row checkRow) hasShortDisplay() bool {
+	return row.Display != "" && row.Display != row.Name
+}
+
+// hasProblems reports whether any check group is failing or warning — used
+// to decide whether the "jump to problems" anchor link renders.
+func hasProblems(vm viewModel) bool {
+	for _, group := range vm.Groups {
+		if group.Status != health.StatusPass {
+			return true
+		}
+	}
+
+	return false
+}
+
+// filterHaystack returns the lowercase search text a row is matched against
+// by the client-side filter: short display name plus raw check key.
+func filterHaystack(row checkRow) string {
+	return strings.ToLower(row.displayName() + " " + row.Name)
+}
+
+// jsStringLiteral encodes s as a double-quoted JavaScript string literal.
+// JSON strings are valid ES2019+ literals (the JSON-superset proposal), so
+// encoding/json's output is used directly — it handles quotes, control
+// characters, and non-ASCII safely. Marshal cannot fail for strings; the
+// fallback exists for exhaustiveness.
+func jsStringLiteral(s string) string {
+	encoded, err := json.Marshal(s)
+	if err != nil {
+		return strconv.Quote(s)
+	}
+
+	return string(encoded)
+}
+
+// filterEmptyExpr builds the data-class-hidden expression for the
+// "no services match" hint: visible only while a query is active and no
+// row anywhere on the page matches it.
+func filterEmptyExpr(vm viewModel) string {
+	all := &strings.Builder{}
+
+	for _, group := range vm.Groups {
+		for _, row := range group.Rows {
+			all.WriteString(filterHaystack(row))
+			all.WriteString("\n")
+		}
+	}
+
+	return "$query !== '' || !" + jsStringLiteral(all.String()) + ".includes($query)"
+}
+
+// errorSummaryMax bounds the error text shown before the details expansion.
+const errorSummaryMax = 80
+
+// truncateError shortens long error text for the collapsed summary,
+// rune-safe so multi-byte characters are never split.
+func truncateError(s string) string {
+	if utf8.RuneCountInString(s) <= errorSummaryMax {
+		return s
+	}
+
+	runes := []rune(s)
+
+	return string(runes[:errorSummaryMax]) + "…"
 }
 
 // sortByName sorts check rows alphabetically by service name.

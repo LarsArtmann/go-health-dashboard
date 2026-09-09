@@ -3,6 +3,7 @@ package dashboard
 import (
 	"fmt"
 	"strconv"
+	"unicode/utf8"
 
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/datastar"
@@ -35,7 +36,10 @@ templ View(data viewModel) {
 							Real-time health monitoring
 						</p>
 					</div>
-					@layout.ThemeToggle("Toggle theme", data.DatastarNonce)
+					<div class="flex items-center gap-3">
+						@connectionPill(data.DatastarNonce)
+						@layout.ThemeToggle("Toggle theme", data.DatastarNonce)
+					</div>
 				</div>
 				if data.ShowStatCards {
 					@display.Grid(display.GridProps{Cols: display.GridCols3}) {
@@ -116,6 +120,7 @@ templ dashboardContent(data viewModel) {
 	{{
 		trendMinVal := 0.0
 		trendMaxVal := 1.0
+		problemsAssigned := false
 	}}
 	@feedback.Alert(feedback.AlertProps{
 		Type:  data.FeedbackType,
@@ -124,6 +129,26 @@ templ dashboardContent(data viewModel) {
 	<p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
 		Updated { data.LastUpdated }
 	</p>
+	if hasProblems(data) {
+		<p class="mt-2 text-sm">
+			<a href="#group-problems" class="font-medium text-red-600 underline decoration-red-300 underline-offset-2 hover:text-red-700 dark:text-red-400 dark:decoration-red-700 dark:hover:text-red-300">
+				Jump to problems ↓
+			</a>
+		</p>
+	}
+	if data.DatastarSrc != "" {
+		<div class="mt-6">
+			<label class="sr-only" for="health-filter">Filter services</label>
+			<input
+				id="health-filter"
+				type="search"
+				autocomplete="off"
+				placeholder="Filter services…"
+				data-model="query"
+				class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+			/>
+		</div>
+	}
 	if len(data.History) >= 2 {
 		<div class="mt-6">
 			@display.Card(display.CardProps{Title: "Health Trend"}) {
@@ -175,6 +200,16 @@ templ dashboardContent(data viewModel) {
 					}) {
 						@groupTable(group)
 					}
+				} else if !problemsAssigned {
+					{{ problemsAssigned = true }}
+					@display.Card(display.CardProps{
+						BaseProps:    utils.BaseProps{ID: "group-problems"},
+						Title:        group.Title,
+						Padding:      display.CardPaddingNone,
+						HeaderAction: groupCountBadge(len(group.Rows)),
+					}) {
+						@groupTable(group)
+					}
 				} else {
 					@display.Card(display.CardProps{
 						Title:        group.Title,
@@ -186,16 +221,46 @@ templ dashboardContent(data viewModel) {
 				}
 			}
 		}
+		if data.DatastarSrc != "" && len(data.Groups) > 0 {
+			<p class="hidden text-sm text-gray-500 dark:text-gray-400" data-filter-empty data-class-hidden={ filterEmptyExpr(data) }>
+				No services match your filter.
+			</p>
+		}
 	</div>
 }
 
 // groupTable renders the service table shared by every group container.
+// Rows are rendered via the Body hook so each <tr> can carry the
+// client-side filter attributes.
 templ groupTable(group checkGroup) {
 	@display.Table(display.TableProps{
 		Headers: []string{"Service", "Status", "Details"},
-		Rows:    rowsToTableRows(group.Rows),
 		Flush:   true,
+		Body:    groupRows(group),
 	})
+}
+
+// groupRows renders the table rows for a group, each carrying its filter
+// haystack and a data-class-hidden expression that hides the row while the
+// query signal is active and does not match. The haystack covers both the
+// short display name and the raw check key, case-insensitively.
+templ groupRows(group checkGroup) {
+	for _, row := range group.Rows {
+		<tr
+			data-filter-row={ filterHaystack(row) }
+			data-class-hidden={ "$query !== '' && !" + jsStringLiteral(filterHaystack(row)) + ".includes($query.toLowerCase())" }
+		>
+			<td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+				@serviceNameCell(row)
+			</td>
+			<td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+				@display.Badge(badgeForStatus(row.Status))
+			</td>
+			<td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+				@rowDetailsCell(row)
+			</td>
+		</tr>
+	}
 }
 
 // groupCountBadge renders the row count shown in a group card's header.
@@ -219,12 +284,22 @@ templ serviceNameCell(row checkRow) {
 	<span class="font-medium text-gray-900 dark:text-gray-100" title={ row.Name }>{ row.displayName() }</span>
 }
 
-// rowDetailsCell renders the Details column: the error text (or a dash),
-// plus the raw check key as a dim monospace line whenever it differs from
-// the shortened display name — full fidelity without giving up scannability.
+// rowDetailsCell renders the Details column: the error text (long errors
+// expand via a native <details>), plus the raw check key as a dim
+// monospace line whenever it differs from the shortened display name —
+// full fidelity without giving up scannability.
 templ rowDetailsCell(row checkRow) {
-	<span class="text-gray-600 dark:text-gray-300">{ row.errorOrDash() }</span>
-	if row.Display != "" && row.Display != row.Name {
+	if row.Error == "" {
+		<span class="text-gray-400 dark:text-gray-500">—</span>
+	} else if utf8.RuneCountInString(row.Error) <= errorSummaryMax {
+		<span class="break-words text-gray-600 dark:text-gray-300">{ row.Error }</span>
+	} else {
+		<details class="min-w-0">
+			<summary class="cursor-pointer break-all text-gray-600 dark:text-gray-300">{ truncateError(row.Error) }</summary>
+			<span class="mt-1 block whitespace-pre-wrap break-words font-mono text-xs text-gray-600 dark:text-gray-400">{ row.Error }</span>
+		</details>
+	}
+	if row.hasShortDisplay() {
 		<span class="mt-0.5 block break-all font-mono text-xs text-gray-400 dark:text-gray-500">{ row.Name }</span>
 	}
 }
@@ -243,3 +318,52 @@ const (
 	trendWidth  = 480
 	trendHeight = 64
 )
+
+// connectionPill renders the SSE connection indicator: live, reconnecting,
+// or offline. The Datastar SDK reports its fetch/SSE lifecycle on the
+// document-level "datastar-fetch" event (detail.type: started, finished,
+// retrying, error, retries-failed); a nonce-carried script maps those to
+// the three states by toggling the HTML hidden attribute. All three states
+// are pre-rendered so no CSS or DOM construction is needed at runtime, and
+// state changes are announced via aria-live. The pill sits outside the
+// patched region, so its state survives SSE content updates.
+templ connectionPill(nonce string) {
+	<span class="inline-flex items-center gap-1.5 text-xs font-medium" aria-live="polite">
+		<span id="conn-state-live" class="inline-flex items-center gap-1.5 text-green-600 dark:text-green-400">
+			<span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+			Live
+		</span>
+		<span id="conn-state-reconnecting" hidden class="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+			<span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+			Reconnecting
+		</span>
+		<span id="conn-state-offline" hidden class="inline-flex items-center gap-1.5 text-red-600 dark:text-red-400">
+			<span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+			Offline
+		</span>
+	</span>
+	<script
+		if nonce != "" {
+			nonce={ nonce }
+		}
+	>
+		(function () {
+			'use strict';
+			if (window.__healthConnInit) { return; }
+			window.__healthConnInit = true;
+			var states = ['live', 'reconnecting', 'offline'];
+			function setState(state) {
+				states.forEach(function (name) {
+					var el = document.getElementById('conn-state-' + name);
+					if (el) { el.hidden = (name !== state); }
+				});
+			}
+			document.addEventListener('datastar-fetch', function (e) {
+				var type = e.detail && e.detail.type;
+				if (type === 'started' || type === 'finished') { setState('live'); }
+				else if (type === 'retrying') { setState('reconnecting'); }
+				else if (type === 'error' || type === 'retries-failed') { setState('offline'); }
+			});
+		})();
+	</script>
+}
