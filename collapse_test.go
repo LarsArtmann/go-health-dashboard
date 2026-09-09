@@ -353,3 +353,151 @@ func TestGroupCountBadges_RenderInCardTitles(t *testing.T) {
 		t.Error("healthy group summary should state its count inline (no badge needed)")
 	}
 }
+
+func TestFilter_RenderedOnlyWithEmbeddedSDK(t *testing.T) {
+	t.Parallel()
+
+	t.Run("self-hosted SDK shows filter", func(t *testing.T) {
+		t.Parallel()
+
+		s := setupDashboard(t, dashboard.WithEmbeddedDatastarSDK())
+		defer s.cleanup()
+
+		w := doRequest(t, s.mux, "/health")
+		body := w.Body.String()
+
+		if !strings.Contains(body, `id="health-filter"`) || !strings.Contains(body, `data-model="query"`) {
+			t.Error("filter input should render when the SDK is self-hosted")
+		}
+
+		if !strings.Contains(body, "data-filter-row") {
+			t.Error("rows should carry filter haystack attributes")
+		}
+
+		if !strings.Contains(body, "No services match your filter.") {
+			t.Error("empty-result hint should render alongside the filter")
+		}
+	})
+
+	t.Run("default CDN config hides filter", func(t *testing.T) {
+		t.Parallel()
+
+		s := setupDashboard(t)
+		defer s.cleanup()
+
+		w := doRequest(t, s.mux, "/health")
+		body := w.Body.String()
+
+		if strings.Contains(body, `id="health-filter"`) {
+			t.Error("filter input should not render without a configured DatastarSrc")
+		}
+	})
+}
+
+func TestJumpToProblems_AnchoredToFirstFailingGroup(t *testing.T) {
+	t.Parallel()
+
+	t.Run("failing setup shows anchor", func(t *testing.T) {
+		t.Parallel()
+
+		s := setupDashboardWithFailures(t)
+		defer s.cleanup()
+
+		w := doRequest(t, s.mux, "/health")
+		body := w.Body.String()
+
+		if !strings.Contains(body, `href="#group-problems"`) {
+			t.Error("alert area should link to the problems anchor when failures exist")
+		}
+
+		if !strings.Contains(body, `id="group-problems"`) {
+			t.Error("first non-healthy group card should carry the problems anchor id")
+		}
+	})
+
+	t.Run("all-pass setup hides anchor", func(t *testing.T) {
+		t.Parallel()
+
+		s := setupDashboard(t)
+		defer s.cleanup()
+
+		w := doRequest(t, s.mux, "/health")
+		body := w.Body.String()
+
+		if strings.Contains(body, `href="#group-problems"`) {
+			t.Error("jump link must be hidden when everything passes")
+		}
+	})
+}
+
+func TestConnectionPill_MarkupAndStates(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t, dashboard.WithNonce("pill-nonce"))
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+	body := w.Body.String()
+
+	for _, id := range []string{"conn-state-live", "conn-state-reconnecting", "conn-state-offline"} {
+		if !strings.Contains(body, `id="`+id+`"`) {
+			t.Errorf("connection pill should pre-render state %s", id)
+		}
+	}
+
+	if !strings.Contains(body, "__healthConnInit") {
+		t.Error("pill script should carry its singleton attach guard")
+	}
+
+	if !strings.Contains(body, "datastar-fetch") {
+		t.Error("pill script should listen for datastar-fetch lifecycle events")
+	}
+}
+
+func TestLongErrors_ExpandViaDetails(t *testing.T) {
+	t.Parallel()
+
+	injector := do.New()
+	provideHealthy(injector, "database")
+
+	const longReason = "connection refused after 12 retries: last error was dial tcp 10.0.0.42:5432: " +
+		"connect: connection timed out while the primary was failing over to the replica pool"
+
+	provideUnhealthy(injector, "queue", longReason)
+	invoke[*healthyService](t, injector, "database")
+	invoke[*unhealthyService](t, injector, "queue")
+
+	probe := health.New(injector,
+		health.WithVersion("1.0.0"),
+		health.WithRefreshInterval(100*time.Millisecond),
+	)
+
+	dash := dashboard.New(probe, dashboard.WithHealthyGroupExpanded())
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	if err := probe.Start(t.Context()); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
+
+	if err := dash.Start(t.Context()); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+
+	defer func() {
+		dash.Shutdown()
+		probe.Shutdown()
+	}()
+
+	w := doRequest(t, mux, "/health")
+	body := w.Body.String()
+
+	if !strings.Contains(body, "<details") {
+		t.Error("long error text should render inside a native details expansion")
+	}
+
+	if !strings.Contains(body, longReason) {
+		t.Error("full error text should be present in the expansion")
+	}
+}

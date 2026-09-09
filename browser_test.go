@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -1186,6 +1187,298 @@ func TestBrowser_CollapseInteract(t *testing.T) {
 	// fresh server-side render, which re-collapses the group. This is the
 	// documented trade-off of server-derived collapse state.
 	waitForJS(t, ctx, detailsState+` === "closed"`, detailsState, nil)
+
+	assertNoBrowserErrors(t, errLog)
+}
+
+// TestBrowser_FilterInteract proves the client-side filter end-to-end:
+// typing narrows the visible rows to matches, clearing restores all of
+// them, and the page stays free of browser errors under strict CSP.
+func TestBrowser_FilterInteract(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-filter-nonce"
+
+	s := setupDashboardWithHealthyServices(t, 12,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithEmbeddedDatastarSDK(),
+		dashboard.WithHealthyGroupExpanded(),
+	)
+	defer s.cleanup()
+
+	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		_, _ = w.Write([]byte("body { margin: 0; }"))
+	})
+
+	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(dstarstatic.Bytes())
+	})
+
+	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+
+	visibleRows := `(function () {
+		return [...document.querySelectorAll("tr[data-filter-row]")].filter(function (tr) {
+			return !tr.classList.contains("hidden");
+		}).length + "";
+	})()`
+
+	var visible string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(visibleRows, &visible)); err != nil {
+		t.Fatalf("browser evaluate: %v", err)
+	}
+
+	if visible != "12" {
+		t.Fatalf("all 12 rows should start visible, got %s", visible)
+	}
+
+	if err := chromedp.Run(ctx,
+		chromedp.SetValue(`#health-filter`, "svc-03", chromedp.ByQuery),
+	); err != nil {
+		t.Fatalf("type into filter: %v", err)
+	}
+
+	waitForJS(t, ctx, visibleRows+` === "1"`, visibleRows, nil)
+
+	if err := chromedp.Run(ctx, chromedp.SetValue(`#health-filter`, "", chromedp.ByQuery)); err != nil {
+		t.Fatalf("clear filter: %v", err)
+	}
+
+	waitForJS(t, ctx, visibleRows+` === "12"`, visibleRows, nil)
+
+	assertNoBrowserErrors(t, errLog)
+}
+
+// TestBrowser_ConnectionPill proves the pill reflects the SSE stream
+// lifecycle: Live while the stream is up, a degraded state when the stream
+// cannot be reached, and Live again after the stream recovers.
+func TestBrowser_ConnectionPill(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-pill-nonce"
+
+	var blockSSE atomic.Bool
+
+	s := setupDashboard(t,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+	)
+	defer s.cleanup()
+
+	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		_, _ = w.Write([]byte("body { margin: 0; }"))
+	})
+
+	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(dstarstatic.Bytes())
+	})
+
+	ssePath := s.dash.Routes().SSE
+
+	proxied := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if blockSSE.Load() && r.URL.Path == ssePath {
+			w.WriteHeader(http.StatusNotFound)
+
+			return
+		}
+		s.mux.ServeHTTP(w, r)
+	})
+
+	server := httptest.NewServer(strictCSPMiddleware(nonce, proxied))
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 150*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+
+	pillState := `(function () {
+		var states = ["live", "reconnecting", "offline"];
+		for (var i = 0; i < states.length; i++) {
+			var el = document.getElementById("conn-state-" + states[i]);
+			if (el && !el.hidden) { return states[i]; }
+		}
+		return "none";
+	})()`
+
+	var state string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(pillState, &state)); err != nil {
+		t.Fatalf("browser evaluate: %v", err)
+	}
+
+	if state != "live" {
+		t.Fatalf("pill should start live, got %q", state)
+	}
+
+	// Break the stream: block new connections and close the broadcaster so
+	// the live stream ends and the SDK starts retrying into the 404.
+	blockSSE.Store(true)
+	s.dash.Shutdown()
+
+	waitForJS(t, ctx,
+		pillState+` === "reconnecting" || `+pillState+` === "offline"`,
+		pillState,
+		nil,
+	)
+
+	// Recover: unblock and restart the pusher, then reload so the browser
+	// makes a fresh connection through the now-open proxy.
+	blockSSE.Store(false)
+
+	if err := s.dash.Start(runCtx); err != nil {
+		t.Fatalf("dash restart: %v", err)
+	}
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser re-navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(pillState, &state)); err != nil {
+		t.Fatalf("browser evaluate after recovery: %v", err)
+	}
+
+	if state != "live" {
+		t.Errorf("pill should return to live after recovery, got %q", state)
+	}
+
+	assertNoBrowserErrors(t, errLog)
+}
+
+// TestBrowser_MobileViewport proves the dashboard is usable at a phone
+// width: no page-level horizontal overflow (the table's scroll wrapper
+// contains its own overflow), and the content is reachable.
+func TestBrowser_MobileViewport(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-mobile-nonce"
+
+	s := setupDashboardWithHealthyServices(t, 9,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithEmbeddedDatastarSDK(),
+	)
+	defer s.cleanup()
+
+	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		_, _ = w.Write([]byte("body { margin: 0; }"))
+	})
+
+	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(dstarstatic.Bytes())
+	})
+
+	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx,
+		chromedp.EmulateViewport(375, 667),
+		chromedp.Navigate(server.URL+"/health"),
+	); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+
+	var pageOverflow, wrapperContained bool
+
+	if err := chromedp.Run(ctx,
+		chromedp.Evaluate(
+			`document.documentElement.scrollWidth <= window.innerWidth + 1`,
+			&pageOverflow,
+		),
+		chromedp.Evaluate(
+			`(function () {
+				var w = document.querySelector(".overflow-x-auto");
+				return !!w && w.scrollWidth >= w.clientWidth - 2 && w.scrollWidth <= w.clientWidth + 400;
+			})()`,
+			&wrapperContained,
+		),
+	); err != nil {
+		t.Fatalf("browser evaluate: %v", err)
+	}
+
+	if !pageOverflow {
+		t.Error("page must not overflow horizontally at 375px; table overflow must be contained in its scroll wrapper")
+	}
+
+	var bodyText string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.body.innerText`, &bodyText)); err != nil {
+		t.Fatalf("browser evaluate body: %v", err)
+	}
+
+	if !strings.Contains(bodyText, "All Systems Operational") {
+		t.Errorf("health content missing from mobile DOM; got: %.200s", bodyText)
+	}
 
 	assertNoBrowserErrors(t, errLog)
 }
