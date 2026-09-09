@@ -1595,16 +1595,18 @@ func TestBrowser_KeyboardNewControls(t *testing.T) {
 	}
 
 	waitForSubscriber(t, s.dash)
+	time.Sleep(250 * time.Millisecond) // let the initial patch settle before focusing
 
 	detailsState := `(function () {
 		var d = document.querySelector("details");
 		return d ? (d.open ? "open" : "closed") : "missing";
 	})()`
 
-	// Focus the summary directly (keyboard path) and toggle with Enter.
+	// Focus the summary directly (keyboard path) and toggle with Enter
+	// ("\r" is the rune chromedp's keyboard encoder maps to the Enter key).
 	if err := chromedp.Run(ctx,
 		chromedp.Focus(`details summary`, chromedp.ByQuery),
-		chromedp.KeyEvent("Enter"),
+		chromedp.KeyEvent("\r"),
 	); err != nil {
 		t.Fatalf("keyboard toggle: %v", err)
 	}
