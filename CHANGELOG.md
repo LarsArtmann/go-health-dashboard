@@ -13,12 +13,32 @@ sit sandwiched between two released sections — at tag time it ships into the
 cut or its contents wait for the next one; decide explicitly, never by
 forgetting.
 
-## [0.7.0] — 2026-09-09
+## [Unreleased]
+
+### Added
+
+- Nothing yet.
+
+### Fixed
+
+- Nothing yet.
+
+## [0.7.0] — 2026-09-10
 
 Dashboard UI/UX overhaul, executed as a Pareto plan
 (`docs/planning/2026-09-09_19-21_dashboard-ui-ux-pareto.md`): maximize
 operator signal-per-glance with the existing design system — no visual
-redesign, no dependency bumps, no CSP regressions.
+redesign, no CSP regressions — plus route ergonomics and observability
+groundwork: the `WithBasePath` ordering footgun is gone, the resolved
+routes are queryable, and a new opt-in introspection endpoint exposes
+the running configuration.
+
+### Compatibility
+
+- `WithBasePath` no longer mutates routes at option-run time; the
+  prefix is applied once after all options run. Code that relied on
+  `WithRoutes` after `WithBasePath` silently dropping the prefix (a
+  footgun, never a feature) will now see the prefixed routes.
 
 ### Added
 
@@ -46,38 +66,6 @@ redesign, no dependency bumps, no CSP regressions.
   patch-safe); the latency StatCard gained an honest hover tooltip.
 - `WithPersistCollapse`: opt-in localStorage persistence of the healthy
   group's open/closed state, re-applied after every SSE patch.
-
-### Fixed
-
-- Stale browsers after a graceful server restart: the LiveRegion now
-  uses the SDK's `RetryAlways` retry mode. A clean stream EOF (what a
-  restart produces) previously disposed the connection silently and
-  every open dashboard stayed frozen until manually reloaded.
-
-## [0.6.1] — 2026-09-05
-
-### Fixed
-
-- Follow templ-components v1.13.1+: `DatastarVersion1_0_2` was renamed to
-  `DatastarVersion1_0_3` (the name-matches-value truth pin) and the old name
-  now exists only as a deprecated literal compat alias. The dashboard pins
-  `DatastarVersion1_0_3` explicitly and requires
-  `templ-components/datastar v1.13.2`.
-## [Unreleased]
-
-Route ergonomics and observability groundwork: the WithBasePath
-ordering footgun is gone, the resolved routes are queryable, and a new
-opt-in introspection endpoint exposes the running configuration.
-
-### Compatibility
-
-- `WithBasePath` no longer mutates routes at option-run time; the
-  prefix is applied once after all options run. Code that relied on
-  `WithRoutes` after `WithBasePath` silently dropping the prefix (a
-  footgun, never a feature) will now see the prefixed routes.
-
-### Added
-
 - `Routes()` accessor: returns the dashboard's fully resolved routes
   (defaults or `WithRoutes`, then the `WithBasePath` prefix).
 - `WithIntrospection()` + `GET /health/introspect`
@@ -148,6 +136,10 @@ opt-in introspection endpoint exposes the running configuration.
 
 ### Fixed
 
+- Stale browsers after a graceful server restart: the LiveRegion now
+  uses the SDK's `RetryAlways` retry mode. A clean stream EOF (what a
+  restart produces) previously disposed the connection silently and
+  every open dashboard stayed frozen until manually reloaded.
 - `WithPersistCollapse` never actually survived an SSE patch (found by
   the new end-to-end browser test): the SDK dispatches its
   `datastar-patch-*` events before merging the patch into the DOM, so
@@ -161,6 +153,16 @@ opt-in introspection endpoint exposes the running configuration.
   queues a mutation record and would loop the observer forever). The
   toggle, patch-survival, and reload-restoration paths are proven in
   `TestBrowser_CollapsePersistInteract`.
+
+## [0.6.1] — 2026-09-05
+
+### Fixed
+
+- Follow templ-components v1.13.1+: `DatastarVersion1_0_2` was renamed to
+  `DatastarVersion1_0_3` (the name-matches-value truth pin) and the old name
+  now exists only as a deprecated literal compat alias. The dashboard pins
+  `DatastarVersion1_0_3` explicitly and requires
+  `templ-components/datastar v1.13.2`.
 
 ## [0.6.0] - 2026-09-04
 
