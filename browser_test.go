@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -1267,7 +1268,13 @@ func TestBrowser_FilterInteract(t *testing.T) {
 
 	waitForJS(t, ctx, visibleRows+` === "1"`, visibleRows, nil)
 
-	if err := chromedp.Run(ctx, chromedp.SetValue(`#health-filter`, "", chromedp.ByQuery)); err != nil {
+	// chromedp.SetValue cannot set an empty string, so clear via JS and
+	// dispatch the input event data-bind listens on.
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+		var el = document.getElementById("health-filter");
+		el.value = "";
+		el.dispatchEvent(new Event("input", { bubbles: true }));
+	})()`, nil)); err != nil {
 		t.Fatalf("clear filter: %v", err)
 	}
 
@@ -1375,24 +1382,14 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 	blockSSE.Store(true)
 	s.dash.Shutdown()
 
-	deadline := time.Now().Add(20 * time.Second)
-
-	for {
-		if err := chromedp.Run(ctx, chromedp.Evaluate(pillState, &state)); err != nil {
-			t.Fatalf("browser evaluate during outage: %v", err)
-		}
-
-		if state == "reconnecting" || state == "offline" {
-			break
-		}
-
-		if time.Now().After(deadline) {
-			var events string
-			_ = chromedp.Run(ctx, chromedp.Evaluate(`JSON.stringify(window.__fetchEvents || [])`, &events))
-			t.Fatalf("pill never left live during outage; last state %q; datastar-fetch events: %s", state, events)
-		}
-
-		time.Sleep(100 * time.Millisecond)
+	if state = pollPillState(
+		t,
+		ctx,
+		pillState,
+		[]string{"reconnecting", "offline"},
+		20*time.Second,
+	); state == "live" {
+		t.Fatalf("pill never left live; events: %s", dumpFetchEvents(ctx))
 	}
 
 	// Recover: unblock and restart the pusher. The SDK's RetryAlways mode
@@ -1405,27 +1402,52 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 		t.Fatalf("dash restart: %v", err)
 	}
 
-	deadline = time.Now().Add(45 * time.Second)
-
-	for {
-		if err := chromedp.Run(ctx, chromedp.Evaluate(pillState, &state)); err != nil {
-			t.Fatalf("browser evaluate during recovery: %v", err)
-		}
-
-		if state == "live" {
-			break
-		}
-
-		if time.Now().After(deadline) {
-			var events string
-			_ = chromedp.Run(ctx, chromedp.Evaluate(`JSON.stringify(window.__fetchEvents || [])`, &events))
-			t.Fatalf("pill never returned to live after recovery; last state %q; datastar-fetch events: %s", state, events)
-		}
-
-		time.Sleep(200 * time.Millisecond)
+	if state = pollPillState(t, ctx, pillState, []string{"live"}, 45*time.Second); state != "live" {
+		t.Fatalf("pill never returned to live; state %q; events: %s", state, dumpFetchEvents(ctx))
 	}
 
 	assertNoBrowserErrors(t, errLog)
+}
+
+// pollPillState polls the connection pill until it reaches one of the wanted
+// states or the deadline expires, returning the last observed state.
+func pollPillState(
+	t *testing.T,
+	ctx context.Context,
+	pillState string,
+	want []string,
+	timeout time.Duration,
+) string {
+	t.Helper()
+
+	deadline := time.Now().Add(timeout)
+
+	var state string
+
+	for {
+		if err := chromedp.Run(ctx, chromedp.Evaluate(pillState, &state)); err != nil {
+			t.Fatalf("browser evaluate pill: %v", err)
+		}
+
+		if slices.Contains(want, state) {
+			return state
+		}
+
+		if time.Now().After(deadline) {
+			return state
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+// dumpFetchEvents returns the recorded datastar-fetch event types for
+// diagnostics when a pill assertion fails.
+func dumpFetchEvents(ctx context.Context) string {
+	var events string
+	_ = chromedp.Run(ctx, chromedp.Evaluate(`JSON.stringify(window.__fetchEvents || [])`, &events))
+
+	return events
 }
 
 // TestBrowser_MobileViewport proves the dashboard is usable at a phone
@@ -1501,12 +1523,17 @@ func TestBrowser_MobileViewport(t *testing.T) {
 	}
 
 	if !pageOverflow {
-		t.Error("page must not overflow horizontally at 375px; table overflow must be contained in its scroll wrapper")
+		t.Error(
+			"page must not overflow horizontally at 375px; table overflow must be contained in its scroll wrapper",
+		)
 	}
 
 	var bodyText string
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.body.innerText`, &bodyText)); err != nil {
+	if err := chromedp.Run(
+		ctx,
+		chromedp.Evaluate(`document.body.innerText`, &bodyText),
+	); err != nil {
 		t.Fatalf("browser evaluate body: %v", err)
 	}
 

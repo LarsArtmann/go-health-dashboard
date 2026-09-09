@@ -357,36 +357,6 @@ func (row checkRow) displayName() string {
 	return row.Name
 }
 
-// errorOrDash returns the check error text, or an em-dash placeholder when
-// the check has no error.
-func (row checkRow) errorOrDash() string {
-	if row.Error == "" {
-		return "—"
-	}
-
-	return row.Error
-}
-
-// rowsToTableRows converts check rows to templ-components TableRows: the
-// service column shows the short display name (raw key in the title
-// attribute and the details column), the status column a badge, and the
-// details column the error text plus the raw check key for full fidelity.
-func rowsToTableRows(rows []checkRow) []display.TableRow {
-	tableRows := make([]display.TableRow, 0, len(rows))
-
-	for _, row := range rows {
-		tableRows = append(tableRows, display.TableRow{
-			Cells: []display.TableCell{
-				{Content: serviceNameCell(row)},
-				{Content: display.Badge(badgeForStatus(row.Status))},
-				{Content: rowDetailsCell(row)},
-			},
-		})
-	}
-
-	return tableRows
-}
-
 // fingerprintChecks creates a deterministic string fingerprint of the checks
 // map for change detection. Keys are sorted to ensure the same input always
 // produces the same output (Go map iteration order is randomized). Each
