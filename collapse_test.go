@@ -366,7 +366,7 @@ func TestFilter_RenderedOnlyWithEmbeddedSDK(t *testing.T) {
 		w := doRequest(t, s.mux, "/health")
 		body := w.Body.String()
 
-		if !strings.Contains(body, `id="health-filter"`) || !strings.Contains(body, `data-model="query"`) {
+		if !strings.Contains(body, `id="health-filter"`) || !strings.Contains(body, `data-bind="query"`) {
 			t.Error("filter input should render when the SDK is self-hosted")
 		}
 
