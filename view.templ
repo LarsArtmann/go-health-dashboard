@@ -20,8 +20,11 @@ const collapseStorageKeyName = "health-healthy-group-collapsed"
 
 // storageKey returns the CollapsibleSection persistence key when collapse
 // persistence is enabled, otherwise empty (no data-collapsible attribute).
+// Source-grouped pages never persist: they can render several pass-status
+// sections, and one localStorage key shared across them would couple their
+// open/closed states.
 func storageKey(data viewModel) string {
-	if data.PersistCollapse {
+	if data.PersistCollapse && data.Grouping != GroupBySource {
 		return collapseStorageKeyName
 	}
 

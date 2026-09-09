@@ -68,6 +68,24 @@ type checkRow struct {
 	Error   string
 }
 
+// GroupMode selects the axis that partitions checks into dashboard cards.
+type GroupMode string
+
+const (
+	// GroupBySeverity partitions checks into Critical Failures,
+	// Non-Critical Issues, and Healthy Services (the default).
+	GroupBySeverity GroupMode = "severity"
+	// GroupBySource partitions aggregate source/check keys into one card
+	// per source, each card carrying its worst-of status; checks without
+	// a source/ prefix share one fallback card. Made for aggregate pages
+	// where per-service cards beat a severity-sorted wall of rows.
+	GroupBySource GroupMode = "source"
+)
+
+// groupTitleServices is the GroupBySource fallback card for checks whose
+// key has no source/ namespace (single-probe dashboards).
+const groupTitleServices = "Services"
+
 // checkGroup groups checks by severity for card-based layout.
 type checkGroup struct {
 	Title  string
@@ -125,6 +143,9 @@ type viewModel struct {
 	// PersistCollapse enables the localStorage persistence script for the
 	// healthy group's open/closed state (WithPersistCollapse).
 	PersistCollapse bool
+	// Grouping records the configured GroupMode so render helpers can
+	// adapt (collapse policy and persistence apply to severity mode only).
+	Grouping GroupMode
 }
 
 // updatedStampFormat is the wall-clock format of the viewModel LastUpdated
@@ -132,10 +153,10 @@ type viewModel struct {
 const updatedStampFormat = "15:04:05 MST"
 
 // buildViewModel transforms a health.Response into a template-ready viewModel.
-// Checks are sorted alphabetically by name and grouped by severity:
-// failing (critical) first, then warnings (non-critical), then healthy.
-func buildViewModel(resp health.Response, title, sseURL string) viewModel {
-	groups := groupChecks(resp.Checks)
+// Checks are sorted alphabetically by name and grouped by the configured
+// mode: severity (failing first, then warnings, then healthy) or source.
+func buildViewModel(resp health.Response, title, sseURL string, mode GroupMode) viewModel {
+	groups := groupChecksBy(mode, resp.Checks)
 
 	feedbackType := mapStatusToFeedback(resp.Status)
 	statusText := mapStatusToText(resp.Status)
@@ -158,6 +179,7 @@ func buildViewModel(resp health.Response, title, sseURL string) viewModel {
 		Groups:          groups,
 		SSEURL:          sseURL,
 		ShowStatCards:   true,
+		Grouping:        mode,
 	}
 }
 
@@ -247,6 +269,80 @@ func groupChecks(checks map[string]health.Check) []checkGroup {
 	}
 
 	return groups
+}
+
+// groupChecksBy dispatches grouping to the configured mode. Unknown modes
+// fall back to severity grouping so a typo can never produce an empty page.
+func groupChecksBy(mode GroupMode, checks map[string]health.Check) []checkGroup {
+	if mode == GroupBySource {
+		return groupChecksBySource(checks)
+	}
+
+	return groupChecks(checks)
+}
+
+// groupChecksBySource partitions aggregate source/check keys into one group
+// per source prefix ("api/postgres" → source "api"); keys without a slash
+// share the groupTitleServices fallback. Each group carries its worst-of
+// row status (fail > warn > pass), groups sort by title, rows by name.
+func groupChecksBySource(checks map[string]health.Check) []checkGroup {
+	rowsBySource := map[string][]checkRow{}
+
+	for name, check := range checks {
+		source, _, namespaced := strings.Cut(name, "/")
+		if !namespaced || source == "" {
+			source = groupTitleServices
+		}
+
+		rowsBySource[source] = append(rowsBySource[source], checkRow{
+			Name:    name,
+			Display: shortDisplayName(name),
+			Status:  check.Status,
+			Error:   check.Error,
+		})
+	}
+
+	sources := make([]string, 0, len(rowsBySource))
+	for source := range rowsBySource {
+		sources = append(sources, source)
+	}
+
+	sort.Strings(sources)
+
+	groups := make([]checkGroup, 0, len(sources))
+	for _, source := range sources {
+		rows := rowsBySource[source]
+		sortByName(rows)
+
+		groups = append(groups, checkGroup{
+			Title:  source,
+			Status: worstGroupStatus(rows),
+			Rows:   rows,
+		})
+	}
+
+	return groups
+}
+
+// worstGroupStatus rolls a group's rows up to one status: fail if any row
+// fails, warn if any row warns, pass otherwise. Unknown statuses count as
+// warn — a group containing something unreadable must not read as healthy.
+func worstGroupStatus(rows []checkRow) health.Status {
+	status := health.StatusPass
+	for _, row := range rows {
+		switch row.Status {
+		case health.StatusFail:
+			return health.StatusFail
+		case health.StatusWarn:
+			status = health.StatusWarn
+		case health.StatusPass:
+			// pass keeps the floor
+		default:
+			status = health.StatusWarn
+		}
+	}
+
+	return status
 }
 
 // shortDisplayName condenses a fully-qualified Go type name for table
@@ -431,10 +527,16 @@ type TimelineEntry struct {
 
 // anonymizeViewModel replaces identifying details with generic labels so
 // the rendered page can be shared with untrusted audiences. Group titles,
-// check names, and error messages are masked; statuses remain visible.
+// check names, and error messages are masked; statuses remain visible. In
+// GroupBySource mode the titles are the source names themselves, so they
+// are masked too — topology is as identifying as names.
 func anonymizeViewModel(vm *viewModel) {
 	for gi := range vm.Groups {
 		group := &vm.Groups[gi]
+
+		if vm.Grouping == GroupBySource {
+			group.Title = fmt.Sprintf("group-%d", gi+1)
+		}
 
 		for ri := range group.Rows {
 			row := &group.Rows[ri]
@@ -449,8 +551,14 @@ func anonymizeViewModel(vm *viewModel) {
 // model's groups and the configured threshold: the group collapses when at
 // least threshold rows are healthy. A threshold of zero or less never
 // collapses. Both render paths (initial HTML and SSE patches) call this, so
-// a patch re-applies the default collapse state by design.
+// a patch re-applies the default collapse state by design. Source-grouped
+// pages skip the policy: there is no single healthy group, and HealthyCount
+// stays zero so no summary claims one.
 func applyCollapsePolicy(vm *viewModel, threshold int) {
+	if vm.Grouping == GroupBySource {
+		return
+	}
+
 	for _, group := range vm.Groups {
 		if group.Status == health.StatusPass {
 			vm.HealthyCount = len(group.Rows)

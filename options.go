@@ -41,6 +41,11 @@ type Config struct {
 	Introspection     bool
 	HideStatCards     bool
 
+	// Grouping selects the axis that partitions checks into dashboard
+	// cards: GroupBySeverity (default) or GroupBySource for aggregate
+	// pages (per-source cards, worst-of status per card).
+	Grouping GroupMode
+
 	// ShutdownDrain bounds how long Shutdown waits for connected SSE
 	// clients to disconnect before closing the broadcaster. Zero closes
 	// immediately (default).
@@ -182,6 +187,14 @@ func WithPersistCollapse() Option {
 // size, for dashboards where the full healthy table is the point.
 func WithHealthyGroupExpanded() Option {
 	return WithHealthyGroupCollapse(0)
+}
+
+// WithGrouping selects how checks are partitioned into dashboard cards:
+// GroupBySeverity (default) or GroupBySource — one card per aggregate
+// source/check prefix, worst-of status per card. Unknown modes fall back
+// to severity grouping at render time.
+func WithGrouping(mode GroupMode) Option {
+	return func(c *Config) { c.Grouping = mode }
 }
 
 // WithHideStatCards hides the version/uptime/latency stat card grid.
