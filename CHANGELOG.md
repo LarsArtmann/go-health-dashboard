@@ -118,6 +118,22 @@ opt-in introspection endpoint exposes the running configuration.
   violation. Guard header now encodes the ceremony rule: pin updates
   land in the same change as any bump.
 
+### Fixed
+
+- `WithPersistCollapse` never actually survived an SSE patch (found by
+  the new end-to-end browser test): the SDK dispatches its
+  `datastar-patch-*` events before merging the patch into the DOM, so
+  re-applying on the event always targeted the replaced-away node; and
+  Datastar's inner-mode merge syncs attributes, whose removal of `open`
+  fired a `toggle` that overwrote the stored choice with the server
+  default. The persistence script now keys storage off summary clicks
+  (user intent, pre-toggle state read synchronously) and re-applies via
+  a scoped MutationObserver watching both the `open` attribute and
+  inserted nodes (guarded sets — an identical `setAttribute` still
+  queues a mutation record and would loop the observer forever). The
+  toggle, patch-survival, and reload-restoration paths are proven in
+  `TestBrowser_CollapsePersistInteract`.
+
 ## [0.6.0] - 2026-09-04
 
 Integrity and watchtowers. Every dashboard write seam now sanitizes the
