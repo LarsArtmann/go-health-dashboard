@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	dashboard "github.com/larsartmann/go-health-dashboard"
 )
@@ -14,10 +15,11 @@ type introspectionDoc struct {
 	Version   string            `json:"version"`
 	GoVersion string            `json:"go_version"`
 	Routes    map[string]string `json:"routes"`
-	Limits    struct {
+	Limits struct {
 		MaxSSEConnections int    `json:"max_sse_connections"`
 		RateLimitEnabled  bool   `json:"rate_limit_enabled"`
 		ShutdownDrain     string `json:"shutdown_drain"`
+		TimelineMaxAge    string `json:"timeline_max_age"`
 	} `json:"limits"`
 	Modes struct {
 		PushMode      string `json:"push_mode"`
@@ -26,6 +28,12 @@ type introspectionDoc struct {
 		Webhook       bool   `json:"webhook"`
 		TrendSamples  int    `json:"trend_samples"`
 		NonceStrategy string `json:"nonce_strategy"`
+
+		HealthyGroupCollapseThreshold int  `json:"healthy_group_collapse_threshold"`
+		PersistCollapse               bool `json:"persist_collapse"`
+		HideStatCards                 bool `json:"hide_stat_cards"`
+		EmbeddedDatastarSDK           bool `json:"embedded_datastar_sdk"`
+		PushOnChangeTTL               int  `json:"push_on_change_ttl"`
 	} `json:"modes"`
 }
 
@@ -50,6 +58,11 @@ func TestIntrospection_ServesResolvedConfig(t *testing.T) {
 		dashboard.WithMetrics(true),
 		dashboard.WithRateLimit(10, 1<<20),
 		dashboard.WithIntrospection(),
+		dashboard.WithHealthyGroupCollapse(3),
+		dashboard.WithPersistCollapse(),
+		dashboard.WithPushOnChangeTTL(2),
+		dashboard.WithTimelineMaxAge(time.Hour),
+		dashboard.WithEmbeddedDatastarSDK(),
 	)
 	defer s.cleanup()
 
@@ -68,7 +81,7 @@ func TestIntrospection_ServesResolvedConfig(t *testing.T) {
 		t.Errorf("version: want %q, got %q", dashboard.Version, doc.Version)
 	}
 
-	for _, route := range []string{"dashboard", "sse", "trend", "export", "metrics"} {
+	for _, route := range []string{"dashboard", "sse", "trend", "export", "metrics", "datastar_js", "introspect"} {
 		if doc.Routes[route] == "" {
 			t.Errorf("routes.%s missing for an enabled feature", route)
 		}
@@ -85,6 +98,18 @@ func TestIntrospection_ServesResolvedConfig(t *testing.T) {
 		t.Error("limits.rate_limit_enabled: want true after WithRateLimit")
 	case doc.Modes.NonceStrategy != "none":
 		t.Errorf("modes.nonce_strategy: want none, got %q", doc.Modes.NonceStrategy)
+	case doc.Modes.HealthyGroupCollapseThreshold != 3:
+		t.Errorf("modes.healthy_group_collapse_threshold: want 3, got %d", doc.Modes.HealthyGroupCollapseThreshold)
+	case !doc.Modes.PersistCollapse:
+		t.Error("modes.persist_collapse: want true after WithPersistCollapse")
+	case doc.Modes.PushOnChangeTTL != 2:
+		t.Errorf("modes.push_on_change_ttl: want 2, got %d", doc.Modes.PushOnChangeTTL)
+	case doc.Limits.TimelineMaxAge != "1h0m0s":
+		t.Errorf("limits.timeline_max_age: want 1h0m0s, got %q", doc.Limits.TimelineMaxAge)
+	case !doc.Modes.EmbeddedDatastarSDK:
+		t.Error("modes.embedded_datastar_sdk: want true after WithEmbeddedDatastarSDK")
+	case doc.Modes.HideStatCards:
+		t.Error("modes.hide_stat_cards: want false by default")
 	}
 }
 

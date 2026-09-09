@@ -1183,6 +1183,115 @@ func TestBrowser_CollapseInteract(t *testing.T) {
 	assertNoBrowserErrors(t, errLog)
 }
 
+// TestBrowser_CollapsePersistInteract proves WithPersistCollapse end-to-end:
+// a manual toggle survives SSE patches (localStorage re-apply) and a full
+// page reload, unlike the server-derived default proven above.
+func TestBrowser_CollapsePersistInteract(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-collapse-persist-nonce"
+
+	s := setupDashboardWithHealthyServices(t, 9,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithPushMode(dashboard.PushAlways),
+		dashboard.WithPushInterval(200*time.Millisecond),
+		dashboard.WithPersistCollapse(),
+	)
+	defer s.cleanup()
+
+	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		_, _ = w.Write([]byte("body { margin: 0; }"))
+	})
+
+	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(dstarstatic.Bytes())
+	})
+
+	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+	time.Sleep(250 * time.Millisecond) // allow the initial SSE patch to apply
+
+	const detailsState = `(function () {
+		var d = document.querySelector("details");
+		return d ? (d.open ? "open" : "closed") : "missing";
+	})()`
+
+	var state string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(detailsState, &state)); err != nil {
+		t.Fatalf("browser evaluate: %v", err)
+	}
+
+	if state != "closed" {
+		t.Fatalf("healthy group should start collapsed (threshold default 8 < 9 rows), got %q", state)
+	}
+
+	if err := chromedp.Run(ctx, chromedp.Click("details summary", chromedp.ByQuery)); err != nil {
+		t.Fatalf("click summary: %v", err)
+	}
+
+	var stored string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(
+		`localStorage.getItem("health-dashboard-healthy-collapsed") || ""`,
+		&stored,
+	)); err != nil {
+		t.Fatalf("browser evaluate localStorage: %v", err)
+	}
+
+	if stored == "" {
+		t.Error("toggle should persist the collapse state to localStorage")
+	}
+
+	// PushAlways patches every 200ms; the persistence script must re-apply
+	// the stored "open" state after each patch. Give it a few patch cycles,
+	// then assert it is still open.
+	time.Sleep(700 * time.Millisecond)
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(detailsState, &state)); err != nil {
+		t.Fatalf("browser evaluate after patches: %v", err)
+	}
+
+	if state != "open" {
+		t.Fatalf("with WithPersistCollapse the expanded state must survive SSE patches, got %q", state)
+	}
+
+	// A full reload must also honor the stored state.
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser reload: %v", err)
+	}
+
+	waitForJS(t, ctx, detailsState+` === "open"`, detailsState, nil)
+
+	assertNoBrowserErrors(t, errLog)
+}
+
 // TestBrowser_FilterInteract proves the client-side filter end-to-end:
 // typing narrows the visible rows to matches, clearing restores all of
 // them, and the page stays free of browser errors under strict CSP.

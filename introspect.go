@@ -25,6 +25,7 @@ type introspectLimits struct {
 	ShutdownDrain         string `json:"shutdown_drain"`
 	MaxConnectionLifetime string `json:"max_connection_lifetime"`
 	HeartbeatInterval     string `json:"heartbeat_interval"`
+	TimelineMaxAge        string `json:"timeline_max_age"` // "0s" = keep all entries
 }
 
 type introspectModes struct {
@@ -34,6 +35,13 @@ type introspectModes struct {
 	Webhook       bool   `json:"webhook"`
 	TrendSamples  int    `json:"trend_samples"` // 0 = trend disabled
 	NonceStrategy string `json:"nonce_strategy"`
+
+	// Presentation modes introduced with the 0.7.x UI.
+	HealthyGroupCollapseThreshold int  `json:"healthy_group_collapse_threshold"` // 0 = always expanded
+	PersistCollapse               bool `json:"persist_collapse"`
+	HideStatCards                 bool `json:"hide_stat_cards"`
+	EmbeddedDatastarSDK           bool `json:"embedded_datastar_sdk"`
+	PushOnChangeTTL               int  `json:"push_on_change_ttl"` // ticks between re-asserts; 0 = disabled
 }
 
 // IntrospectionHandler serves the resolved configuration as JSON. Enabled
@@ -50,12 +58,14 @@ func (d *Dashboard) IntrospectionHandler() http.Handler {
 		routes := map[string]string{}
 
 		for name, path := range map[string]string{
-			"dashboard": d.cfg.Routes.Dashboard,
-			"sse":       d.cfg.Routes.SSE,
-			"favicon":   d.cfg.Routes.Favicon,
-			"metrics":   d.cfg.Routes.Metrics,
-			"trend":     d.cfg.Routes.Trend,
-			"export":    d.cfg.Routes.Export,
+			"dashboard":   d.cfg.Routes.Dashboard,
+			"sse":         d.cfg.Routes.SSE,
+			"favicon":     d.cfg.Routes.Favicon,
+			"metrics":     d.cfg.Routes.Metrics,
+			"trend":       d.cfg.Routes.Trend,
+			"export":      d.cfg.Routes.Export,
+			"datastar_js": d.cfg.Routes.DatastarJS,
+			"introspect":  d.cfg.Routes.Introspect,
 		} {
 			if path != "" {
 				routes[name] = path
@@ -81,6 +91,7 @@ func (d *Dashboard) IntrospectionHandler() http.Handler {
 				ShutdownDrain:         formatDuration(d.cfg.ShutdownDrain),
 				MaxConnectionLifetime: formatDuration(d.cfg.MaxConnectionLifetime),
 				HeartbeatInterval:     formatDuration(d.cfg.HeartbeatInterval),
+				TimelineMaxAge:        formatDuration(d.cfg.TimelineMaxAge),
 			},
 			Modes: introspectModes{
 				PushMode:      string(d.cfg.PushMode),
@@ -89,6 +100,12 @@ func (d *Dashboard) IntrospectionHandler() http.Handler {
 				Webhook:       d.cfg.WebhookURL != "",
 				TrendSamples:  d.cfg.TrendSamples,
 				NonceStrategy: strategy,
+
+				HealthyGroupCollapseThreshold: d.cfg.HealthyGroupCollapseThreshold,
+				PersistCollapse:               d.cfg.PersistCollapse,
+				HideStatCards:                 d.cfg.HideStatCards,
+				EmbeddedDatastarSDK:           d.cfg.EmbeddedDatastarSDK,
+				PushOnChangeTTL:               d.cfg.PushOnChangeTTL,
 			},
 		}
 
