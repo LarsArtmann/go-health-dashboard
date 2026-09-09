@@ -165,4 +165,4 @@
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | GOEXPERIMENT=jsonv2 requirement    | All Go commands require this env var; go-sse uses `encoding/json/v2`                                                             |
 | Datastar needs `unsafe-eval`       | The SDK compiles expressions via `Function`; strict CSPs must allow it — documented in README, verified by `browser_test.go`     |
-| templ-components pinned at v1.11.0 | v1.12.0's LiveRegion busy-script emits `nonce=""` (upstream #6/#7 open); pin freezes the audited Datastar bundle — see CHANGELOG |
+| UI deps pinned + guard-enforced | templ-components v1.16.0 + go-datastar v0.5.0 (browser-suite-audited); `scripts/check-ui-pins.sh` fails CI on any movement — see CHANGELOG |

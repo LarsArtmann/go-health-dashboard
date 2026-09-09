@@ -105,6 +105,19 @@ opt-in introspection endpoint exposes the running configuration.
   tag at it. Same-origin script means `script-src 'self'` is sufficient
   (the SDK's own `unsafe-eval` requirement remains); no CDN dependency.
 
+### Changed
+
+- UI dependency ceremony for the templ-components v1.16.0 sweep (fifth
+  unguarded sweep; caught by the CI pin guard as designed): the full
+  browser suite re-ran green on v1.16.0 + go-datastar v0.5.0, the pin
+  guard now pins v1.16.0 (including the newly direct
+  `templ-components/utils` module), and the axe `definition-list`/
+  `dlitem` tolerance is retired — upstream #6 fixed the StatCard `<dl>`
+  markup in v1.16.0 (`dt`+`dd` grouped in one wrapper div), so
+  `TestBrowser_Accessibility` again fails on any serious/critical
+  violation. Guard header now encodes the ceremony rule: pin updates
+  land in the same change as any bump.
+
 ## [0.6.0] - 2026-09-04
 
 Integrity and watchtowers. Every dashboard write seam now sanitizes the
