@@ -106,9 +106,9 @@ type viewModel struct {
 	// ExportURL, TrendURL, and MetricsURL are the non-empty endpoints
 	// surfaced in the header links row: export/history JSON, trend JSON, and
 	// Prometheus metrics. Empty means the endpoint is disabled.
-	ExportURL  string
-	TrendURL   string
-	MetricsURL string
+	ExportURL   string
+	TrendURL    string
+	MetricsURL  string
 	Description string
 	// ShowStatCards renders the version/uptime/latency card grid.
 	// Enabled by default; disabled via WithHideStatCards.
@@ -146,18 +146,18 @@ func buildViewModel(resp health.Response, title, sseURL string) viewModel {
 	}
 
 	return viewModel{
-		LastUpdated:      time.Now().UTC().Format(updatedStampFormat),
-		LastUpdatedTime:  time.Now().UTC(),
-		Title:            title,
-		Status:           resp.Status,
-		FeedbackType:     feedbackType,
-		StatusText:       statusText,
-		Version:          resp.Version,
-		Uptime:           resp.Uptime,
-		LatencyMs:        resp.TotalLatencyMs,
-		Groups:           groups,
-		SSEURL:           sseURL,
-		ShowStatCards:    true,
+		LastUpdated:     time.Now().UTC().Format(updatedStampFormat),
+		LastUpdatedTime: time.Now().UTC(),
+		Title:           title,
+		Status:          resp.Status,
+		FeedbackType:    feedbackType,
+		StatusText:      statusText,
+		Version:         resp.Version,
+		Uptime:          resp.Uptime,
+		LatencyMs:       resp.TotalLatencyMs,
+		Groups:          groups,
+		SSEURL:          sseURL,
+		ShowStatCards:   true,
 	}
 }
 
