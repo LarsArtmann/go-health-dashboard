@@ -1084,3 +1084,108 @@ func TestBrowser_AggregateCSPClean(t *testing.T) {
 
 	assertNoBrowserErrors(t, errLog)
 }
+
+// TestBrowser_CollapseInteract proves the healthy-group collapse end-to-end
+// under a strict CSP: the group starts collapsed (server-derived default),
+// clicking the summary expands it, and the next SSE patch re-applies the
+// collapsed default — collapse state is re-derived server-side on every
+// patch by design, and this test pins that documented behavior.
+func TestBrowser_CollapseInteract(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-collapse-nonce"
+
+	// PushAlways guarantees patches flow after the manual toggle without
+	// needing an actual health change.
+	s := setupDashboardWithHealthyServices(t, 9,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithPushMode(dashboard.PushAlways),
+		dashboard.WithPushInterval(200*time.Millisecond),
+	)
+	defer s.cleanup()
+
+	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		_, _ = w.Write([]byte("body { margin: 0; }"))
+	})
+
+	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(dstarstatic.Bytes())
+	})
+
+	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+	time.Sleep(250 * time.Millisecond) // allow the initial SSE patch to apply
+
+	const detailsState = `(function () {
+		var d = document.querySelector("details");
+		return d ? (d.open ? "open" : "closed") : "missing";
+	})()`
+
+	var state string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(detailsState, &state)); err != nil {
+		t.Fatalf("browser evaluate: %v", err)
+	}
+
+	if state != "closed" {
+		t.Fatalf("healthy group should start collapsed, got %q", state)
+	}
+
+	if err := chromedp.Run(ctx, chromedp.Click("details summary", chromedp.ByQuery)); err != nil {
+		t.Fatalf("click summary: %v", err)
+	}
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(detailsState, &state)); err != nil {
+		t.Fatalf("browser evaluate after click: %v", err)
+	}
+
+	if state != "open" {
+		t.Fatalf("healthy group should be expanded after clicking the summary, got %q", state)
+	}
+
+	var tableVisible bool
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(
+		`document.querySelector("details table") !== null && document.querySelector("details table").offsetParent !== null`,
+		&tableVisible,
+	)); err != nil {
+		t.Fatalf("browser evaluate table: %v", err)
+	}
+
+	if !tableVisible {
+		t.Error("service table inside the expanded group should be visible")
+	}
+
+	// The next SSE patch (PushAlways, 200ms) replaces #health-region with a
+	// fresh server-side render, which re-collapses the group. This is the
+	// documented trade-off of server-derived collapse state.
+	waitForJS(t, ctx, detailsState+` === "closed"`, detailsState, nil)
+
+	assertNoBrowserErrors(t, errLog)
+}
