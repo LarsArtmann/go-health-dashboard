@@ -19,6 +19,16 @@ Everything below survived the 2026-09-10 full-execution session (Pareto plan
 `docs/planning/2026-09-10_00-26_ci-green-and-backlog-pareto.html`, closing
 report `docs/status/2026-09-10_01-15_full-execution-session.md`).
 
+### Release hygiene (post-v0.7.0, harvested from the 2026-09-10 release session)
+
+| Task                                                                    | Status    | Impact | Effort | Notes                                                                                                |
+| ----------------------------------------------------------------------- | --------- | ------ | ------ | ---------------------------------------------------------------------------------------------------- |
+| Backfill the missing v0.6.1 GitHub Release from its CHANGELOG section   | 🔴 `TODO` | Medium | S      | Releases currently jump v0.6.0 → v0.7.0; two-minute fix but a new public act — wants user go-ahead (report 2026-09-10 g Q1) |
+| Codify release lessons in AGENTS.md: fmt AFTER the last `templ generate`, commit immediately vs the auto-daemon, tag-first push order, poll-loop external verification | 🔴 `TODO` | Medium | S | All four bit or paid off during the v0.7.0 cut (report 2026-09-10 d/e)                                |
+| `scripts/verify-release.sh <ver>`: proxy hash == tag commit, sumdb, clean-dir `go get`, release state | 🔴 `TODO` | Medium | S/M    | Makes the post-push tail of a release mechanical (report 2026-09-10 e-5)                              |
+| CHANGELOG structural lint in CI: exactly one `[Unreleased]`, first section only, monotonic version order | 🔴 `TODO` | Medium | S      | The sandwiched-`[Unreleased]` bug survived days of doc audits (report 2026-09-10 a-2)                 |
+| Investigate the dependabot client_model 0.6.3 PR red (own branch)       | 🔴 `TODO` | Medium | S      | Observed failing 2026-09-09/10; likely a guard tripping on a go.sum-only bump; rebase and see         |
+
 ### Polish & cleanup (Low impact)
 
 | Task                                                                    | Status    | Impact | Effort | Notes                                                                                                |
