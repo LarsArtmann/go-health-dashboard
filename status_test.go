@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"fmt"
 	"testing"
 
 	health "github.com/larsartmann/go-health"
@@ -292,5 +293,136 @@ func TestFingerprintChecks_NoDelimiterCollision(t *testing.T) {
 
 	if fingerprintChecks(aliased) == fingerprintChecks(separate) {
 		t.Error("fingerprint collision: delimiter-bearing name aliases a different field split")
+	}
+}
+
+// healthyChecks builds an n-entry all-pass checks map.
+func healthyChecks(n int) map[string]health.Check {
+	checks := make(map[string]health.Check, n)
+	for i := range n {
+		checks[fmt.Sprintf("svc-%02d", i)] = health.Check{Status: health.StatusPass}
+	}
+
+	return checks
+}
+
+func TestApplyCollapsePolicy_ThresholdBoundary(t *testing.T) {
+	t.Parallel()
+
+	const threshold = 8
+
+	tests := []struct {
+		name          string
+		healthyRows   int
+		wantCollapsed bool
+	}{
+		{"below threshold", 7, false},
+		{"at threshold", 8, true},
+		{"above threshold", 9, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			vm := buildViewModel(health.Response{
+				Status: health.StatusPass,
+				Checks: healthyChecks(tt.healthyRows),
+			}, "Test", "/health/sse")
+
+			applyCollapsePolicy(&vm, threshold)
+
+			if vm.HealthyCount != tt.healthyRows {
+				t.Errorf("HealthyCount: want %d, got %d", tt.healthyRows, vm.HealthyCount)
+			}
+
+			if vm.HealthyCollapsed != tt.wantCollapsed {
+				t.Errorf("HealthyCollapsed with %d healthy rows (threshold %d): want %v, got %v",
+					tt.healthyRows, threshold, tt.wantCollapsed, vm.HealthyCollapsed)
+			}
+		})
+	}
+}
+
+func TestApplyCollapsePolicy_NoHealthyGroup(t *testing.T) {
+	t.Parallel()
+
+	vm := buildViewModel(health.Response{
+		Status: health.StatusFail,
+		Checks: map[string]health.Check{
+			"db": {Status: health.StatusFail, Error: "down"},
+		},
+	}, "Test", "/health/sse")
+
+	applyCollapsePolicy(&vm, 8)
+
+	if vm.HealthyCount != 0 {
+		t.Errorf("HealthyCount with no healthy group: want 0, got %d", vm.HealthyCount)
+	}
+
+	if vm.HealthyCollapsed {
+		t.Error("HealthyCollapsed must be false when no healthy group exists")
+	}
+}
+
+func TestApplyCollapsePolicy_ZeroThresholdNeverCollapses(t *testing.T) {
+	t.Parallel()
+
+	vm := buildViewModel(health.Response{
+		Status: health.StatusPass,
+		Checks: healthyChecks(50),
+	}, "Test", "/health/sse")
+
+	applyCollapsePolicy(&vm, 0)
+
+	if vm.HealthyCollapsed {
+		t.Error("HealthyCollapsed must be false with threshold 0")
+	}
+
+	if vm.HealthyCount != 50 {
+		t.Errorf("HealthyCount: want 50, got %d", vm.HealthyCount)
+	}
+}
+
+func TestHealthyGroupSummary(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		group checkGroup
+		want  string
+	}{
+		{
+			name: "all pass",
+			group: checkGroup{
+				Title: groupTitleHealthy,
+				Rows: []checkRow{
+					{Name: "db", Status: health.StatusPass},
+					{Name: "cache", Status: health.StatusPass},
+				},
+			},
+			want: "Healthy Services · 2 · all pass",
+		},
+		{
+			name: "unknown status suppresses all-pass claim",
+			group: checkGroup{
+				Title: groupTitleHealthy,
+				Rows: []checkRow{
+					{Name: "db", Status: health.StatusPass},
+					{Name: "odd", Status: health.Status("unknown")},
+				},
+			},
+			want: "Healthy Services · 2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := healthyGroupSummary(tt.group); got != tt.want {
+				t.Errorf("healthyGroupSummary: want %q, got %q", tt.want, got)
+			}
+		})
 	}
 }
