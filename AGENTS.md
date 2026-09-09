@@ -110,6 +110,7 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **Runtime CSP is verified in a headless browser** — `browser_test.go` serves the page self-hosted (compiled CSS + embedded SDK) under strict CSP, waits for the SSE connection, and asserts the runtime DOM has zero `<style>` elements and no styled elements besides `<html>` (theme script uses CSSOM, CSP-safe by spec).
 - **SSE reconnection via retry field** — `WithRetryInterval(d)` sets the SSE `retry` field on every event, telling the browser how long to wait before reconnecting. The handler always sends current state on connect, so reconnecting clients immediately see the latest health — no event replay needed.
 - **Sub-path mounting via WithBasePath** — `WithBasePath("/admin")` prefixes all routes in `Config.Routes`. Combined with `RegisterRoutes(mux)` reading from `Config`, this ensures the HTML-referenced SSE URL always matches the registered handler.
+- **`LastUpdatedTime`/age is HTML-only by design** — the JSON health response stays byte-stable with go-health's own probe handlers (kubelets and scrapers diff payloads); freshness rides the trend/export endpoints instead. Revisit only if a JSON consumer asks for it.
 - **samber/do lifecycle integration** — `Dashboard` implements `do.HealthcheckerWithContext` and `do.Shutdowner` (compile-time asserted). `Register(injector, probe, opts...)` stores it via `do.ProvideValue`, so consumers with an injector get `do.Shutdown`/`do.HealthCheck` cascades for free.
 
 ### Data Flow

@@ -146,6 +146,9 @@ type viewModel struct {
 	// Grouping records the configured GroupMode so render helpers can
 	// adapt (collapse policy and persistence apply to severity mode only).
 	Grouping GroupMode
+	// HasDatastarRuntime is false when the page is served without the
+	// Datastar SDK (WithNoDatastarRuntime); SDK-dependent UI is omitted.
+	HasDatastarRuntime bool
 }
 
 // updatedStampFormat is the wall-clock format of the viewModel LastUpdated
@@ -329,6 +332,7 @@ func groupChecksBySource(checks map[string]health.Check) []checkGroup {
 // warn — a group containing something unreadable must not read as healthy.
 func worstGroupStatus(rows []checkRow) health.Status {
 	status := health.StatusPass
+
 	for _, row := range rows {
 		switch row.Status {
 		case health.StatusFail:
@@ -531,16 +535,16 @@ type TimelineEntry struct {
 // GroupBySource mode the titles are the source names themselves, so they
 // are masked too — topology is as identifying as names.
 func anonymizeViewModel(vm *viewModel) {
-	for gi := range vm.Groups {
-		group := &vm.Groups[gi]
+	for groupIdx := range vm.Groups {
+		group := &vm.Groups[groupIdx]
 
 		if vm.Grouping == GroupBySource {
-			group.Title = fmt.Sprintf("group-%d", gi+1)
+			group.Title = fmt.Sprintf("group-%d", groupIdx+1)
 		}
 
-		for ri := range group.Rows {
-			row := &group.Rows[ri]
-			row.Name = fmt.Sprintf("check-%d", gi*100+ri+1)
+		for rowIdx := range group.Rows {
+			row := &group.Rows[rowIdx]
+			row.Name = fmt.Sprintf("check-%d", groupIdx*100+rowIdx+1)
 			row.Display = row.Name
 			row.Error = ""
 		}

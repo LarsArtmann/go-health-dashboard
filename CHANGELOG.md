@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+`[Unreleased]` convention: new work accrues in the `[Unreleased]` section at
+the top. When a version is tagged, the section is re-headed with the version
+and date IN THE SAME CHANGE as the `Version` const bump and the tag (the
+version-guard CI job fails otherwise). An `[Unreleased]` section may never
+sit sandwiched between two released sections — at tag time it ships into the
+cut or its contents wait for the next one; decide explicitly, never by
+forgetting.
+
 ## [0.7.0] — 2026-09-09
 
 Dashboard UI/UX overhaul, executed as a Pareto plan
@@ -114,6 +122,12 @@ opt-in introspection endpoint exposes the running configuration.
   persistence deliberately do not apply in source mode (no single
   healthy group; several pass sections must not share one storage key),
   and public mode masks source titles — topology is identifying.
+- `WithNoDatastarRuntime()`: omits the SDK-dependent UI (client-side
+  filter box, no-match hint, connection pill) for pages served without
+  the Datastar SDK runtime — e.g. behind a custom CSP-safe patch client
+  (CV's mini-client). Without it, a straight bump would render a dead
+  filter input (no expression engine) and a pill stuck on "Live". All
+  server-rendered behavior is unaffected.
 - Example toggles `DEMO_COLLAPSE=<n>`, `DEMO_PERSIST=1`,
   `DEMO_EMBEDDED_SDK=1`, and `DEMO_GROUPING=source|severity` dogfood the
   collapse threshold, persistence, the client-side filter, and source

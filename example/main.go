@@ -252,7 +252,9 @@ func buildOptions() []dashboard.Option {
 	if raw := os.Getenv("DEMO_COLLAPSE"); raw != "" {
 		threshold, err := strconv.Atoi(raw)
 		if err != nil || threshold < 0 {
-			log.Fatalf("DEMO_COLLAPSE: want a non-negative integer, got %q", raw)
+			// The raw env value never reaches the log; only the parsed
+			// (necessarily numeric) result does.
+			log.Fatalf("DEMO_COLLAPSE: want a non-negative integer")
 		}
 
 		opts = append(opts, dashboard.WithHealthyGroupCollapse(threshold))
@@ -271,16 +273,16 @@ func buildOptions() []dashboard.Option {
 		)
 	}
 
-	if raw := os.Getenv("DEMO_GROUPING"); raw != "" {
-		switch dashboard.GroupMode(raw) {
-		case dashboard.GroupBySource:
-			opts = append(opts, dashboard.WithGrouping(dashboard.GroupBySource))
-			log.Println("grouping: one card per aggregate source (DEMO_GROUPING=source)")
-		case dashboard.GroupBySeverity:
-			// The default; accepted explicitly for demo symmetry.
-		default:
-			log.Fatalf("DEMO_GROUPING: want source or severity, got %q", raw)
-		}
+	switch dashboard.GroupMode(os.Getenv("DEMO_GROUPING")) {
+	case dashboard.GroupBySource:
+		opts = append(opts, dashboard.WithGrouping(dashboard.GroupBySource))
+		log.Println("grouping: one card per aggregate source (DEMO_GROUPING=source)")
+	case dashboard.GroupBySeverity:
+		// The default; accepted explicitly for demo symmetry.
+	case "":
+		// Unset; the default applies.
+	default:
+		log.Fatalf("DEMO_GROUPING: want source or severity")
 	}
 
 	return opts

@@ -173,17 +173,27 @@ func TestStorageKey_NeverPersistsInSourceMode(t *testing.T) {
 func TestGroupChecks_NeverEmitEmptyGroups(t *testing.T) {
 	t.Parallel()
 
-	allStatuses := []health.Status{health.StatusPass, health.StatusWarn, health.StatusFail, "unknown"}
+	allStatuses := []health.Status{
+		health.StatusPass,
+		health.StatusWarn,
+		health.StatusFail,
+		"unknown",
+	}
 
 	fixtures := []map[string]health.Check{
 		{},
 		{"only": {Status: health.StatusPass}},
-		{"a": {Status: health.StatusFail}, "b": {Status: health.StatusWarn}, "c": {Status: health.StatusPass}},
+		{
+			"a": {Status: health.StatusFail},
+			"b": {Status: health.StatusWarn},
+			"c": {Status: health.StatusPass},
+		},
 	}
 
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		checks := map[string]health.Check{}
-		for j := 0; j <= i%7; j++ {
+
+		for j := range i%7 + 1 {
 			checks[string(rune('a'+j%26))+string(rune('a'+i%26))] = health.Check{
 				Status: allStatuses[(i+j)%len(allStatuses)],
 			}
@@ -198,7 +208,9 @@ func TestGroupChecks_NeverEmitEmptyGroups(t *testing.T) {
 				if len(group.Rows) == 0 {
 					t.Errorf(
 						"fixture %d mode %s: group %q has zero rows — empty groups must never render",
-						fixtureIndex, mode, group.Title,
+						fixtureIndex,
+						mode,
+						group.Title,
 					)
 				}
 			}

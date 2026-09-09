@@ -153,6 +153,7 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 	vm.ShowStatCards = !d.cfg.HideStatCards
 	vm.Description = d.cfg.Description
 	vm.PersistCollapse = d.cfg.PersistCollapse
+	vm.HasDatastarRuntime = !d.cfg.NoDatastarRuntime
 	vm.ExportURL = d.exportURL()
 	vm.TrendURL = d.trendURL()
 	vm.MetricsURL = d.metricsURL()

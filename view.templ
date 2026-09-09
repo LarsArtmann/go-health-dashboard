@@ -55,7 +55,9 @@ templ View(data viewModel) {
 						</p>
 					</div>
 					<div class="flex items-center gap-3">
-						@connectionPill(data.DatastarNonce)
+						if data.HasDatastarRuntime {
+							@connectionPill(data.DatastarNonce)
+						}
 						@layout.ThemeToggle("Toggle theme", data.DatastarNonce)
 					</div>
 				</div>
@@ -191,7 +193,7 @@ templ dashboardContent(data viewModel) {
 			</a>
 		</p>
 	}
-	if data.DatastarSrc != "" {
+	if data.DatastarSrc != "" && data.HasDatastarRuntime {
 		<div class="mt-6">
 			<label class="sr-only" for="health-filter">Filter services</label>
 			<input
@@ -277,7 +279,7 @@ templ dashboardContent(data viewModel) {
 				}
 			}
 		}
-		if data.DatastarSrc != "" && len(data.Groups) > 0 {
+		if data.DatastarSrc != "" && data.HasDatastarRuntime && len(data.Groups) > 0 {
 			<p
 				class="hidden text-sm text-gray-500 dark:text-gray-400"
 				role="status"

@@ -1,6 +1,8 @@
 # Upstream issue draft — go-health: per-check `Since`/`Duration` metadata
 
-> Draft only — not filed. Prepared per the verify-before-filing discipline:
+> **Filed 2026-09-10 as [go-health#2](https://github.com/LarsArtmann/go-health/issues/2)** — claims re-verified against the v0.1.3 module cache before filing. Kept as the reasoning record.
+>
+> Draft provenance: prepared per the verify-before-filing discipline:
 > every claim below was re-read from `types.go` in go-health v0.1.3 (module
 > cache, 2026-09-09) before being written.
 

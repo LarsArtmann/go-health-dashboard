@@ -46,6 +46,14 @@ type Config struct {
 	// pages (per-source cards, worst-of status per card).
 	Grouping GroupMode
 
+	// NoDatastarRuntime marks the page as served WITHOUT the Datastar SDK
+	// runtime — e.g. by a custom patch client speaking the SSE wire
+	// protocol. SDK-expression UI (the client-side filter box) and
+	// SDK-event UI (the connection pill) are omitted, because both would
+	// render dead without the expression engine and fetch lifecycle
+	// events.
+	NoDatastarRuntime bool
+
 	// ShutdownDrain bounds how long Shutdown waits for connected SSE
 	// clients to disconnect before closing the broadcaster. Zero closes
 	// immediately (default).
@@ -187,6 +195,14 @@ func WithPersistCollapse() Option {
 // size, for dashboards where the full healthy table is the point.
 func WithHealthyGroupExpanded() Option {
 	return WithHealthyGroupCollapse(0)
+}
+
+// WithNoDatastarRuntime omits the SDK-dependent UI (client-side filter box
+// and connection pill) for pages served without the Datastar SDK runtime —
+// e.g. behind a custom CSP-safe patch client. Server-rendered behavior
+// (collapse, names, badges, jump link, SSE patches) is unaffected.
+func WithNoDatastarRuntime() Option {
+	return func(c *Config) { c.NoDatastarRuntime = true }
 }
 
 // WithGrouping selects how checks are partitioned into dashboard cards:

@@ -87,32 +87,30 @@ func TestIntrospection_ServesResolvedConfig(t *testing.T) {
 		}
 	}
 
-	switch {
-	case doc.Modes.TrendSamples != 42:
-		t.Errorf("modes.trend_samples: want 42, got %d", doc.Modes.TrendSamples)
-	case doc.Modes.PushMode != "on-change":
-		t.Errorf("modes.push_mode: want on-change, got %q", doc.Modes.PushMode)
-	case !doc.Modes.Metrics:
-		t.Error("modes.metrics: want true after WithMetrics(true)")
-	case !doc.Limits.RateLimitEnabled:
-		t.Error("limits.rate_limit_enabled: want true after WithRateLimit")
-	case doc.Modes.NonceStrategy != "none":
-		t.Errorf("modes.nonce_strategy: want none, got %q", doc.Modes.NonceStrategy)
-	case doc.Modes.HealthyGroupCollapseThreshold != 3:
-		t.Errorf(
-			"modes.healthy_group_collapse_threshold: want 3, got %d",
-			doc.Modes.HealthyGroupCollapseThreshold,
-		)
-	case !doc.Modes.PersistCollapse:
-		t.Error("modes.persist_collapse: want true after WithPersistCollapse")
-	case doc.Modes.PushOnChangeTTL != 2:
-		t.Errorf("modes.push_on_change_ttl: want 2, got %d", doc.Modes.PushOnChangeTTL)
-	case doc.Limits.TimelineMaxAge != "1h0m0s":
-		t.Errorf("limits.timeline_max_age: want 1h0m0s, got %q", doc.Limits.TimelineMaxAge)
-	case !doc.Modes.EmbeddedDatastarSDK:
-		t.Error("modes.embedded_datastar_sdk: want true after WithEmbeddedDatastarSDK")
-	case doc.Modes.HideStatCards:
-		t.Error("modes.hide_stat_cards: want false by default")
+	for _, check := range []struct {
+		name string
+		ok   bool
+		msg  string
+	}{
+		{"trend_samples", doc.Modes.TrendSamples == 42, "want 42 after WithTrend(42)"},
+		{"push_mode", doc.Modes.PushMode == "on-change", "want on-change"},
+		{"metrics", doc.Modes.Metrics, "want true after WithMetrics(true)"},
+		{"rate_limit_enabled", doc.Limits.RateLimitEnabled, "want true after WithRateLimit"},
+		{"nonce_strategy", doc.Modes.NonceStrategy == "none", "want none"},
+		{
+			"healthy_group_collapse_threshold",
+			doc.Modes.HealthyGroupCollapseThreshold == 3,
+			"want 3 after WithHealthyGroupCollapse(3)",
+		},
+		{"persist_collapse", doc.Modes.PersistCollapse, "want true after WithPersistCollapse"},
+		{"push_on_change_ttl", doc.Modes.PushOnChangeTTL == 2, "want 2 after WithPushOnChangeTTL(2)"},
+		{"timeline_max_age", doc.Limits.TimelineMaxAge == "1h0m0s", "want 1h0m0s after WithTimelineMaxAge(time.Hour)"},
+		{"embedded_datastar_sdk", doc.Modes.EmbeddedDatastarSDK, "want true after WithEmbeddedDatastarSDK"},
+		{"hide_stat_cards", !doc.Modes.HideStatCards, "want false by default"},
+	} {
+		if !check.ok {
+			t.Errorf("%s: %s", check.name, check.msg)
+		}
 	}
 }
 
