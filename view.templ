@@ -6,7 +6,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/a-h/templ"
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/datastar"
 	"github.com/larsartmann/templ-components/display"
@@ -68,16 +67,18 @@ templ View(data viewModel) {
 							Label: "Uptime",
 						})
 						@display.StatCard(display.StatCardProps{
+							BaseProps: utils.BaseProps{
+								Attrs: templ.Attributes{
+									// Native hover tooltip: honest framing for the
+									// number without a script (the upstream Tooltip
+									// component emits its aria script with a nonce
+									// attribute even for nonce-less pages, which
+									// breaks the CSP-no-nonce contract).
+									"title": "Duration of the most recent probe batch across all services, refreshed every probe interval",
+								},
+							},
 							Value: fmt.Sprintf("%dms", data.LatencyMs),
 							Label: "Check Latency",
-							Attrs: templ.Attributes{
-								// Native hover tooltip: honest framing for the
-								// number without a script (the upstream Tooltip
-								// component emits its aria script with a nonce
-								// attribute even for nonce-less pages, which
-								// breaks the CSP-no-nonce contract).
-								"title": "Duration of the most recent probe batch across all services, refreshed every probe interval",
-							},
 						})
 					}
 				}
