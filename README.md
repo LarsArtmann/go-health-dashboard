@@ -358,12 +358,12 @@ pass/fail every 15s), and one always failing. Watch the dashboard update live.
 
 Tested version matrix (`go.mod` is the live source of truth):
 
-| Dependency       | Version | Note                                                 |
-| ---------------- | ------- | ---------------------------------------------------- |
-| go-health        | v0.1.3  | `aggregate` package needs v0.1.0+                    |
+| Dependency       | Version | Note                                                |
+| ---------------- | ------- | --------------------------------------------------- |
+| go-health        | v0.1.3  | `aggregate` package needs v0.1.0+                   |
 | templ-components | v1.16.0 | pinned — CI guard + browser-suite re-audit on bumps |
-| go-datastar      | v0.5.0  | audited SDK bundle; needs CSP `unsafe-eval`          |
-| go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                       |
+| go-datastar      | v0.5.0  | audited SDK bundle; needs CSP `unsafe-eval`         |
+| go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                      |
 
 ## Dark Mode
 

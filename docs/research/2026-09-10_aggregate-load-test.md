@@ -1,10 +1,10 @@
 # Research — 20-source aggregate load test (F8)
 
-|              |                                            |
-| ------------ | ------------------------------------------ |
-| **Date**     | 2026-09-10                                 |
-| **Harness**  | `TestLoad_Aggregate20Sources` (`loadtest_test.go`), run with `LOADTEST=1 nix develop -c go test -run TestLoad_Aggregate20Sources -v .` |
-| **Machine**  | Lars's dev box (nixpkgs, go 1.26.7)        |
+|             |                                                                                                                                        |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Date**    | 2026-09-10                                                                                                                             |
+| **Harness** | `TestLoad_Aggregate20Sources` (`loadtest_test.go`), run with `LOADTEST=1 nix develop -c go test -run TestLoad_Aggregate20Sources -v .` |
+| **Machine** | Lars's dev box (nixpkgs, go 1.26.7)                                                                                                    |
 
 ## Setup
 
@@ -16,14 +16,14 @@
 
 ## Results
 
-| Metric                          | Value      |
-| ------------------------------- | ---------- |
-| SSE events delivered (5s)       | 1002 (~50 per client; 10/s at the 100ms interval — zero loss) |
-| Time to first SSE event         | 7.65ms     |
-| Scrape latency p50              | 1.05ms     |
-| Scrape latency p95              | 5.49ms     |
-| Scrape latency max              | 12.56ms    |
-| Subscriber ceiling observed     | 20/20 concurrent without 503s (limit unset) |
+| Metric                      | Value                                                         |
+| --------------------------- | ------------------------------------------------------------- |
+| SSE events delivered (5s)   | 1002 (~50 per client; 10/s at the 100ms interval — zero loss) |
+| Time to first SSE event     | 7.65ms                                                        |
+| Scrape latency p50          | 1.05ms                                                        |
+| Scrape latency p95          | 5.49ms                                                        |
+| Scrape latency max          | 12.56ms                                                       |
+| Subscriber ceiling observed | 20/20 concurrent without 503s (limit unset)                   |
 
 ## Reading
 

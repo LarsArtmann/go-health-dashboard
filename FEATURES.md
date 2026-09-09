@@ -19,32 +19,32 @@
 
 ## Dashboard Rendering
 
-| Feature                                      | Status                | Notes                                                                                                                                                         |
-| -------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| HTML dashboard page                          | 🟢 `FULLY_FUNCTIONAL` | `view.templ:17` — layout.Base shell, no HTMX, Datastar SDK in head                                                                                            |
-| Content negotiation on `/health`             | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` `Handler()` + `wantsJSON()` — full RFC 7231 §5.3.2 q-value parser with wildcard support                                                        |
-| Status banner (alert)                        | 🟢 `FULLY_FUNCTIONAL` | `view.templ:118` — feedback.Alert with FeedbackType                                                                                                           |
-| Severity-grouped service cards               | 🟢 `FULLY_FUNCTIONAL` | `status.go` `groupChecks()` — fail/warn/pass groups, alphabetically sorted                                                                                    |
-| Service tables with badges                   | 🟢 `FULLY_FUNCTIONAL` | `status.go` `rowsToTableRows()` — badge per row, error column                                                                                                 |
-| StatCards (version, uptime, latency)         | 🟢 `FULLY_FUNCTIONAL` | `view.templ:39-47` — 3-card grid                                                                                                                              |
-| StatCards hiding (`WithHideStatCards`)       | 🟢 `FULLY_FUNCTIONAL` | Compact mode; banner and tables always render                                                                                                                 |
-| Health trend sparkline (`WithTrend`)         | 🟢 `FULLY_FUNCTIONAL` | `pusher.go` ring buffer + `view.templ` — `display.Sparkline`, pass=1/warn=0.5/fail=0                                                                          |
-| Empty state                                  | 🟢 `FULLY_FUNCTIONAL` | `view.templ` — "No services registered yet."                                                                                                                  |
-| Healthy-group collapse (native `<details>`)  | 🟢 `FULLY_FUNCTIONAL` | `status.go` `applyCollapsePolicy` + `view.templ` — default threshold 8 (`WithHealthyGroupCollapse`/`WithHealthyGroupExpanded`); patches re-derive server-side |
-| Short display names for checks               | 🟢 `FULLY_FUNCTIONAL` | `status.go` `shortDisplayName` — module path dropped, raw key in title attr + details cell; public mode masks both                                            |
-| Group count badges                           | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `groupCountBadge` — card header badges; healthy group states count in summary                                                                    |
-| Client-side filter (self-hosted SDK)         | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `groupRows` — `data-bind` query signal + `data-class:hidden` rows; no-match hint                                                                 |
-| Connection pill (live/reconnecting/offline)  | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `connectionPill` — `datastar-fetch` events; stream self-heals via `RetryAlways`                                                                  |
-| Jump-to-problems anchor                      | 🟢 `FULLY_FUNCTIONAL` | `view.templ` — banner link to `#group-problems` when failing/warning groups exist                                                                             |
-| Header links (export/trend/metrics)          | 🟢 `FULLY_FUNCTIONAL` | `view.templ` — shown only when the endpoints are configured                                                                                                   |
-| Relative "updated" age                       | 🟢 `FULLY_FUNCTIONAL` | `status.go` `formatAge` — server-rendered next to absolute stamp (patch-safe, no script)                                                                      |
-| Collapse persistence (`WithPersistCollapse`) | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `collapsePersistence` — localStorage + re-apply after patches; opt-in                                                                            |
-| Source-grouped cards (`WithGrouping(GroupBySource)`) | 🟢 `FULLY_FUNCTIONAL` | `status.go` `groupChecksBySource` — one card per `source/check` prefix, worst-of status; severity mode stays the default |
-| SDK-less rendering (`WithNoDatastarRuntime`) | 🟢 `FULLY_FUNCTIONAL` | `options.go` — omits filter box + connection pill for custom patch clients (CV's mini-client); server-rendered behavior unaffected |
-| Long-error expansion                         | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `rowDetailsCell` — native `<details>` for 80+ rune errors, break-words                                                                           |
-| Graceful shutdown state display              | 🟢 `FULLY_FUNCTIONAL` | `status.go:111` — buildViewModel overrides banner to "Shutting Down"                                                                                          |
-| Dark mode toggle                             | 🟢 `FULLY_FUNCTIONAL` | `view.templ:36` — layout.ThemeToggle, nonce-aware, persisted in localStorage                                                                                  |
-| Favicon endpoint                             | 🟢 `FULLY_FUNCTIONAL` | `favicon.go:13` — embedded SVG green-heart, served at `/favicon.svg`                                                                                          |
+| Feature                                              | Status                | Notes                                                                                                                                                         |
+| ---------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HTML dashboard page                                  | 🟢 `FULLY_FUNCTIONAL` | `view.templ:17` — layout.Base shell, no HTMX, Datastar SDK in head                                                                                            |
+| Content negotiation on `/health`                     | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` `Handler()` + `wantsJSON()` — full RFC 7231 §5.3.2 q-value parser with wildcard support                                                        |
+| Status banner (alert)                                | 🟢 `FULLY_FUNCTIONAL` | `view.templ:118` — feedback.Alert with FeedbackType                                                                                                           |
+| Severity-grouped service cards                       | 🟢 `FULLY_FUNCTIONAL` | `status.go` `groupChecks()` — fail/warn/pass groups, alphabetically sorted                                                                                    |
+| Service tables with badges                           | 🟢 `FULLY_FUNCTIONAL` | `status.go` `rowsToTableRows()` — badge per row, error column                                                                                                 |
+| StatCards (version, uptime, latency)                 | 🟢 `FULLY_FUNCTIONAL` | `view.templ:39-47` — 3-card grid                                                                                                                              |
+| StatCards hiding (`WithHideStatCards`)               | 🟢 `FULLY_FUNCTIONAL` | Compact mode; banner and tables always render                                                                                                                 |
+| Health trend sparkline (`WithTrend`)                 | 🟢 `FULLY_FUNCTIONAL` | `pusher.go` ring buffer + `view.templ` — `display.Sparkline`, pass=1/warn=0.5/fail=0                                                                          |
+| Empty state                                          | 🟢 `FULLY_FUNCTIONAL` | `view.templ` — "No services registered yet."                                                                                                                  |
+| Healthy-group collapse (native `<details>`)          | 🟢 `FULLY_FUNCTIONAL` | `status.go` `applyCollapsePolicy` + `view.templ` — default threshold 8 (`WithHealthyGroupCollapse`/`WithHealthyGroupExpanded`); patches re-derive server-side |
+| Short display names for checks                       | 🟢 `FULLY_FUNCTIONAL` | `status.go` `shortDisplayName` — module path dropped, raw key in title attr + details cell; public mode masks both                                            |
+| Group count badges                                   | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `groupCountBadge` — card header badges; healthy group states count in summary                                                                    |
+| Client-side filter (self-hosted SDK)                 | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `groupRows` — `data-bind` query signal + `data-class:hidden` rows; no-match hint                                                                 |
+| Connection pill (live/reconnecting/offline)          | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `connectionPill` — `datastar-fetch` events; stream self-heals via `RetryAlways`                                                                  |
+| Jump-to-problems anchor                              | 🟢 `FULLY_FUNCTIONAL` | `view.templ` — banner link to `#group-problems` when failing/warning groups exist                                                                             |
+| Header links (export/trend/metrics)                  | 🟢 `FULLY_FUNCTIONAL` | `view.templ` — shown only when the endpoints are configured                                                                                                   |
+| Relative "updated" age                               | 🟢 `FULLY_FUNCTIONAL` | `status.go` `formatAge` — server-rendered next to absolute stamp (patch-safe, no script)                                                                      |
+| Collapse persistence (`WithPersistCollapse`)         | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `collapsePersistence` — localStorage + re-apply after patches; opt-in                                                                            |
+| Source-grouped cards (`WithGrouping(GroupBySource)`) | 🟢 `FULLY_FUNCTIONAL` | `status.go` `groupChecksBySource` — one card per `source/check` prefix, worst-of status; severity mode stays the default                                      |
+| SDK-less rendering (`WithNoDatastarRuntime`)         | 🟢 `FULLY_FUNCTIONAL` | `options.go` — omits filter box + connection pill for custom patch clients (CV's mini-client); server-rendered behavior unaffected                            |
+| Long-error expansion                                 | 🟢 `FULLY_FUNCTIONAL` | `view.templ` `rowDetailsCell` — native `<details>` for 80+ rune errors, break-words                                                                           |
+| Graceful shutdown state display                      | 🟢 `FULLY_FUNCTIONAL` | `status.go:111` — buildViewModel overrides banner to "Shutting Down"                                                                                          |
+| Dark mode toggle                                     | 🟢 `FULLY_FUNCTIONAL` | `view.templ:36` — layout.ThemeToggle, nonce-aware, persisted in localStorage                                                                                  |
+| Favicon endpoint                                     | 🟢 `FULLY_FUNCTIONAL` | `favicon.go:13` — embedded SVG green-heart, served at `/favicon.svg`                                                                                          |
 
 ## Real-Time Updates
 
@@ -93,14 +93,14 @@
 
 ## Routing
 
-| Feature                    | Status                | Notes                                                                                                |
-| -------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------- |
-| Configurable routes        | 🟢 `FULLY_FUNCTIONAL` | `routes.go` `Routes` — Dashboard, SSE, Favicon, Metrics, Trend, Export, Liveness, Readiness, Startup |
-| Default routes             | 🟢 `FULLY_FUNCTIONAL` | `routes.go` — /health, /health/sse, /favicon.svg, /healthz, /readyz, /startupz                       |
-| Embeddable sub-path mode   | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` `WithBasePath()` — prefixes all routes; SSE URL in HTML matches                       |
-| Kubernetes probe endpoints | 🟢 `FULLY_FUNCTIONAL` | Wired from probe handlers in `dashboard.go` `RegisterRoutes()`                                       |
-| JSON content on `/health`  | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` `wantsJSON()` — RFC 7231 q-value Accept negotiation; 200 pass/warn, 503 fail          |
-| Trend JSON endpoint        | 🟢 `FULLY_FUNCTIONAL` | `trend.go` — samples + transitions at `/health/trend` with `WithTrend`                               |
+| Feature                         | Status                | Notes                                                                                                       |
+| ------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Configurable routes             | 🟢 `FULLY_FUNCTIONAL` | `routes.go` `Routes` — Dashboard, SSE, Favicon, Metrics, Trend, Export, Liveness, Readiness, Startup        |
+| Default routes                  | 🟢 `FULLY_FUNCTIONAL` | `routes.go` — /health, /health/sse, /favicon.svg, /healthz, /readyz, /startupz                              |
+| Embeddable sub-path mode        | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` `WithBasePath()` — prefixes all routes; SSE URL in HTML matches                              |
+| Kubernetes probe endpoints      | 🟢 `FULLY_FUNCTIONAL` | Wired from probe handlers in `dashboard.go` `RegisterRoutes()`                                              |
+| JSON content on `/health`       | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` `wantsJSON()` — RFC 7231 q-value Accept negotiation; 200 pass/warn, 503 fail                 |
+| Trend JSON endpoint             | 🟢 `FULLY_FUNCTIONAL` | `trend.go` — samples + transitions at `/health/trend` with `WithTrend`                                      |
 | JSON/CSV/NDJSON export endpoint | 🟢 `FULLY_FUNCTIONAL` | `trend.go` — `/health/export`, `?format=csv`, `Accept: text/csv`, or `?format=ndjson` (one object per line) |
 
 ## Configuration
@@ -163,8 +163,8 @@
 
 ## Known Gaps
 
-| Gap                                | Where documented                                                                                                                 |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| GOEXPERIMENT=jsonv2 requirement    | All Go commands require this env var; go-sse uses `encoding/json/v2`                                                             |
-| Datastar needs `unsafe-eval`       | The SDK compiles expressions via `Function`; strict CSPs must allow it — documented in README, verified by `browser_test.go`     |
+| Gap                             | Where documented                                                                                                                           |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| GOEXPERIMENT=jsonv2 requirement | All Go commands require this env var; go-sse uses `encoding/json/v2`                                                                       |
+| Datastar needs `unsafe-eval`    | The SDK compiles expressions via `Function`; strict CSPs must allow it — documented in README, verified by `browser_test.go`               |
 | UI deps pinned + guard-enforced | templ-components v1.16.0 + go-datastar v0.5.0 (browser-suite-audited); `scripts/check-ui-pins.sh` fails CI on any movement — see CHANGELOG |

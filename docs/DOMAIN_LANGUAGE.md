@@ -168,19 +168,19 @@ the pusher's atomic counter. Returns 0 when the pusher has not been started.
 
 ## Route Layout
 
-| Route                 | Purpose                                        | Content Type                          |
-| --------------------- | ---------------------------------------------- | ------------------------------------- |
-| `/health`             | HTML dashboard (or JSON via Accept)            | text/html or JSON                     |
-| `/health/sse`         | SSE patch stream                               | text/event-stream                     |
-| `/favicon.svg`        | Dashboard favicon                              | image/svg+xml                         |
-| `/health/metrics`     | Prometheus exposition (opt-in)                 | text/plain                            |
-| `/health/trend`       | History samples + transitions (opt-in)         | application/json                      |
-| `/health/export`      | History export, JSON/CSV/NDJSON (opt-in)       | application/json, text/csv, x-ndjson  |
-| `/health/introspect`  | Resolved-config document (opt-in)              | application/json                      |
-| `/health/datastar.js` | Embedded SDK bundle (opt-in)                   | text/javascript                       |
-| `/healthz`            | Kubernetes liveness probe                      | application/json                      |
-| `/readyz`             | Kubernetes readiness probe                     | application/json                      |
-| `/startupz`           | Kubernetes startup probe                       | application/json                      |
+| Route                 | Purpose                                  | Content Type                         |
+| --------------------- | ---------------------------------------- | ------------------------------------ |
+| `/health`             | HTML dashboard (or JSON via Accept)      | text/html or JSON                    |
+| `/health/sse`         | SSE patch stream                         | text/event-stream                    |
+| `/favicon.svg`        | Dashboard favicon                        | image/svg+xml                        |
+| `/health/metrics`     | Prometheus exposition (opt-in)           | text/plain                           |
+| `/health/trend`       | History samples + transitions (opt-in)   | application/json                     |
+| `/health/export`      | History export, JSON/CSV/NDJSON (opt-in) | application/json, text/csv, x-ndjson |
+| `/health/introspect`  | Resolved-config document (opt-in)        | application/json                     |
+| `/health/datastar.js` | Embedded SDK bundle (opt-in)             | text/javascript                      |
+| `/healthz`            | Kubernetes liveness probe                | application/json                     |
+| `/readyz`             | Kubernetes readiness probe               | application/json                     |
+| `/startupz`           | Kubernetes startup probe                 | application/json                     |
 
 ## Presentation Terms (0.7.x UI)
 

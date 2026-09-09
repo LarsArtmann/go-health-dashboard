@@ -1,12 +1,12 @@
 # Status Report — CI-Green & Backlog Pareto: Full Execution Session
 
-|                         |                                                                                                                                                                    |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Date**                | 2026-09-10 01:15 (CEST)                                                                                                                                            |
-| **Session scope**       | Full execution of the reconciled TODO list + the 50-item list from `2026-09-09_23-26_ui-ux-pareto-execution-status.md` (f), per the Pareto plan `docs/planning/2026-09-10_00-26_ci-green-and-backlog-pareto.html` |
-| **Repo state**          | `master`, working tree with this session's changes (auto-daemon commits interleaved)                                                                               |
-| **Gates at close**      | Unit ✅ · `-race` ✅ · lint 0 ✅ · browser suite ✅ (incl. axe with ZERO tolerances) · vulncheck ✅ · `nix flake check` ✅ · pin guard ✅ · pre-push script: only the version-vs-tag check red (user decision) |
-| **Coverage**            | Library 79.8% (CI floor 78%, scoped `go test .`); `nix run .#coverage` now matches CI's scope                                                                      |
+|                    |                                                                                                                                                                                                                   |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Date**           | 2026-09-10 01:15 (CEST)                                                                                                                                                                                           |
+| **Session scope**  | Full execution of the reconciled TODO list + the 50-item list from `2026-09-09_23-26_ui-ux-pareto-execution-status.md` (f), per the Pareto plan `docs/planning/2026-09-10_00-26_ci-green-and-backlog-pareto.html` |
+| **Repo state**     | `master`, working tree with this session's changes (auto-daemon commits interleaved)                                                                                                                              |
+| **Gates at close** | Unit ✅ · `-race` ✅ · lint 0 ✅ · browser suite ✅ (incl. axe with ZERO tolerances) · vulncheck ✅ · `nix flake check` ✅ · pin guard ✅ · pre-push script: only the version-vs-tag check red (user decision)    |
+| **Coverage**       | Library 79.8% (CI floor 78%, scoped `go test .`); `nix run .#coverage` now matches CI's scope                                                                                                                     |
 
 ---
 
@@ -141,12 +141,12 @@
 
 ## f) Decisions that remain yours
 
-| #  | Decision                                                                                       | Where it blocks                                  |
-| -- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| 1  | Tag `v0.7.0` vs cut `v0.8.0` — `[Unreleased]` is now substantial (introspection, NDJSON, grouping, ceremony, the PersistCollapse fix). Folding it into 0.7.0 ships a much bigger tag than its CHANGELOG section describes; 0.8.0 keeps both honest. Then push `--follow-tags` (greens version-guard). | CI version-guard job; release checklist          |
-| 2  | CV rollout order (report g Q2). The bump is now SAFE with `WithNoDatastarRuntime()`; deploy pipeline is yours. | `~/projects/CV` go.mod pin at v0.6.1             |
-| 3  | Copy affordance for raw keys (report g Q3) — still open as a product call.                      | TODO_LIST blocked                                |
-| 4  | Pin-guard keep sign-off (guard retained by decision; deviation documented).                    | `scripts/check-ui-pins.sh` header                |
+| # | Decision                                                                                                                                                                                                                                                                                              | Where it blocks                         |
+| - | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| 1 | Tag `v0.7.0` vs cut `v0.8.0` — `[Unreleased]` is now substantial (introspection, NDJSON, grouping, ceremony, the PersistCollapse fix). Folding it into 0.7.0 ships a much bigger tag than its CHANGELOG section describes; 0.8.0 keeps both honest. Then push `--follow-tags` (greens version-guard). | CI version-guard job; release checklist |
+| 2 | CV rollout order (report g Q2). The bump is now SAFE with `WithNoDatastarRuntime()`; deploy pipeline is yours.                                                                                                                                                                                        | `~/projects/CV` go.mod pin at v0.6.1    |
+| 3 | Copy affordance for raw keys (report g Q3) — still open as a product call.                                                                                                                                                                                                                            | TODO_LIST blocked                       |
+| 4 | Pin-guard keep sign-off (guard retained by decision; deviation documented).                                                                                                                                                                                                                           | `scripts/check-ui-pins.sh` header       |
 
 ## CV findings mapping (report f46, from CV's 2026-09-09 architecture review)
 

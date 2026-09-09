@@ -1,18 +1,18 @@
 # Research — render benchmark re-baseline (post-0.7.x UI)
 
-|              |                                            |
-| ------------ | ------------------------------------------ |
-| **Date**     | 2026-09-10                                 |
-| **Command**  | `nix develop -c go test -bench 'BenchmarkHandler_HTMLRendering\|BenchmarkDashboard_FullHTML' -benchtime 2s -run xxx -count 3 .` |
-| **Context**  | First baseline after the render grew the filter expressions, connection pill, persistence script, and source grouping (plan f21: the old baseline predated the UI work). |
+|             |                                                                                                                                                                          |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Date**    | 2026-09-10                                                                                                                                                               |
+| **Command** | `nix develop -c go test -bench 'BenchmarkHandler_HTMLRendering\|BenchmarkDashboard_FullHTML' -benchtime 2s -run xxx -count 3 .`                                          |
+| **Context** | First baseline after the render grew the filter expressions, connection pill, persistence script, and source grouping (plan f21: the old baseline predated the UI work). |
 
 ## Results (3 runs each)
 
-| Benchmark                    | ns/op (min–max)      | B/op   | allocs/op |
-| ---------------------------- | -------------------- | ------ | --------- |
-| Handler_HTMLRendering        | 29,028 – 99,236      | —      | —         |
-| Dashboard_FullHTML           | 185,607 – 222,947    | 70,754 | ~574      |
-| Dashboard_FullHTMLWithTrend  | 183,608 – 199,296    | 70,869 | ~577      |
+| Benchmark                   | ns/op (min–max)   | B/op   | allocs/op |
+| --------------------------- | ----------------- | ------ | --------- |
+| Handler_HTMLRendering       | 29,028 – 99,236   | —      | —         |
+| Dashboard_FullHTML          | 185,607 – 222,947 | 70,754 | ~574      |
+| Dashboard_FullHTMLWithTrend | 183,608 – 199,296 | 70,869 | ~577      |
 
 ## Reading
 
