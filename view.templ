@@ -63,6 +63,13 @@ templ View(data viewModel) {
 						URL:       data.SSEURL,
 						AutoStart: true,
 						Live:      datastar.LivePolite,
+						// A graceful server restart ends the SSE stream with a
+						// clean EOF, which the SDK's default retry mode treats
+						// as a completed request and never reconnects — every
+						// browser would go stale until reloaded. RetryAlways
+						// re-runs the connect across restarts (the failure
+						// counter resets on every successful connect).
+						Retry: datastar.RetryAlways,
 					}) {
 						@dashboardContent(data)
 					}
@@ -361,6 +368,7 @@ templ connectionPill(nonce string) {
 			document.addEventListener('datastar-fetch', function (e) {
 				var type = e.detail && e.detail.type;
 				if (type === 'started' || type === 'finished') { setState('live'); }
+				else if (type && type.indexOf('datastar-patch-') === 0) { setState('live'); }
 				else if (type === 'retrying') { setState('reconnecting'); }
 				else if (type === 'error' || type === 'retries-failed') { setState('offline'); }
 			});

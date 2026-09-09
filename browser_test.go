@@ -1395,26 +1395,34 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	// Recover: unblock and restart the pusher, then reload so the browser
-	// makes a fresh connection through the now-open proxy.
+	// Recover: unblock and restart the pusher. The SDK's RetryAlways mode
+	// keeps re-running the connect through the outage (retrying into the
+	// 404, then succeeding), so the pill must return to live on its own —
+	// without any page reload.
 	blockSSE.Store(false)
 
 	if err := s.dash.Start(runCtx); err != nil {
 		t.Fatalf("dash restart: %v", err)
 	}
 
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser re-navigate: %v", err)
-	}
+	deadline = time.Now().Add(45 * time.Second)
 
-	waitForSubscriber(t, s.dash)
+	for {
+		if err := chromedp.Run(ctx, chromedp.Evaluate(pillState, &state)); err != nil {
+			t.Fatalf("browser evaluate during recovery: %v", err)
+		}
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(pillState, &state)); err != nil {
-		t.Fatalf("browser evaluate after recovery: %v", err)
-	}
+		if state == "live" {
+			break
+		}
 
-	if state != "live" {
-		t.Errorf("pill should return to live after recovery, got %q", state)
+		if time.Now().After(deadline) {
+			var events string
+			_ = chromedp.Run(ctx, chromedp.Evaluate(`JSON.stringify(window.__fetchEvents || [])`, &events))
+			t.Fatalf("pill never returned to live after recovery; last state %q; datastar-fetch events: %s", state, events)
+		}
+
+		time.Sleep(200 * time.Millisecond)
 	}
 
 	assertNoBrowserErrors(t, errLog)
