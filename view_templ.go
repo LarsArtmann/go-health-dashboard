@@ -5,11 +5,12 @@ package dashboard
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
+import "github.com/a-h/templ"
+import templruntime "github.com/a-h/templ/runtime"
+
 import (
 	"fmt"
 
-	"github.com/a-h/templ"
-	templruntime "github.com/a-h/templ/runtime"
 	"github.com/larsartmann/templ-components/datastar"
 	"github.com/larsartmann/templ-components/display"
 	"github.com/larsartmann/templ-components/feedback"
@@ -277,7 +278,7 @@ func dashboardHead(data viewModel) templ.Component {
 		} else {
 			templ_7745c5c3_Err = datastar.SDKScript(datastar.SDKScriptProps{
 				BaseProps: utils.BaseProps{Nonce: data.DatastarNonce},
-				Version:   datastar.DatastarVersion1_0_2,
+				Version:   datastar.DatastarVersion1_0_3,
 			}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
