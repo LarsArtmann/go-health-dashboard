@@ -424,8 +424,8 @@ templ connectionPill(nonce string) {
 // group's open/closed state in localStorage and re-applies it after every
 // SSE patch (patches re-derive the server-side default, which would
 // otherwise undo the operator's choice). Rendered outside the patched
-// region; the toggle listener uses capture because the toggle event does
-// not bubble.
+// region; storage keys off summary clicks (user intent) because patch
+// merges also flip the open attribute and would erase the stored choice.
 templ collapsePersistence(nonce string) {
 	<script if nonce != "" {
 	nonce={ nonce }
@@ -444,16 +444,52 @@ templ collapsePersistence(nonce string) {
 				else if (stored === 'closed') { d.open = false; }
 			}
 			apply();
-			document.addEventListener('toggle', function (e) {
-				var d = e.target;
-				if (d && d.matches && d.matches('details[data-collapsible]')) {
-					try { localStorage.setItem(KEY, d.open ? 'open' : 'closed'); } catch (err) {}
-				}
-			}, true);
+			// Store USER intent only. A `toggle` listener cannot distinguish a
+			// user toggle from Datastar's patch merge, which syncs attributes
+			// and thereby removes `open` — that merge-driven toggle used to
+			// overwrite the stored choice with the server default. A click on
+			// the summary always precedes a user toggle (mouse and keyboard),
+			// and during click dispatch `details.open` still holds the
+			// pre-toggle state, so the flipped value is stored synchronously.
+			document.addEventListener('click', function (e) {
+				var target = e.target;
+				var summary = target && target.closest && target.closest('summary');
+				if (!summary || !summary.parentElement ||
+					!summary.parentElement.matches ||
+					!summary.parentElement.matches('details[data-collapsible]')) { return; }
+				var details = summary.parentElement;
+				try {
+					localStorage.setItem(KEY, details.open ? 'closed' : 'open');
+				} catch (err) {}
+			}, false);
+			// The SDK dispatches its datastar-patch-* fetch events BEFORE the
+			// patch is merged into the DOM, so applying on the event alone
+			// always re-opens the replaced-away node. A scoped MutationObserver
+			// reacts to the actual DOM change instead — deterministic for
+			// inner-mode element patches — with the fetch event kept as a
+			// belt-and-braces trigger.
 			document.addEventListener('datastar-fetch', function (e) {
 				var t = e.detail && e.detail.type;
 				if (t && t.indexOf('datastar-patch-') === 0) { apply(); }
 			});
+			if ('MutationObserver' in window) {
+				var selector = 'details[data-collapsible]';
+				var observer = new MutationObserver(function (records) {
+					for (var i = 0; i < records.length; i++) {
+						var added = records[i].addedNodes;
+						for (var j = 0; j < added.length; j++) {
+							var node = added[j];
+							if (node.nodeType !== 1) { continue; }
+							if ((node.matches && node.matches(selector)) ||
+								(node.querySelector && node.querySelector(selector))) {
+								apply();
+								return;
+							}
+						}
+					}
+				});
+				observer.observe(document.body, { childList: true, subtree: true });
+			}
 		})();
 	</script>
 }

@@ -1279,7 +1279,19 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 	}
 
 	if state != "open" {
-		t.Fatalf("with WithPersistCollapse the expanded state must survive SSE patches, got %q", state)
+		var diag string
+		_ = chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+			var d = document.querySelector('details[data-collapsible]');
+			var plain = document.querySelector('details');
+			return JSON.stringify({
+				init: !!window.__healthCollapseInit,
+				stored: (function(){ try { return localStorage.getItem('health-healthy-group-collapsed'); } catch (e) { return 'ERR:'+e.message; } })(),
+				hasDataAttr: d !== null,
+				plainDetailsOpen: plain ? plain.open : null,
+				regionHTML: (document.getElementById('health-region') || {innerHTML:'NO_REGION'}).innerHTML.slice(0, 200)
+			});
+		})()`, &diag))
+		t.Fatalf("with WithPersistCollapse the expanded state must survive SSE patches, got %q; diag=%s", state, diag)
 	}
 
 	// A full reload must also honor the stored state.
