@@ -226,15 +226,7 @@ func TestBrowser_CSPCleanRuntime(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
 	defer server.Close()
@@ -426,14 +418,8 @@ func TestBrowser_LiveSSEPatch(t *testing.T) {
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux)
 
-	mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-	mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	mux.HandleFunc("/static/app.css", browserStaticCSS)
+	mux.HandleFunc("/static/datastar.js", browserStaticJS)
 
 	if err := probe.Start(t.Context()); err != nil {
 		t.Fatalf("probe.Start: %v", err)
@@ -572,14 +558,8 @@ func TestBrowser_Accessibility(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
+
 	s.mux.HandleFunc("/static/axe.js", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/javascript")
 		_, _ = w.Write(axeBytes)
@@ -736,14 +716,20 @@ func waitForJS(t *testing.T, ctx context.Context, predicate, valueExpr string, r
 func browserStaticHandlers(t *testing.T, s *probeSetup) {
 	t.Helper()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	s.mux.HandleFunc("/static/app.css", browserStaticCSS)
+	s.mux.HandleFunc("/static/datastar.js", browserStaticJS)
+}
+
+// browserStaticCSS and browserStaticJS are the shared handlers behind
+// browserStaticHandlers, for tests that register them on a bare mux.
+func browserStaticCSS(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/css")
+	_, _ = w.Write([]byte("body { margin: 0; }"))
+}
+
+func browserStaticJS(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/javascript")
+	_, _ = w.Write(dstarstatic.Bytes())
 }
 
 // TestBrowser_KeyboardNavigation walks the page with real Tab keystrokes
@@ -1101,15 +1087,7 @@ func TestBrowser_CollapseInteract(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
 	defer server.Close()
@@ -1203,15 +1181,7 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
 	defer server.Close()
@@ -1330,15 +1300,7 @@ func TestBrowser_FilterInteract(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
 	defer server.Close()
@@ -1464,15 +1426,7 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	ssePath := s.dash.Routes().SSE
 
@@ -1637,15 +1591,7 @@ func TestBrowser_RetryAlwaysRidesOutMaxConnections(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
 	defer server.Close()
@@ -1729,15 +1675,7 @@ func TestBrowser_MobileViewport(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
 	defer server.Close()
@@ -1824,15 +1762,7 @@ func TestBrowser_KeyboardNewControls(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
 	defer server.Close()
@@ -1915,15 +1845,7 @@ func TestBrowser_KeyboardLinks(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
 	defer server.Close()

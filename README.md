@@ -375,6 +375,17 @@ toggle button for manual switching. The preference is persisted in
 
 Dark screenshot captured by `screenshot_dark_test.go` (`SCREENSHOT_OUTPUT_DARK=docs/screenshot-dark.png`).
 
+## Failure State
+
+With a critical service down, the banner leads with the failure, a
+jump-to-problems link skips past the healthy bulk, and the Critical
+Failures card sorts to the top:
+
+![Health dashboard with a critical service failing: red status banner, jump-to-problems link, and a Critical Failures card](docs/screenshot-degraded.png)
+
+Degraded screenshot captured by `screenshot_test.go`
+(`SCREENSHOT_OUTPUT_DEGRADED=docs/screenshot-degraded.png`).
+
 ## Content-Security-Policy
 
 The served HTML is CSP-clean: every inline script carries the configured

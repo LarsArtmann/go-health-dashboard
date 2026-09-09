@@ -14,6 +14,23 @@ import (
 	"github.com/samber/do/v2"
 )
 
+// screenshotFileMode is the docs-file permission captures normalize to:
+// git only tracks the executable bit, but a 0600 docs file trips readers
+// and diff tools.
+const screenshotFileMode = 0o644
+
+// normalizeScreenshotPerms chmods a capture to the docs convention. The
+// out path comes from an operator-provided env variable, so the file
+// permission change is annotated in one place instead of per call site.
+func normalizeScreenshotPerms(t *testing.T, out string) {
+	t.Helper()
+
+	//nolint:gosec // out is the operator-provided env path; 0644 matches the docs convention
+	if err := os.Chmod(out, screenshotFileMode); err != nil {
+		t.Fatalf("chmod screenshot: %v", err)
+	}
+}
+
 // captureThemeScreenshot renders the dashboard in the requested theme and
 // writes a PNG to out. Skipped when envVar is unset: screenshot capture is
 // a manual documentation tool.
@@ -118,11 +135,7 @@ func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
 		t.Fatalf("write screenshot: %v", err)
 	}
 
-	// Normalize to the repo's docs convention (git only tracks the
-	// executable bit, but a 0600 docs file trips readers and diff tools).
-	if err := os.Chmod(out, 0o644); err != nil {
-		t.Fatalf("chmod screenshot: %v", err)
-	}
+	normalizeScreenshotPerms(t, out)
 
 	t.Logf("screenshot written to %s (%d bytes)", out, len(png))
 }
@@ -243,9 +256,7 @@ func TestCaptureREADME_ScreenshotDegraded(t *testing.T) {
 		t.Fatalf("write screenshot: %v", err)
 	}
 
-	if err := os.Chmod(out, 0o644); err != nil {
-		t.Fatalf("chmod screenshot: %v", err)
-	}
+	normalizeScreenshotPerms(t, out)
 
 	t.Logf("degraded screenshot written to %s (%d bytes)", out, len(png))
 }
