@@ -3,8 +3,10 @@ package dashboard
 import (
 	"fmt"
 	"strconv"
+	"time"
 	"unicode/utf8"
 
+	"github.com/a-h/templ"
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/datastar"
 	"github.com/larsartmann/templ-components/display"
@@ -12,6 +14,20 @@ import (
 	"github.com/larsartmann/templ-components/layout"
 	"github.com/larsartmann/templ-components/utils"
 )
+
+// collapseStorageKeyName is the localStorage key the persistence script
+// uses when WithPersistCollapse is enabled.
+const collapseStorageKeyName = "health-healthy-group-collapsed"
+
+// storageKey returns the CollapsibleSection persistence key when collapse
+// persistence is enabled, otherwise empty (no data-collapsible attribute).
+func storageKey(data viewModel) string {
+	if data.PersistCollapse {
+		return collapseStorageKeyName
+	}
+
+	return ""
+}
 
 // View renders the full HTML dashboard page: Base shell (no HTMX), Datastar
 // SDK in head, header, StatCards, and a LiveRegion that auto-connects to the
@@ -43,26 +59,26 @@ templ View(data viewModel) {
 				</div>
 				if data.ShowStatCards {
 					@display.Grid(display.GridProps{Cols: display.GridCols3}) {
-						@display.Tooltip(display.TooltipProps{
-							Text: "Wall-clock duration of the most recent probe batch across all services, as cached by the health probe",
-						}) {
-							@display.StatCard(display.StatCardProps{
-								Value: versionOrUnknown(data.Version),
-								Label: "Version",
-							})
-						}
+						@display.StatCard(display.StatCardProps{
+							Value: versionOrUnknown(data.Version),
+							Label: "Version",
+						})
 						@display.StatCard(display.StatCardProps{
 							Value: data.Uptime,
 							Label: "Uptime",
 						})
-						@display.Tooltip(display.TooltipProps{
-							Text: "Duration of the most recent probe batch across all services (cached every refresh interval)",
-						}) {
-							@display.StatCard(display.StatCardProps{
-								Value: fmt.Sprintf("%dms", data.LatencyMs),
-								Label: "Check Latency",
-							})
-						}
+						@display.StatCard(display.StatCardProps{
+							Value: fmt.Sprintf("%dms", data.LatencyMs),
+							Label: "Check Latency",
+							Attrs: templ.Attributes{
+								// Native hover tooltip: honest framing for the
+								// number without a script (the upstream Tooltip
+								// component emits its aria script with a nonce
+								// attribute even for nonce-less pages, which
+								// breaks the CSP-no-nonce contract).
+								"title": "Duration of the most recent probe batch across all services, refreshed every probe interval",
+							},
+						})
 					}
 				}
 				<div class="mt-6">
@@ -82,6 +98,9 @@ templ View(data viewModel) {
 						@dashboardContent(data)
 					}
 				</div>
+				if data.PersistCollapse {
+					@collapsePersistence(data.DatastarNonce)
+				}
 			</div>
 		}
 	}
@@ -143,7 +162,24 @@ templ dashboardContent(data viewModel) {
 	})
 	<p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
 		Updated { data.LastUpdated }
+		if !data.LastUpdatedTime.IsZero() {
+			<span class="text-gray-400 dark:text-gray-500">· { formatAge(data.LastUpdatedTime, time.Now().UTC()) }</span>
+		}
 	</p>
+	if data.ExportURL != "" || data.TrendURL != "" || data.MetricsURL != "" {
+		<p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+			if data.ExportURL != "" {
+				<a class="font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300" href={ data.ExportURL + "?format=csv" }>Export CSV</a>
+				<a class="font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300" href={ data.ExportURL }>Export JSON</a>
+			}
+			if data.TrendURL != "" {
+				<a class="font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300" href={ data.TrendURL }>Trend JSON</a>
+			}
+			if data.MetricsURL != "" {
+				<a class="font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300" href={ data.MetricsURL }>Metrics</a>
+			}
+		</p>
+	}
 	if hasProblems(data) {
 		<p class="mt-2 text-sm">
 			<a href="#group-problems" class="font-medium text-red-600 underline decoration-red-300 underline-offset-2 hover:text-red-700 dark:text-red-400 dark:decoration-red-700 dark:hover:text-red-300">
@@ -204,14 +240,15 @@ templ dashboardContent(data viewModel) {
 	<div class="mt-6 space-y-6">
 		if len(data.Groups) == 0 {
 			@display.Card(display.CardProps{Title: "Service Status"}) {
-				@display.SimpleEmptyState("No registered services")
+				@display.SimpleEmptyState("No services registered yet.")
 			}
 		} else {
 			for _, group := range data.Groups {
 				if group.Status == health.StatusPass {
 					@display.CollapsibleSection(display.CollapsibleSectionProps{
-						Title:     healthyGroupSummary(group),
-						Collapsed: data.HealthyCollapsed,
+						Title:      healthyGroupSummary(group),
+						Collapsed:  data.HealthyCollapsed,
+						StorageKey: storageKey(data),
 					}) {
 						@groupTable(group)
 					}
@@ -379,6 +416,46 @@ templ connectionPill(nonce string) {
 				else if (type && type.indexOf('datastar-patch-') === 0) { setState('live'); }
 				else if (type === 'retrying') { setState('reconnecting'); }
 				else if (type === 'error' || type === 'retries-failed') { setState('offline'); }
+			});
+		})();
+	</script>
+}
+
+// collapsePersistence renders the opt-in script that stores the healthy
+// group's open/closed state in localStorage and re-applies it after every
+// SSE patch (patches re-derive the server-side default, which would
+// otherwise undo the operator's choice). Rendered outside the patched
+// region; the toggle listener uses capture because the toggle event does
+// not bubble.
+templ collapsePersistence(nonce string) {
+	<script
+		if nonce != "" {
+			nonce={ nonce }
+		}
+	>
+		(function () {
+			'use strict';
+			if (window.__healthCollapseInit) { return; }
+			window.__healthCollapseInit = true;
+			var KEY = 'health-healthy-group-collapsed';
+			function apply() {
+				var d = document.querySelector('details[data-collapsible]');
+				if (!d) { return; }
+				var stored;
+				try { stored = localStorage.getItem(KEY); } catch (err) { return; }
+				if (stored === 'open') { d.open = true; }
+				else if (stored === 'closed') { d.open = false; }
+			}
+			apply();
+			document.addEventListener('toggle', function (e) {
+				var d = e.target;
+				if (d && d.matches && d.matches('details[data-collapsible]')) {
+					try { localStorage.setItem(KEY, d.open ? 'open' : 'closed'); } catch (err) {}
+				}
+			}, true);
+			document.addEventListener('datastar-fetch', function (e) {
+				var t = e.detail && e.detail.type;
+				if (t && t.indexOf('datastar-patch-') === 0) { apply(); }
 			});
 		})();
 	</script>
