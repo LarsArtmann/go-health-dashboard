@@ -1886,3 +1886,248 @@ func TestBrowser_KeyboardNewControls(t *testing.T) {
 
 	assertNoBrowserErrors(t, errLog)
 }
+
+// TestBrowser_KeyboardLinks proves the navigation affordances are keyboard
+// operable and labelled: the jump-to-problems anchor activates with Enter
+// and lands on the problems group, and the header links (export, trend,
+// metrics) are focusable anchors with non-empty accessible names.
+func TestBrowser_KeyboardLinks(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-keyboard-links-nonce"
+
+	s := setupDashboardWithFailures(t,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithEmbeddedDatastarSDK(),
+		dashboard.WithTrend(8),
+		dashboard.WithMetrics(true),
+	)
+	defer s.cleanup()
+
+	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		_, _ = w.Write([]byte("body { margin: 0; }"))
+	})
+
+	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(dstarstatic.Bytes())
+	})
+
+	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+	time.Sleep(250 * time.Millisecond) // let the initial patch settle
+
+	// Every configured header link must be a real anchor with an accessible
+	// name (its trimmed text) — reachable by keyboard via ordinary Tab order.
+	var unnamed string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+		var links = document.querySelectorAll('a[href*="export"], a[href*="trend"], a[href*="metrics"]');
+		var missing = [];
+		links.forEach(function (a) {
+			if (!a.getAttribute("href") || !(a.textContent || "").trim()) {
+				missing.push(a.getAttribute("href") || "(no href)");
+			}
+		});
+		return missing.join(",");
+	})()`, &unnamed)); err != nil {
+		t.Fatalf("browser evaluate header links: %v", err)
+	}
+
+	if unnamed != "" {
+		t.Errorf("header links without an accessible name: %s", unnamed)
+	}
+
+	var linkCount string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(
+		`document.querySelectorAll('a[href*="export"], a[href*="trend"], a[href*="metrics"]').length + ""`,
+		&linkCount,
+	)); err != nil {
+		t.Fatalf("browser evaluate link count: %v", err)
+	}
+
+	if linkCount != "4" {
+		t.Errorf("want 4 header links (export CSV, export JSON, trend, metrics), got %s", linkCount)
+	}
+
+	// The jump-to-problems anchor must exist on a failing page and activate
+	// via keyboard: focus + Enter navigates to the problems group.
+	var jumpHref string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(
+		`(function () {
+			var links = [...document.querySelectorAll("a")];
+			var jump = links.find(function (a) { return a.getAttribute("href") === "#group-problems"; });
+			return jump ? jump.getAttribute("href") : "";
+		})()`,
+		&jumpHref,
+	)); err != nil {
+		t.Fatalf("browser evaluate jump link: %v", err)
+	}
+
+	if jumpHref != "#group-problems" {
+		t.Fatal("jump-to-problems anchor missing on a page with failing groups")
+	}
+
+	if err := chromedp.Run(ctx,
+		chromedp.Focus(`a[href="#group-problems"]`, chromedp.ByQuery),
+		chromedp.KeyEvent("\r"),
+	); err != nil {
+		t.Fatalf("keyboard jump activation: %v", err)
+	}
+
+	waitForJS(t, ctx,
+		`window.location.hash === "#group-problems"`,
+		`window.location.hash`,
+		nil,
+	)
+
+	assertNoBrowserErrors(t, errLog)
+}
+
+// TestBrowser_AggregateNewUI exercises the 0.7.x UI surface on an aggregate
+// page: namespaced source/check keys survive short-name rendering, the
+// client-side filter narrows by source prefix, and the healthy-group summary
+// states the merged count — all under the strict CSP harness.
+func TestBrowser_AggregateNewUI(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-agg-newui-nonce"
+
+	apiInjector := do.New()
+	provideHealthy(apiInjector, "postgres")
+	invoke[*healthyService](t, apiInjector, "postgres")
+
+	apiProbe := health.New(apiInjector, health.WithRefreshInterval(100*time.Millisecond))
+	if err := apiProbe.Start(context.Background()); err != nil {
+		t.Fatalf("api probe start: %v", err)
+	}
+	defer apiProbe.Shutdown()
+
+	workerInjector := do.New()
+	provideHealthy(workerInjector, "redis")
+	provideHealthy(workerInjector, "queue")
+	invoke[*healthyService](t, workerInjector, "redis")
+	invoke[*healthyService](t, workerInjector, "queue")
+
+	workerProbe := health.New(workerInjector, health.WithRefreshInterval(100*time.Millisecond))
+	if err := workerProbe.Start(context.Background()); err != nil {
+		t.Fatalf("worker probe start: %v", err)
+	}
+	defer workerProbe.Shutdown()
+
+	agg, err := aggregate.New(
+		aggregate.Source{Name: "api", Probe: apiProbe},
+		aggregate.Source{Name: "worker", Probe: workerProbe},
+	)
+	if err != nil {
+		t.Fatalf("aggregate.New: %v", err)
+	}
+
+	s := setupDashboardWithProber(t, agg,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithEmbeddedDatastarSDK(),
+		dashboard.WithHealthyGroupExpanded(),
+	)
+	defer s.cleanup()
+
+	browserStaticHandlers(t, s)
+
+	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+	time.Sleep(250 * time.Millisecond) // let the initial patch settle
+
+	// Namespaced keys must survive short-name rendering verbatim — the
+	// aggregate source prefix is the load-bearing part of the name.
+	waitForBodyText(t, ctx, "api/postgres")
+	waitForBodyText(t, ctx, "worker/redis")
+	waitForBodyText(t, ctx, "worker/queue")
+
+	// The healthy-group summary states the merged count across sources.
+	waitForBodyText(t, ctx, "3")
+
+	visibleRows := `(function () {
+		return [...document.querySelectorAll("tr[data-filter-row]")].filter(function (tr) {
+			return !tr.classList.contains("hidden");
+		}).length + "";
+	})()`
+
+	var visible string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(visibleRows, &visible)); err != nil {
+		t.Fatalf("browser evaluate rows: %v", err)
+	}
+
+	if visible != "3" {
+		t.Fatalf("aggregate page should render 3 rows, got %s", visible)
+	}
+
+	// Filtering by source prefix narrows to that source's checks only.
+	if err := chromedp.Run(ctx,
+		chromedp.SetValue(`#health-filter`, "worker", chromedp.ByQuery),
+	); err != nil {
+		t.Fatalf("filter by source: %v", err)
+	}
+
+	waitForJS(t, ctx, visibleRows+` === "2"`, visibleRows, nil)
+
+	if err := chromedp.Run(ctx,
+		chromedp.SetValue(`#health-filter`, "api/post", chromedp.ByQuery),
+	); err != nil {
+		t.Fatalf("filter by full namespaced key: %v", err)
+	}
+
+	waitForJS(t, ctx, visibleRows+` === "1"`, visibleRows, nil)
+
+	assertNoBrowserErrors(t, errLog)
+}

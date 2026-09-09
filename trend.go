@@ -114,10 +114,11 @@ func (d *Dashboard) TrendHandler() http.HandlerFunc {
 	}
 }
 
-// ExportHandler serves the recorded status history as JSON (default) or CSV
-// (?format=csv or Accept: text/csv). Enabled together with WithTrend at
-// Routes.Export (default /health/export). CSV columns: timestamp, value,
-// status.
+// ExportHandler serves the recorded status history as JSON (default), CSV
+// (?format=csv or Accept: text/csv), or newline-delimited JSON
+// (?format=ndjson — one sample object per line, streamed for consumers
+// that tail the export). Enabled together with WithTrend at Routes.Export
+// (default /health/export). CSV columns: timestamp, value, status.
 func (d *Dashboard) ExportHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		push := d.push.Load()
@@ -161,6 +162,22 @@ func (d *Dashboard) ExportHandler() http.HandlerFunc {
 
 			if err := json.MarshalWrite(w, jsonSamples(samples)); err != nil {
 				http.Error(w, "dashboard: failed to encode export", http.StatusInternalServerError)
+			}
+		case "ndjson":
+			w.Header().Set("Content-Type", "application/x-ndjson; charset=utf-8")
+			w.Header().Set("Cache-Control", "no-cache")
+
+			// One self-contained JSON object per line: consumers can split on
+			// newlines without parsing the whole payload first.
+			for _, sample := range jsonSamples(samples) {
+				line, err := json.Marshal(sample)
+				if err != nil {
+					http.Error(w, "dashboard: failed to encode export", http.StatusInternalServerError)
+					return
+				}
+
+				_, _ = w.Write(line)
+				_, _ = w.Write([]byte{'\n'})
 			}
 		default:
 			http.Error(w, "dashboard: unsupported export format "+format, http.StatusBadRequest)
