@@ -426,3 +426,71 @@ func TestHealthyGroupSummary(t *testing.T) {
 		})
 	}
 }
+
+func TestShortDisplayName(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{"empty", "", ""},
+		{"single word", "database", "database"},
+		{"already short", "database.Service", "database.Service"},
+		{"stdlib", "fmt.Stringer", "fmt.Stringer"},
+		{"cv handler", "*github.com/LarsArtmann/CV/internal/features/healthdash/handlers.Handlers", "handlers.Handlers"},
+		{"go-health probe", "github.com/larsartmann/go-health.Probe", "go-health.Probe"},
+		{"aggregate", "github.com/larsartmann/go-health/aggregate.Aggregate", "aggregate.Aggregate"},
+		{"stdlib net/http", "net/http.Client", "http.Client"},
+		{"versioned module", "samber/do/v2.injector", "v2.injector"},
+		{"aggregate key unchanged", "cv/database", "cv/database"},
+		{"source check unchanged", "source/check", "source/check"},
+		{"bare dot", ".", "."},
+		{"leading dot", ".weird", ".weird"},
+		{"trailing dot", "pkg.", "pkg."},
+		{"public mode masked name", "check-12", "check-12"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := shortDisplayName(tt.raw); got != tt.want {
+				t.Errorf("shortDisplayName(%q): want %q, got %q", tt.raw, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestGroupChecks_DerivesShortDisplayName(t *testing.T) {
+	t.Parallel()
+
+	groups := groupChecks(map[string]health.Check{
+		"*github.com/x/y/handlers.Handlers": {Status: health.StatusPass},
+		"database":                          {Status: health.StatusFail, Error: "down"},
+	})
+
+	var long, plain *checkRow
+
+	for gi := range groups {
+		for ri := range groups[gi].Rows {
+			row := &groups[gi].Rows[ri]
+
+			switch row.Name {
+			case "*github.com/x/y/handlers.Handlers":
+				long = row
+			case "database":
+				plain = row
+			}
+		}
+	}
+
+	if long == nil || long.Display != "handlers.Handlers" {
+		t.Errorf("long type name should shorten to handlers.Handlers, got %+v", long)
+	}
+
+	if plain == nil || plain.Display != "database" {
+		t.Errorf("short name should pass through unchanged, got %+v", plain)
+	}
+}

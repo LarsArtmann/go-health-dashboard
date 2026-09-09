@@ -200,9 +200,17 @@ templ groupTable(group checkGroup) {
 
 // groupCountBadge renders the row count shown in a group card's header.
 templ groupCountBadge(count int) {
-	<span class={ "ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium tabular-nums", "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" } aria-label={ fmt.Sprintf("%d services", count) }>
+	<span class={ "ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium tabular-nums", "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" } aria-label={ fmt.Sprintf("%d service%s", count, pluralS(count)) }>
 		{ strconv.Itoa(count) }
 	</span>
+}
+
+// pluralS returns "s" for counts other than exactly one.
+func pluralS(count int) string {
+	if count == 1 {
+		return ""
+	}
+	return "s"
 }
 
 // serviceNameCell renders the Service column: the shortened display name,

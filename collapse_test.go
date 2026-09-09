@@ -202,3 +202,149 @@ func TestCollapse_CollapsedRenderKeepsCSPInvariants(t *testing.T) {
 		t.Errorf("summary should state count and pass status, body:\n%s", body)
 	}
 }
+
+func TestPublicMode_ShortDisplayNameAlsoAnonymized(t *testing.T) {
+	t.Parallel()
+
+	injector := do.New()
+
+	const longName = "*github.com/LarsArtmann/CV/internal/features/healthdash/handlers.Handlers"
+
+	provideHealthy(injector, longName)
+	invoke[*healthyService](t, injector, longName)
+
+	probe := health.New(injector,
+		health.WithVersion("1.0.0"),
+		health.WithRefreshInterval(100*time.Millisecond),
+	)
+
+	dash := dashboard.New(probe, dashboard.WithPublicMode())
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	if err := probe.Start(t.Context()); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
+
+	if err := dash.Start(t.Context()); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+
+	defer func() {
+		dash.Shutdown()
+		probe.Shutdown()
+	}()
+
+	w := doRequest(t, mux, "/health")
+	body := w.Body.String()
+
+	if strings.Contains(body, longName) {
+		t.Error("public mode must not leak the raw fully-qualified type name")
+	}
+
+	if strings.Contains(body, "handlers.Handlers") {
+		t.Error("public mode must not leak the shortened type name either")
+	}
+
+	if !strings.Contains(body, "check-") {
+		t.Error("public mode should show generic check labels")
+	}
+}
+
+func TestDisplayName_ReflectsShortAndRawNames(t *testing.T) {
+	t.Parallel()
+
+	injector := do.New()
+
+	const longName = "*github.com/LarsArtmann/CV/internal/features/healthdash/handlers.Handlers"
+
+	provideHealthy(injector, longName)
+	provideHealthy(injector, "database")
+	invoke[*healthyService](t, injector, longName)
+	invoke[*healthyService](t, injector, "database")
+
+	probe := health.New(injector,
+		health.WithVersion("1.0.0"),
+		health.WithRefreshInterval(100*time.Millisecond),
+	)
+
+	dash := dashboard.New(probe, dashboard.WithHealthyGroupExpanded())
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	if err := probe.Start(t.Context()); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
+
+	if err := dash.Start(t.Context()); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+
+	defer func() {
+		dash.Shutdown()
+		probe.Shutdown()
+	}()
+
+	w := doRequest(t, mux, "/health")
+	body := w.Body.String()
+
+	if !strings.Contains(body, `title="`+longName+`"`) {
+		t.Error("short display name should carry the raw key as title attribute")
+	}
+
+	if !strings.Contains(body, ">handlers.Handlers<") {
+		t.Errorf("table should show the shortened name, body:\n%s", body)
+	}
+
+	if !strings.Contains(body, "font-mono") || !strings.Contains(body, ">"+longName+"<") {
+		t.Error("details cell should disclose the raw key as a monospace line")
+	}
+}
+
+func TestGroupCountBadges_RenderInCardTitles(t *testing.T) {
+	t.Parallel()
+
+	injector := do.New()
+	provideHealthy(injector, "database")
+	provideHealthy(injector, "cache")
+	provideUnhealthy(injector, "queue", "timeout")
+	invoke[*healthyService](t, injector, "database")
+	invoke[*healthyService](t, injector, "cache")
+	invoke[*unhealthyService](t, injector, "queue")
+
+	probe := health.New(injector,
+		health.WithVersion("1.0.0"),
+		health.WithRefreshInterval(100*time.Millisecond),
+	)
+
+	dash := dashboard.New(probe, dashboard.WithHealthyGroupExpanded())
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	if err := probe.Start(t.Context()); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
+
+	if err := dash.Start(t.Context()); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+
+	defer func() {
+		dash.Shutdown()
+		probe.Shutdown()
+	}()
+
+	w := doRequest(t, mux, "/health")
+	body := w.Body.String()
+
+	if !strings.Contains(body, `aria-label="1 service"`) {
+		t.Error("warning group card with one row should show a singular count badge")
+	}
+
+	if !strings.Contains(body, "Healthy Services · 2 · all pass") {
+		t.Error("healthy group summary should state its count inline (no badge needed)")
+	}
+}
