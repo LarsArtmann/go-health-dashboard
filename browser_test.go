@@ -663,24 +663,15 @@ func TestBrowser_Accessibility(t *testing.T) {
 	// The skip link is sr-only until keyboard focus and this harness serves
 	// no real Tailwind stylesheet, so axe cannot compute meaningful contrast
 	// for it; production colors (blue-600 on white) pass WCAG AA.
-	// definition-list and dlitem are tolerated ONLY for the StatCard figure
-	// markup (upstream templ-components#6: the <dd> is wrapped in <div>
-	// levels a <dl> may not contain; v1.13.x deepened the nesting from
-	// dl>div>dd to dl>div>div>dd, which axe reports as dlitem instead of
-	// definition-list depending on version); any other violation of either
-	// rule still fails.
+	// (The StatCard definition-list/dlitem tolerance was retired with
+	// templ-components v1.16.0, which fixed upstream #6 by grouping <dt>
+	// and <dd> inside the same wrapper div.)
 	start := `axe.run(
 		{ include: [document], exclude: [["a[href='#main-content']"]] },
 		{ resultTypes: ["violations"] }
 	).then(function (r) {
 		window.__axeViolations = JSON.stringify(r.violations.filter(function (v) {
-			if (v.impact !== "serious" && v.impact !== "critical") { return false; }
-			if (v.id === "definition-list" || v.id === "dlitem") {
-				return !(v.nodes.length > 0 && v.nodes.every(function (n) {
-					return n.html.indexOf("<dd") !== -1 && n.html.indexOf("text-2xl font-semibold") !== -1;
-				}));
-			}
-			return true;
+			return v.impact === "serious" || v.impact === "critical";
 		}).map(function (v) { return v.id + ":" + v.impact + ":" + v.nodes.length + ":" + v.nodes.map(function (n) { return n.html; }).join(" | ").slice(0, 200); }));
 	}).catch(function (e) {
 		window.__axeViolations = "AXE_ERROR: " + e;
