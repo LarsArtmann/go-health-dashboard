@@ -43,18 +43,26 @@ templ View(data viewModel) {
 				</div>
 				if data.ShowStatCards {
 					@display.Grid(display.GridProps{Cols: display.GridCols3}) {
-						@display.StatCard(display.StatCardProps{
-							Value: versionOrUnknown(data.Version),
-							Label: "Version",
-						})
+						@display.Tooltip(display.TooltipProps{
+							Text: "Wall-clock duration of the most recent probe batch across all services, as cached by the health probe",
+						}) {
+							@display.StatCard(display.StatCardProps{
+								Value: versionOrUnknown(data.Version),
+								Label: "Version",
+							})
+						}
 						@display.StatCard(display.StatCardProps{
 							Value: data.Uptime,
 							Label: "Uptime",
 						})
-						@display.StatCard(display.StatCardProps{
-							Value: fmt.Sprintf("%dms", data.LatencyMs),
-							Label: "Check Latency",
-						})
+						@display.Tooltip(display.TooltipProps{
+							Text: "Duration of the most recent probe batch across all services (cached every refresh interval)",
+						}) {
+							@display.StatCard(display.StatCardProps{
+								Value: fmt.Sprintf("%dms", data.LatencyMs),
+								Label: "Check Latency",
+							})
+						}
 					}
 				}
 				<div class="mt-6">
