@@ -3,6 +3,7 @@ package dashboard
 import (
 	"fmt"
 
+	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/datastar"
 	"github.com/larsartmann/templ-components/display"
 	"github.com/larsartmann/templ-components/feedback"
@@ -166,19 +167,33 @@ templ dashboardContent(data viewModel) {
 			}
 		} else {
 			for _, group := range data.Groups {
-				@display.Card(display.CardProps{
-					Title:   group.Title,
-					Padding: display.CardPaddingNone,
-				}) {
-					@display.Table(display.TableProps{
-						Headers: []string{"Service", "Status", "Details"},
-						Rows:    rowsToTableRows(group.Rows),
-						Flush:   true,
-					})
+				if group.Status == health.StatusPass {
+					@display.CollapsibleSection(display.CollapsibleSectionProps{
+						Title:     healthyGroupSummary(group),
+						Collapsed: data.HealthyCollapsed,
+					}) {
+						@groupTable(group)
+					}
+				} else {
+					@display.Card(display.CardProps{
+						Title:   group.Title,
+						Padding: display.CardPaddingNone,
+					}) {
+						@groupTable(group)
+					}
 				}
 			}
 		}
 	</div>
+}
+
+// groupTable renders the service table shared by every group container.
+templ groupTable(group checkGroup) {
+	@display.Table(display.TableProps{
+		Headers: []string{"Service", "Status", "Details"},
+		Rows:    rowsToTableRows(group.Rows),
+		Flush:   true,
+	})
 }
 
 // versionOrUnknown returns the version string or "unknown" when empty.

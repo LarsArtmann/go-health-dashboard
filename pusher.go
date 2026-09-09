@@ -144,6 +144,7 @@ func (p *pusher) broadcast() {
 // and returns the resulting sse.Event. Returns ok=false if rendering fails.
 func (p *pusher) renderPatch(resp health.Response) (sse.Event, bool) {
 	vm := buildViewModel(resp, p.dashboard.cfg.Title, p.dashboard.cfg.Routes.SSE)
+	applyCollapsePolicy(&vm, p.dashboard.cfg.HealthyGroupCollapseThreshold)
 	vm.CSSPath = p.dashboard.cfg.CSSPath
 	vm.DatastarSrc = p.dashboard.cfg.DatastarSrc
 	vm.ShowStatCards = !p.dashboard.cfg.HideStatCards

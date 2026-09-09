@@ -136,6 +136,7 @@ func (d *Dashboard) SubscriberCount() int64 {
 func (d *Dashboard) buildData(r *http.Request) viewModel {
 	resp := d.currentResponse()
 	vm := buildViewModel(resp, d.cfg.Title, d.cfg.Routes.SSE)
+	applyCollapsePolicy(&vm, d.cfg.HealthyGroupCollapseThreshold)
 
 	nonce := d.cfg.Nonce
 	if d.cfg.NonceExtractor != nil {

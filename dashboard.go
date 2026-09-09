@@ -85,12 +85,14 @@ var (
 //   - PushInterval: probe's RefreshInterval, or 2s if probe is live
 //   - PushMode: PushOnChange
 //   - Routes: DefaultRoutes()
+//   - HealthyGroupCollapseThreshold: 8 (collapse the healthy group at 8+ rows)
 func New(probe Prober, opts ...Option) *Dashboard {
 	cfg := Config{
-		Title:             defaultTitle,
-		PushMode:          PushOnChange,
-		Routes:            DefaultRoutes(),
-		HeartbeatInterval: defaultHeartbeatInterval,
+		Title:                         defaultTitle,
+		PushMode:                      PushOnChange,
+		Routes:                        DefaultRoutes(),
+		HeartbeatInterval:             defaultHeartbeatInterval,
+		HealthyGroupCollapseThreshold: defaultHealthyGroupCollapseThreshold,
 	}
 
 	for _, opt := range opts {
