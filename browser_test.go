@@ -1339,6 +1339,18 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 
 	waitForSubscriber(t, s.dash)
 
+	// Record every SDK lifecycle event so a failure can show what actually
+	// fired instead of guessing from minified bundle logic.
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+		window.__fetchEvents = [];
+		document.addEventListener("datastar-fetch", function (e) {
+			var d = e.detail || {};
+			window.__fetchEvents.push(d.type + (d.argsRaw && d.argsRaw.status ? ":" + d.argsRaw.status : ""));
+		});
+	})()`, nil)); err != nil {
+		t.Fatalf("inject event recorder: %v", err)
+	}
+
 	pillState := `(function () {
 		var states = ["live", "reconnecting", "offline"];
 		for (var i = 0; i < states.length; i++) {
@@ -1363,11 +1375,25 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 	blockSSE.Store(true)
 	s.dash.Shutdown()
 
-	waitForJS(t, ctx,
-		pillState+` === "reconnecting" || `+pillState+` === "offline"`,
-		pillState,
-		nil,
-	)
+	deadline := time.Now().Add(20 * time.Second)
+
+	for {
+		if err := chromedp.Run(ctx, chromedp.Evaluate(pillState, &state)); err != nil {
+			t.Fatalf("browser evaluate during outage: %v", err)
+		}
+
+		if state == "reconnecting" || state == "offline" {
+			break
+		}
+
+		if time.Now().After(deadline) {
+			var events string
+			_ = chromedp.Run(ctx, chromedp.Evaluate(`JSON.stringify(window.__fetchEvents || [])`, &events))
+			t.Fatalf("pill never left live during outage; last state %q; datastar-fetch events: %s", state, events)
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
 
 	// Recover: unblock and restart the pusher, then reload so the browser
 	// makes a fresh connection through the now-open proxy.
