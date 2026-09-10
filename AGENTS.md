@@ -174,6 +174,22 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   Copy it for new `DEMO_*` toggles and for library code absorbing example
   logic.
 - **go-health marks non-critical failing checks `warn`, not `fail`** — only critical services produce `fail` per-check statuses (and overall fail). `setupDashboardWithFailures` yields cache/queue `warn` checks with overall `warn`; metrics tests assert accordingly.
+- **Release discipline (all four bit or paid off during the v0.7.0 cut)** —
+  (1) `nix fmt` runs AFTER the last `templ generate`: every build/test app
+  regenerates `view_templ.go` in raw form, so fmt-before-generate gets
+  undone and the CI hygiene drift check goes red; canonical order is
+  generate → fmt (the CI hygiene job's comment says so). (2) Commit
+  intent-bearing changes immediately after each verified batch: the
+  auto-daemon commits continuously and eats whatever sits uncommitted —
+  the v0.7.0 release commit's message was lost this way (`ebf52d0`), and
+  on 2026-09-10 two freshly written release scripts were swept into an
+  adjacent auto-commit seconds before their intent commit landed. New
+  files: commit right after their first successful run, before long
+  verification chains. (3) Push the TAG first, then master — the master
+  run's `fetch-depth: 0` checkout then sees the tag and the version-guard
+  job cannot lose a fetch race. (4) External-state verification (proxy
+  hash, sumdb, clean-dir consumer, GitHub Release state, CI on the release
+  commit) is a script, not a memory: `bash scripts/verify-release.sh <ver>`.
 
 ---
 
