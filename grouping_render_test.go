@@ -67,3 +67,98 @@ func TestWithNoDatastarRuntime_OmitsSDKDependentUI(t *testing.T) {
 		t.Error("server-rendered collapse must keep working without the Datastar runtime")
 	}
 }
+
+// TestMobileRowStacking_Markup pins the mobile responsive contract: below
+// the sm breakpoint (640px) the service table stops laying out as a table —
+// the header hides, each row becomes a stacked card, and every cell shows
+// its label. Pure Tailwind variants on our own markup (no stylesheet, no
+// script), so SSE patches carry the identical classes. The visual side is
+// covered by TestBrowser_MobileViewport against the harness CSS stub; the
+// real Tailwind pipeline (Play CDN or consumer build) is the generator of
+// these utilities by construction of the class names.
+func TestMobileRowStacking_Markup(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboardWithHealthyServices(t, 2)
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+	body := w.Body.String()
+
+	// The upstream-rendered <thead> has no class hook, so the hide rule
+	// rides an arbitrary variant on the table element.
+	if !strings.Contains(body, `[&_thead]:max-sm:hidden`) {
+		t.Error("table must hide its header row below the sm breakpoint")
+	}
+
+	if !strings.Contains(body, `max-sm:[&:not(.hidden)]:block`) {
+		t.Error("rows must stack into blocks below the sm breakpoint")
+	}
+
+	// The :not(.hidden) guard is load-bearing: the client-side filter hides
+	// rows by toggling the hidden class, and without the guard the stacking
+	// display:block would out-cascade it on mobile (same specificity, later
+	// sort order in generated sheets).
+	for _, want := range []string{
+		`max-sm:border-b`,
+		`max-sm:last:border-b-0`,
+		`dark:max-sm:border-gray-700`,
+		`>Service</span>`,
+		`>Status</span>`,
+		`>Details</span>`,
+		`sm:hidden">Service`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("mobile stacking markup missing %q", want)
+		}
+	}
+
+	if strings.Count(body, `sm:hidden">Service`) != 2 {
+		t.Errorf("each row must carry a mobile-only Service label, got %d for 2 rows",
+			strings.Count(body, `sm:hidden">Service`))
+	}
+}
+
+// TestRender_ContrastSafeStatusColors locks the WCAG AA color decisions for
+// status-bearing text on the live page. Measured ratios (WCAG relative
+// luminance, normal text needs >= 4.5:1; values computed 2026-09-10):
+//
+//	green-600 on white 3.30 / amber-600 on white 3.19 / gray-400 on white 2.54  -> FAIL, replaced
+//	green-700 on white 5.02 / amber-700 on white 5.02 / red-600 on white 4.83   -> pass
+//	gray-500 on white 4.83 / gray-500 on gray-800 3.04 (decorative only there)
+//	dark variants (gray-400/green-400/amber-400/red-400/blue-400 on gray-800): 5.31-8.79 -> pass
+//
+// The upstream Badge/Alert/StatCard palettes are out of this test's reach.
+func TestRender_ContrastSafeStatusColors(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboardWithFailures(t,
+		dashboard.WithEmbeddedDatastarSDK(),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+	)
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+	body := w.Body.String()
+
+	for _, failing := range []string{
+		`text-green-600`,  // 3.30:1 on white
+		`text-amber-600`,  // 3.19:1 on white
+		`text-gray-400 dark:text-gray-500`, // raw keys / dim labels: 2.54:1 on white, 3.04:1 on dark gray-800
+	} {
+		if strings.Contains(body, failing) {
+			t.Errorf("rendered page uses contrast-failing color class %q", failing)
+		}
+	}
+
+	for _, want := range []string{
+		`text-green-700 dark:text-green-400`,
+		`text-amber-700 dark:text-amber-400`,
+		`text-red-600 dark:text-red-400`, // 4.83:1 on white — passes
+		`text-gray-500 dark:text-gray-400`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("rendered page missing contrast-safe color class %q", want)
+		}
+	}
+}

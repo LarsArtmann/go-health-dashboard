@@ -519,7 +519,7 @@ func TestPersistCollapse_MarkupOptIn(t *testing.T) {
 			t.Error("collapsed section should carry the storage key attribute")
 		}
 
-		if !strings.Contains(body, "data-health-collapse-persist") {
+		if !strings.Contains(body, "data-health-collapse-persist=\"true\"") {
 			t.Error("persistence section of the page bootstrap should render when opted in")
 		}
 	})
@@ -533,11 +533,14 @@ func TestPersistCollapse_MarkupOptIn(t *testing.T) {
 		w := doRequest(t, s.mux, "/health")
 		body := w.Body.String()
 
-		if strings.Contains(body, "data-collapsible") {
+		// The bootstrap script's SOURCE mentions both markers (it queries
+		// details[data-collapsible] and reads its own opt-in attribute), so
+		// assert on rendered attribute forms, not bare substrings.
+		if strings.Contains(body, "data-collapsible=\"") {
 			t.Error("storage key attribute must be absent by default")
 		}
 
-		if strings.Contains(body, "data-health-collapse-persist") {
+		if strings.Contains(body, "data-health-collapse-persist=\"true\"") {
 			t.Error("persistence section must be absent by default")
 		}
 	})

@@ -10,8 +10,10 @@ import (
 	"unicode/utf8"
 
 	health "github.com/larsartmann/go-health"
+	templ "github.com/a-h/templ"
 	"github.com/larsartmann/templ-components/display"
 	"github.com/larsartmann/templ-components/feedback"
+	"github.com/larsartmann/templ-components/utils"
 )
 
 // mapStatusToBadge converts a go-health Status to the corresponding
@@ -149,6 +151,12 @@ type viewModel struct {
 	// HasDatastarRuntime is false when the page is served without the
 	// Datastar SDK (WithNoDatastarRuntime); SDK-dependent UI is omitted.
 	HasDatastarRuntime bool
+	// Evidence summarizes the observational record behind the green rows:
+	// how many of the current checks have ever deviated from pass under
+	// this pusher, and since when. Populated by populateEvidence; zero
+	// (Since unset) when the pusher has not started, and the truth strip
+	// stays unrendered — no observations, no evidence claims.
+	Evidence evidenceSummary
 }
 
 // updatedStampFormat is the wall-clock format of the viewModel LastUpdated
@@ -467,11 +475,19 @@ func sortByName(rows []checkRow) {
 	})
 }
 
-// badgeForStatus creates a display.BadgeProps for the given status.
-func badgeForStatus(s health.Status) display.BadgeProps {
+// badgeForStatus creates a display.BadgeProps for the given status. Pass
+// badges carry the observational evidence as a native title tooltip:
+// unproven greens disclose that no deviation was ever seen, proven greens
+// cite their last non-pass (see badgeEvidenceTitle).
+func badgeForStatus(s health.Status, ev evidenceSummary, name string) display.BadgeProps {
 	return display.BadgeProps{
 		Text: string(s),
 		Type: mapStatusToBadge(s),
+		BaseProps: utils.BaseProps{
+			Attrs: templ.Attributes{
+				"title": badgeEvidenceTitle(checkRow{Name: name, Status: s}, ev),
+			},
+		},
 	}
 }
 
