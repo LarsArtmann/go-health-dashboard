@@ -165,6 +165,13 @@ The page is organized for triage: **failures first, green last**.
   shown only when those endpoints are configured.
 - **Updated stamp** — absolute UTC time plus a coarse age; the stamp is the
   time the health state was actually observed.
+- **Failure evidence** — a pass badge means "no failure observed", not
+  "verified healthy": a check that can never fail looks identical to one
+  that just survived a real failure. The strip under the Updated stamp
+  reports how many checks have ever deviated from pass since the dashboard
+  started ("6 of 60" — or an explicit warning when the answer is zero), and
+  hovering a `pass` badge tells you whether that green is backed by an
+  observed failure or is unproven. Evidence resets on restart.
 
 ## Protecting the Dashboard
 
