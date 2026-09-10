@@ -20,6 +20,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # CHANGELOG structural lint (pure bash, no Go): exactly one
+      # [Unreleased], first section only, monotonic version order. The
+      # sandwiched-[Unreleased] bug survived days of doc audits; this
+      # turns that class of drift into a build failure.
+      - name: CHANGELOG structural lint
+        run: bash scripts/check-changelog.sh
+
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod

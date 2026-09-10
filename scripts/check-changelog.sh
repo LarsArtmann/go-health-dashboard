@@ -35,14 +35,25 @@ else
 fi
 
 # 3. Version sections strictly descending semver order.
-# Versions may carry pre-release/build suffixes (sort -V handles those);
-# duplicates and out-of-order entries both fail.
+# GNU sort -V is not semver-aware (suffix heuristics differ across
+# implementations), so ordering uses an explicit key: zero-padded core
+# numbers, then a release/pre-release flag (a release sorts AFTER its own
+# pre-releases in ascending order), then the suffix text. Build metadata
+# ('+') does not affect precedence and is stripped before splitting.
 version_order=$(grep -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+[^]]*\]' "$changelog" | sed -E 's/^## \[(.*)\]$/\1/' || true)
 if [ -z "$version_order" ]; then
 	echo "::error::$changelog contains no version sections — is this the right file?"
 	fail=1
 else
-	sorted=$(echo "$version_order" | sort -rV)
+	sorted=$(echo "$version_order" | awk -F'-' '
+		{
+			core = $1
+			sub(/\+.*/, "", core)
+			suffix = (NF > 1) ? substr($0, length(core) + 2) : ""
+			n = split(core, p, ".")
+			flag = (suffix == "") ? 1 : 0
+			printf "%010d.%010d.%010d.%d\t%s\t%s\n", p[1], p[2], p[3], flag, suffix, $0
+		}' | LC_ALL=C sort -t"$(printf '\t')" -k1,1r -k2,2r | cut -f3)
 	if [ "$version_order" = "$sorted" ]; then
 		echo "OK   $(echo "$version_order" | wc -l | tr -d ' ') version sections in descending order ($(echo "$version_order" | head -1) … $(echo "$version_order" | tail -1))"
 	else

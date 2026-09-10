@@ -5,6 +5,7 @@
 #   1. FEATURES.md test-suite counts vs the actual *_test.go files
 #   2. Version const vs the latest git tag (version-guard job)
 #   3. UI dependency pins (scripts/check-ui-pins.sh)
+#   4. CHANGELOG structural lint (scripts/check-changelog.sh)
 #
 # Run: bash scripts/pre-push-checks.sh
 # Exits non-zero on the first failure with the same wording CI prints.
@@ -41,6 +42,11 @@ fi
 
 # 3. UI dependency pins.
 if ! bash scripts/check-ui-pins.sh; then
+	fail=1
+fi
+
+# 4. CHANGELOG structural lint (same script CI runs).
+if ! bash scripts/check-changelog.sh; then
 	fail=1
 fi
 
