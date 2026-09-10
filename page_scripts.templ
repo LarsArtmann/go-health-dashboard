@@ -152,8 +152,8 @@ templ pageBootstrap(data viewModel) {
 					var stored;
 					try { stored = localStorage.getItem(KEY); } catch (err) { return; }
 					// Only write when the state actually differs: setting
-					// .open queues a mutation record even for an identical
-					// value, which would feed this same observer forever.
+					// .open feeds the observer a mutation record even when
+					// the value is identical, which would loop it forever.
 					if (stored === 'open' && !d.open) { d.open = true; }
 					else if (stored === 'closed' && d.open) { d.open = false; }
 				}
@@ -216,9 +216,10 @@ templ pageBootstrap(data viewModel) {
 							}
 						}
 					});
-					// Inner-mode patches merge the existing <details> in place and
-					// sync its attributes — removing `open` — so both attribute
-					// flips and inserted nodes must re-apply the stored state.
+					// Inner-mode patches merge the existing collapsible section
+					// in place and sync its attributes — removing `open` — so
+					// both attribute flips and inserted nodes must re-apply the
+					// stored state.
 					observer.observe(document.body, {
 						childList: true,
 						subtree: true,

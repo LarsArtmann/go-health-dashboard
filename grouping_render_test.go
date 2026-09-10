@@ -54,7 +54,10 @@ func TestWithNoDatastarRuntime_OmitsSDKDependentUI(t *testing.T) {
 
 	body := w.Body.String()
 
-	for _, dead := range []string{"health-filter", "conn-state-live", "data-filter-empty"} {
+	// The bootstrap script's SOURCE mentions the pill element ids (its pill
+	// section self-guards on their absence), so assert on rendered markup,
+	// not bare substrings.
+	for _, dead := range []string{"id=\"conn-state-live\"", "id=\"health-filter\"", "data-filter-empty"} {
 		if strings.Contains(body, dead) {
 			t.Errorf("SDK-dependent UI %q must not render without the Datastar runtime", dead)
 		}

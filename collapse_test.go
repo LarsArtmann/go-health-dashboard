@@ -446,8 +446,8 @@ func TestConnectionPill_MarkupAndStates(t *testing.T) {
 		}
 	}
 
-	if !strings.Contains(body, "__healthConnInit") {
-		t.Error("pill script should carry its singleton attach guard")
+	if !strings.Contains(body, "__healthBootstrapInit") {
+		t.Error("pill script should carry its singleton attach guard (shared page bootstrap)")
 	}
 
 	if !strings.Contains(body, "datastar-fetch") {
@@ -519,8 +519,8 @@ func TestPersistCollapse_MarkupOptIn(t *testing.T) {
 			t.Error("collapsed section should carry the storage key attribute")
 		}
 
-		if !strings.Contains(body, "__healthCollapseInit") {
-			t.Error("persistence script should render when opted in")
+		if !strings.Contains(body, "data-health-collapse-persist") {
+			t.Error("persistence section of the page bootstrap should render when opted in")
 		}
 	})
 
@@ -537,8 +537,8 @@ func TestPersistCollapse_MarkupOptIn(t *testing.T) {
 			t.Error("storage key attribute must be absent by default")
 		}
 
-		if strings.Contains(body, "__healthCollapseInit") {
-			t.Error("persistence script must be absent by default")
+		if strings.Contains(body, "data-health-collapse-persist") {
+			t.Error("persistence section must be absent by default")
 		}
 	})
 }
