@@ -233,9 +233,9 @@ templ dashboardContent(data viewModel) {
 						<li class="flex items-center justify-between gap-4 py-2 text-sm first:pt-0 last:pb-0">
 							<time class="font-mono text-gray-500 tabular-nums dark:text-gray-400">{ entry.At }</time>
 							if entry.Degraded {
-								<span class="font-medium text-amber-600 dark:text-amber-400">{ entry.Status }</span>
+								<span class="font-medium text-amber-700 dark:text-amber-400">{ entry.Status }</span>
 							} else {
-								<span class="font-medium text-green-600 dark:text-green-400">{ entry.Status }</span>
+								<span class="font-medium text-green-700 dark:text-green-400">{ entry.Status }</span>
 							}
 						</li>
 					}
@@ -295,11 +295,20 @@ templ dashboardContent(data viewModel) {
 // groupTable renders the service table shared by every group container.
 // Rows are rendered via the Body hook so each <tr> can carry the
 // client-side filter attributes.
+//
+// Mobile (below the sm breakpoint) the table stops being a table: the
+// header row hides and each body row stacks into a card with per-cell
+// labels (see groupRows). The stacking utilities ride Tailwind variants
+// only — no extra stylesheet, no script — so SSE patches carry the same
+// classes as the initial render. Requires Tailwind ≥3.1 (arbitrary
+// variants); the arbitrary variant on the table element is what hides
+// the upstream-rendered <thead>, which has no class hook of its own.
 templ groupTable(group checkGroup) {
 	@display.Table(display.TableProps{
 		Headers: []string{"Service", "Status", "Details"},
 		Flush:   true,
 		Body:    groupRows(group),
+		Class:   "[&_thead]:max-sm:hidden",
 	})
 }
 
@@ -307,19 +316,32 @@ templ groupTable(group checkGroup) {
 // haystack and a data-class-hidden expression that hides the row while the
 // query signal is active and does not match. The haystack covers both the
 // short display name and the raw check key, case-insensitively.
+//
+// Below the sm breakpoint each row renders as a stacked card: the row is
+// a block with a divider, and every cell shows its label above the value.
+// The `:not(.hidden)` guard is load-bearing: the client-side filter hides
+// rows by toggling the `hidden` CLASS, and an author display:block inside
+// a media query would otherwise out-cascade that toggle (same specificity,
+// variant rules sort later in the generated sheet). The guard raises the
+// stacking rule's specificity so filtering keeps winning on mobile; if
+// the filter ever stops using the `hidden` class, revisit this selector.
 templ groupRows(group checkGroup) {
 	for _, row := range group.Rows {
 		<tr
 			data-filter-row={ filterHaystack(row) }
 			data-class:hidden={ "$query !== '' && !" + jsStringLiteral(filterHaystack(row)) + ".includes($query.toLowerCase())" }
+			class="max-sm:[&:not(.hidden)]:block max-sm:border-b max-sm:border-gray-200 max-sm:last:border-b-0 dark:max-sm:border-gray-700"
 		>
 			<td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+				<span class="mb-0.5 block text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:hidden">Service</span>
 				@serviceNameCell(row)
 			</td>
 			<td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+				<span class="mb-0.5 block text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:hidden">Status</span>
 				@display.Badge(badgeForStatus(row.Status))
 			</td>
 			<td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+				<span class="mb-0.5 block text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:hidden">Details</span>
 				@rowDetailsCell(row)
 			</td>
 		</tr>
@@ -353,7 +375,7 @@ templ serviceNameCell(row checkRow) {
 // full fidelity without giving up scannability.
 templ rowDetailsCell(row checkRow) {
 	if row.Error == "" {
-		<span class="text-gray-400 dark:text-gray-500">—</span>
+		<span class="text-gray-500 dark:text-gray-400">—</span>
 	} else if utf8.RuneCountInString(row.Error) <= errorSummaryMax {
 		<span class="break-words text-gray-600 dark:text-gray-300">{ row.Error }</span>
 	} else {
@@ -363,7 +385,7 @@ templ rowDetailsCell(row checkRow) {
 		</details>
 	}
 	if row.hasShortDisplay() {
-		<span class="mt-0.5 block break-all font-mono text-xs text-gray-400 dark:text-gray-500">{ row.Name }</span>
+		<span class="mt-0.5 block break-all font-mono text-xs text-gray-500 dark:text-gray-400">{ row.Name }</span>
 	}
 }
 
@@ -392,11 +414,11 @@ const (
 // patched region, so its state survives SSE content updates.
 templ connectionPill(nonce string) {
 	<span class="inline-flex items-center gap-1.5 text-xs font-medium" aria-live="polite">
-		<span id="conn-state-live" class="inline-flex min-w-24 items-center justify-center gap-1.5 text-green-600 dark:text-green-400">
+		<span id="conn-state-live" class="inline-flex min-w-24 items-center justify-center gap-1.5 text-green-700 dark:text-green-400">
 			<span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
 			Live
 		</span>
-		<span id="conn-state-reconnecting" hidden class="inline-flex min-w-24 items-center justify-center gap-1.5 text-amber-600 dark:text-amber-400">
+		<span id="conn-state-reconnecting" hidden class="inline-flex min-w-24 items-center justify-center gap-1.5 text-amber-700 dark:text-amber-400">
 			<span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
 			Reconnecting
 		</span>
