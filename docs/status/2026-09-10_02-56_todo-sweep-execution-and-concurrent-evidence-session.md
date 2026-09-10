@@ -16,18 +16,18 @@ shared state. Three intent commits were eaten by the auto-daemon.
 
 ## Runtime state at report time
 
-| What                     | State                                                                                                                                        | Evidence                                     |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| Local master             | ahead of origin by ~12 commits, **unpushed** (release hygiene + UI batch + docs; pushing not authorized this session)                        | `git status`                                 |
-| Working tree             | my work committed (7dacd53); one untracked file from the OTHER session (`evidence_integration_test.go`, appearing as I type)                 | `git status`                                 |
-| Unit suite               | green, 5.0s, on the combined tree (my UI batch + their evidence refactor)                                                                    | `go test .`                                  |
-| Browser CSP suite        | **PASS 12.4s** on the combined tree (pill, persistence, theme, filter, keyboard, axe, mobile viewport, aggregate)                            | `nix develop -c go test -run TestBrowser`    |
-| Lint                     | my files clean; ~10 findings remain in the OTHER session's in-flight files (`evidence.go`, `evidence_test.go`, `status.go`)                  | `nix run .#lint`                             |
-| pre-push-checks.sh       | all green (FEATURES 246/33 synced, version 0.7.0 == v0.7.0, pins intact, changelog lint green)                                               | run at 02:4x                                 |
-| GitHub Releases          | v0.6.1 backfilled (published, `--latest=false`); v0.7.0 still Latest; gap v0.6.0→v0.7.0 closed                                               | `gh release list`                            |
-| Dependabot PRs #13/#12/#4 | all **10/10 green** after `gh pr update-branch` (root cause: stale branches predating the v1.16.0 pins + v0.7.0 tag); none merged          | `gh pr checks`                               |
-| verify-release.sh        | self-verified green against v0.7.0 (all six checks + clean exit)                                                                             | run twice (second after trap fix)            |
-| Standing reds            | none observed in-repo; the evidence session's lint findings are the only open in-tree debt and it is still writing                           | `nix run .#lint`                             |
+| What                      | State                                                                                                                             | Evidence                                  |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Local master              | ahead of origin by ~12 commits, **unpushed** (release hygiene + UI batch + docs; pushing not authorized this session)             | `git status`                              |
+| Working tree              | my work committed (7dacd53); one untracked file from the OTHER session (`evidence_integration_test.go`, appearing as I type)      | `git status`                              |
+| Unit suite                | green, 5.0s, on the combined tree (my UI batch + their evidence refactor)                                                         | `go test .`                               |
+| Browser CSP suite         | **PASS 12.4s** on the combined tree (pill, persistence, theme, filter, keyboard, axe, mobile viewport, aggregate)                 | `nix develop -c go test -run TestBrowser` |
+| Lint                      | my files clean; ~10 findings remain in the OTHER session's in-flight files (`evidence.go`, `evidence_test.go`, `status.go`)       | `nix run .#lint`                          |
+| pre-push-checks.sh        | all green (FEATURES 246/33 synced, version 0.7.0 == v0.7.0, pins intact, changelog lint green)                                    | run at 02:4x                              |
+| GitHub Releases           | v0.6.1 backfilled (published, `--latest=false`); v0.7.0 still Latest; gap v0.6.0→v0.7.0 closed                                    | `gh release list`                         |
+| Dependabot PRs #13/#12/#4 | all **10/10 green** after `gh pr update-branch` (root cause: stale branches predating the v1.16.0 pins + v0.7.0 tag); none merged | `gh pr checks`                            |
+| verify-release.sh         | self-verified green against v0.7.0 (all six checks + clean exit)                                                                  | run twice (second after trap fix)         |
+| Standing reds             | none observed in-repo; the evidence session's lint findings are the only open in-tree debt and it is still writing                | `nix run .#lint`                          |
 
 ---
 

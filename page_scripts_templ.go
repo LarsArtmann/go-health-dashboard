@@ -164,7 +164,7 @@ func pageBootstrap(data viewModel) templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.DatastarNonce)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `page_scripts.templ`, Line: 89, Col: 29}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `page_scripts.templ`, Line: 86, Col: 27}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 			if templ_7745c5c3_Err != nil {

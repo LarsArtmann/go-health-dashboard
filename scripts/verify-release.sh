@@ -30,9 +30,15 @@ fi
 TAG="v${1#v}"
 MODULE=$(go list -m)
 fail=0
-step() { echo; echo "== $1"; }
+step() {
+	echo
+	echo "== $1"
+}
 ok() { echo "   OK  $1"; }
-bad() { echo "   FAIL $1"; fail=1; }
+bad() {
+	echo "   FAIL $1"
+	fail=1
+}
 
 TMP=$(mktemp -d)
 # Go marks downloaded module-cache files read-only; restore write bits before rm.
@@ -92,7 +98,7 @@ if [ -n "$local_commit" ]; then
 		cd "$consumer"
 		export GOWORK=off GOFLAGS= GOEXPERIMENT=jsonv2 GOMODCACHE="$TMP/gomodcache2"
 		go mod init consumer >/dev/null 2>&1
-		printf 'package main\n\nimport (\n\t"fmt"\n\n\t"github.com/larsartmann/go-health-dashboard"\n)\n\nfunc main() { fmt.Println(dashboard.Version) }\n' > main.go
+		printf 'package main\n\nimport (\n\t"fmt"\n\n\t"github.com/larsartmann/go-health-dashboard"\n)\n\nfunc main() { fmt.Println(dashboard.Version) }\n' >main.go
 		go mod tidy >/dev/null
 		got=$(go run .)
 		if [ "$got" = "${TAG#v}" ]; then
