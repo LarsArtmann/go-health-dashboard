@@ -1,0 +1,232 @@
+package dashboard
+
+import (
+	"github.com/larsartmann/templ-components/utils"
+)
+
+// Page-level scripts and their markup-only companions, split out of
+// view.templ per the ADR-0001 file-split rationale: the dashboard shell and
+// the client scripts change for different reasons. Everything here renders
+// OUTSIDE the SSE-patched region, so none of these nodes are ever replaced
+// by a patch (the pill's state, the theme preference, and the collapse
+// observer all survive content updates by construction).
+//
+// The three page scripts (theme toggle, connection pill, collapse
+// persistence) share ONE nonce-carried <script> (pageBootstrap). Previously
+// each control carried its own inline script; consolidating removes two
+// script tags from every page load while keeping identical behavior — the
+// CSP browser suite (TestBrowser_*) exercises pill states, collapse
+// persistence, theme toggling, and keyboard access against this bootstrap.
+// The pre-paint theme script in <head> (injected by layout.Base) is
+// deliberately NOT merged: it must run before first paint to avoid a dark-
+// mode flash, which a body-end bootstrap cannot guarantee.
+
+// themeToggle renders the light/dark switch button. Hand-rolled instead of
+// layout.ThemeToggle so its script can live in the shared bootstrap
+// (upstream renders the button and an inline script as an inseparable
+// pair). The markup, classes, switch semantics, and toggle behavior mirror
+// templ-components v1.16.0's ThemeToggle exactly; the two inline SVG paths
+// are the upstream icons module's Moon/Sun (heroicons outline) copied to
+// avoid pulling a fourth pinned templ-components module for two icons. If
+// upstream changes the toggle's behavior or markup, port it here — the
+// browser keyboard and dark-mode tests cover the seams.
+templ themeToggle() {
+	<button
+		type="button"
+		class={ "rounded-md p-2 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-500 dark:hover:text-gray-300 ", utils.TransitionColors }
+		data-theme-toggle
+		role="switch"
+		aria-checked="false"
+		aria-label="Toggle theme"
+	>
+		<svg class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
+		</svg>
+		<svg class="hidden h-5 w-5 dark:block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/>
+		</svg>
+	</button>
+}
+
+// connectionPill renders the SSE connection indicator: live, reconnecting,
+// or offline. All three states are pre-rendered so no CSS or DOM
+// construction is needed at runtime, and state changes are announced via
+// aria-live. Markup only — the event wiring lives in pageBootstrap (the
+// pill's spans sit outside the patched region, so its state survives SSE
+// content updates).
+templ connectionPill() {
+	<span class="inline-flex items-center gap-1.5 text-xs font-medium" aria-live="polite">
+		<span id="conn-state-live" class="inline-flex min-w-24 items-center justify-center gap-1.5 text-green-700 dark:text-green-400">
+			<span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+			Live
+		</span>
+		<span id="conn-state-reconnecting" hidden class="inline-flex min-w-24 items-center justify-center gap-1.5 text-amber-700 dark:text-amber-400">
+			<span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+			Reconnecting
+		</span>
+		<span id="conn-state-offline" hidden class="inline-flex min-w-24 items-center justify-center gap-1.5 text-red-600 dark:text-red-400">
+			<span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+			Offline
+		</span>
+	</span>
+}
+
+// pageBootstrap renders the page's single inline script: theme toggle
+// wiring, connection-pill state mapping, and (when WithPersistCollapse is
+// enabled, signaled by the data-health-collapse-persist attribute) the
+// collapse persistence observer. Sections self-guard so one script serves
+// every configuration: the pill section only wires when the pill markup is
+// present, and the persistence section only runs when the server opted in.
+//
+// The persistence half stores the healthy group's open/closed state in
+// localStorage and re-applies it after every SSE patch (patches re-derive
+// the server-side default, which would otherwise undo the operator's
+// choice). Storage keys off summary clicks (user intent) because patch
+// merges also flip the open attribute and would erase the stored choice.
+templ pageBootstrap(data viewModel) {
+	<script
+		if data.DatastarNonce != "" {
+			nonce={ data.DatastarNonce }
+		}
+		if data.PersistCollapse {
+			data-health-collapse-persist="true"
+		}
+	>
+		(function () {
+			'use strict';
+			if (window.__healthBootstrapInit) { return; }
+			window.__healthBootstrapInit = true;
+
+			// --- Theme toggle -------------------------------------------------
+			var html = document.documentElement;
+			function syncToggleAria(btn) {
+				if (btn) { btn.setAttribute('aria-checked', String(html.classList.contains('dark'))); }
+			}
+			function syncAllToggleAria() {
+				document.querySelectorAll('[data-theme-toggle]').forEach(syncToggleAria);
+			}
+			syncAllToggleAria();
+			document.addEventListener('click', function (e) {
+				var btn = e.target.closest('[data-theme-toggle]');
+				if (!btn) { return; }
+				var isDark = html.classList.contains('dark');
+				if (isDark) {
+					html.classList.remove('dark');
+					try { localStorage.setItem('theme', 'light'); } catch (err) {}
+				} else {
+					html.classList.add('dark');
+					try { localStorage.setItem('theme', 'dark'); } catch (err) {}
+				}
+				html.style.colorScheme = isDark ? 'light' : 'dark';
+				syncAllToggleAria();
+			});
+
+			// --- Connection pill ----------------------------------------------
+			// The Datastar SDK reports its fetch/SSE lifecycle on the
+			// document-level "datastar-fetch" event (detail.type: started,
+			// finished, retrying, error, retries-failed); patch application
+			// itself dispatches datastar-patch-* types, which also mean live.
+			if (document.getElementById('conn-state-live')) {
+				var states = ['live', 'reconnecting', 'offline'];
+				function setPillState(state) {
+					states.forEach(function (name) {
+						var el = document.getElementById('conn-state-' + name);
+						if (el) { el.hidden = (name !== state); }
+					});
+				}
+				document.addEventListener('datastar-fetch', function (e) {
+					var type = e.detail && e.detail.type;
+					if (type === 'started' || type === 'finished') { setPillState('live'); }
+					else if (type && type.indexOf('datastar-patch-') === 0) { setPillState('live'); }
+					else if (type === 'retrying') { setPillState('reconnecting'); }
+					else if (type === 'error' || type === 'retries-failed') { setPillState('offline'); }
+				});
+			}
+
+			// --- Collapse persistence (WithPersistCollapse only) ---------------
+			if (document.currentScript && document.currentScript.hasAttribute('data-health-collapse-persist')) {
+				var KEY = 'health-healthy-group-collapsed';
+				function applyStoredCollapse() {
+					var d = document.querySelector('details[data-collapsible]');
+					if (!d) { return; }
+					var stored;
+					try { stored = localStorage.getItem(KEY); } catch (err) { return; }
+					// Only write when the state actually differs: setting
+					// .open queues a mutation record even for an identical
+					// value, which would feed this same observer forever.
+					if (stored === 'open' && !d.open) { d.open = true; }
+					else if (stored === 'closed' && d.open) { d.open = false; }
+				}
+				applyStoredCollapse();
+				// Cross-tab consistency: another tab's collapse toggle writes the
+				// same localStorage key, and the storage event tells this tab to
+				// follow suit.
+				window.addEventListener('storage', function (e) {
+					if (e.key === KEY) { applyStoredCollapse(); }
+				});
+				// Store USER intent only. A `toggle` listener cannot distinguish a
+				// user toggle from Datastar's patch merge, which syncs attributes
+				// and thereby removes `open` — that merge-driven toggle used to
+				// overwrite the stored choice with the server default. A click on
+				// the summary always precedes a user toggle (mouse and keyboard),
+				// and during click dispatch `details.open` still holds the
+				// pre-toggle state, so the flipped value is stored synchronously.
+				document.addEventListener('click', function (e) {
+					var target = e.target;
+					var summary = target && target.closest && target.closest('summary');
+					if (!summary || !summary.parentElement ||
+						!summary.parentElement.matches ||
+						!summary.parentElement.matches('details[data-collapsible]')) { return; }
+					var details = summary.parentElement;
+					try {
+						localStorage.setItem(KEY, details.open ? 'closed' : 'open');
+					} catch (err) {}
+				}, false);
+				// The SDK dispatches its datastar-patch-* fetch events BEFORE the
+				// patch is merged into the DOM, so applying on the event alone
+				// always re-opens the replaced-away node. A scoped MutationObserver
+				// reacts to the actual DOM change instead — deterministic for
+				// inner-mode element patches — with the fetch event kept as a
+				// belt-and-braces trigger.
+				document.addEventListener('datastar-fetch', function (e) {
+					var t = e.detail && e.detail.type;
+					if (t && t.indexOf('datastar-patch-') === 0) { applyStoredCollapse(); }
+				});
+				if ('MutationObserver' in window) {
+					var selector = 'details[data-collapsible]';
+					var observer = new MutationObserver(function (records) {
+						for (var i = 0; i < records.length; i++) {
+							var record = records[i];
+							if (record.type === 'attributes') {
+								if (record.target.matches && record.target.matches(selector)) {
+									applyStoredCollapse();
+									return;
+								}
+								continue;
+							}
+							var added = record.addedNodes;
+							for (var j = 0; j < added.length; j++) {
+								var node = added[j];
+								if (node.nodeType !== 1) { continue; }
+								if ((node.matches && node.matches(selector)) ||
+									(node.querySelector && node.querySelector(selector))) {
+									applyStoredCollapse();
+									return;
+								}
+							}
+						}
+					});
+					// Inner-mode patches merge the existing <details> in place and
+					// sync its attributes — removing `open` — so both attribute
+					// flips and inserted nodes must re-apply the stored state.
+					observer.observe(document.body, {
+						childList: true,
+						subtree: true,
+						attributes: true,
+						attributeFilter: ['open']
+					});
+				}
+			}
+		})();
+	</script>
+}
