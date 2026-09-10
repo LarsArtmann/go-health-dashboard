@@ -45,6 +45,16 @@ forgetting.
   into CI (`Build` job) and `scripts/pre-push-checks.sh`.
 - v0.6.1 GitHub Release backfilled from its CHANGELOG section
   (2026-09-10; `--latest=false` — v0.7.0 stays Latest).
+- Failure-evidence truth strip (`evidence.go`): the dashboard now
+  distinguishes verified greens from unproven ones. The pusher records
+  per-check non-pass observations on every tick; the page reports "X of N
+  checks have deviated from pass since <start>" under the Updated stamp
+  (with an explicit warning when the ratio is zero — green rows may be
+  unable to fail), and every `pass` badge carries a native tooltip:
+  unproven greens disclose their lack of evidence, proven greens cite the
+  last observed non-pass. HTML-only; the JSON response, webhooks, and
+  metrics are unchanged. Evidence accrues from dashboard start and resets
+  on restart.
 
 ### Changed
 
