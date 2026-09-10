@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	health "github.com/larsartmann/go-health"
 	"github.com/a-h/templ"
+	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/display"
 )
 
@@ -31,6 +31,8 @@ func worstOf(statuses map[string]health.Status) health.Status {
 			return health.StatusFail
 		case health.StatusWarn:
 			status = health.StatusWarn
+		case health.StatusPass:
+			// pass keeps the floor
 		}
 	}
 
@@ -41,13 +43,13 @@ func TestEvidenceLog_ObservesNonPass(t *testing.T) {
 	t.Parallel()
 
 	log := newEvidenceLog()
-	at := time.Now()
+	observedAt := time.Now()
 
 	pass := health.Response{Status: health.StatusPass, Checks: map[string]health.Check{
 		"db": {Status: health.StatusPass},
 	}}
 
-	log.observe(pass, at)
+	log.observe(pass, observedAt)
 
 	if got := log.snapshot(); len(got.lastNonPassBy) != 0 {
 		t.Fatalf("pass-only tick recorded evidence: %v", got.lastNonPassBy)
@@ -59,8 +61,8 @@ func TestEvidenceLog_ObservesNonPass(t *testing.T) {
 		"queue": {Status: health.StatusFail, Error: "timeout"},
 	}}
 
-	log.observe(degraded, at)
-	log.observe(degraded, at.Add(time.Second))
+	log.observe(degraded, observedAt)
+	log.observe(degraded, observedAt.Add(time.Second))
 
 	sum := log.snapshot()
 
@@ -72,13 +74,17 @@ func TestEvidenceLog_ObservesNonPass(t *testing.T) {
 		t.Error("pass-only check must stay unproven")
 	}
 
-	if got := sum.lastNonPassOf("cache"); !got.Equal(at.Add(time.Second)) {
-		t.Errorf("LastNonPass = %v, want %v (latest observation wins)", got, at.Add(time.Second))
+	if got := sum.lastNonPassOf("cache"); !got.Equal(observedAt.Add(time.Second)) {
+		t.Errorf(
+			"LastNonPass = %v, want %v (latest observation wins)",
+			got,
+			observedAt.Add(time.Second),
+		)
 	}
 
 	// Recovery keeps the evidence: a green that has deviated before stays
 	// proven — that is the entire point.
-	log.observe(pass, at.Add(2*time.Second))
+	log.observe(pass, observedAt.Add(2*time.Second))
 
 	if sum2 := log.snapshot(); !sum2.everNonPass("cache") {
 		t.Error("recovered check lost its proven status")
@@ -110,12 +116,12 @@ func TestPopulateEvidence_CountsOnlyCurrentChecks(t *testing.T) {
 	t.Parallel()
 
 	log := newEvidenceLog()
-	at := time.Now()
+	observedAt := time.Now()
 
 	log.observe(health.Response{Checks: map[string]health.Check{
 		"db":      {Status: health.StatusFail},
 		"removed": {Status: health.StatusFail},
-	}}, at)
+	}}, observedAt)
 
 	// "removed" disappeared from the response; its proof must not inflate
 	// the ratio against the current check set.
@@ -132,14 +138,22 @@ func TestPopulateEvidence_CountsOnlyCurrentChecks(t *testing.T) {
 	}
 
 	if vm.Evidence.Proven != 1 {
-		t.Errorf("Proven = %d, want 1 (db proven, removed check not counted, fresh unproven)", vm.Evidence.Proven)
+		t.Errorf(
+			"Proven = %d, want 1 (db proven, removed check not counted, fresh unproven)",
+			vm.Evidence.Proven,
+		)
 	}
 }
 
 func TestPopulateEvidence_NilLog(t *testing.T) {
 	t.Parallel()
 
-	vm := buildViewModel(respWithChecks(map[string]health.Status{"db": health.StatusPass}), "", "", GroupBySeverity)
+	vm := buildViewModel(
+		respWithChecks(map[string]health.Status{"db": health.StatusPass}),
+		"",
+		"",
+		GroupBySeverity,
+	)
 	populateEvidence(&vm, nil, respWithChecks(map[string]health.Status{"db": health.StatusPass}))
 
 	if !vm.Evidence.Since.IsZero() {
@@ -150,17 +164,16 @@ func TestPopulateEvidence_NilLog(t *testing.T) {
 func TestBadgeEvidenceTitle(t *testing.T) {
 	t.Parallel()
 
-	at := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
+	observedAt := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
 
 	sum := evidenceSummary{
-		Since:  at,
+		Since:  observedAt,
 		Total:  2,
 		Proven: 1,
 		lastNonPassBy: map[string]time.Time{
-			"db": at,
+			"db": observedAt,
 		},
 	}
-
 	tests := []struct {
 		name string
 		row  checkRow
@@ -219,18 +232,18 @@ func TestBadgeEvidenceTitle(t *testing.T) {
 func TestBadgeForStatus_CarriesTitle(t *testing.T) {
 	t.Parallel()
 
-	at := time.Now()
+	observedAt := time.Now()
 
 	sum := evidenceSummary{
-		Since:         at,
-		lastNonPassBy: map[string]time.Time{"db": at},
+		Since:         observedAt,
+		lastNonPassBy: map[string]time.Time{"db": observedAt},
 	}
 
 	props := badgeForStatus(health.StatusPass, sum, "cache")
 
-	title, ok := props.BaseProps.Attrs["title"].(string)
+	title, ok := props.Attrs["title"].(string)
 	if !ok || !strings.Contains(title, "unproven") {
-		t.Fatalf("badge title = %v, want an unproven disclosure", props.BaseProps.Attrs["title"])
+		t.Fatalf("badge title = %v, want an unproven disclosure", props.Attrs["title"])
 	}
 
 	if props.Text != string(health.StatusPass) || props.Type != display.BadgeSuccess {
@@ -304,7 +317,7 @@ func TestEvidenceSummaryText(t *testing.T) {
 func TestRender_EvidenceStrip(t *testing.T) {
 	t.Parallel()
 
-	at := time.Now()
+	observedAt := time.Now()
 
 	provenVM := buildViewModel(respWithChecks(map[string]health.Status{
 		"db":    health.StatusPass,
@@ -312,8 +325,8 @@ func TestRender_EvidenceStrip(t *testing.T) {
 	}), "Test", "/health/sse", GroupBySeverity)
 
 	provenVM.Evidence = evidenceSummary{
-		Since: at, Total: 2, Proven: 1,
-		lastNonPassBy: map[string]time.Time{"cache": at},
+		Since: observedAt, Total: 2, Proven: 1,
+		lastNonPassBy: map[string]time.Time{"cache": observedAt},
 	}
 
 	html := renderToString(t, dashboardContent(provenVM))
@@ -326,7 +339,12 @@ func TestRender_EvidenceStrip(t *testing.T) {
 		t.Error("truth strip missing the native tooltip")
 	}
 
-	zeroVM := buildViewModel(respWithChecks(map[string]health.Status{"db": health.StatusPass}), "Test", "/health/sse", GroupBySeverity)
+	zeroVM := buildViewModel(
+		respWithChecks(map[string]health.Status{"db": health.StatusPass}),
+		"Test",
+		"/health/sse",
+		GroupBySeverity,
+	)
 	zeroHTML := renderToString(t, dashboardContent(zeroVM))
 
 	if strings.Contains(zeroHTML, "Failure evidence") {
@@ -339,11 +357,11 @@ func TestRender_EvidenceStrip(t *testing.T) {
 func renderToString(t *testing.T, c templ.Component) string {
 	t.Helper()
 
-	sb := &strings.Builder{}
+	builder := &strings.Builder{}
 
-	if err := c.Render(t.Context(), sb); err != nil {
+	if err := c.Render(t.Context(), builder); err != nil {
 		t.Fatalf("render: %v", err)
 	}
 
-	return sb.String()
+	return builder.String()
 }

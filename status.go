@@ -9,8 +9,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	health "github.com/larsartmann/go-health"
 	templ "github.com/a-h/templ"
+	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/display"
 	"github.com/larsartmann/templ-components/feedback"
 )
@@ -478,14 +478,14 @@ func sortByName(rows []checkRow) {
 // badges carry the observational evidence as a native title tooltip:
 // unproven greens disclose that no deviation was ever seen, proven greens
 // cite their last non-pass (see badgeEvidenceTitle).
-func badgeForStatus(s health.Status, ev evidenceSummary, name string) display.BadgeProps {
+func badgeForStatus(s health.Status, evidence evidenceSummary, name string) display.BadgeProps {
 	props := display.BadgeProps{
 		Text: string(s),
 		Type: mapStatusToBadge(s),
 	}
 
-	if title := badgeEvidenceTitle(checkRow{Name: name, Status: s}, ev); title != "" {
-		props.BaseProps.Attrs = templ.Attributes{
+	if title := badgeEvidenceTitle(checkRow{Name: name, Status: s}, evidence); title != "" {
+		props.Attrs = templ.Attributes{
 			"title": title,
 		}
 	}

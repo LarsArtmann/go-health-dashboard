@@ -53,7 +53,7 @@ func newEvidenceLog() *evidenceLog {
 // non-pass observation proves a check can deviate from green (the
 // healthaudit "errored is the only proof" semantics, generalized to warn,
 // which equally proves real logic ran).
-func (e *evidenceLog) observe(resp health.Response, at time.Time) {
+func (e *evidenceLog) observe(resp health.Response, observedAt time.Time) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -62,18 +62,18 @@ func (e *evidenceLog) observe(resp health.Response, at time.Time) {
 			continue
 		}
 
-		ev := e.checks[name]
-		if ev == nil {
+		evidence := e.checks[name]
+		if evidence == nil {
 			if len(e.checks) >= maxEvidenceChecks {
 				continue
 			}
 
-			ev = &checkEvidence{}
-			e.checks[name] = ev
+			evidence = &checkEvidence{}
+			e.checks[name] = evidence
 		}
 
-		ev.NonPassCount++
-		ev.LastNonPass = at
+		evidence.NonPassCount++
+		evidence.LastNonPass = observedAt
 	}
 }
 
@@ -157,20 +157,27 @@ func evidenceSummaryText(s evidenceSummary) string {
 
 	since := s.Since.UTC().Format(updatedStampFormat)
 
-	switch {
-	case s.Proven == 0:
+	if s.Proven == 0 {
 		return fmt.Sprintf(
 			"Failure evidence: 0 of %d checks has ever deviated from pass since %s — green rows are unproven, not verified; they may be unable to fail.",
-			s.Total, since)
-	case s.Proven == s.Total:
+			s.Total,
+			since,
+		)
+	}
+
+	if s.Proven == s.Total {
 		return fmt.Sprintf(
 			"Failure evidence: all %d checks have deviated from pass at least once since %s.",
 			s.Total, since)
-	default:
-		return fmt.Sprintf(
-			"Failure evidence: %d of %d checks have deviated from pass at least once since %s; the other %d green rows are unproven.",
-			s.Proven, s.Total, since, s.Total-s.Proven)
 	}
+
+	return fmt.Sprintf(
+		"Failure evidence: %d of %d checks have deviated from pass at least once since %s; the other %d green rows are unproven.",
+		s.Proven,
+		s.Total,
+		since,
+		s.Total-s.Proven,
+	)
 }
 
 // evidenceTooltip is the native hover explanation behind the truth strip:
@@ -189,10 +196,12 @@ func badgeEvidenceTitle(row checkRow, s evidenceSummary) string {
 	if !s.everNonPass(row.Name) {
 		return fmt.Sprintf(
 			"pass — never deviated from pass since %s; this green is unproven (the check may be unable to fail)",
-			s.Since.UTC().Format(updatedStampFormat))
+			s.Since.UTC().Format(updatedStampFormat),
+		)
 	}
 
 	return fmt.Sprintf(
 		"pass — last non-pass observed at %s; this green is backed by a check that has demonstrably deviated",
-		s.lastNonPassOf(row.Name).UTC().Format(updatedStampFormat))
+		s.lastNonPassOf(row.Name).UTC().Format(updatedStampFormat),
+	)
 }

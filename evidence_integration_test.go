@@ -6,10 +6,9 @@ import (
 	"testing"
 	"time"
 
-	do "github.com/samber/do/v2"
-
-	dashboard "github.com/larsartmann/go-health-dashboard"
 	health "github.com/larsartmann/go-health"
+	dashboard "github.com/larsartmann/go-health-dashboard"
+	do "github.com/samber/do/v2"
 )
 
 // setupAllFailing builds a probe whose every check is non-pass, so the
@@ -70,7 +69,10 @@ func TestIntegration_EvidenceStripReflectsObservations(t *testing.T) {
 	body := waitForBody(t, s.mux, "/health", "Failure evidence: 2 of 3 checks")
 
 	if !strings.Contains(body, "the other 1 green rows are unproven") {
-		t.Errorf("strip should name the unproven remainder: %s", extractLine(body, "Failure evidence"))
+		t.Errorf(
+			"strip should name the unproven remainder: %s",
+			extractLine(body, "Failure evidence"),
+		)
 	}
 
 	if !strings.Contains(body, "never deviated from pass") {
@@ -94,14 +96,17 @@ func TestIntegration_EvidenceStrip_AllProven(t *testing.T) {
 	body := waitForBody(t, s.mux, "/health", "Failure evidence: all 2 checks")
 
 	if strings.Contains(body, "unproven") {
-		t.Errorf("all-proven dashboard must not warn about unproven rows: %s", extractLine(body, "Failure evidence"))
+		t.Errorf(
+			"all-proven dashboard must not warn about unproven rows: %s",
+			extractLine(body, "Failure evidence"),
+		)
 	}
 }
 
 // extractLine returns the first line of body containing substr (for
 // focused failure messages).
 func extractLine(body, substr string) string {
-	for _, line := range strings.Split(body, "\n") {
+	for line := range strings.SplitSeq(body, "\n") {
 		if strings.Contains(line, substr) {
 			return line
 		}
