@@ -17,7 +17,52 @@ forgetting.
 
 ### Added
 
-- Nothing yet.
+- Mobile row stacking: below the `sm` breakpoint (640px) the service
+  table stops laying out as a table — the header row hides and each row
+  stacks into a labeled card (Service / Status / Details). Pure Tailwind
+  variants on the dashboard's own markup (no stylesheet, no script), so
+  SSE patches carry identical classes; a `:not(.hidden)` guard keeps the
+  client-side filter winning over the stacking display rule on mobile.
+  Requires Tailwind ≥3.1 (arbitrary variants).
+- Page scripts consolidated: the connection-pill wiring, the collapse
+  persistence observer, and the theme toggle now share ONE nonce-carried
+  bootstrap script (`page_scripts.templ`), removing two inline script
+  tags per page load; behavior is unchanged and proven by the existing
+  CSP browser suite. The theme toggle button is now rendered by the
+  dashboard itself (same markup, switch semantics, and icons as the
+  upstream component) so its script could join the bootstrap; the
+  pre-paint dark-mode script in `<head>` is untouched (it must run
+  before first paint). `view.templ` split per ADR-0001: page scripts
+  and pill markup live in `page_scripts.templ` (531 → 403 lines).
+- Release verification tooling: `scripts/verify-release.sh <version>`
+  mechanically checks the post-push tail (tag on origin, proxy
+  `Origin.Hash` == tag commit, sumdb-verified fresh-cache download,
+  clean-dir consumer get/build/run, GitHub Release state, CI runs on
+  the release commit), and `scripts/check-changelog.sh` turns the
+  sandwiched-`[Unreleased]` bug class into a build failure (exactly one
+  `[Unreleased]`, first section only, semver-descending sections —
+  explicit sort key, since `sort -V` is not semver-aware). Both wired
+  into CI (`Build` job) and `scripts/pre-push-checks.sh`.
+- v0.6.1 GitHub Release backfilled from its CHANGELOG section
+  (2026-09-10; `--latest=false` — v0.7.0 stays Latest).
+
+### Changed
+
+- Status-bearing text colors upgraded to WCAG AA on the live page
+  (normal text needs 4.5:1): pill/timeline `green-600 → green-700`
+  (3.30 → 5.02 on white) and `amber-600 → amber-700` (3.19 → 5.02);
+  raw check keys and dim labels `gray-400/gray-500 → gray-500/gray-400`
+  (2.54 → 4.83 on white; 3.04 → 5.78 on dark cards). Dark-mode variants
+  were already passing (5.31-10.63:1). Locked by
+  `TestRender_ContrastSafeStatusColors` with the measured ratios.
+- Release lessons codified: AGENTS.md gained the release-discipline
+  gotcha (fmt after the last `templ generate`; commit intent-bearing
+  batches immediately vs the auto-daemon; tag-first push order;
+  `verify-release.sh` as the external-state loop), and
+  `docs/release-checklist.md` carries the ordering rule, tag-first
+  push, the one-command verification, the poll-loop rule for slow
+  surfaces, the `--latest=false` backfill convention, and refreshed
+  v1.16.0 pin wording.
 
 ### Fixed
 
