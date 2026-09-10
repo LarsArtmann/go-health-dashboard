@@ -101,7 +101,7 @@ func (h *historyBuffer) transitions() []statusTransition {
 // interval (and is arbitrarily stale for a freshly connected browser).
 const maxTimelineEntries = 5
 
-func populateHistory(vm *viewModel, buffer *historyBuffer) {
+func populateHistory(vm *viewModel, buffer *historyBuffer, maxAge time.Duration) {
 	samples := buffer.snapshot()
 
 	values := make([]float64, 0, len(samples))
@@ -112,10 +112,26 @@ func populateHistory(vm *viewModel, buffer *historyBuffer) {
 	vm.History = values
 
 	if len(samples) > 0 {
-		vm.LastUpdated = samples[len(samples)-1].At.UTC().Format(updatedStampFormat)
+		last := samples[len(samples)-1]
+		vm.LastUpdated = last.At.UTC().Format(updatedStampFormat)
+		vm.LastUpdatedTime = last.At.UTC()
 	}
 
 	transitions := buffer.transitions()
+
+	if maxAge > 0 {
+		cutoff := time.Now().Add(-maxAge)
+
+		kept := transitions[:0]
+		for _, tr := range transitions {
+			if tr.At.After(cutoff) {
+				kept = append(kept, tr)
+			}
+		}
+
+		transitions = kept
+	}
+
 	if len(transitions) > maxTimelineEntries {
 		transitions = transitions[len(transitions)-maxTimelineEntries:]
 	}

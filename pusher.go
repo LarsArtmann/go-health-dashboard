@@ -2,7 +2,9 @@ package dashboard
 
 import (
 	"context"
+	"math"
 	"net/http"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -47,6 +49,8 @@ type pusher struct {
 	connections   atomic.Int64
 	lastBroadcast atomic.Int64
 	history       *historyBuffer
+	ttl           int
+	ticks         int
 
 	mu              sync.Mutex
 	lastStatus      health.Status
@@ -72,6 +76,7 @@ func newPusher(d *Dashboard) *pusher {
 		retry:       d.cfg.RetryInterval,
 		maxLifetime: d.cfg.MaxConnectionLifetime,
 		history:     history,
+		ttl:         d.cfg.PushOnChangeTTL,
 	}
 }
 
@@ -138,13 +143,24 @@ func (p *pusher) broadcast() {
 // renderPatch renders the dashboard content to a Datastar ElementsPatch
 // and returns the resulting sse.Event. Returns ok=false if rendering fails.
 func (p *pusher) renderPatch(resp health.Response) (sse.Event, bool) {
-	vm := buildViewModel(resp, p.dashboard.cfg.Title, p.dashboard.cfg.Routes.SSE)
+	vm := buildViewModel(
+		resp,
+		p.dashboard.cfg.Title,
+		p.dashboard.cfg.Routes.SSE,
+		p.dashboard.cfg.Grouping,
+	)
+	applyCollapsePolicy(&vm, p.dashboard.cfg.HealthyGroupCollapseThreshold)
 	vm.CSSPath = p.dashboard.cfg.CSSPath
+	vm.HasDatastarRuntime = !p.dashboard.cfg.NoDatastarRuntime
 	vm.DatastarSrc = p.dashboard.cfg.DatastarSrc
 	vm.ShowStatCards = !p.dashboard.cfg.HideStatCards
+	vm.PersistCollapse = p.dashboard.cfg.PersistCollapse
+	vm.ExportURL = p.dashboard.exportURL()
+	vm.TrendURL = p.dashboard.trendURL()
+	vm.MetricsURL = p.dashboard.metricsURL()
 
 	if p.history != nil {
-		populateHistory(&vm, p.history)
+		populateHistory(&vm, p.history, p.dashboard.cfg.TimelineMaxAge)
 	}
 
 	content := dashboardContent(vm)
@@ -180,8 +196,20 @@ func (p *pusher) shouldBroadcast(resp health.Response) bool {
 	if resp.Status != p.lastStatus || fp != p.lastFingerprint {
 		p.lastStatus = resp.Status
 		p.lastFingerprint = fp
+		p.ticks = 0
 
 		return true
+	}
+
+	// PushOnChangeTTL: re-assert the unchanged state every n-th tick so
+	// clients that missed an event self-heal.
+	if p.ttl > 0 {
+		p.ticks++
+		if p.ticks >= p.ttl {
+			p.ticks = 0
+
+			return true
+		}
 	}
 
 	return false
@@ -199,13 +227,24 @@ func (p *pusher) atCapacity(w http.ResponseWriter) bool {
 	return true
 }
 
+// writeSSEUnavailable answers a new SSE connection while no pusher is
+// running. A configured shutdown drain makes the 503 temporary, so the
+// response carries Retry-After pointing past the drain window.
+func (d *Dashboard) writeSSEUnavailable(w http.ResponseWriter) {
+	if d.cfg.ShutdownDrain > 0 {
+		w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(d.cfg.ShutdownDrain.Seconds()))))
+	}
+
+	http.Error(w, "dashboard: SSE push is not active", http.StatusServiceUnavailable)
+}
+
 // sseHandler upgrades to an SSE connection, sends the initial state as a
 // Datastar patch, then forwards broadcaster events to the client. Blocks
 // until the client disconnects or the pusher shuts down.
 func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
 	push := d.push.Load()
 	if push == nil {
-		http.Error(w, "dashboard: SSE push is not active", http.StatusServiceUnavailable)
+		d.writeSSEUnavailable(w)
 
 		return
 	}

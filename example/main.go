@@ -16,6 +16,12 @@
 //	DEMO_DRAIN=5s                graceful SSE drain window on shutdown
 //	DEMO_PUBLIC=1                public status-page mode (WithPublicMode)
 //	DEMO_BASE_PATH=/status       mount the dashboard under a sub-path (WithBasePath)
+//	DEMO_AGGREGATE=1             serve a two-probe aggregate instead of one probe (go-health aggregate)
+//	DEMO_WEBHOOK=<url>           POST transitions to this receiver (WithWebhook)
+//	DEMO_COLLAPSE=<n>            healthy-group collapse threshold (0 = always expanded)
+//	DEMO_PERSIST=1               persist the healthy group's open/closed state (WithPersistCollapse)
+//	DEMO_EMBEDDED_SDK=1          serve the SDK same-origin and enable the client-side filter
+//	DEMO_GROUPING=source         group cards by aggregate source instead of severity (WithGrouping)
 //	PORT=8080                    listen address
 package main
 
@@ -26,6 +32,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -35,6 +42,7 @@ import (
 
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	"github.com/larsartmann/go-health/aggregate"
 	"github.com/samber/do/v2"
 )
 
@@ -45,24 +53,18 @@ func main() {
 	injector := do.New()
 	defer func() { _ = injector.Shutdown() }()
 
-	registerService(injector, "postgres", &alwaysHealthy{})
-	registerService(injector, "redis", &flappingService{failEvery: 15 * time.Second})
-	registerService(
-		injector,
-		"metrics-exporter",
-		&alwaysFailing{reason: "exporter endpoint unreachable"},
-	)
-
-	probe := health.New(injector,
-		health.WithVersion("1.2.3"),
-		health.WithCriticalServices("postgres", "redis"),
-		health.WithRefreshInterval(2*time.Second),
-	)
-
-	if err := probe.Start(ctx); err != nil {
-		log.Fatalf("probe.Start: %v", err)
+	var probeBundle struct {
+		prober   dashboard.Prober
+		shutdown func()
 	}
-	defer probe.Shutdown()
+	if os.Getenv("DEMO_AGGREGATE") != "" {
+		probeBundle = buildAggregateProbe(ctx)
+	} else {
+		probeBundle = buildSingleProbe(ctx, injector)
+	}
+	defer probeBundle.shutdown()
+
+	probe := probeBundle.prober
 
 	// Assemble the option set from environment toggles so every feature can
 	// be demonstrated without code changes.
@@ -105,6 +107,85 @@ func main() {
 	}
 }
 
+// probeBundle pairs a ready prober with its shutdown func.
+type probeBundle struct {
+	prober   dashboard.Prober
+	shutdown func()
+}
+
+// buildSingleProbe builds the classic one-injector probe over the default
+// demo services.
+func buildSingleProbe(ctx context.Context, injector *do.RootScope) probeBundle {
+	registerService(injector, "postgres", &alwaysHealthy{})
+	registerService(injector, "redis", &flappingService{failEvery: 15 * time.Second})
+	registerService(
+		injector,
+		"metrics-exporter",
+		&alwaysFailing{reason: "exporter endpoint unreachable"},
+	)
+
+	probe := health.New(injector,
+		health.WithVersion("1.2.3"),
+		health.WithCriticalServices("postgres", "redis"),
+		health.WithRefreshInterval(2*time.Second),
+	)
+
+	if err := probe.Start(ctx); err != nil {
+		log.Fatalf("probe.Start: %v", err)
+	}
+
+	return probeBundle{prober: probe, shutdown: probe.Shutdown}
+}
+
+// buildAggregateProbe builds two independent probes (api + worker service
+// groups) merged with go-health's aggregate — the multi-service dashboard
+// from AGENTS.md. Sources must have unique, slash-free names (go-health
+// v0.1.3 contract).
+func buildAggregateProbe(ctx context.Context) probeBundle {
+	apiInjector := do.New()
+	registerService(apiInjector, "postgres", &alwaysHealthy{})
+	registerService(apiInjector, "redis", &flappingService{failEvery: 15 * time.Second})
+
+	workerInjector := do.New()
+	registerService(
+		workerInjector,
+		"metrics-exporter",
+		&alwaysFailing{reason: "exporter endpoint unreachable"},
+	)
+
+	apiProbe := health.New(apiInjector,
+		health.WithVersion("1.2.3"),
+		health.WithCriticalServices("postgres"),
+		health.WithRefreshInterval(2*time.Second),
+	)
+	workerProbe := health.New(workerInjector,
+		health.WithRefreshInterval(2*time.Second),
+	)
+
+	agg, err := aggregate.New(
+		aggregate.Source{Name: "api", Probe: apiProbe},
+		aggregate.Source{Name: "worker", Probe: workerProbe},
+	)
+	if err != nil {
+		log.Fatalf("aggregate.New: %v", err)
+	}
+
+	if err := apiProbe.Start(ctx); err != nil {
+		log.Fatalf("api probe.Start: %v", err)
+	}
+	if err := workerProbe.Start(ctx); err != nil {
+		log.Fatalf("worker probe.Start: %v", err)
+	}
+
+	return probeBundle{
+		prober: agg,
+		shutdown: func() {
+			apiProbe.Shutdown()
+			workerProbe.Shutdown()
+		},
+	}
+}
+
 // buildOptions assembles the demo option set from environment toggles so
 // every feature can be demonstrated without code changes.
 func buildOptions() []dashboard.Option {
@@ -141,6 +222,18 @@ func buildOptions() []dashboard.Option {
 		log.Printf("rate limit: enabled on dashboard routes")
 	}
 
+	if raw := os.Getenv("DEMO_WEBHOOK"); raw != "" {
+		webhookURL, err := safeWebhookURL(raw)
+		if err != nil {
+			log.Fatalf("DEMO_WEBHOOK: %v", err)
+		}
+
+		opts = append(opts, dashboard.WithWebhook(webhookURL))
+		// The URL itself is never logged — it may embed a bearer secret,
+		// mirroring the library's zero-logging delivery policy.
+		log.Printf("webhook: transitions POST to the configured receiver (DEMO_WEBHOOK set)")
+	}
+
 	if os.Getenv("DEMO_PUBLIC") != "" {
 		opts = append(opts, dashboard.WithPublicMode())
 		log.Println("public mode: check names and errors anonymized (DEMO_PUBLIC set)")
@@ -156,7 +249,70 @@ func buildOptions() []dashboard.Option {
 		log.Println("base path: dashboard routes mounted under the DEMO_BASE_PATH prefix")
 	}
 
+	opts = appendUIGrowthOptions(opts)
+
 	return opts
+}
+
+// appendUIGrowthOptions appends the 0.7.x UI toggles: collapse threshold,
+// collapse persistence, embedded SDK (client-side filter), and grouping
+// mode. Env values are validated before any reaches a log line, following
+// the log-injection defense the other DEMO_ toggles use.
+func appendUIGrowthOptions(opts []dashboard.Option) []dashboard.Option {
+	if raw := os.Getenv("DEMO_COLLAPSE"); raw != "" {
+		threshold, err := strconv.Atoi(raw)
+		if err != nil || threshold < 0 {
+			// The raw env value never reaches the log; only the parsed
+			// (necessarily numeric) result does.
+			log.Fatalf("DEMO_COLLAPSE: want a non-negative integer")
+		}
+
+		opts = append(opts, dashboard.WithHealthyGroupCollapse(threshold))
+		log.Printf("collapse: healthy group collapses at %d rows", threshold)
+	}
+
+	if os.Getenv("DEMO_PERSIST") != "" {
+		opts = append(opts, dashboard.WithPersistCollapse())
+		log.Println("persist: collapse state survives reloads and patches (DEMO_PERSIST set)")
+	}
+
+	if os.Getenv("DEMO_EMBEDDED_SDK") != "" {
+		opts = append(opts, dashboard.WithEmbeddedDatastarSDK())
+		log.Println(
+			"embedded SDK: same-origin datastar.js and client-side filter (DEMO_EMBEDDED_SDK set)",
+		)
+	}
+
+	switch dashboard.GroupMode(os.Getenv("DEMO_GROUPING")) {
+	case dashboard.GroupBySource:
+		opts = append(opts, dashboard.WithGrouping(dashboard.GroupBySource))
+		log.Println("grouping: one card per aggregate source (DEMO_GROUPING=source)")
+	case dashboard.GroupBySeverity:
+		// The default; accepted explicitly for demo symmetry.
+	case "":
+		// Unset; the default applies.
+	default:
+		log.Fatalf("DEMO_GROUPING: want source or severity")
+	}
+
+	return opts
+}
+
+// safeWebhookURL validates an env-provided webhook endpoint: it must be an
+// absolute http/https URL. It returns the canonical URL for WithWebhook.
+func safeWebhookURL(spec string) (string, error) {
+	parsed, err := url.Parse(spec)
+	if err != nil {
+		return "", fmt.Errorf("invalid webhook URL: %w", err)
+	}
+
+	if (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+		return "", errors.New("webhook URL must be an absolute http/https URL")
+	}
+
+	canonical := parsed.String()
+
+	return canonical, nil
 }
 
 // safeBasePath validates an env-provided base path: it must be a plain URL

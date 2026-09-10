@@ -72,15 +72,18 @@
               pkgs.gosec
               pkgs.templ
               pkgs.trash-cli
+              pkgs.chromium
             ];
 
             GOWORK = "off";
             GOEXPERIMENT = "jsonv2";
+            GO_HEALTH_DASHBOARD_CHROME = "${pkgs.chromium}/bin/chromium";
 
             shellHook = ''
               echo "go-health-dashboard dev shell — $(go version)"
               echo "GOEXPERIMENT=$GOEXPERIMENT (required for go-sse dependency)"
               echo "GOWORK=off (ignore parent workspace)"
+              echo "GO_HEALTH_DASHBOARD_CHROME=$GO_HEALTH_DASHBOARD_CHROME (browser suite)"
             '';
           };
 
@@ -114,7 +117,9 @@
             '';
 
             coverage = mkApp "coverage" [ goPkg ] ''
-              GOEXPERIMENT=jsonv2 go test ./... -coverprofile=coverage.out -covermode=atomic "$@"
+              # Scoped to the library package like CI's coverage floor; the
+              # example carries no tests and would dilute the percentage.
+              GOEXPERIMENT=jsonv2 go test . -coverprofile=coverage.out -covermode=atomic "$@"
               go tool cover -func=coverage.out
             '';
 

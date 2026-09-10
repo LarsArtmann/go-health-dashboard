@@ -168,7 +168,7 @@ func TestPopulateHistory_LastUpdatedIsLastSampleTime(t *testing.T) {
 	history.record(sample{At: observed, Value: trendWarnValue, Status: string(health.StatusWarn)})
 
 	vm := viewModel{LastUpdated: "would-be-render-time"}
-	populateHistory(&vm, history)
+	populateHistory(&vm, history, 0)
 
 	want := observed.UTC().Format(updatedStampFormat)
 	if vm.LastUpdated != want {
@@ -186,7 +186,7 @@ func TestPopulateHistory_EmptyBufferKeepsRenderTime(t *testing.T) {
 	history := newHistoryBuffer(4)
 
 	vm := viewModel{LastUpdated: "render-time"}
-	populateHistory(&vm, history)
+	populateHistory(&vm, history, 0)
 
 	if vm.LastUpdated != "render-time" {
 		t.Errorf("empty history must not touch LastUpdated, got %q", vm.LastUpdated)

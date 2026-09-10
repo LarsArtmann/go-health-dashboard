@@ -14,8 +14,8 @@ from the probe but never writes to it.
 ### Check
 
 A single named service health check registered with the probe. Each check
-returns a `Status` and an optional error message. The dashboard renders checks
-grouped by severity.
+returns a `Status` and an optional error message. The dashboard renders
+checks grouped by severity (default) or by source (`WithGrouping`).
 
 ### Status
 
@@ -168,14 +168,77 @@ the pusher's atomic counter. Returns 0 when the pusher has not been started.
 
 ## Route Layout
 
-| Route             | Purpose                                | Content Type                 |
-| ----------------- | -------------------------------------- | ---------------------------- |
-| `/health`         | HTML dashboard (or JSON via Accept)    | text/html or JSON            |
-| `/health/sse`     | SSE patch stream                       | text/event-stream            |
-| `/favicon.svg`    | Dashboard favicon                      | image/svg+xml                |
-| `/health/metrics` | Prometheus exposition (opt-in)         | text/plain                   |
-| `/health/trend`   | History samples + transitions (opt-in) | application/json             |
-| `/health/export`  | History export, JSON or CSV (opt-in)   | application/json or text/csv |
-| `/healthz`        | Kubernetes liveness probe              | application/json             |
-| `/readyz`         | Kubernetes readiness probe             | application/json             |
-| `/startupz`       | Kubernetes startup probe               | application/json             |
+| Route                 | Purpose                                  | Content Type                         |
+| --------------------- | ---------------------------------------- | ------------------------------------ |
+| `/health`             | HTML dashboard (or JSON via Accept)      | text/html or JSON                    |
+| `/health/sse`         | SSE patch stream                         | text/event-stream                    |
+| `/favicon.svg`        | Dashboard favicon                        | image/svg+xml                        |
+| `/health/metrics`     | Prometheus exposition (opt-in)           | text/plain                           |
+| `/health/trend`       | History samples + transitions (opt-in)   | application/json                     |
+| `/health/export`      | History export, JSON/CSV/NDJSON (opt-in) | application/json, text/csv, x-ndjson |
+| `/health/introspect`  | Resolved-config document (opt-in)        | application/json                     |
+| `/health/datastar.js` | Embedded SDK bundle (opt-in)             | text/javascript                      |
+| `/healthz`            | Kubernetes liveness probe                | application/json                     |
+| `/readyz`             | Kubernetes readiness probe               | application/json                     |
+| `/startupz`           | Kubernetes startup probe                 | application/json                     |
+
+## Presentation Terms (0.7.x UI)
+
+Terms the rendered page and its copy lean on; load-bearing in tests too.
+
+### Group
+
+One card (or collapsible section) of related checks. Two grouping axes
+(`WithGrouping`): **severity** — Critical Failures, Non-Critical Issues,
+Healthy Services (default); **source** — one card per aggregate `source/check`
+prefix, worst-of status per card, plain keys in a fallback Services card.
+
+### source/check
+
+The namespaced key an aggregate produces for a merged probe's check (e.g.
+`api/postgres`). The source prefix is load-bearing: short-name rendering and
+source grouping both preserve it verbatim.
+
+### Short display name
+
+The condensed table label for a check (`handlers.Handlers` instead of the
+fully-qualified type). Presentation-only and lossless: the raw key stays
+recoverable via the title attribute and a monospace details line. Generic
+type parameters (`store.Store[string]`) pass through unchanged.
+
+### Healthy-group collapse
+
+The healthy group renders as a native `<details>` section and auto-collapses
+at `WithHealthyGroupCollapse(n)` rows (default 8) so a wall of green never
+buries problems. Severity mode only — source-grouped pages have no single
+healthy group.
+
+### Collapse persistence
+
+`WithPersistCollapse` stores the healthy group's open/closed state in
+localStorage and re-applies it after every SSE patch and reload. Storage keys
+off summary clicks (user intent); a scoped MutationObserver re-applies after
+patch merges.
+
+### Client-side filter
+
+The search box (embedded-SDK setups): rows hide via `data-class:hidden` while
+the query signal matches neither short nor raw name. The no-match hint is a
+`role="status"` region so screen readers announce it.
+
+### Connection pill
+
+The live / reconnecting / offline indicator, driven by the SDK's
+`datastar-fetch` lifecycle events. Equal-width states prevent layout shift;
+state changes are announced via `aria-live`.
+
+### Jump-to-problems
+
+The anchor from the status banner to `#group-problems` (the first
+failing/warning card), so operators land on what hurts.
+
+### Sample / Transition
+
+A **sample** is one recorded overall-status point (`{At, Value, Status}`);
+**transitions** are derived flips between statuses. Samples power the trend
+sparkline, `/health/trend`, `/health/export`, and the timeline card.

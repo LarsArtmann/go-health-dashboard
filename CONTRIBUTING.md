@@ -26,6 +26,9 @@ nix run .#vulncheck  # govulncheck
 nix fmt              # format code (gofumpt, goimports, golines, nixfmt)
 ```
 
+CI enforces a **75% coverage floor** on the race/coverage job (baseline
+76.9%). Check locally with `nix run .#coverage` before pushing.
+
 Without Nix, prefix all Go commands with `GOEXPERIMENT=jsonv2` and run
 `templ generate` before building.
 
@@ -60,6 +63,13 @@ prefer `dashboard.Register(injector, probe, opts...)` over `dashboard.New`.
 `Register` stores the dashboard in the container, so `do.Shutdown` and
 `do.HealthCheck` cascades include it automatically — see the package
 documentation and the `lifecycle_test.go` suite for the exact contracts.
+
+## Releasing
+
+Maintainers cut releases by following `docs/release-checklist.md` —
+reconcile, re-head the CHANGELOG, bump the `Version` const in the same
+commit as the annotated tag, run every gate, then push and verify the
+proxy, CI, and the GitHub Release page.
 
 ## Reporting Issues
 

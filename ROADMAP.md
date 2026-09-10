@@ -19,18 +19,23 @@ Raw ideas:
 - Rate limiter response headers: `X-RateLimit-Limit` / `X-RateLimit-Remaining`
   / `X-RateLimit-Reset` (basic 429 + Retry-After shipped in v0.3.x cycle)
 - Optional jitter on `WithMaxConnectionLifetime` to avoid reconnect herds
+- Retry-After header on 503s during the shutdown-drain window
 - Watchdog gauge `dashboard_pusher_last_tick_seconds` and an opt-in
   auto-restart hook (current watchdog is report-only by design)
 - Request logging middleware option (slog) for dashboard routes
 
 ### 2. Multi-Service and Federation
 
-Extend beyond a single go-health Probe to aggregate multiple services or
-clusters on one dashboard.
+In-process multi-service shipped in v0.5.0 (go-health `aggregate` + the
+`Prober` interface). What remains:
 
 Raw ideas:
 
-- Multi-probe support: dashboard for multiple services on one page
+- `WithGrouping(BySource)` view option: per-service cards by splitting
+  namespaced `source/check` keys (severity grouping already renders
+  aggregates fine)
+- Per-source staleness surface: last-refresh age per source (needs a
+  timestamp API in go-health)
 - Service grouping by custom tags or labels (not just severity)
 - Aggregate status across multiple instances or clusters
 - Federation: pull health from remote go-health instances via HTTP
@@ -38,6 +43,8 @@ Raw ideas:
   go-health, not the dashboard — see Design Spikes)
 - `Register` auto-start: wire `Start(ctx)` into the samber/do container
   lifecycle so `Register` + container start needs no manual `Start` call
+- Example/demo: aggregate + webhook demo modes in `nix run .#example`
+  (it still demos a single probe)
 
 ### 3. Observability and History
 
@@ -61,6 +68,19 @@ Raw ideas:
 - Public mode hardening: leak-scanner test (grep rendered HTML for registered
   service names), optional redaction of the `/health` JSON (which stays
   verbatim today — documented in AGENTS.md)
+- Webhook delivery observability: `dashboard_webhook_deliveries_total{result}`
+  - duration histogram behind `WithMetrics` (deliveries are silently
+    best-effort today — "it didn't arrive" is undebuggable)
+- Webhook hardening: HMAC signing (`WithWebhookSecret` → `X-Signature`)
+  and a payload `"schema":1` version field before external consumers
+  freeze the format (see Open Questions)
+- Introspection endpoint (JSON: enabled routes, limits, modes) for ops
+- Rate-limit 429 body: include Retry-After as JSON for API clients
+- PushMode: PushOnChange with TTL (re-assert state every N intervals)
+- Timeline card: cap entries by age as well as count (5 entries can
+  span days)
+- Per-check latency histogram series in metrics (currently total only)
+- NDJSON export format option on `/health/export`
 - Incident tracking (annotate status changes with context) — deferred; needs
   product thought beyond the timeline card that shipped in the v0.3.x cycle
 
@@ -77,6 +97,64 @@ Raw ideas:
   cost) — BLOCKED on the `GOEXPERIMENT=jsonv2` decision (Open Questions)
 - Screenshot or PDF export for incident reports — screenshots are covered by
   env-guarded tests; PDF remains out of scope
+- Embedded Datastar SDK serving helper (a `WithCSSPath` analog) so
+  CSP-'self' deployments don't hand-roll static wiring
+- Browser test: CSP-clean runtime check for an aggregate-rendered page
+- Load test: 20-source aggregate under concurrent SSE + scrape
+
+### 5. Pipeline, Testing and Docs Tooling
+
+Raw ideas:
+
+- CI: `templ generate` drift check (fail when generated files differ)
+- CI: `actionlint` step for both workflow files; add a `nix flake check` job;
+  Go version matrix (latest two 1.26.x patches)
+- CI: upload browser screenshots as artifacts for visual diffs;
+  Dependabot/renovate for GitHub Action SHA bumps (pins rot)
+- devShell: Chrome/Chromium in the flake so the browser suite runs locally
+- Coverage: push total > 80% (currently ~77%), then raise the CI floor
+- Nightly fuzztime budget review (4×60s → target the hottest target);
+  rehearse the fuzz issue-on-failure path with a deliberately failing run
+- Fuzz targets: CSV exporter, `RecommendedCSP` injection attempts, webhook
+  payload marshal, aggregate merge (follow the `fuzz_test.go` pattern)
+- Browser golden-screenshot diff test (catch visual drift)
+- Keyboard-navigation a11y smoke in the browser suite; browser-test the
+  metrics endpoint under strict CSP
+- Unit-test the version-guard grep logic (script drift protection)
+- Boundary/negotiation tests: `WithTrend(1)`, `ExportHandler` with
+  `Accept: text/csv;q=0.8`, `WithBasePath` edge cases (`""`, `"/"`,
+  trailing slash, nested `/a/b`), SSE retry large values
+- Race-stress: 50 concurrent SSE clients vs `SubscriberCount` consistency;
+  webhook delivery-ordering test under concurrent transitions
+- Verify no heartbeat-goroutine leak on Shutdown/broadcaster close;
+  fuzz the `safeBasePath` validator once it moves into the library
+- Benchmarks: `renderPatch` retry stamping; `BenchmarkHealthCheck`
+- Mutation-test spot check on change-detection (fingerprint) logic
+- DI-surface ideas (from the 04-41 NEXT-50, still open): example-binary e2e
+  run, `BenchmarkRegister`, `do.Package` wrapper, `WithInjector` evaluation,
+  lazy `Provider` variant,
+  Dashboard appear in its own health table?), robustness tests (nil
+  injector/probe panics, double-`Register` override, restart-after-shutdown,
+  cascade order, `HealthCheck` under live SSE, `SubscriberCount` after
+  `Register`), HealthCheck↔probe aggregation, pusher-metrics exposure,
+  `RegisterNamed` multi-instance, child scopes, `Explain()` output, the
+  `do.Healthchecker` no-context variant, and the ProvideValue-vs-Provide ADR
+- Shutdown-ordering test for the example (pusher alive vs broadcaster closed)
+- README: coverage badge; "protect probes via network policy" note;
+  screenshot regenerate one-liner + caption for the light screenshot
+- doc.go: webhook + public-mode combo example; `WithBasePath` example
+- templ-components UI follow-ups (PageHeader, Stack, StatCard icons, Dot) —
+  verify not already shipped upstream, then adopt
+- Deprecate `WithNonce` in favor of `WithNonceExtractor` (long-term)
+- `nix run .#ci` local mirror of the GitHub Actions steps
+- Re-check the gopls stdversion false positive on a future gopls release
+  (dismissed 2026-09-04 via `analyses.stdversion: false` in
+  `.vscode/settings.json`: the warning fires identically with and without
+  `GOEXPERIMENT=jsonv2` on gopls v0.23.0 even though `json.Unmarshal` is
+  fully supported on go1.26 under the experiment; golangci-lint — the
+  authoritative gate — does not enable stdversion)
+- Sign release tags (`tag.gpgSign`, documented in `docs/release-checklist.md`;
+  compare links shipped in the CHANGELOG footer 2026-09-04)
 
 ## Non-goals
 
@@ -104,17 +182,18 @@ These require user decisions and cannot be resolved by reading code:
 - **GOEXPERIMENT=jsonv2:** Every Go command requires this env var because go-sse
   uses `encoding/json/v2`. Accept it (and document loudly), fork go-sse, or
   build-tag gate the SSE code?
-- **Next release policy:** the post-v0.3.1 batch in CHANGELOG `[Unreleased]`
-  is purely additive (new options, endpoints) — semver suggests v0.4.0;
-  alternatively batch more and cut v0.3.2.
 - **Fingerprint compatibility:** the v0.3.x length-prefix fix changed
   fingerprint values (one spurious "change" after upgrade if anyone persisted
   them). Accept + document as-is, or version/stabilize the fingerprint
   format?
+- **Webhook hardening appetite:** is `Authorization`-header auth enough for
+  your ingests, or do you want HMAC signing (`WithWebhookSecret` →
+  `X-Signature`) and an explicit payload `"schema":1` version field before
+  any external consumer freezes the format?
 
 ## Design Spikes (v0.3.x cycle, not implemented)
 
-Summaries in `docs/planning/2026-09-03_v03-cycle-decisions-notes.md`.
+Summaries in `docs/planning/archived/2026-09-03_v03-cycle-decisions-notes.md`.
 
 - **Federation spike** — expose one instance's health to another as a
   synthetic check. Preferred home: go-health (`FederatedProber` option),
@@ -123,3 +202,18 @@ Summaries in `docs/planning/2026-09-03_v03-cycle-decisions-notes.md`.
   one-way push with browser-managed reconnection; WebSocket would add a
   second protocol surface (auth, proxies, reconnect logic) with no
   dashboard use case for bidirectional traffic.
+
+## Decisions (2026-09-04 v0.6.0 cycle)
+
+- **Self-monitoring: feature, keep as-is.** Empirically verified
+  (`selfmonitor_test.go`): `dashboard.Register` stores the Dashboard in the
+  injector the probe evaluates each tick, so the dashboard appears in its own
+  health table and (while running) reports itself `pass`. This is honest — a
+  not-yet-started or drained dashboard SHOULD show unhealthy. Users who do
+  not want it construct with `New` instead of `Register`. No filter option;
+  revisit only with a concrete demand signal.
+- **InstanceID UI: defer.** go-health carries `InstanceID` in its JSON only;
+  the dashboard adds no StatCard for it. Rationale: public mode would need a
+  masking rule for it, single-replica users gain nothing, and the JSON field
+  already serves load-balancer attribution. Revisit if multi-replica
+  dashboard UI demand materializes.

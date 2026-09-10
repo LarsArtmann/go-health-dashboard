@@ -5,13 +5,13 @@ monitoring stack — Prometheus/Grafana, SigNoz, Gatus, Uptime Kuma, custom
 ingests — not to replace it. This document encodes the health semantics once,
 so every integration expresses the same meaning:
 
-| Concept | Meaning | Wire signal |
-|---|---|---|
-| `pass` | Healthy | `200` on `/readyz`, `dashboard_health_status{2}` |
-| `warn` | Degraded but serving (non-critical failure) | `200` on `/readyz` — **deliberately not an error code** |
-| `fail` | Not serving (critical failure) | `503` on `/readyz` |
-| shutting down | Graceful drain in progress | `503` on `/readyz`, `dashboard_health_shutting_down 1` |
-| liveness | Process alive, zero dependency checks | Always `200` on `/healthz` (by design — no restart cascades) |
+| Concept       | Meaning                                     | Wire signal                                                  |
+| ------------- | ------------------------------------------- | ------------------------------------------------------------ |
+| `pass`        | Healthy                                     | `200` on `/readyz`, `dashboard_health_status{2}`             |
+| `warn`        | Degraded but serving (non-critical failure) | `200` on `/readyz` — **deliberately not an error code**      |
+| `fail`        | Not serving (critical failure)              | `503` on `/readyz`                                           |
+| shutting down | Graceful drain in progress                  | `503` on `/readyz`, `dashboard_health_shutting_down 1`       |
+| liveness      | Process alive, zero dependency checks       | Always `200` on `/healthz` (by design — no restart cascades) |
 
 ---
 
@@ -160,7 +160,7 @@ as JSON:
   "status": "warn",
   "shutting_down": false,
   "checks": {
-    "cache": {"status": "warn", "error": "connection refused"}
+    "cache": { "status": "warn", "error": "connection refused" }
   },
   "changed_at": "2026-09-04T00:30:00Z"
 }
@@ -188,7 +188,7 @@ require — the payload shape is owned and versioned here.
 
 - **Remote federation** (pulling health from remote instances): Kuma, Gatus,
   and Grafana are purpose-built for multi-service aggregation, history, and
-  alerting. Use them. For several probes inside *one* process, use
+  alerting. Use them. For several probes inside _one_ process, use
   go-health's `aggregate` package and hand the merged view to this dashboard.
 - **A public status page**: `WithPublicMode` anonymizes the rendered
   dashboard and metrics; hosting, whitelisting, and incident workflows stay

@@ -232,6 +232,54 @@ func TestExportHandler_CSV(t *testing.T) {
 	}
 }
 
+func TestExportHandler_NDJSON(t *testing.T) {
+	t.Parallel()
+
+	s, _ := setupTrendDashboard(t)
+	defer s.cleanup()
+
+	waitForTrendSamples(t, s, 2)
+
+	w := doRequest(t, s.mux, "/health/export?format=ndjson")
+	if w.Code != http.StatusOK {
+		t.Fatalf("status: want 200, got %d", w.Code)
+	}
+
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/x-ndjson") {
+		t.Fatalf("content-type: want application/x-ndjson, got %s", ct)
+	}
+
+	body := strings.TrimSpace(w.Body.String())
+	if body == "" {
+		t.Fatal("ndjson body is empty")
+	}
+
+	if !strings.HasSuffix(w.Body.String(), "\n") {
+		t.Error("ndjson payload should end with a newline")
+	}
+
+	lines := strings.Split(body, "\n")
+
+	if len(lines) < 2 {
+		t.Fatalf("ndjson lines: want >= 2, got %d", len(lines))
+	}
+
+	for i, line := range lines {
+		var sample struct {
+			At     string  `json:"at"`
+			Value  float64 `json:"value"`
+			Status string  `json:"status"`
+		}
+		if err := json.Unmarshal([]byte(line), &sample); err != nil {
+			t.Fatalf("ndjson line %d is not a self-contained JSON object: %v\n%s", i, err, line)
+		}
+
+		if sample.At == "" || sample.Status == "" {
+			t.Errorf("ndjson line %d missing at/status: %s", i, line)
+		}
+	}
+}
+
 func TestTrendEndpoints_DisabledWithoutTrend(t *testing.T) {
 	t.Parallel()
 
@@ -244,6 +292,35 @@ func TestTrendEndpoints_DisabledWithoutTrend(t *testing.T) {
 
 	if w := doRequest(t, s.mux, "/health/export"); w.Code != http.StatusNotFound {
 		t.Errorf("export without WithTrend: want 404, got %d", w.Code)
+	}
+}
+
+// TestTrendEndpoints_503WhenPusherNotStarted covers the nil-pusher branch:
+// a dashboard that was constructed but never started must answer both trend
+// endpoints with 503 and a message that distinguishes "not started" from
+// "trend not enabled".
+func TestTrendEndpoints_503WhenPusherNotStarted(t *testing.T) {
+	t.Parallel()
+
+	injector := do.New()
+	provideHealthy(injector, "database")
+	invoke[*healthyService](t, injector, "database")
+
+	probe := health.New(injector, health.WithRefreshInterval(time.Hour))
+
+	dash := dashboard.New(probe, dashboard.WithTrend(10))
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	for _, path := range []string{"/health/trend", "/health/export"} {
+		w := doRequest(t, mux, path)
+		if w.Code != http.StatusServiceUnavailable {
+			t.Errorf("%s without Start: want 503, got %d", path, w.Code)
+		}
+		if !strings.Contains(w.Body.String(), "pusher is not active") {
+			t.Errorf("%s 503 body should name the inactive pusher: %s", path, w.Body.String())
+		}
 	}
 }
 

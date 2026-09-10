@@ -26,7 +26,7 @@
 ## b) PARTIALLY DONE
 
 1. ~~**Browser tests are local-only right now.** Works: verified locally with nix chromium; skip logic proven. Missing: CI wiring (chromium install + `GO_HEALTH_DASHBOARD_CHROME` env in `.github/workflows/ci.yml`), so CI never exercises them. Blocker: none, just not wired. Effort: M.~~ done (CI browser job wired and verified green on runner (run 33763955031) 2026-09-03)
-2. **Screenshot capture is a manual command.** Works: one-command reproduction from the repo. Missing: CI job or `nix run .#screenshot` flake app; also no dark-theme variant. Effort: S–M.
+2. ~~**Screenshot capture is a manual command.** Works: one-command reproduction from the repo. Missing: CI job or `nix run .#screenshot` flake app; also no dark-theme variant. Effort: S–M.~~ done (partially closed - dark variant shipped (screenshot_dark_test.go); CI artifacts + regenerate one-liner routed to ROADMAP Theme 5)
 3. ~~**Metrics endpoint conformance.** Works: hand-rolled exposition with tests. Missing: `promtool check metrics`-style validation, latency histogram (currently a single ms gauge), no `client_golang` bridge helper for consumers with existing registries. Effort: M.~~ done at `bd99de0`
 4. ~~**CHANGELOG `[Unreleased]`** — complete entries written, but no release cut: `Version` constant still `0.2.0`, no tag. The new API surface (4 options + MetricsHandler) is unreleased. Effort: S (release flow exists as skill).~~ done at `d453c52`
 5. ~~**TODO_LIST harvest from this report** — section (f) below is brainstorm; per the docs-health flow it must be routed into TODO_LIST.md/ROADMAP.md. Not done yet. Effort: S.~~ done at `40ba449`
@@ -40,7 +40,7 @@ _(Deliberately untouched this session — planned/ROADMAP only)_
 
 1. **Build-tag gating for SSE** — the standing 🔵 BLOCKED item; needs _your_ decision (accept `GOEXPERIMENT=jsonv2` / fork go-sse / build-tag gate). Untouched by design.
 2. ~~Graceful SSE shutdown drain, SSE connection max-lifetime, pusher self-check watchdog, request-logging middleware option, rate limiting on the dashboard route, per-route stricter CSP — ROADMAP Theme 1 (Production Hardening), unrefined.~~ done at `3022fbf`
-3. Multi-probe federation, service grouping, public status-page mode — ROADMAP Theme 2.
+3. ~~Multi-probe federation, service grouping, public status-page mode — ROADMAP Theme 2.~~ done (superseded - multi-probe shipped in v0.5.0 (aggregate + Prober); federation remains a ROADMAP idea)
 4. ~~Status-change timeline, incident tracking, JSON/CSV export, refresh-timestamp display — ROADMAP Theme 3 (partially advanced by `WithTrend`, which is the first stateful step; note the tension with the "stateless view layer" non-goal is now real and worth revisiting).~~ done at `e9f47cb`
 5. ~~WebSocket transport, OG metadata/social preview, PDF export, `RecommendedCSP()` helper — ROADMAP Theme 4. (`RecommendedCSP()` is now _much_ easier: the exact verified policy is documented in the README.)~~ done (OG at 4e4a149, RecommendedCSP at f627164, WebSocket spike rejected (ROADMAP Design Spikes), PDF out of scope)
 6. ~~HEADLESS-browser a11y axe run, dark-mode README screenshot — new ideas surfaced this session, never started.~~ done at `be5fe4c`
@@ -58,14 +58,14 @@ _(Deliberately untouched this session — planned/ROADMAP only)_
 
 ## e) WHAT WE SHOULD IMPROVE
 
-1. **Browser tests are dead weight in CI until wired** — impact: false confidence; the strongest test in the repo never runs in CI. Fix: chromium in CI image + env var (M).
+1. ~~**Browser tests are dead weight in CI until wired** — impact: false confidence; the strongest test in the repo never runs in CI. Fix: chromium in CI image + env var (M).~~ done (done - CI browser job shipped in v0.4.0 (ci.yml Browser runtime-CSP job))
 2. **Read-before-edit discipline on docs** — two of the three messiest moments (CHANGELOG mangling) came from editing long files I'd only partially read. Fix: full-section View before any multiedit on prose files; prefer scripted rebuilds for long restructures.
 3. **Think about blocking semantics before composing tests** — the SSE deadlock was predictable from knowledge I already had. Fix: when a test list includes a streaming endpoint, decide its timeout story first.
 4. **Addressable-variable/const mistakes in templ** — pattern repeats (embedded fields last release, const-addressing this one). Fix: a personal checklist line: "templ struct literal → embedded fields? & of what?" — or a lint rule upstream.
-5. **gopls vs golangci disagreement** — gopls shows 8-9 stale warnings all session; noisy enough to hide real diagnostics. Fix: investigate go-directive/toolchain bump (the `json.Marshal requires go1.27` hint) or gopls env (`GOEXPERIMENT` for gopls).
+5. ~~**gopls vs golangci disagreement** — gopls shows 8-9 stale warnings all session; noisy enough to hide real diagnostics. Fix: investigate go-directive/toolchain bump (the `json.Marshal requires go1.27` hint) or gopls env (`GOEXPERIMENT` for gopls).~~ done (routed - ROADMAP Theme 5 gopls investigation)
 6. **Auto-commit daemon granularity** — 16 "chore: auto-commit N file(s) (heuristic)" commits make bisecting this session painful; mixed unrelated files per commit. Fix (config-level): larger debounce or per-file-type grouping. _(Your infrastructure — your call.)_
-7. **`WithTrend` vs "stateless view layer" non-goal** — the dashboard now holds state (ring buffer). Justified and documented, but the ROADMAP non-goal wording ("The dashboard is a stateless view layer") should be re-annotated before it confuses a future session.
-8. **Screenshot freshness** — the PNG will drift from the UI silently. Fix: a documented one-liner to regenerate (or CI artifact) + a "captured <date>" caption in the README.
+7. ~~**`WithTrend` vs "stateless view layer" non-goal** — the dashboard now holds state (ring buffer). Justified and documented, but the ROADMAP non-goal wording ("The dashboard is a stateless view layer") should be re-annotated before it confuses a future session.~~ done (done in the 2026-09-03 docs-health pass - ROADMAP non-goal now says bounded view state)
+8. ~~**Screenshot freshness** — the PNG will drift from the UI silently. Fix: a documented one-liner to regenerate (or CI artifact) + a "captured <date>" caption in the README.~~ done (partially closed - dark caption done 2026-09-03; light caption + regenerate one-liner routed to ROADMAP Theme 5)
 
 ## f) TOP 50 NEXT TASKS (brainstorm — HARVEST into TODO_LIST/ROADMAP before treating as commitments)
 

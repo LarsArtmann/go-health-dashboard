@@ -1,0 +1,49 @@
+direction: right
+title: {
+  label: "go-health-dashboard — CI-Green & Backlog Pareto (2026-09-10)"
+  shape: text
+  style: {
+    font-size: 28
+    bold: true
+  }
+}
+
+tier1: Tier 1 — the 1% that unblocks 51% {
+  ceremony: "Pin ceremony v1.16.0\n(browser suite, guard, docs)"
+  harvest: "TODO_LIST harvest\n(truth restored)"
+  introspect: "Introspection fields\n(threshold + persist)"
+  persistE2E: "PersistCollapse\nbrowser E2E"
+}
+
+tier2: Tier 2 — 4% for 64%: regression armor {
+  interplay: "RetryAlways interplay x3\n(conn limit, 429, drain)"
+  guards: "Guards: wantsJSON,\npublic filter, axe-on-filtered,\nkeyboard, aggregate"
+  measures: "Coverage baseline,\nbenchmark, fuzz 60s"
+}
+
+tier3: Tier 3 — 20% for 80%: features {
+  f5: "F5: per-check latency\n+ NDJSON export"
+  f11: "F11: WithGrouping(BySource)"
+  example: "Example DEMO_ toggles\n+ config dogfooding"
+  ux: "UX batch: pill width,\nstorage-sync, aria-live,\ngenerics, zero-count"
+  docs: "Docs: DOMAIN_LANGUAGE,\nplan annotations, conventions"
+}
+
+tier4: Tier 4 — 80% to 100% {
+  goldens: "Golden render snapshot"
+  consolidate: "Browser boilerplate\nconsolidation"
+  bootstrap: "One nonce'd script\nbootstrap"
+  mobile: "Mobile stacking\n(design then impl)"
+  degraded: "Degraded screenshot\nfixture"
+  prepush: "pre-push-checks.sh"
+  upstream: "go-health issue\n(verify then file)"
+  f8: "F8: 20-source load test"
+  cvcheck: "CV CSP read-only check"
+}
+
+ceremony -> guards: validates the bumped dep set
+ceremony -> example: demo rides validated UI
+interplay -> f8: harness knowledge feeds load test
+example -> cvcheck: dogfooding before adoption
+measures -> prepush: encode the formulas
+docs -> upstream: draft verified, then filed

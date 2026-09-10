@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	dstarstatic "github.com/larsartmann/go-datastar/static"
 	health "github.com/larsartmann/go-health"
 )
 
@@ -134,7 +135,8 @@ func (d *Dashboard) SubscriberCount() int64 {
 // otherwise the fixed construction-time Nonce is used.
 func (d *Dashboard) buildData(r *http.Request) viewModel {
 	resp := d.currentResponse()
-	vm := buildViewModel(resp, d.cfg.Title, d.cfg.Routes.SSE)
+	vm := buildViewModel(resp, d.cfg.Title, d.cfg.Routes.SSE, d.cfg.Grouping)
+	applyCollapsePolicy(&vm, d.cfg.HealthyGroupCollapseThreshold)
 
 	nonce := d.cfg.Nonce
 	if d.cfg.NonceExtractor != nil {
@@ -150,13 +152,18 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 	vm.FaviconURL = d.cfg.Routes.Favicon
 	vm.ShowStatCards = !d.cfg.HideStatCards
 	vm.Description = d.cfg.Description
+	vm.PersistCollapse = d.cfg.PersistCollapse
+	vm.HasDatastarRuntime = !d.cfg.NoDatastarRuntime
+	vm.ExportURL = d.exportURL()
+	vm.TrendURL = d.trendURL()
+	vm.MetricsURL = d.metricsURL()
 
 	if d.cfg.PublicMode {
 		anonymizeViewModel(&vm)
 	}
 
 	if p := d.push.Load(); p != nil && p.history != nil {
-		populateHistory(&vm, p.history)
+		populateHistory(&vm, p.history, d.cfg.TimelineMaxAge)
 	}
 
 	return vm
@@ -198,6 +205,14 @@ func (d *Dashboard) RegisterRoutes(mux *http.ServeMux) {
 		mux.Handle(routes.Export, d.wrap(d.applyRateLimit(d.ExportHandler())))
 	}
 
+	if d.cfg.Introspection && routes.Introspect != "" {
+		mux.Handle(routes.Introspect, d.wrap(d.applyRateLimit(d.IntrospectionHandler())))
+	}
+
+	if d.cfg.EmbeddedDatastarSDK && routes.DatastarJS != "" {
+		mux.Handle(routes.DatastarJS, d.wrap(d.embeddedSDKHandler()))
+	}
+
 	mux.HandleFunc(routes.Liveness, d.probe.LivenessHandler())
 	mux.HandleFunc(routes.Readiness, d.probe.ReadinessHandler())
 	mux.HandleFunc(routes.Startup, d.probe.StartupHandler())
@@ -212,4 +227,21 @@ func (d *Dashboard) wrap(h http.Handler) http.Handler {
 	}
 
 	return d.cfg.Middleware(h)
+}
+
+// embeddedSDKHandler serves the pinned Datastar SDK bundle from the
+// go-datastar/static embed (WithEmbeddedDatastarSDK). Same-origin, so a
+// strict CSP needs no CDN exception beyond the SDK's own 'unsafe-eval'.
+func (d *Dashboard) embeddedSDKHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != strings.TrimSuffix(d.cfg.Routes.DatastarJS, "/") {
+			http.NotFound(w, r)
+
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		_, _ = w.Write(dstarstatic.Bytes())
+	})
 }

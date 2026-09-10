@@ -51,5 +51,7 @@ implemented, tested, and verified.** Remaining ideas live in `ROADMAP.md`.
   to a future cycle. _(Tracked as a ROADMAP raw idea, 2026-09-03.)_
 - WebSocket transport: rejected in the design spike (SSE suffices; see
   decision notes).
-- Build-tag gating for SSE (BLOCKED on user decision, unchanged —
-  requires accepting the jsonv2 requirement, forking go-sse, or gating).
+- ~~Build-tag gating for SSE (BLOCKED on user decision, unchanged —
+  requires accepting the jsonv2 requirement, forking go-sse, or gating).~~
+  still BLOCKED — tracked in `TODO_LIST.md` (Blocked table) and ROADMAP
+  Open Questions; unchanged as of 2026-09-04.

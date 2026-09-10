@@ -14,6 +14,23 @@ import (
 	"github.com/samber/do/v2"
 )
 
+// screenshotFileMode is the docs-file permission captures normalize to:
+// git only tracks the executable bit, but a 0600 docs file trips readers
+// and diff tools.
+const screenshotFileMode = 0o644
+
+// normalizeScreenshotPerms chmods a capture to the docs convention. The
+// out path comes from an operator-provided env variable, so the file
+// permission change is annotated in one place instead of per call site.
+func normalizeScreenshotPerms(t *testing.T, out string) {
+	t.Helper()
+
+	//nolint:gosec // out is the operator-provided env path; 0644 matches the docs convention
+	if err := os.Chmod(out, screenshotFileMode); err != nil {
+		t.Fatalf("chmod screenshot: %v", err)
+	}
+}
+
 // captureThemeScreenshot renders the dashboard in the requested theme and
 // writes a PNG to out. Skipped when envVar is unset: screenshot capture is
 // a manual documentation tool.
@@ -118,6 +135,8 @@ func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
 		t.Fatalf("write screenshot: %v", err)
 	}
 
+	normalizeScreenshotPerms(t, out)
+
 	t.Logf("screenshot written to %s (%d bytes)", out, len(png))
 }
 
@@ -131,4 +150,113 @@ func TestCaptureREADME_Screenshot(t *testing.T) {
 	t.Parallel()
 
 	captureThemeScreenshot(t, "SCREENSHOT_OUTPUT", "light", os.Getenv("SCREENSHOT_OUTPUT"))
+}
+
+// TestCaptureREADME_ScreenshotDegraded renders the failure state — a
+// critical service down, so the banner, jump-to-problems link, and the
+// Critical Failures card all show:
+//
+//	SCREENSHOT_OUTPUT_DEGRADED=docs/screenshot-degraded.png \
+//	GO_HEALTH_DASHBOARD_CHROME=/path/to/chromium \
+//	go test -run TestCaptureREADME_ScreenshotDegraded -v .
+func TestCaptureREADME_ScreenshotDegraded(t *testing.T) {
+	t.Parallel()
+
+	if os.Getenv("SCREENSHOT_OUTPUT_DEGRADED") == "" {
+		t.Skip("SCREENSHOT_OUTPUT_DEGRADED not set; screenshot capture is manual")
+	}
+
+	chromePath := findChrome(t)
+
+	injector := do.New()
+	provideHealthy(injector, "api-gateway")
+	provideUnhealthy(injector, "postgres", "connection refused (db-1:5432)")
+	provideUnhealthy(injector, "metrics-exporter", "exporter endpoint unreachable")
+	invoke[*healthyService](t, injector, "api-gateway")
+	invoke[*unhealthyService](t, injector, "postgres")
+	invoke[*unhealthyService](t, injector, "metrics-exporter")
+
+	probe := health.New(injector,
+		health.WithVersion("1.2.3"),
+		health.WithCriticalServices("postgres"),
+		health.WithRefreshInterval(100*time.Millisecond),
+	)
+
+	dash := dashboard.New(probe,
+		dashboard.WithTitle("Production Cluster"),
+		dashboard.WithPushInterval(100*time.Millisecond),
+		dashboard.WithPushMode(dashboard.PushAlways),
+		dashboard.WithTrend(40),
+	)
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	if err := probe.Start(t.Context()); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
+
+	if err := dash.Start(t.Context()); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+
+	defer func() {
+		dash.Shutdown()
+		probe.Shutdown()
+	}()
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	if err := chromedp.Run(ctx,
+		chromedp.Navigate(server.URL+"/healthz"),
+		chromedp.Evaluate(`localStorage.setItem('theme', 'light')`, nil),
+		chromedp.Navigate(server.URL+"/health"),
+	); err != nil {
+		t.Fatalf("navigate: %v", err)
+	}
+
+	deadline := time.Now().Add(15 * time.Second)
+
+	for dash.SubscriberCount() == 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("SSE never connected during screenshot capture")
+		}
+
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	time.Sleep(600 * time.Millisecond)
+
+	var png []byte
+
+	if err := chromedp.Run(ctx,
+		chromedp.EmulateViewport(1280, 800),
+		chromedp.FullScreenshot(&png, 95),
+	); err != nil {
+		t.Fatalf("screenshot: %v", err)
+	}
+
+	out := os.Getenv("SCREENSHOT_OUTPUT_DEGRADED")
+
+	//nolint:gosec // output path is the operator-provided environment variable
+	if err := os.WriteFile(out, png, 0o600); err != nil {
+		t.Fatalf("write screenshot: %v", err)
+	}
+
+	normalizeScreenshotPerms(t, out)
+
+	t.Logf("degraded screenshot written to %s (%d bytes)", out, len(png))
 }

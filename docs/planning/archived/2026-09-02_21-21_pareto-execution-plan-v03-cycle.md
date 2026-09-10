@@ -349,13 +349,13 @@ All 32 medium tasks above are annotated inline with their closing commit or
 disposition. The 166 fine tasks in Step 3 were consumed by their parent
 M-tasks (each M-task's fine breakdown executed as part of it) and are not
 individually annotated; cycle completion was verified in
-`docs/status/2026-09-03_v03x-cycle-execution-complete.md`.
+`docs/status/archived/2026-09-03_v03x-cycle-execution-complete.md`.
 
 Residuals that outlived the plan (tracked, not lost):
 
 - M22 visual transition markers — ROADMAP raw idea (data shipped, SVG markers not drawn)
 - M27 security-headers audit — ROADMAP raw idea (OG/description shipped)
-- M30 chromedp `[::1]` launcher and templ-components theme-script filings — open; templ-components#6 (StatCard `<dl>`) filed with verified diagnosis (`docs/planning/2026-09-03_issue-drafts.md`)
+- M30 chromedp `[::1]` launcher and templ-components theme-script filings — open; templ-components#6 (StatCard `<dl>`) filed with verified diagnosis (`docs/planning/archived/2026-09-03_issue-drafts.md`)
 - M6 promtool devShell package — impossible in nixpkgs (prometheus 3.x ships no promtool); conformance anchored on the official parser
 
 This plan is fully harvested: open work lives in `TODO_LIST.md`, long-term

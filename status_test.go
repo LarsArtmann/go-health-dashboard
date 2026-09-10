@@ -1,7 +1,9 @@
 package dashboard
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/display"
@@ -186,7 +188,7 @@ func TestBuildViewModel(t *testing.T) {
 		},
 	}
 
-	vm := buildViewModel(resp, "My Service", "/health/sse")
+	vm := buildViewModel(resp, "My Service", "/health/sse", GroupBySeverity)
 
 	if vm.Title != "My Service" {
 		t.Errorf("title: want 'My Service', got %q", vm.Title)
@@ -225,7 +227,7 @@ func TestBuildViewModel_ShuttingDown(t *testing.T) {
 		ShuttingDown: true,
 	}
 
-	vm := buildViewModel(resp, "Test", "/health/sse")
+	vm := buildViewModel(resp, "Test", "/health/sse", GroupBySeverity)
 
 	if vm.FeedbackType != feedback.FeedbackWarning {
 		t.Errorf("shutdown feedback: want warning, got %s", vm.FeedbackType)
@@ -292,5 +294,248 @@ func TestFingerprintChecks_NoDelimiterCollision(t *testing.T) {
 
 	if fingerprintChecks(aliased) == fingerprintChecks(separate) {
 		t.Error("fingerprint collision: delimiter-bearing name aliases a different field split")
+	}
+}
+
+// healthyChecks builds an n-entry all-pass checks map.
+func healthyChecks(n int) map[string]health.Check {
+	checks := make(map[string]health.Check, n)
+	for i := range n {
+		checks[fmt.Sprintf("svc-%02d", i)] = health.Check{Status: health.StatusPass}
+	}
+
+	return checks
+}
+
+func TestApplyCollapsePolicy_ThresholdBoundary(t *testing.T) {
+	t.Parallel()
+
+	const threshold = 8
+
+	tests := []struct {
+		name          string
+		healthyRows   int
+		wantCollapsed bool
+	}{
+		{"below threshold", 7, false},
+		{"at threshold", 8, true},
+		{"above threshold", 9, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			vm := buildViewModel(health.Response{
+				Status: health.StatusPass,
+				Checks: healthyChecks(tt.healthyRows),
+			}, "Test", "/health/sse", GroupBySeverity)
+
+			applyCollapsePolicy(&vm, threshold)
+
+			if vm.HealthyCount != tt.healthyRows {
+				t.Errorf("HealthyCount: want %d, got %d", tt.healthyRows, vm.HealthyCount)
+			}
+
+			if vm.HealthyCollapsed != tt.wantCollapsed {
+				t.Errorf("HealthyCollapsed with %d healthy rows (threshold %d): want %v, got %v",
+					tt.healthyRows, threshold, tt.wantCollapsed, vm.HealthyCollapsed)
+			}
+		})
+	}
+}
+
+func TestApplyCollapsePolicy_NoHealthyGroup(t *testing.T) {
+	t.Parallel()
+
+	vm := buildViewModel(health.Response{
+		Status: health.StatusFail,
+		Checks: map[string]health.Check{
+			"db": {Status: health.StatusFail, Error: "down"},
+		},
+	}, "Test", "/health/sse", GroupBySeverity)
+
+	applyCollapsePolicy(&vm, 8)
+
+	if vm.HealthyCount != 0 {
+		t.Errorf("HealthyCount with no healthy group: want 0, got %d", vm.HealthyCount)
+	}
+
+	if vm.HealthyCollapsed {
+		t.Error("HealthyCollapsed must be false when no healthy group exists")
+	}
+}
+
+func TestApplyCollapsePolicy_ZeroThresholdNeverCollapses(t *testing.T) {
+	t.Parallel()
+
+	vm := buildViewModel(health.Response{
+		Status: health.StatusPass,
+		Checks: healthyChecks(50),
+	}, "Test", "/health/sse", GroupBySeverity)
+
+	applyCollapsePolicy(&vm, 0)
+
+	if vm.HealthyCollapsed {
+		t.Error("HealthyCollapsed must be false with threshold 0")
+	}
+
+	if vm.HealthyCount != 50 {
+		t.Errorf("HealthyCount: want 50, got %d", vm.HealthyCount)
+	}
+}
+
+func TestHealthyGroupSummary(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		group checkGroup
+		want  string
+	}{
+		{
+			name: "all pass",
+			group: checkGroup{
+				Title: groupTitleHealthy,
+				Rows: []checkRow{
+					{Name: "db", Status: health.StatusPass},
+					{Name: "cache", Status: health.StatusPass},
+				},
+			},
+			want: "Healthy Services · 2 · all pass",
+		},
+		{
+			name: "unknown status suppresses all-pass claim",
+			group: checkGroup{
+				Title: groupTitleHealthy,
+				Rows: []checkRow{
+					{Name: "db", Status: health.StatusPass},
+					{Name: "odd", Status: health.Status("unknown")},
+				},
+			},
+			want: "Healthy Services · 2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := healthyGroupSummary(tt.group); got != tt.want {
+				t.Errorf("healthyGroupSummary: want %q, got %q", tt.want, got)
+			}
+		})
+	}
+}
+
+func TestShortDisplayName(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{"empty", "", ""},
+		{"single word", "database", "database"},
+		{"already short", "database.Service", "database.Service"},
+		{"stdlib", "fmt.Stringer", "fmt.Stringer"},
+		{
+			"cv handler",
+			"*github.com/LarsArtmann/CV/internal/features/healthdash/handlers.Handlers",
+			"handlers.Handlers",
+		},
+		{"go-health probe", "github.com/larsartmann/go-health.Probe", "go-health.Probe"},
+		{
+			"aggregate",
+			"github.com/larsartmann/go-health/aggregate.Aggregate",
+			"aggregate.Aggregate",
+		},
+		{"stdlib net/http", "net/http.Client", "http.Client"},
+		{"versioned module", "samber/do/v2.injector", "v2.injector"},
+		{"aggregate key unchanged", "cv/database", "cv/database"},
+		{"source check unchanged", "source/check", "source/check"},
+		// Decision (2026-09-10): generic type parameters pass through —
+		// stripping "[T]" would lie about the type, and inventing a
+		// prettier form is not worth the fidelity loss. Real-world shape:
+		// a service registered as a generic type.
+		{"generic type param", "*github.com/x/repo/store.Store[string]", "store.Store[string]"},
+		{"generic stdlib", "sync.Map[string, int]", "sync.Map[string, int]"},
+		{"bare dot", ".", "."},
+		{"leading dot", ".weird", ".weird"},
+		{"trailing dot", "pkg.", "pkg."},
+		{"public mode masked name", "check-12", "check-12"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := shortDisplayName(tt.raw); got != tt.want {
+				t.Errorf("shortDisplayName(%q): want %q, got %q", tt.raw, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestGroupChecks_DerivesShortDisplayName(t *testing.T) {
+	t.Parallel()
+
+	groups := groupChecks(map[string]health.Check{
+		"*github.com/x/y/handlers.Handlers": {Status: health.StatusPass},
+		"database":                          {Status: health.StatusFail, Error: "down"},
+	})
+
+	var long, plain *checkRow
+
+	for gi := range groups {
+		for ri := range groups[gi].Rows {
+			row := &groups[gi].Rows[ri]
+
+			switch row.Name {
+			case "*github.com/x/y/handlers.Handlers":
+				long = row
+			case "database":
+				plain = row
+			}
+		}
+	}
+
+	if long == nil || long.Display != "handlers.Handlers" {
+		t.Errorf("long type name should shorten to handlers.Handlers, got %+v", long)
+	}
+
+	if plain == nil || plain.Display != "database" {
+		t.Errorf("short name should pass through unchanged, got %+v", plain)
+	}
+}
+
+func TestFormatAge(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name string
+		at   time.Time
+		want string
+	}{
+		{"just now", now.Add(-5 * time.Second), "just now"},
+		{"future clamps", now.Add(5 * time.Minute), "just now"},
+		{"seconds", now.Add(-42 * time.Second), "just now"},
+		{"exactly a minute", now.Add(-61 * time.Second), "1m ago"},
+		{"minutes", now.Add(-3 * time.Minute), "3m ago"},
+		{"hours", now.Add(-2 * time.Hour), "2h ago"},
+		{"long", now.Add(-26 * time.Hour), "26h ago"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := formatAge(tt.at, now); got != tt.want {
+				t.Errorf("formatAge: want %q, got %q", tt.want, got)
+			}
+		})
 	}
 }

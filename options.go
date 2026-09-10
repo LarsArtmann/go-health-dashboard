@@ -15,6 +15,10 @@ const (
 	// defaultHeartbeatInterval is the SSE keepalive interval when
 	// WithHeartbeatInterval is not set.
 	defaultHeartbeatInterval = 15 * time.Second
+	// defaultHealthyGroupCollapseThreshold collapses the healthy group once
+	// it reaches this many rows. Chosen so small services stay scannable
+	// while large aggregates collapse instead of burying the page.
+	defaultHealthyGroupCollapseThreshold = 8
 )
 
 // Config holds construction-only configuration for a Dashboard.
@@ -34,7 +38,21 @@ type Config struct {
 	Middleware        func(http.Handler) http.Handler
 	MetricsEnabled    bool
 	TrendSamples      int
+	Introspection     bool
 	HideStatCards     bool
+
+	// Grouping selects the axis that partitions checks into dashboard
+	// cards: GroupBySeverity (default) or GroupBySource for aggregate
+	// pages (per-source cards, worst-of status per card).
+	Grouping GroupMode
+
+	// NoDatastarRuntime marks the page as served WITHOUT the Datastar SDK
+	// runtime — e.g. by a custom patch client speaking the SSE wire
+	// protocol. SDK-expression UI (the client-side filter box) and
+	// SDK-event UI (the connection pill) are omitted, because both would
+	// render dead without the expression engine and fetch lifecycle
+	// events.
+	NoDatastarRuntime bool
 
 	// ShutdownDrain bounds how long Shutdown waits for connected SSE
 	// clients to disconnect before closing the broadcaster. Zero closes
@@ -55,6 +73,38 @@ type Config struct {
 	// and the metrics endpoint. Health JSON and probe endpoints are
 	// unaffected.
 	PublicMode bool
+
+	// HealthyGroupCollapseThreshold collapses the healthy group behind a
+	// native <details> element when at least this many checks are healthy,
+	// so a large all-green table never buries failures rendered above it.
+	// Zero keeps the group expanded always. Defaults to
+	// defaultHealthyGroupCollapseThreshold; set via WithHealthyGroupCollapse
+	// or disabled via WithHealthyGroupExpanded.
+	HealthyGroupCollapseThreshold int
+
+	// PersistCollapse stores the healthy group's open/closed state in the
+	// browser's localStorage and re-applies it after every SSE patch. Off
+	// by default: patches re-derive the collapse state server-side, which
+	// keeps every client consistent. Enable via WithPersistCollapse.
+	PersistCollapse bool
+
+	// BasePath is stored by WithBasePath and applied to Routes once after
+	// all options run (see resolveRoutes). Empty means no prefix.
+	BasePath string
+
+	// EmbeddedDatastarSDK registers Routes.DatastarJS serving the pinned
+	// SDK bundle from the go-datastar/static embed, and points the HTML's
+	// script src at it. Set via WithEmbeddedDatastarSDK.
+	EmbeddedDatastarSDK bool
+
+	// PushOnChangeTTL re-asserts the current state every n-th push tick in
+	// PushOnChange mode, even when nothing changed, so a client that
+	// missed an event self-heals. Zero (default) disables re-assertion.
+	PushOnChangeTTL int
+
+	// TimelineMaxAge drops timeline entries older than this duration.
+	// Zero (default) keeps every recorded transition.
+	TimelineMaxAge time.Duration
 
 	// RateLimitRequests and RateLimitWindow configure a shared token
 	// bucket across all dashboard-owned routes. Zero disables rate
@@ -117,6 +167,50 @@ func WithTrend(samples int) Option {
 			c.TrendSamples = samples
 		}
 	}
+}
+
+// WithHealthyGroupCollapse collapses the healthy group behind a native
+// <details> element once at least threshold checks are healthy. The summary
+// line shows the count so the group stays glanceable; users can expand it
+// manually. A threshold of zero (or less) keeps the group expanded always.
+func WithHealthyGroupCollapse(threshold int) Option {
+	return func(c *Config) {
+		if threshold < 0 {
+			threshold = 0
+		}
+
+		c.HealthyGroupCollapseThreshold = threshold
+	}
+}
+
+// WithPersistCollapse stores the healthy group's open/closed state in
+// localStorage and re-applies it after every SSE patch, so an operator's
+// choice survives reconnects and restarts. Off by default: without it, an
+// SSE patch re-applies the server-derived default collapse state.
+func WithPersistCollapse() Option {
+	return func(c *Config) { c.PersistCollapse = true }
+}
+
+// WithHealthyGroupExpanded keeps the healthy group expanded regardless of
+// size, for dashboards where the full healthy table is the point.
+func WithHealthyGroupExpanded() Option {
+	return WithHealthyGroupCollapse(0)
+}
+
+// WithNoDatastarRuntime omits the SDK-dependent UI (client-side filter box
+// and connection pill) for pages served without the Datastar SDK runtime —
+// e.g. behind a custom CSP-safe patch client. Server-rendered behavior
+// (collapse, names, badges, jump link, SSE patches) is unaffected.
+func WithNoDatastarRuntime() Option {
+	return func(c *Config) { c.NoDatastarRuntime = true }
+}
+
+// WithGrouping selects how checks are partitioned into dashboard cards:
+// GroupBySeverity (default) or GroupBySource — one card per aggregate
+// source/check prefix, worst-of status per card. Unknown modes fall back
+// to severity grouping at render time.
+func WithGrouping(mode GroupMode) Option {
+	return func(c *Config) { c.Grouping = mode }
 }
 
 // WithHideStatCards hides the version/uptime/latency stat card grid.
@@ -304,42 +398,107 @@ func WithRetryInterval(d time.Duration) Option {
 // Use this when mounting the dashboard under a non-root path — for example
 // WithBasePath("/admin") produces "/admin/health", "/admin/health/sse", etc.
 //
-// The prefix is applied to whatever routes are currently configured. When
-// combined with WithRoutes, call WithBasePath last so it prefixes the custom
-// routes; calling WithRoutes after WithBasePath replaces the prefixed set.
+// The prefix is stored and applied once after all options run, so the order
+// of WithBasePath relative to WithRoutes does not matter (the historical
+// ordering footgun is gone).
 func WithBasePath(prefix string) Option {
 	return func(cfg *Config) {
-		prefix = strings.TrimSuffix(prefix, "/")
-		if prefix == "" {
-			return
-		}
+		cfg.BasePath = strings.TrimSuffix(prefix, "/")
+	}
+}
 
-		r := cfg.Routes
-		out := Routes{
-			Dashboard: prefix + r.Dashboard,
-			SSE:       prefix + r.SSE,
-			Favicon:   prefix + r.Favicon,
-			Liveness:  prefix + r.Liveness,
-			Readiness: prefix + r.Readiness,
-			Startup:   prefix + r.Startup,
-		}
+// resolveRoutes applies cfg.BasePath to cfg.Routes. Empty routes stay
+// empty ("disabled") and never become the bare prefix.
+func (c *Config) resolveRoutes() {
+	if c.BasePath == "" {
+		return
+	}
 
-		// An empty Metrics route is meaningful ("disabled") — don't turn it
-		// into the bare prefix.
-		if r.Metrics != "" {
-			out.Metrics = prefix + r.Metrics
-		}
+	prefix := c.BasePath
+	r := c.Routes
 
-		// Same for Trend/Export: empty means disabled, and they only
-		// register when WithTrend is configured anyway.
-		if r.Trend != "" {
-			out.Trend = prefix + r.Trend
-		}
+	out := Routes{
+		Dashboard:  prefix + r.Dashboard,
+		SSE:        prefix + r.SSE,
+		Favicon:    prefix + r.Favicon,
+		Liveness:   prefix + r.Liveness,
+		Readiness:  prefix + r.Readiness,
+		Startup:    prefix + r.Startup,
+		Introspect: prefix + r.Introspect,
+	}
 
-		if r.Export != "" {
-			out.Export = prefix + r.Export
-		}
+	// Empty Metrics route is meaningful ("disabled") — don't turn it into
+	// the bare prefix. Same for Trend/Export/Introspect.
+	if r.Metrics != "" {
+		out.Metrics = prefix + r.Metrics
+	}
 
-		cfg.Routes = out
+	if r.Trend != "" {
+		out.Trend = prefix + r.Trend
+	}
+
+	if r.Export != "" {
+		out.Export = prefix + r.Export
+	}
+
+	if r.Introspect != "" {
+		out.Introspect = prefix + r.Introspect
+	}
+
+	if r.DatastarJS != "" {
+		out.DatastarJS = prefix + r.DatastarJS
+	}
+
+	c.Routes = out
+}
+
+// WithIntrospection enables the introspection endpoint served at
+// Routes.Introspect (default /health/introspect) by RegisterRoutes. The
+// endpoint returns the dashboard's resolved configuration — routes,
+// limits, modes, versions — as JSON. It exposes route paths and feature
+// flags but never check results or check names; gate it with
+// WithMiddleware if that disclosure matters in your environment.
+func WithIntrospection() Option {
+	return func(c *Config) {
+		c.Introspection = true
+	}
+}
+
+// WithEmbeddedDatastarSDK serves the pinned Datastar SDK from the
+// go-datastar/static embed at Routes.DatastarJS (default
+// /health/datastar.js) and points the dashboard's script tag at it. This
+// removes both the CDN dependency and the CSP exception it would need: the
+// script becomes same-origin, so `script-src 'self'` (plus the
+// 'unsafe-eval' the SDK itself requires for expression compilation)
+// is sufficient. The served bytes are exactly the audited bundle from the
+// pinned go-datastar version.
+func WithEmbeddedDatastarSDK() Option {
+	return func(c *Config) {
+		c.EmbeddedDatastarSDK = true
+	}
+}
+
+// WithPushOnChangeTTL re-asserts the current health state every n-th push
+// tick in PushOnChange mode, even when nothing changed. A client that
+// missed an event (proxy timeout, tab throttling) self-heals on the next
+// re-assertion instead of showing stale state until the next real change.
+// Values below 2 are ignored (1 would degenerate to PushAlways). Zero (the
+// default) disables re-assertion.
+func WithPushOnChangeTTL(n int) Option {
+	return func(c *Config) {
+		if n >= 2 {
+			c.PushOnChangeTTL = n
+		}
+	}
+}
+
+// WithTimelineMaxAge hides timeline entries older than d from the timeline
+// card (the trend/export endpoints keep the full history). Zero (the
+// default) keeps every recorded transition.
+func WithTimelineMaxAge(d time.Duration) Option {
+	return func(c *Config) {
+		if d > 0 {
+			c.TimelineMaxAge = d
+		}
 	}
 }

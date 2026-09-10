@@ -81,6 +81,10 @@ dash := dashboard.Register(injector, probe, dashboard.WithTitle("My Service"))
 `Register` stores the Dashboard in the injector, so `do.Shutdown(injector)`
 and `do.HealthCheck[*Dashboard](injector)` cascade to it automatically.
 
+No samber/do in your app? go-health's `NewWithHealthCheck(fn, opts...)`
+builds a probe from a plain function — use it with `dashboard.New` +
+`Start`/`Shutdown` as shown above; only `Register` needs an injector.
+
 ## Routes
 
 | Path              | Method | Content-Type                  | What It Does                                                                                                              |
@@ -111,6 +115,9 @@ dash := dashboard.New(probe,
     dashboard.WithRetryInterval(2*time.Second),                // SSE reconnection delay (browser retry field)
     dashboard.WithTrend(60),                                   // Health trend sparkline (samples retained)
     dashboard.WithHideStatCards(),                             // Hide version/uptime/latency cards
+    dashboard.WithHealthyGroupCollapse(8),                     // Collapse healthy group at 8+ rows (default 8)
+    // dashboard.WithHealthyGroupExpanded(),                     // Never collapse the healthy group
+    dashboard.WithPersistCollapse(),                           // Remember collapse state in localStorage (opt-in)
     dashboard.WithMetrics(true),                               // Prometheus metrics at /health/metrics
     dashboard.WithMiddleware(myAuthMiddleware),                // Protect dashboard routes (see below)
     dashboard.WithShutdownDrain(5*time.Second),                // Wait for SSE clients on Shutdown
@@ -133,6 +140,31 @@ dash := dashboard.New(probe,
 dashboard-owned routes (dashboard HTML, SSE, favicon, metrics, trend,
 export) — not one bucket per route. Kubernetes probe endpoints are never
 limited.
+
+## Reading the Dashboard
+
+The page is organized for triage: **failures first, green last**.
+
+- **Status banner** — overall state at a glance: "All Systems Operational",
+  "Degraded — Non-Critical Issues", or "Unhealthy — Critical Failures". When
+  anything is failing, a **Jump to problems** link scrolls to the first
+  non-healthy group.
+- **Service tables** — grouped by severity (critical failures, non-critical
+  issues, healthy). Card titles carry row-count badges. Long check names are
+  shortened (`*github.com/org/repo/internal/.../handlers.Handlers` reads as
+  `handlers.Handlers`); the full key is in the table cell and on hover.
+- **Healthy group** — collapsed by default once 8+ services pass
+  (`WithHealthyGroupCollapse`); the summary line states the count. An SSE
+  patch re-applies the default state; `WithPersistCollapse` lets each
+  browser keep its choice.
+- **Filter** (self-hosted SDK setups) — type to narrow rows by short or raw
+  name, case-insensitive.
+- **Connection pill** — live / reconnecting / offline, driven by the SSE
+  stream's real lifecycle. The stream self-heals across server restarts.
+- **Header links** — Export CSV/JSON, trend history, and Prometheus metrics,
+  shown only when those endpoints are configured.
+- **Updated stamp** — absolute UTC time plus a coarse age; the stamp is the
+  time the health state was actually observed.
 
 ## Protecting the Dashboard
 
@@ -246,6 +278,23 @@ The dashboard uses [Datastar](https://data-star.dev) for real-time DOM updates:
 
 By default, `PushOnChange` mode only sends updates when the health status actually changes — minimizing SSE traffic for NOC monitors that stay connected for long periods.
 
+The `Updated <time>` stamp in the page header shows the **observation time of
+the last trend sample** (not the render time) when `WithTrend` is enabled, so
+the page never looks fresher than the underlying data.
+
+`dash.HealthCheck(ctx)` powers samber/do health cascades and returns a small
+sentinel family you can branch on:
+
+```go
+if err := dash.HealthCheck(ctx); err != nil {
+    switch {
+    case errors.Is(err, dashboard.ErrPusherNotStarted): // Start never called
+    case errors.Is(err, dashboard.ErrPusherShutDown):   // Shutdown called
+    case errors.Is(err, dashboard.ErrPusherStale):      // push loop wedged
+    }
+}
+```
+
 ## Build
 
 **Requires `GOEXPERIMENT=jsonv2`** (the go-sse dependency uses `encoding/json/v2`).
@@ -276,14 +325,16 @@ GOEXPERIMENT=jsonv2 DEMO_TREND=1 DEMO_METRICS=1 DEMO_AUTH=my-token DEMO_RATELIMI
 
 All toggles are optional — plain `go run ./example` works too.
 
-| Variable             | Effect                                                         |
-| -------------------- | -------------------------------------------------------------- |
-| `DEMO_TREND=1`       | Health trend sparkline (`WithTrend`)                           |
-| `DEMO_METRICS=1`     | Prometheus endpoint at `/health/metrics` (`WithMetrics`)       |
-| `DEMO_AUTH=<token>`  | Bearer-token middleware on dashboard routes (`WithMiddleware`) |
-| `DEMO_RATELIMIT=n/w` | Token-bucket rate limit, e.g. `30/1m` (`WithRateLimit`)        |
-| `DEMO_DRAIN=5s`      | Graceful SSE drain window on shutdown (`WithShutdownDrain`)    |
-| `PORT`               | Listen port (default 8080)                                     |
+| Variable                 | Effect                                                         |
+| ------------------------ | -------------------------------------------------------------- |
+| `DEMO_TREND=1`           | Health trend sparkline (`WithTrend`)                           |
+| `DEMO_METRICS=1`         | Prometheus endpoint at `/health/metrics` (`WithMetrics`)       |
+| `DEMO_AUTH=<token>`      | Bearer-token middleware on dashboard routes (`WithMiddleware`) |
+| `DEMO_RATELIMIT=n/w`     | Token-bucket rate limit, e.g. `30/1m` (`WithRateLimit`)        |
+| `DEMO_DRAIN=5s`          | Graceful SSE drain window on shutdown (`WithShutdownDrain`)    |
+| `DEMO_PUBLIC=1`          | Public mode — anonymized check names (`WithPublicMode`)        |
+| `DEMO_BASE_PATH=/status` | Mount the dashboard under `/status` (`WithBasePath`)           |
+| `PORT`                   | Listen port (default 8080)                                     |
 
 The example includes mock services: one always healthy, one flapping (alternates
 pass/fail every 15s), and one always failing. Watch the dashboard update live.
@@ -305,6 +356,15 @@ pass/fail every 15s), and one always failing. Watch the dashboard update live.
 | [go-datastar](https://github.com/larsartmann/go-datastar)           | Datastar SSE patch protocol (ElementsFromTempl)  |
 | [go-sse](https://github.com/larsartmann/go-sse)                     | SSE transport (Broadcaster, Stream)              |
 
+Tested version matrix (`go.mod` is the live source of truth):
+
+| Dependency       | Version | Note                                                |
+| ---------------- | ------- | --------------------------------------------------- |
+| go-health        | v0.1.3  | `aggregate` package needs v0.1.0+                   |
+| templ-components | v1.16.0 | pinned — CI guard + browser-suite re-audit on bumps |
+| go-datastar      | v0.5.0  | audited SDK bundle; needs CSP `unsafe-eval`         |
+| go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                      |
+
 ## Dark Mode
 
 The dashboard respects the user's OS dark-mode preference and includes a
@@ -314,6 +374,17 @@ toggle button for manual switching. The preference is persisted in
 ![Health dashboard in dark mode showing the same layout with a dark theme](docs/screenshot-dark.png)
 
 Dark screenshot captured by `screenshot_dark_test.go` (`SCREENSHOT_OUTPUT_DARK=docs/screenshot-dark.png`).
+
+## Failure State
+
+With a critical service down, the banner leads with the failure, a
+jump-to-problems link skips past the healthy bulk, and the Critical
+Failures card sorts to the top:
+
+![Health dashboard with a critical service failing: red status banner, jump-to-problems link, and a Critical Failures card](docs/screenshot-degraded.png)
+
+Degraded screenshot captured by `screenshot_test.go`
+(`SCREENSHOT_OUTPUT_DEGRADED=docs/screenshot-degraded.png`).
 
 ## Content-Security-Policy
 
