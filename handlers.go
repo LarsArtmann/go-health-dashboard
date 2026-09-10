@@ -135,7 +135,7 @@ func (d *Dashboard) SubscriberCount() int64 {
 // otherwise the fixed construction-time Nonce is used.
 func (d *Dashboard) buildData(r *http.Request) viewModel {
 	resp := d.currentResponse()
-	vm := buildViewModel(resp, d.cfg.Title, d.cfg.Routes.SSE)
+	vm := buildViewModel(resp, d.cfg.Title, d.cfg.Routes.SSE, d.cfg.Grouping)
 	applyCollapsePolicy(&vm, d.cfg.HealthyGroupCollapseThreshold)
 
 	nonce := d.cfg.Nonce
@@ -153,6 +153,7 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 	vm.ShowStatCards = !d.cfg.HideStatCards
 	vm.Description = d.cfg.Description
 	vm.PersistCollapse = d.cfg.PersistCollapse
+	vm.HasDatastarRuntime = !d.cfg.NoDatastarRuntime
 	vm.ExportURL = d.exportURL()
 	vm.TrendURL = d.trendURL()
 	vm.MetricsURL = d.metricsURL()

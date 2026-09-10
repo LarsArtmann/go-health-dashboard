@@ -18,6 +18,10 @@
 //	DEMO_BASE_PATH=/status       mount the dashboard under a sub-path (WithBasePath)
 //	DEMO_AGGREGATE=1             serve a two-probe aggregate instead of one probe (go-health aggregate)
 //	DEMO_WEBHOOK=<url>           POST transitions to this receiver (WithWebhook)
+//	DEMO_COLLAPSE=<n>            healthy-group collapse threshold (0 = always expanded)
+//	DEMO_PERSIST=1               persist the healthy group's open/closed state (WithPersistCollapse)
+//	DEMO_EMBEDDED_SDK=1          serve the SDK same-origin and enable the client-side filter
+//	DEMO_GROUPING=source         group cards by aggregate source instead of severity (WithGrouping)
 //	PORT=8080                    listen address
 package main
 
@@ -243,6 +247,52 @@ func buildOptions() []dashboard.Option {
 
 		opts = append(opts, dashboard.WithBasePath(basePath))
 		log.Println("base path: dashboard routes mounted under the DEMO_BASE_PATH prefix")
+	}
+
+	opts = appendUIGrowthOptions(opts)
+
+	return opts
+}
+
+// appendUIGrowthOptions appends the 0.7.x UI toggles: collapse threshold,
+// collapse persistence, embedded SDK (client-side filter), and grouping
+// mode. Env values are validated before any reaches a log line, following
+// the log-injection defense the other DEMO_ toggles use.
+func appendUIGrowthOptions(opts []dashboard.Option) []dashboard.Option {
+	if raw := os.Getenv("DEMO_COLLAPSE"); raw != "" {
+		threshold, err := strconv.Atoi(raw)
+		if err != nil || threshold < 0 {
+			// The raw env value never reaches the log; only the parsed
+			// (necessarily numeric) result does.
+			log.Fatalf("DEMO_COLLAPSE: want a non-negative integer")
+		}
+
+		opts = append(opts, dashboard.WithHealthyGroupCollapse(threshold))
+		log.Printf("collapse: healthy group collapses at %d rows", threshold)
+	}
+
+	if os.Getenv("DEMO_PERSIST") != "" {
+		opts = append(opts, dashboard.WithPersistCollapse())
+		log.Println("persist: collapse state survives reloads and patches (DEMO_PERSIST set)")
+	}
+
+	if os.Getenv("DEMO_EMBEDDED_SDK") != "" {
+		opts = append(opts, dashboard.WithEmbeddedDatastarSDK())
+		log.Println(
+			"embedded SDK: same-origin datastar.js and client-side filter (DEMO_EMBEDDED_SDK set)",
+		)
+	}
+
+	switch dashboard.GroupMode(os.Getenv("DEMO_GROUPING")) {
+	case dashboard.GroupBySource:
+		opts = append(opts, dashboard.WithGrouping(dashboard.GroupBySource))
+		log.Println("grouping: one card per aggregate source (DEMO_GROUPING=source)")
+	case dashboard.GroupBySeverity:
+		// The default; accepted explicitly for demo symmetry.
+	case "":
+		// Unset; the default applies.
+	default:
+		log.Fatalf("DEMO_GROUPING: want source or severity")
 	}
 
 	return opts

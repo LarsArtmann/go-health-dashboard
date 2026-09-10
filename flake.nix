@@ -117,7 +117,9 @@
             '';
 
             coverage = mkApp "coverage" [ goPkg ] ''
-              GOEXPERIMENT=jsonv2 go test ./... -coverprofile=coverage.out -covermode=atomic "$@"
+              # Scoped to the library package like CI's coverage floor; the
+              # example carries no tests and would dilute the percentage.
+              GOEXPERIMENT=jsonv2 go test . -coverprofile=coverage.out -covermode=atomic "$@"
               go tool cover -func=coverage.out
             '';
 

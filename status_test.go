@@ -188,7 +188,7 @@ func TestBuildViewModel(t *testing.T) {
 		},
 	}
 
-	vm := buildViewModel(resp, "My Service", "/health/sse")
+	vm := buildViewModel(resp, "My Service", "/health/sse", GroupBySeverity)
 
 	if vm.Title != "My Service" {
 		t.Errorf("title: want 'My Service', got %q", vm.Title)
@@ -227,7 +227,7 @@ func TestBuildViewModel_ShuttingDown(t *testing.T) {
 		ShuttingDown: true,
 	}
 
-	vm := buildViewModel(resp, "Test", "/health/sse")
+	vm := buildViewModel(resp, "Test", "/health/sse", GroupBySeverity)
 
 	if vm.FeedbackType != feedback.FeedbackWarning {
 		t.Errorf("shutdown feedback: want warning, got %s", vm.FeedbackType)
@@ -329,7 +329,7 @@ func TestApplyCollapsePolicy_ThresholdBoundary(t *testing.T) {
 			vm := buildViewModel(health.Response{
 				Status: health.StatusPass,
 				Checks: healthyChecks(tt.healthyRows),
-			}, "Test", "/health/sse")
+			}, "Test", "/health/sse", GroupBySeverity)
 
 			applyCollapsePolicy(&vm, threshold)
 
@@ -353,7 +353,7 @@ func TestApplyCollapsePolicy_NoHealthyGroup(t *testing.T) {
 		Checks: map[string]health.Check{
 			"db": {Status: health.StatusFail, Error: "down"},
 		},
-	}, "Test", "/health/sse")
+	}, "Test", "/health/sse", GroupBySeverity)
 
 	applyCollapsePolicy(&vm, 8)
 
@@ -372,7 +372,7 @@ func TestApplyCollapsePolicy_ZeroThresholdNeverCollapses(t *testing.T) {
 	vm := buildViewModel(health.Response{
 		Status: health.StatusPass,
 		Checks: healthyChecks(50),
-	}, "Test", "/health/sse")
+	}, "Test", "/health/sse", GroupBySeverity)
 
 	applyCollapsePolicy(&vm, 0)
 
@@ -455,6 +455,12 @@ func TestShortDisplayName(t *testing.T) {
 		{"versioned module", "samber/do/v2.injector", "v2.injector"},
 		{"aggregate key unchanged", "cv/database", "cv/database"},
 		{"source check unchanged", "source/check", "source/check"},
+		// Decision (2026-09-10): generic type parameters pass through —
+		// stripping "[T]" would lie about the type, and inventing a
+		// prettier form is not worth the fidelity loss. Real-world shape:
+		// a service registered as a generic type.
+		{"generic type param", "*github.com/x/repo/store.Store[string]", "store.Store[string]"},
+		{"generic stdlib", "sync.Map[string, int]", "sync.Map[string, int]"},
 		{"bare dot", ".", "."},
 		{"leading dot", ".weird", ".weird"},
 		{"trailing dot", "pkg.", "pkg."},

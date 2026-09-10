@@ -358,12 +358,12 @@ pass/fail every 15s), and one always failing. Watch the dashboard update live.
 
 Tested version matrix (`go.mod` is the live source of truth):
 
-| Dependency       | Version | Note                                                 |
-| ---------------- | ------- | ---------------------------------------------------- |
-| go-health        | v0.1.3  | `aggregate` package needs v0.1.0+                    |
-| templ-components | v1.11.0 | pinned — v1.12.0 busy-script nonce bug (upstream #7) |
-| go-datastar      | v0.4.0  | audited SDK bundle; needs CSP `unsafe-eval`          |
-| go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                       |
+| Dependency       | Version | Note                                                |
+| ---------------- | ------- | --------------------------------------------------- |
+| go-health        | v0.1.3  | `aggregate` package needs v0.1.0+                   |
+| templ-components | v1.16.0 | pinned — CI guard + browser-suite re-audit on bumps |
+| go-datastar      | v0.5.0  | audited SDK bundle; needs CSP `unsafe-eval`         |
+| go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                      |
 
 ## Dark Mode
 
@@ -374,6 +374,17 @@ toggle button for manual switching. The preference is persisted in
 ![Health dashboard in dark mode showing the same layout with a dark theme](docs/screenshot-dark.png)
 
 Dark screenshot captured by `screenshot_dark_test.go` (`SCREENSHOT_OUTPUT_DARK=docs/screenshot-dark.png`).
+
+## Failure State
+
+With a critical service down, the banner leads with the failure, a
+jump-to-problems link skips past the healthy bulk, and the Critical
+Failures card sorts to the top:
+
+![Health dashboard with a critical service failing: red status banner, jump-to-problems link, and a Critical Failures card](docs/screenshot-degraded.png)
+
+Degraded screenshot captured by `screenshot_test.go`
+(`SCREENSHOT_OUTPUT_DEGRADED=docs/screenshot-degraded.png`).
 
 ## Content-Security-Policy
 

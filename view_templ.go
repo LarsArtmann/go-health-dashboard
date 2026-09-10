@@ -28,8 +28,11 @@ const collapseStorageKeyName = "health-healthy-group-collapsed"
 
 // storageKey returns the CollapsibleSection persistence key when collapse
 // persistence is enabled, otherwise empty (no data-collapsible attribute).
+// Source-grouped pages never persist: they can render several pass-status
+// sections, and one localStorage key shared across them would couple their
+// open/closed states.
 func storageKey(data viewModel) string {
-	if data.PersistCollapse {
+	if data.PersistCollapse && data.Grouping != GroupBySource {
 		return collapseStorageKeyName
 	}
 
@@ -91,7 +94,7 @@ func View(data viewModel) templ.Component {
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(data.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 48, Col: 19}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 51, Col: 19}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -101,9 +104,11 @@ func View(data viewModel) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = connectionPill(data.DatastarNonce).Render(ctx, templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
+				if data.HasDatastarRuntime {
+					templ_7745c5c3_Err = connectionPill(data.DatastarNonce).Render(ctx, templ_7745c5c3_Buffer)
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
 				}
 				templ_7745c5c3_Err = layout.ThemeToggle("Toggle theme", data.DatastarNonce).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
@@ -279,7 +284,7 @@ func dashboardHead(data viewModel) templ.Component {
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 115, Col: 53}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 120, Col: 53}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8)
 			if templ_7745c5c3_Err != nil {
@@ -292,7 +297,7 @@ func dashboardHead(data viewModel) templ.Component {
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 116, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 121, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var9)
 			if templ_7745c5c3_Err != nil {
@@ -305,7 +310,7 @@ func dashboardHead(data viewModel) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 117, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 122, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var10)
 			if templ_7745c5c3_Err != nil {
@@ -342,7 +347,7 @@ func dashboardHead(data viewModel) templ.Component {
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.TailwindNonce)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 133, Col: 37}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 138, Col: 37}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var11)
 				if templ_7745c5c3_Err != nil {
@@ -355,7 +360,7 @@ func dashboardHead(data viewModel) templ.Component {
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.TailwindNonce)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 134, Col: 37}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 139, Col: 37}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
 				if templ_7745c5c3_Err != nil {
@@ -418,7 +423,7 @@ func dashboardContent(data viewModel) templ.Component {
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(data.LastUpdated)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 165, Col: 28}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 170, Col: 28}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -436,7 +441,7 @@ func dashboardContent(data viewModel) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(formatAge(data.LastUpdatedTime, time.Now().UTC()))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 167, Col: 104}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 172, Col: 104}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -464,7 +469,7 @@ func dashboardContent(data viewModel) templ.Component {
 				var templ_7745c5c3_Var16 templ.SafeURL
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinURLErrs(data.ExportURL + "?format=csv")
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 173, Col: 216}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 178, Col: 216}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
@@ -477,7 +482,7 @@ func dashboardContent(data viewModel) templ.Component {
 				var templ_7745c5c3_Var17 templ.SafeURL
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinURLErrs(data.ExportURL)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 174, Col: 200}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 179, Col: 200}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 				if templ_7745c5c3_Err != nil {
@@ -496,7 +501,7 @@ func dashboardContent(data viewModel) templ.Component {
 				var templ_7745c5c3_Var18 templ.SafeURL
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinURLErrs(data.TrendURL)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 177, Col: 199}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 182, Col: 199}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
@@ -515,7 +520,7 @@ func dashboardContent(data viewModel) templ.Component {
 				var templ_7745c5c3_Var19 templ.SafeURL
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(data.MetricsURL)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 180, Col: 201}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 185, Col: 201}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -537,7 +542,7 @@ func dashboardContent(data viewModel) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		if data.DatastarSrc != "" {
+		if data.DatastarSrc != "" && data.HasDatastarRuntime {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<div class=\"mt-6\"><label class=\"sr-only\" for=\"health-filter\">Filter services</label> <input id=\"health-filter\" type=\"search\" autocomplete=\"off\" placeholder=\"Filter services…\" data-bind=\"query\" class=\"block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500\"></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -622,7 +627,7 @@ func dashboardContent(data viewModel) templ.Component {
 					var templ_7745c5c3_Var22 string
 					templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(entry.At)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 229, Col: 87}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 234, Col: 87}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 					if templ_7745c5c3_Err != nil {
@@ -640,7 +645,7 @@ func dashboardContent(data viewModel) templ.Component {
 						var templ_7745c5c3_Var23 string
 						templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(entry.Status)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 231, Col: 83}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 236, Col: 83}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 						if templ_7745c5c3_Err != nil {
@@ -658,7 +663,7 @@ func dashboardContent(data viewModel) templ.Component {
 						var templ_7745c5c3_Var24 string
 						templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(entry.Status)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 233, Col: 83}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 238, Col: 83}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 						if templ_7745c5c3_Err != nil {
@@ -804,15 +809,15 @@ func dashboardContent(data viewModel) templ.Component {
 				}
 			}
 		}
-		if data.DatastarSrc != "" && len(data.Groups) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<p class=\"hidden text-sm text-gray-500 dark:text-gray-400\" data-filter-empty data-class:hidden=\"")
+		if data.DatastarSrc != "" && data.HasDatastarRuntime && len(data.Groups) > 0 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<p class=\"hidden text-sm text-gray-500 dark:text-gray-400\" role=\"status\" data-filter-empty data-class:hidden=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var29 string
 			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.ResolveAttributeValue(filterEmptyExpr(data))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 278, Col: 121}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 287, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var29)
 			if templ_7745c5c3_Err != nil {
@@ -900,7 +905,7 @@ func groupRows(group checkGroup) templ.Component {
 			var templ_7745c5c3_Var32 string
 			templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.ResolveAttributeValue(filterHaystack(row))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 303, Col: 40}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 313, Col: 40}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var32)
 			if templ_7745c5c3_Err != nil {
@@ -913,7 +918,7 @@ func groupRows(group checkGroup) templ.Component {
 			var templ_7745c5c3_Var33 string
 			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.ResolveAttributeValue("$query !== '' && !" + jsStringLiteral(filterHaystack(row)) + ".includes($query.toLowerCase())")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 304, Col: 118}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 314, Col: 118}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var33)
 			if templ_7745c5c3_Err != nil {
@@ -999,7 +1004,7 @@ func groupCountBadge(count int) templ.Component {
 		var templ_7745c5c3_Var37 string
 		templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.ResolveAttributeValue(fmt.Sprintf("%d service%s", count, pluralS(count)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 321, Col: 235}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 331, Col: 235}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var37)
 		if templ_7745c5c3_Err != nil {
@@ -1012,7 +1017,7 @@ func groupCountBadge(count int) templ.Component {
 		var templ_7745c5c3_Var38 string
 		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(count))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 322, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 332, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 		if templ_7745c5c3_Err != nil {
@@ -1064,7 +1069,7 @@ func serviceNameCell(row checkRow) templ.Component {
 		var templ_7745c5c3_Var40 string
 		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.ResolveAttributeValue(row.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 337, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 347, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var40)
 		if templ_7745c5c3_Err != nil {
@@ -1077,7 +1082,7 @@ func serviceNameCell(row checkRow) templ.Component {
 		var templ_7745c5c3_Var41 string
 		templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(row.displayName())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 337, Col: 98}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 347, Col: 98}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 		if templ_7745c5c3_Err != nil {
@@ -1129,7 +1134,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 			var templ_7745c5c3_Var43 string
 			templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(row.Error)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 348, Col: 72}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 358, Col: 72}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 			if templ_7745c5c3_Err != nil {
@@ -1147,7 +1152,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 			var templ_7745c5c3_Var44 string
 			templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(truncateError(row.Error))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 351, Col: 104}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 361, Col: 104}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 			if templ_7745c5c3_Err != nil {
@@ -1160,7 +1165,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 			var templ_7745c5c3_Var45 string
 			templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(row.Error)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 352, Col: 122}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 362, Col: 122}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 			if templ_7745c5c3_Err != nil {
@@ -1179,7 +1184,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 			var templ_7745c5c3_Var46 string
 			templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(row.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 356, Col: 100}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 366, Col: 100}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 			if templ_7745c5c3_Err != nil {
@@ -1238,7 +1243,7 @@ func connectionPill(nonce string) templ.Component {
 			templ_7745c5c3_Var47 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "<span class=\"inline-flex items-center gap-1.5 text-xs font-medium\" aria-live=\"polite\"><span id=\"conn-state-live\" class=\"inline-flex items-center gap-1.5 text-green-600 dark:text-green-400\"><span class=\"h-1.5 w-1.5 rounded-full bg-green-500\"></span> Live</span> <span id=\"conn-state-reconnecting\" hidden class=\"inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400\"><span class=\"h-1.5 w-1.5 rounded-full bg-amber-500\"></span> Reconnecting</span> <span id=\"conn-state-offline\" hidden class=\"inline-flex items-center gap-1.5 text-red-600 dark:text-red-400\"><span class=\"h-1.5 w-1.5 rounded-full bg-red-500\"></span> Offline</span></span><script")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "<span class=\"inline-flex items-center gap-1.5 text-xs font-medium\" aria-live=\"polite\"><span id=\"conn-state-live\" class=\"inline-flex min-w-24 items-center justify-center gap-1.5 text-green-600 dark:text-green-400\"><span class=\"h-1.5 w-1.5 rounded-full bg-green-500\"></span> Live</span> <span id=\"conn-state-reconnecting\" hidden class=\"inline-flex min-w-24 items-center justify-center gap-1.5 text-amber-600 dark:text-amber-400\"><span class=\"h-1.5 w-1.5 rounded-full bg-amber-500\"></span> Reconnecting</span> <span id=\"conn-state-offline\" hidden class=\"inline-flex min-w-24 items-center justify-center gap-1.5 text-red-600 dark:text-red-400\"><span class=\"h-1.5 w-1.5 rounded-full bg-red-500\"></span> Offline</span></span><script")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1250,7 +1255,7 @@ func connectionPill(nonce string) templ.Component {
 			var templ_7745c5c3_Var48 string
 			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.ResolveAttributeValue(nonce)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 399, Col: 14}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 409, Col: 14}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var48)
 			if templ_7745c5c3_Err != nil {
@@ -1273,8 +1278,8 @@ func connectionPill(nonce string) templ.Component {
 // group's open/closed state in localStorage and re-applies it after every
 // SSE patch (patches re-derive the server-side default, which would
 // otherwise undo the operator's choice). Rendered outside the patched
-// region; the toggle listener uses capture because the toggle event does
-// not bubble.
+// region; storage keys off summary clicks (user intent) because patch
+// merges also flip the open attribute and would erase the stored choice.
 func collapsePersistence(nonce string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -1308,7 +1313,7 @@ func collapsePersistence(nonce string) templ.Component {
 			var templ_7745c5c3_Var50 string
 			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.ResolveAttributeValue(nonce)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 431, Col: 14}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 441, Col: 14}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var50)
 			if templ_7745c5c3_Err != nil {
@@ -1319,7 +1324,7 @@ func collapsePersistence(nonce string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, ">\n\t\t(function () {\n\t\t\t'use strict';\n\t\t\tif (window.__healthCollapseInit) { return; }\n\t\t\twindow.__healthCollapseInit = true;\n\t\t\tvar KEY = 'health-healthy-group-collapsed';\n\t\t\tfunction apply() {\n\t\t\t\tvar d = document.querySelector('details[data-collapsible]');\n\t\t\t\tif (!d) { return; }\n\t\t\t\tvar stored;\n\t\t\t\ttry { stored = localStorage.getItem(KEY); } catch (err) { return; }\n\t\t\t\tif (stored === 'open') { d.open = true; }\n\t\t\t\telse if (stored === 'closed') { d.open = false; }\n\t\t\t}\n\t\t\tapply();\n\t\t\tdocument.addEventListener('toggle', function (e) {\n\t\t\t\tvar d = e.target;\n\t\t\t\tif (d && d.matches && d.matches('details[data-collapsible]')) {\n\t\t\t\t\ttry { localStorage.setItem(KEY, d.open ? 'open' : 'closed'); } catch (err) {}\n\t\t\t\t}\n\t\t\t}, true);\n\t\t\tdocument.addEventListener('datastar-fetch', function (e) {\n\t\t\t\tvar t = e.detail && e.detail.type;\n\t\t\t\tif (t && t.indexOf('datastar-patch-') === 0) { apply(); }\n\t\t\t});\n\t\t})();\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, ">\n\t\t(function () {\n\t\t\t'use strict';\n\t\t\tif (window.__healthCollapseInit) { return; }\n\t\t\twindow.__healthCollapseInit = true;\n\t\t\tvar KEY = 'health-healthy-group-collapsed';\n\t\t\tfunction apply() {\n\t\t\t\tvar d = document.querySelector('details[data-collapsible]');\n\t\t\t\tif (!d) { return; }\n\t\t\t\tvar stored;\n\t\t\t\ttry { stored = localStorage.getItem(KEY); } catch (err) { return; }\n\t\t\t\t// Only write when the state actually differs: setting\n\t\t\t\t// .open queues a mutation record even for an identical\n\t\t\t\t// value, which would feed this same observer forever.\n\t\t\t\tif (stored === 'open' && !d.open) { d.open = true; }\n\t\t\t\telse if (stored === 'closed' && d.open) { d.open = false; }\n\t\t\t}\n\t\t\tapply();\n\t\t\t// Cross-tab consistency: another tab's collapse toggle writes the\n\t\t\t// same localStorage key, and the storage event tells this tab to\n\t\t\t// follow suit.\n\t\t\twindow.addEventListener('storage', function (e) {\n\t\t\t\tif (e.key === KEY) { apply(); }\n\t\t\t});\n\t\t\t// Store USER intent only. A `toggle` listener cannot distinguish a\n\t\t\t// user toggle from Datastar's patch merge, which syncs attributes\n\t\t\t// and thereby removes `open` — that merge-driven toggle used to\n\t\t\t// overwrite the stored choice with the server default. A click on\n\t\t\t// the summary always precedes a user toggle (mouse and keyboard),\n\t\t\t// and during click dispatch `details.open` still holds the\n\t\t\t// pre-toggle state, so the flipped value is stored synchronously.\n\t\t\tdocument.addEventListener('click', function (e) {\n\t\t\t\tvar target = e.target;\n\t\t\t\tvar summary = target && target.closest && target.closest('summary');\n\t\t\t\tif (!summary || !summary.parentElement ||\n\t\t\t\t\t!summary.parentElement.matches ||\n\t\t\t\t\t!summary.parentElement.matches('details[data-collapsible]')) { return; }\n\t\t\t\tvar details = summary.parentElement;\n\t\t\t\ttry {\n\t\t\t\t\tlocalStorage.setItem(KEY, details.open ? 'closed' : 'open');\n\t\t\t\t} catch (err) {}\n\t\t\t}, false);\n\t\t\t// The SDK dispatches its datastar-patch-* fetch events BEFORE the\n\t\t\t// patch is merged into the DOM, so applying on the event alone\n\t\t\t// always re-opens the replaced-away node. A scoped MutationObserver\n\t\t\t// reacts to the actual DOM change instead — deterministic for\n\t\t\t// inner-mode element patches — with the fetch event kept as a\n\t\t\t// belt-and-braces trigger.\n\t\t\tdocument.addEventListener('datastar-fetch', function (e) {\n\t\t\t\tvar t = e.detail && e.detail.type;\n\t\t\t\tif (t && t.indexOf('datastar-patch-') === 0) { apply(); }\n\t\t\t});\n\t\t\tif ('MutationObserver' in window) {\n\t\t\t\tvar selector = 'details[data-collapsible]';\n\t\t\t\tvar observer = new MutationObserver(function (records) {\n\t\t\t\t\tfor (var i = 0; i < records.length; i++) {\n\t\t\t\t\t\tvar record = records[i];\n\t\t\t\t\t\tif (record.type === 'attributes') {\n\t\t\t\t\t\t\tif (record.target.matches && record.target.matches(selector)) {\n\t\t\t\t\t\t\t\tapply();\n\t\t\t\t\t\t\t\treturn;\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\tcontinue;\n\t\t\t\t\t\t}\n\t\t\t\t\t\tvar added = record.addedNodes;\n\t\t\t\t\t\tfor (var j = 0; j < added.length; j++) {\n\t\t\t\t\t\t\tvar node = added[j];\n\t\t\t\t\t\t\tif (node.nodeType !== 1) { continue; }\n\t\t\t\t\t\t\tif ((node.matches && node.matches(selector)) ||\n\t\t\t\t\t\t\t\t(node.querySelector && node.querySelector(selector))) {\n\t\t\t\t\t\t\t\tapply();\n\t\t\t\t\t\t\t\treturn;\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t\t// Inner-mode patches merge the existing <details> in place and\n\t\t\t\t// sync its attributes — removing `open` — so both attribute\n\t\t\t\t// flips and inserted nodes must re-apply the stored state.\n\t\t\t\tobserver.observe(document.body, {\n\t\t\t\t\tchildList: true,\n\t\t\t\t\tsubtree: true,\n\t\t\t\t\tattributes: true,\n\t\t\t\t\tattributeFilter: ['open']\n\t\t\t\t});\n\t\t\t}\n\t\t})();\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

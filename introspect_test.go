@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	dashboard "github.com/larsartmann/go-health-dashboard"
 )
@@ -18,6 +19,7 @@ type introspectionDoc struct {
 		MaxSSEConnections int    `json:"max_sse_connections"`
 		RateLimitEnabled  bool   `json:"rate_limit_enabled"`
 		ShutdownDrain     string `json:"shutdown_drain"`
+		TimelineMaxAge    string `json:"timeline_max_age"`
 	} `json:"limits"`
 	Modes struct {
 		PushMode      string `json:"push_mode"`
@@ -26,6 +28,12 @@ type introspectionDoc struct {
 		Webhook       bool   `json:"webhook"`
 		TrendSamples  int    `json:"trend_samples"`
 		NonceStrategy string `json:"nonce_strategy"`
+
+		HealthyGroupCollapseThreshold int  `json:"healthy_group_collapse_threshold"`
+		PersistCollapse               bool `json:"persist_collapse"`
+		HideStatCards                 bool `json:"hide_stat_cards"`
+		EmbeddedDatastarSDK           bool `json:"embedded_datastar_sdk"`
+		PushOnChangeTTL               int  `json:"push_on_change_ttl"`
 	} `json:"modes"`
 }
 
@@ -50,6 +58,11 @@ func TestIntrospection_ServesResolvedConfig(t *testing.T) {
 		dashboard.WithMetrics(true),
 		dashboard.WithRateLimit(10, 1<<20),
 		dashboard.WithIntrospection(),
+		dashboard.WithHealthyGroupCollapse(3),
+		dashboard.WithPersistCollapse(),
+		dashboard.WithPushOnChangeTTL(2),
+		dashboard.WithTimelineMaxAge(time.Hour),
+		dashboard.WithEmbeddedDatastarSDK(),
 	)
 	defer s.cleanup()
 
@@ -68,23 +81,36 @@ func TestIntrospection_ServesResolvedConfig(t *testing.T) {
 		t.Errorf("version: want %q, got %q", dashboard.Version, doc.Version)
 	}
 
-	for _, route := range []string{"dashboard", "sse", "trend", "export", "metrics"} {
+	for _, route := range []string{"dashboard", "sse", "trend", "export", "metrics", "datastar_js", "introspect"} {
 		if doc.Routes[route] == "" {
 			t.Errorf("routes.%s missing for an enabled feature", route)
 		}
 	}
 
-	switch {
-	case doc.Modes.TrendSamples != 42:
-		t.Errorf("modes.trend_samples: want 42, got %d", doc.Modes.TrendSamples)
-	case doc.Modes.PushMode != "on-change":
-		t.Errorf("modes.push_mode: want on-change, got %q", doc.Modes.PushMode)
-	case !doc.Modes.Metrics:
-		t.Error("modes.metrics: want true after WithMetrics(true)")
-	case !doc.Limits.RateLimitEnabled:
-		t.Error("limits.rate_limit_enabled: want true after WithRateLimit")
-	case doc.Modes.NonceStrategy != "none":
-		t.Errorf("modes.nonce_strategy: want none, got %q", doc.Modes.NonceStrategy)
+	for _, check := range []struct {
+		name string
+		ok   bool
+		msg  string
+	}{
+		{"trend_samples", doc.Modes.TrendSamples == 42, "want 42 after WithTrend(42)"},
+		{"push_mode", doc.Modes.PushMode == "on-change", "want on-change"},
+		{"metrics", doc.Modes.Metrics, "want true after WithMetrics(true)"},
+		{"rate_limit_enabled", doc.Limits.RateLimitEnabled, "want true after WithRateLimit"},
+		{"nonce_strategy", doc.Modes.NonceStrategy == "none", "want none"},
+		{
+			"healthy_group_collapse_threshold",
+			doc.Modes.HealthyGroupCollapseThreshold == 3,
+			"want 3 after WithHealthyGroupCollapse(3)",
+		},
+		{"persist_collapse", doc.Modes.PersistCollapse, "want true after WithPersistCollapse"},
+		{"push_on_change_ttl", doc.Modes.PushOnChangeTTL == 2, "want 2 after WithPushOnChangeTTL(2)"},
+		{"timeline_max_age", doc.Limits.TimelineMaxAge == "1h0m0s", "want 1h0m0s after WithTimelineMaxAge(time.Hour)"},
+		{"embedded_datastar_sdk", doc.Modes.EmbeddedDatastarSDK, "want true after WithEmbeddedDatastarSDK"},
+		{"hide_stat_cards", !doc.Modes.HideStatCards, "want false by default"},
+	} {
+		if !check.ok {
+			t.Errorf("%s: %s", check.name, check.msg)
+		}
 	}
 }
 

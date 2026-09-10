@@ -232,6 +232,54 @@ func TestExportHandler_CSV(t *testing.T) {
 	}
 }
 
+func TestExportHandler_NDJSON(t *testing.T) {
+	t.Parallel()
+
+	s, _ := setupTrendDashboard(t)
+	defer s.cleanup()
+
+	waitForTrendSamples(t, s, 2)
+
+	w := doRequest(t, s.mux, "/health/export?format=ndjson")
+	if w.Code != http.StatusOK {
+		t.Fatalf("status: want 200, got %d", w.Code)
+	}
+
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/x-ndjson") {
+		t.Fatalf("content-type: want application/x-ndjson, got %s", ct)
+	}
+
+	body := strings.TrimSpace(w.Body.String())
+	if body == "" {
+		t.Fatal("ndjson body is empty")
+	}
+
+	if !strings.HasSuffix(w.Body.String(), "\n") {
+		t.Error("ndjson payload should end with a newline")
+	}
+
+	lines := strings.Split(body, "\n")
+
+	if len(lines) < 2 {
+		t.Fatalf("ndjson lines: want >= 2, got %d", len(lines))
+	}
+
+	for i, line := range lines {
+		var sample struct {
+			At     string  `json:"at"`
+			Value  float64 `json:"value"`
+			Status string  `json:"status"`
+		}
+		if err := json.Unmarshal([]byte(line), &sample); err != nil {
+			t.Fatalf("ndjson line %d is not a self-contained JSON object: %v\n%s", i, err, line)
+		}
+
+		if sample.At == "" || sample.Status == "" {
+			t.Errorf("ndjson line %d missing at/status: %s", i, line)
+		}
+	}
+}
+
 func TestTrendEndpoints_DisabledWithoutTrend(t *testing.T) {
 	t.Parallel()
 

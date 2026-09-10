@@ -226,15 +226,7 @@ func TestBrowser_CSPCleanRuntime(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
 	defer server.Close()
@@ -426,14 +418,8 @@ func TestBrowser_LiveSSEPatch(t *testing.T) {
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux)
 
-	mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-	mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	mux.HandleFunc("/static/app.css", browserStaticCSS)
+	mux.HandleFunc("/static/datastar.js", browserStaticJS)
 
 	if err := probe.Start(t.Context()); err != nil {
 		t.Fatalf("probe.Start: %v", err)
@@ -572,14 +558,8 @@ func TestBrowser_Accessibility(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
+
 	s.mux.HandleFunc("/static/axe.js", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/javascript")
 		_, _ = w.Write(axeBytes)
@@ -663,24 +643,15 @@ func TestBrowser_Accessibility(t *testing.T) {
 	// The skip link is sr-only until keyboard focus and this harness serves
 	// no real Tailwind stylesheet, so axe cannot compute meaningful contrast
 	// for it; production colors (blue-600 on white) pass WCAG AA.
-	// definition-list and dlitem are tolerated ONLY for the StatCard figure
-	// markup (upstream templ-components#6: the <dd> is wrapped in <div>
-	// levels a <dl> may not contain; v1.13.x deepened the nesting from
-	// dl>div>dd to dl>div>div>dd, which axe reports as dlitem instead of
-	// definition-list depending on version); any other violation of either
-	// rule still fails.
+	// (The StatCard definition-list/dlitem tolerance was retired with
+	// templ-components v1.16.0, which fixed upstream #6 by grouping <dt>
+	// and <dd> inside the same wrapper div.)
 	start := `axe.run(
 		{ include: [document], exclude: [["a[href='#main-content']"]] },
 		{ resultTypes: ["violations"] }
 	).then(function (r) {
 		window.__axeViolations = JSON.stringify(r.violations.filter(function (v) {
-			if (v.impact !== "serious" && v.impact !== "critical") { return false; }
-			if (v.id === "definition-list" || v.id === "dlitem") {
-				return !(v.nodes.length > 0 && v.nodes.every(function (n) {
-					return n.html.indexOf("<dd") !== -1 && n.html.indexOf("text-2xl font-semibold") !== -1;
-				}));
-			}
-			return true;
+			return v.impact === "serious" || v.impact === "critical";
 		}).map(function (v) { return v.id + ":" + v.impact + ":" + v.nodes.length + ":" + v.nodes.map(function (n) { return n.html; }).join(" | ").slice(0, 200); }));
 	}).catch(function (e) {
 		window.__axeViolations = "AXE_ERROR: " + e;
@@ -745,14 +716,20 @@ func waitForJS(t *testing.T, ctx context.Context, predicate, valueExpr string, r
 func browserStaticHandlers(t *testing.T, s *probeSetup) {
 	t.Helper()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	s.mux.HandleFunc("/static/app.css", browserStaticCSS)
+	s.mux.HandleFunc("/static/datastar.js", browserStaticJS)
+}
+
+// browserStaticCSS and browserStaticJS are the shared handlers behind
+// browserStaticHandlers, for tests that register them on a bare mux.
+func browserStaticCSS(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/css")
+	_, _ = w.Write([]byte("body { margin: 0; }"))
+}
+
+func browserStaticJS(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/javascript")
+	_, _ = w.Write(dstarstatic.Bytes())
 }
 
 // TestBrowser_KeyboardNavigation walks the page with real Tab keystrokes
@@ -1110,15 +1087,7 @@ func TestBrowser_CollapseInteract(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
 	defer server.Close()
@@ -1192,6 +1161,126 @@ func TestBrowser_CollapseInteract(t *testing.T) {
 	assertNoBrowserErrors(t, errLog)
 }
 
+// TestBrowser_CollapsePersistInteract proves WithPersistCollapse end-to-end:
+// a manual toggle survives SSE patches (localStorage re-apply) and a full
+// page reload, unlike the server-derived default proven above.
+func TestBrowser_CollapsePersistInteract(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-collapse-persist-nonce"
+
+	s := setupDashboardWithHealthyServices(t, 9,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithPushMode(dashboard.PushAlways),
+		dashboard.WithPushInterval(200*time.Millisecond),
+		dashboard.WithPersistCollapse(),
+	)
+	defer s.cleanup()
+
+	browserStaticHandlers(t, s)
+
+	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+	time.Sleep(250 * time.Millisecond) // allow the initial SSE patch to apply
+
+	const detailsState = `(function () {
+		var d = document.querySelector("details");
+		return d ? (d.open ? "open" : "closed") : "missing";
+	})()`
+
+	var state string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(detailsState, &state)); err != nil {
+		t.Fatalf("browser evaluate: %v", err)
+	}
+
+	if state != "closed" {
+		t.Fatalf(
+			"healthy group should start collapsed (threshold default 8 < 9 rows), got %q",
+			state,
+		)
+	}
+
+	if err := chromedp.Run(ctx, chromedp.Click("details summary", chromedp.ByQuery)); err != nil {
+		t.Fatalf("click summary: %v", err)
+	}
+
+	var stored string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(
+		`localStorage.getItem("health-healthy-group-collapsed") || ""`,
+		&stored,
+	)); err != nil {
+		t.Fatalf("browser evaluate localStorage: %v", err)
+	}
+
+	if stored == "" {
+		t.Error("toggle should persist the collapse state to localStorage")
+	}
+
+	// PushAlways patches every 200ms; the persistence script must re-apply
+	// the stored "open" state after each patch. Give it a few patch cycles,
+	// then assert it is still open.
+	time.Sleep(700 * time.Millisecond)
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(detailsState, &state)); err != nil {
+		t.Fatalf("browser evaluate after patches: %v", err)
+	}
+
+	if state != "open" {
+		var diag string
+		_ = chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+			var d = document.querySelector('details[data-collapsible]');
+			var plain = document.querySelector('details');
+			return JSON.stringify({
+				init: !!window.__healthCollapseInit,
+				stored: (function(){ try { return localStorage.getItem('health-healthy-group-collapsed'); } catch (e) { return 'ERR:'+e.message; } })(),
+				hasDataAttr: d !== null,
+				plainDetailsOpen: plain ? plain.open : null,
+				regionHTML: (document.getElementById('health-region') || {innerHTML:'NO_REGION'}).innerHTML.slice(0, 200)
+			});
+		})()`, &diag))
+		t.Fatalf(
+			"with WithPersistCollapse the expanded state must survive SSE patches, got %q; diag=%s",
+			state,
+			diag,
+		)
+	}
+
+	// A full reload must also honor the stored state.
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser reload: %v", err)
+	}
+
+	waitForJS(t, ctx, detailsState+` === "open"`, detailsState, nil)
+
+	assertNoBrowserErrors(t, errLog)
+}
+
 // TestBrowser_FilterInteract proves the client-side filter end-to-end:
 // typing narrows the visible rows to matches, clearing restores all of
 // them, and the page stays free of browser errors under strict CSP.
@@ -1211,15 +1300,7 @@ func TestBrowser_FilterInteract(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
 	defer server.Close()
@@ -1268,6 +1349,49 @@ func TestBrowser_FilterInteract(t *testing.T) {
 
 	waitForJS(t, ctx, visibleRows+` === "1"`, visibleRows, nil)
 
+	// Plan C5 leftover: re-run the accessibility audit on the FILTERED
+	// state, not just the full page — hiding rows via data-class must not
+	// introduce violations (e.g. a dangling no-match region or removed
+	// table semantics).
+	axeBytes := fetchAxeCore(t)
+
+	s.mux.HandleFunc("/static/axe.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(axeBytes)
+	})
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+		if (window.axe) { return; }
+		var el = document.createElement("script");
+		el.src = "/static/axe.js";
+		document.head.appendChild(el);
+	})()`, nil)); err != nil {
+		t.Fatalf("axe inject: %v", err)
+	}
+
+	waitForJS(t, ctx, `window.axe !== undefined`, `typeof window.axe`, nil)
+
+	var filteredAudit string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`axe.run(
+		{ include: [document] },
+		{ resultTypes: ["violations"] }
+	).then(function (r) {
+		window.__filteredAxe = JSON.stringify(r.violations.filter(function (v) {
+			return v.impact === "serious" || v.impact === "critical";
+		}).map(function (v) { return v.id + ":" + v.nodes.length; }));
+	}).catch(function (e) {
+		window.__filteredAxe = "AXE_ERROR: " + e;
+	})`, nil)); err != nil {
+		t.Fatalf("axe run: %v", err)
+	}
+
+	waitForJS(t, ctx, `window.__filteredAxe !== undefined`, `window.__filteredAxe`, &filteredAudit)
+
+	if filteredAudit != "[]" {
+		t.Errorf("axe on the filtered DOM found serious/critical violations: %s", filteredAudit)
+	}
+
 	// chromedp.SetValue cannot set an empty string, so clear via JS and
 	// dispatch the input event data-bind listens on.
 	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
@@ -1302,15 +1426,7 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	ssePath := s.dash.Routes().SSE
 
@@ -1450,6 +1566,97 @@ func dumpFetchEvents(ctx context.Context) string {
 	return events
 }
 
+// TestBrowser_RetryAlwaysRidesOutMaxConnections proves the client-side
+// interplay of RetryAlways with WithMaxSSEConnections: with the limit held
+// by one tab, a second tab's SSE requests are rejected with 503 and the SDK
+// keeps retrying without user action; once the holding tab disconnects, the
+// waiting tab connects and renders live state. The same non-200 retry path
+// in the SDK bundle serves 429 rate-limit responses (verified in the pinned
+// v0.5.0 bundle: any non-200 under retry=always schedules a retry), so this
+// also documents the RetryAlways × rate-limit interplay.
+func TestBrowser_RetryAlwaysRidesOutMaxConnections(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-retry-503-nonce"
+
+	s := setupDashboardWithHealthyServices(t, 4,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithPushMode(dashboard.PushAlways),
+		dashboard.WithPushInterval(200*time.Millisecond),
+		dashboard.WithMaxSSEConnections(1),
+	)
+	defer s.cleanup()
+
+	browserStaticHandlers(t, s)
+
+	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	tabA, cancelA := chromedp.NewContext(allocCtx)
+	defer cancelA()
+
+	errLogA := watchBrowserErrors(tabA)
+
+	if err := chromedp.Run(tabA, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("tab A navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+
+	if s.dash.SubscriberCount() != 1 {
+		t.Fatalf("connection limit 1: want exactly 1 subscriber, got %d", s.dash.SubscriberCount())
+	}
+
+	tabB, cancelB := chromedp.NewContext(allocCtx)
+	defer cancelB()
+
+	errLogB := watchBrowserErrors(tabB)
+
+	if err := chromedp.Run(tabB, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("tab B navigate: %v", err)
+	}
+
+	// Tab B's SSE requests get 503 for as long as tab A holds the only
+	// slot. The SDK must keep retrying (RetryAlways) without connecting.
+	time.Sleep(1500 * time.Millisecond)
+
+	if got := s.dash.SubscriberCount(); got != 1 {
+		t.Fatalf("tab B must not exceed the connection limit, subscribers = %d", got)
+	}
+
+	// Releasing tab A closes its SSE stream; tab B's pending retry should
+	// take the freed slot and render live state.
+	cancelA()
+
+	deadline := time.Now().Add(20 * time.Second)
+
+	for s.dash.SubscriberCount() == 0 {
+		if time.Now().After(deadline) {
+			t.Fatalf("tab B never connected after the slot freed (retry loop gave up?)")
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	waitForBodyText(t, tabB, "Healthy")
+
+	assertNoBrowserErrors(t, errLogA)
+	assertNoBrowserErrors(t, errLogB)
+}
+
 // TestBrowser_MobileViewport proves the dashboard is usable at a phone
 // width: no page-level horizontal overflow (the table's scroll wrapper
 // contains its own overflow), and the content is reachable.
@@ -1468,15 +1675,7 @@ func TestBrowser_MobileViewport(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
 	defer server.Close()
@@ -1563,15 +1762,7 @@ func TestBrowser_KeyboardNewControls(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	s.mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		_, _ = w.Write([]byte("body { margin: 0; }"))
-	})
-
-	s.mux.HandleFunc("/static/datastar.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/javascript")
-		_, _ = w.Write(dstarstatic.Bytes())
-	})
+	browserStaticHandlers(t, s)
 
 	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
 	defer server.Close()
@@ -1627,6 +1818,243 @@ func TestBrowser_KeyboardNewControls(t *testing.T) {
 			return !tr.classList.contains("hidden");
 		}).length + "";
 	})()`
+
+	waitForJS(t, ctx, visibleRows+` === "1"`, visibleRows, nil)
+
+	assertNoBrowserErrors(t, errLog)
+}
+
+// TestBrowser_KeyboardLinks proves the navigation affordances are keyboard
+// operable and labelled: the jump-to-problems anchor activates with Enter
+// and lands on the problems group, and the header links (export, trend,
+// metrics) are focusable anchors with non-empty accessible names.
+func TestBrowser_KeyboardLinks(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-keyboard-links-nonce"
+
+	s := setupDashboardWithFailures(t,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithEmbeddedDatastarSDK(),
+		dashboard.WithTrend(8),
+		dashboard.WithMetrics(true),
+	)
+	defer s.cleanup()
+
+	browserStaticHandlers(t, s)
+
+	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+	time.Sleep(250 * time.Millisecond) // let the initial patch settle
+
+	// Every configured header link must be a real anchor with an accessible
+	// name (its trimmed text) — reachable by keyboard via ordinary Tab order.
+	var unnamed string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+		var links = document.querySelectorAll('a[href*="export"], a[href*="trend"], a[href*="metrics"]');
+		var missing = [];
+		links.forEach(function (a) {
+			if (!a.getAttribute("href") || !(a.textContent || "").trim()) {
+				missing.push(a.getAttribute("href") || "(no href)");
+			}
+		});
+		return missing.join(",");
+	})()`, &unnamed)); err != nil {
+		t.Fatalf("browser evaluate header links: %v", err)
+	}
+
+	if unnamed != "" {
+		t.Errorf("header links without an accessible name: %s", unnamed)
+	}
+
+	var linkCount string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(
+		`document.querySelectorAll('a[href*="export"], a[href*="trend"], a[href*="metrics"]').length + ""`,
+		&linkCount,
+	)); err != nil {
+		t.Fatalf("browser evaluate link count: %v", err)
+	}
+
+	if linkCount != "4" {
+		t.Errorf("want 4 header links (export CSV, export JSON, trend, metrics), got %s", linkCount)
+	}
+
+	// The jump-to-problems anchor must exist on a failing page and activate
+	// via keyboard: focus + Enter navigates to the problems group.
+	var jumpHref string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(
+		`(function () {
+			var links = [...document.querySelectorAll("a")];
+			var jump = links.find(function (a) { return a.getAttribute("href") === "#group-problems"; });
+			return jump ? jump.getAttribute("href") : "";
+		})()`,
+		&jumpHref,
+	)); err != nil {
+		t.Fatalf("browser evaluate jump link: %v", err)
+	}
+
+	if jumpHref != "#group-problems" {
+		t.Fatal("jump-to-problems anchor missing on a page with failing groups")
+	}
+
+	if err := chromedp.Run(ctx,
+		chromedp.Focus(`a[href="#group-problems"]`, chromedp.ByQuery),
+		chromedp.KeyEvent("\r"),
+	); err != nil {
+		t.Fatalf("keyboard jump activation: %v", err)
+	}
+
+	waitForJS(t, ctx,
+		`window.location.hash === "#group-problems"`,
+		`window.location.hash`,
+		nil,
+	)
+
+	assertNoBrowserErrors(t, errLog)
+}
+
+// TestBrowser_AggregateNewUI exercises the 0.7.x UI surface on an aggregate
+// page: namespaced source/check keys survive short-name rendering, the
+// client-side filter narrows by source prefix, and the healthy-group summary
+// states the merged count — all under the strict CSP harness.
+func TestBrowser_AggregateNewUI(t *testing.T) {
+	t.Parallel()
+
+	chromePath := findChrome(t)
+
+	const nonce = "browser-agg-newui-nonce"
+
+	apiInjector := do.New()
+	provideHealthy(apiInjector, "postgres")
+	invoke[*healthyService](t, apiInjector, "postgres")
+
+	apiProbe := health.New(apiInjector, health.WithRefreshInterval(100*time.Millisecond))
+	if err := apiProbe.Start(context.Background()); err != nil {
+		t.Fatalf("api probe start: %v", err)
+	}
+	defer apiProbe.Shutdown()
+
+	workerInjector := do.New()
+	provideHealthy(workerInjector, "redis")
+	provideHealthy(workerInjector, "queue")
+	invoke[*healthyService](t, workerInjector, "redis")
+	invoke[*healthyService](t, workerInjector, "queue")
+
+	workerProbe := health.New(workerInjector, health.WithRefreshInterval(100*time.Millisecond))
+	if err := workerProbe.Start(context.Background()); err != nil {
+		t.Fatalf("worker probe start: %v", err)
+	}
+	defer workerProbe.Shutdown()
+
+	agg, err := aggregate.New(
+		aggregate.Source{Name: "api", Probe: apiProbe},
+		aggregate.Source{Name: "worker", Probe: workerProbe},
+	)
+	if err != nil {
+		t.Fatalf("aggregate.New: %v", err)
+	}
+
+	s := setupDashboardWithProber(t, agg,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithEmbeddedDatastarSDK(),
+		dashboard.WithHealthyGroupExpanded(),
+	)
+	defer s.cleanup()
+
+	browserStaticHandlers(t, s)
+
+	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
+	defer server.Close()
+
+	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
+	defer stopChrome()
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer runCancel()
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	waitForSubscriber(t, s.dash)
+	time.Sleep(250 * time.Millisecond) // let the initial patch settle
+
+	// Namespaced keys must survive short-name rendering verbatim — the
+	// aggregate source prefix is the load-bearing part of the name.
+	waitForBodyText(t, ctx, "api/postgres")
+	waitForBodyText(t, ctx, "worker/redis")
+	waitForBodyText(t, ctx, "worker/queue")
+
+	// The healthy-group summary states the merged count across sources.
+	waitForBodyText(t, ctx, "3")
+
+	visibleRows := `(function () {
+		return [...document.querySelectorAll("tr[data-filter-row]")].filter(function (tr) {
+			return !tr.classList.contains("hidden");
+		}).length + "";
+	})()`
+
+	var visible string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(visibleRows, &visible)); err != nil {
+		t.Fatalf("browser evaluate rows: %v", err)
+	}
+
+	if visible != "3" {
+		t.Fatalf("aggregate page should render 3 rows, got %s", visible)
+	}
+
+	// Filtering by source prefix narrows to that source's checks only.
+	if err := chromedp.Run(ctx,
+		chromedp.SetValue(`#health-filter`, "worker", chromedp.ByQuery),
+	); err != nil {
+		t.Fatalf("filter by source: %v", err)
+	}
+
+	waitForJS(t, ctx, visibleRows+` === "2"`, visibleRows, nil)
+
+	if err := chromedp.Run(ctx,
+		chromedp.SetValue(`#health-filter`, "api/post", chromedp.ByQuery),
+	); err != nil {
+		t.Fatalf("filter by full namespaced key: %v", err)
+	}
 
 	waitForJS(t, ctx, visibleRows+` === "1"`, visibleRows, nil)
 

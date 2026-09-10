@@ -133,3 +133,43 @@ func TestPublicMode_LeakScanner(t *testing.T) {
 		t.Error("readyz should stay verbatim in public mode, but cache name is missing")
 	}
 }
+
+// TestPublicMode_FilterHaystackStaysMaskedAndSearchable pins the filter
+// interplay with public mode: the client-side filter must keep working on
+// the masked names (positive case), and its haystack attributes — the
+// data-filter-row values and the embedded data-class expressions — must
+// carry only masked names (the raw-name half is swept by the leak scanner
+// above; this asserts the feature did not silently disable itself).
+func TestPublicMode_FilterHaystackStaysMaskedAndSearchable(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboardWithFailures(t,
+		dashboard.WithPublicMode(),
+		dashboard.WithEmbeddedDatastarSDK(),
+	)
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+	if w.Code != http.StatusOK && w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("/health: unexpected status %d", w.Code)
+	}
+
+	body := w.Body.String()
+
+	if !strings.Contains(body, `data-filter-row="check-`) {
+		t.Error(
+			"public mode should keep the filter working on masked check-N names, but no masked haystack rendered",
+		)
+	}
+
+	for _, masked := range []string{"check-1", "check-2", "check-3"} {
+		if strings.Contains(body, `data-filter-row="`+masked) ||
+			strings.Contains(body, `.includes("`+masked) {
+			return // at least one masked row is filterable
+		}
+	}
+
+	t.Error(
+		"no masked check-N name found in the filter haystack — the filter is effectively dead in public mode",
+	)
+}

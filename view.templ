@@ -20,8 +20,11 @@ const collapseStorageKeyName = "health-healthy-group-collapsed"
 
 // storageKey returns the CollapsibleSection persistence key when collapse
 // persistence is enabled, otherwise empty (no data-collapsible attribute).
+// Source-grouped pages never persist: they can render several pass-status
+// sections, and one localStorage key shared across them would couple their
+// open/closed states.
 func storageKey(data viewModel) string {
-	if data.PersistCollapse {
+	if data.PersistCollapse && data.Grouping != GroupBySource {
 		return collapseStorageKeyName
 	}
 
@@ -52,7 +55,9 @@ templ View(data viewModel) {
 						</p>
 					</div>
 					<div class="flex items-center gap-3">
-						@connectionPill(data.DatastarNonce)
+						if data.HasDatastarRuntime {
+							@connectionPill(data.DatastarNonce)
+						}
 						@layout.ThemeToggle("Toggle theme", data.DatastarNonce)
 					</div>
 				</div>
@@ -188,7 +193,7 @@ templ dashboardContent(data viewModel) {
 			</a>
 		</p>
 	}
-	if data.DatastarSrc != "" {
+	if data.DatastarSrc != "" && data.HasDatastarRuntime {
 		<div class="mt-6">
 			<label class="sr-only" for="health-filter">Filter services</label>
 			<input
@@ -274,8 +279,13 @@ templ dashboardContent(data viewModel) {
 				}
 			}
 		}
-		if data.DatastarSrc != "" && len(data.Groups) > 0 {
-			<p class="hidden text-sm text-gray-500 dark:text-gray-400" data-filter-empty data-class:hidden={ filterEmptyExpr(data) }>
+		if data.DatastarSrc != "" && data.HasDatastarRuntime && len(data.Groups) > 0 {
+			<p
+				class="hidden text-sm text-gray-500 dark:text-gray-400"
+				role="status"
+				data-filter-empty
+				data-class:hidden={ filterEmptyExpr(data) }
+			>
 				No services match your filter.
 			</p>
 		}
@@ -382,15 +392,15 @@ const (
 // patched region, so its state survives SSE content updates.
 templ connectionPill(nonce string) {
 	<span class="inline-flex items-center gap-1.5 text-xs font-medium" aria-live="polite">
-		<span id="conn-state-live" class="inline-flex items-center gap-1.5 text-green-600 dark:text-green-400">
+		<span id="conn-state-live" class="inline-flex min-w-24 items-center justify-center gap-1.5 text-green-600 dark:text-green-400">
 			<span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
 			Live
 		</span>
-		<span id="conn-state-reconnecting" hidden class="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+		<span id="conn-state-reconnecting" hidden class="inline-flex min-w-24 items-center justify-center gap-1.5 text-amber-600 dark:text-amber-400">
 			<span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
 			Reconnecting
 		</span>
-		<span id="conn-state-offline" hidden class="inline-flex items-center gap-1.5 text-red-600 dark:text-red-400">
+		<span id="conn-state-offline" hidden class="inline-flex min-w-24 items-center justify-center gap-1.5 text-red-600 dark:text-red-400">
 			<span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
 			Offline
 		</span>
@@ -424,8 +434,8 @@ templ connectionPill(nonce string) {
 // group's open/closed state in localStorage and re-applies it after every
 // SSE patch (patches re-derive the server-side default, which would
 // otherwise undo the operator's choice). Rendered outside the patched
-// region; the toggle listener uses capture because the toggle event does
-// not bubble.
+// region; storage keys off summary clicks (user intent) because patch
+// merges also flip the open attribute and would erase the stored choice.
 templ collapsePersistence(nonce string) {
 	<script if nonce != "" {
 	nonce={ nonce }
@@ -440,20 +450,81 @@ templ collapsePersistence(nonce string) {
 				if (!d) { return; }
 				var stored;
 				try { stored = localStorage.getItem(KEY); } catch (err) { return; }
-				if (stored === 'open') { d.open = true; }
-				else if (stored === 'closed') { d.open = false; }
+				// Only write when the state actually differs: setting
+				// .open queues a mutation record even for an identical
+				// value, which would feed this same observer forever.
+				if (stored === 'open' && !d.open) { d.open = true; }
+				else if (stored === 'closed' && d.open) { d.open = false; }
 			}
 			apply();
-			document.addEventListener('toggle', function (e) {
-				var d = e.target;
-				if (d && d.matches && d.matches('details[data-collapsible]')) {
-					try { localStorage.setItem(KEY, d.open ? 'open' : 'closed'); } catch (err) {}
-				}
-			}, true);
+			// Cross-tab consistency: another tab's collapse toggle writes the
+			// same localStorage key, and the storage event tells this tab to
+			// follow suit.
+			window.addEventListener('storage', function (e) {
+				if (e.key === KEY) { apply(); }
+			});
+			// Store USER intent only. A `toggle` listener cannot distinguish a
+			// user toggle from Datastar's patch merge, which syncs attributes
+			// and thereby removes `open` — that merge-driven toggle used to
+			// overwrite the stored choice with the server default. A click on
+			// the summary always precedes a user toggle (mouse and keyboard),
+			// and during click dispatch `details.open` still holds the
+			// pre-toggle state, so the flipped value is stored synchronously.
+			document.addEventListener('click', function (e) {
+				var target = e.target;
+				var summary = target && target.closest && target.closest('summary');
+				if (!summary || !summary.parentElement ||
+					!summary.parentElement.matches ||
+					!summary.parentElement.matches('details[data-collapsible]')) { return; }
+				var details = summary.parentElement;
+				try {
+					localStorage.setItem(KEY, details.open ? 'closed' : 'open');
+				} catch (err) {}
+			}, false);
+			// The SDK dispatches its datastar-patch-* fetch events BEFORE the
+			// patch is merged into the DOM, so applying on the event alone
+			// always re-opens the replaced-away node. A scoped MutationObserver
+			// reacts to the actual DOM change instead — deterministic for
+			// inner-mode element patches — with the fetch event kept as a
+			// belt-and-braces trigger.
 			document.addEventListener('datastar-fetch', function (e) {
 				var t = e.detail && e.detail.type;
 				if (t && t.indexOf('datastar-patch-') === 0) { apply(); }
 			});
+			if ('MutationObserver' in window) {
+				var selector = 'details[data-collapsible]';
+				var observer = new MutationObserver(function (records) {
+					for (var i = 0; i < records.length; i++) {
+						var record = records[i];
+						if (record.type === 'attributes') {
+							if (record.target.matches && record.target.matches(selector)) {
+								apply();
+								return;
+							}
+							continue;
+						}
+						var added = record.addedNodes;
+						for (var j = 0; j < added.length; j++) {
+							var node = added[j];
+							if (node.nodeType !== 1) { continue; }
+							if ((node.matches && node.matches(selector)) ||
+								(node.querySelector && node.querySelector(selector))) {
+								apply();
+								return;
+							}
+						}
+					}
+				});
+				// Inner-mode patches merge the existing <details> in place and
+				// sync its attributes — removing `open` — so both attribute
+				// flips and inserted nodes must re-apply the stored state.
+				observer.observe(document.body, {
+					childList: true,
+					subtree: true,
+					attributes: true,
+					attributeFilter: ['open']
+				});
+			}
 		})();
 	</script>
 }
