@@ -5,11 +5,33 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+`[Unreleased]` convention: new work accrues in the `[Unreleased]` section at
+the top. When a version is tagged, the section is re-headed with the version
+and date IN THE SAME CHANGE as the `Version` const bump and the tag (the
+version-guard CI job fails otherwise). An `[Unreleased]` section may never
+sit sandwiched between two released sections — at tag time it ships into the
+cut or its contents wait for the next one; decide explicitly, never by
+forgetting.
+
 ## [Unreleased]
 
-Route ergonomics and observability groundwork: the WithBasePath
-ordering footgun is gone, the resolved routes are queryable, and a new
-opt-in introspection endpoint exposes the running configuration.
+### Added
+
+- Nothing yet.
+
+### Fixed
+
+- Nothing yet.
+
+## [0.7.0] — 2026-09-10
+
+Dashboard UI/UX overhaul, executed as a Pareto plan
+(`docs/planning/2026-09-09_19-21_dashboard-ui-ux-pareto.md`): maximize
+operator signal-per-glance with the existing design system — no visual
+redesign, no CSP regressions — plus route ergonomics and observability
+groundwork: the `WithBasePath` ordering footgun is gone, the resolved
+routes are queryable, and a new opt-in introspection endpoint exposes
+the running configuration.
 
 ### Compatibility
 
@@ -20,6 +42,30 @@ opt-in introspection endpoint exposes the running configuration.
 
 ### Added
 
+- Healthy-group collapse: the healthy group renders as a native
+  `<details>` section with a count summary ("Healthy Services · 57 · all
+  pass") and collapses automatically at 8+ rows
+  (`WithHealthyGroupCollapse`, `WithHealthyGroupExpanded`). Failing and
+  warning groups keep their cards.
+- Human-readable service names: fully-qualified Go type names shorten to
+  the last package segment plus type (`handlers.Handlers`); the raw key
+  stays recoverable via the title attribute and a monospace line in the
+  details cell. Aggregate `source/check` keys pass through untouched.
+- Group count badges in card titles; the healthy group states its count
+  inline in the summary.
+- Client-side filter box (self-hosted-SDK setups): rows hide via
+  `data-class:hidden` matching short and raw names case-insensitively,
+  with a no-match hint.
+- Connection pill (live / reconnecting / offline) driven by Datastar
+  `datastar-fetch` lifecycle events.
+- Jump-to-problems anchor from the status banner to the first failing or
+  warning group.
+- Header links row surfacing the export/trend/metrics endpoints when
+  configured.
+- Relative "updated" age next to the absolute stamp (server-rendered,
+  patch-safe); the latency StatCard gained an honest hover tooltip.
+- `WithPersistCollapse`: opt-in localStorage persistence of the healthy
+  group's open/closed state, re-applied after every SSE patch.
 - `Routes()` accessor: returns the dashboard's fully resolved routes
   (defaults or `WithRoutes`, then the `WithBasePath` prefix).
 - `WithIntrospection()` + `GET /health/introspect`
@@ -54,6 +100,69 @@ opt-in introspection endpoint exposes the running configuration.
   from the `go-datastar/static` embed and points the dashboard's script
   tag at it. Same-origin script means `script-src 'self'` is sufficient
   (the SDK's own `unsafe-eval` requirement remains); no CDN dependency.
+- `?format=ndjson` on the export endpoint: newline-delimited JSON, one
+  sample object per line (`application/x-ndjson`), for consumers that
+  stream or tail export data. Per-check latency histogram labels remain
+  blocked on go-health exposing per-check durations (tracked upstream).
+- `WithGrouping(GroupBySource)`: one card per aggregate `source/check`
+  prefix, worst-of status per card (fail > warn > pass), plain keys in a
+  fallback Services card. The healthy-group collapse policy and
+  persistence deliberately do not apply in source mode (no single
+  healthy group; several pass sections must not share one storage key),
+  and public mode masks source titles — topology is identifying.
+- `WithNoDatastarRuntime()`: omits the SDK-dependent UI (client-side
+  filter box, no-match hint, connection pill) for pages served without
+  the Datastar SDK runtime — e.g. behind a custom CSP-safe patch client
+  (CV's mini-client). Without it, a straight bump would render a dead
+  filter input (no expression engine) and a pill stuck on "Live". All
+  server-rendered behavior is unaffected.
+- Example toggles `DEMO_COLLAPSE=<n>`, `DEMO_PERSIST=1`,
+  `DEMO_EMBEDDED_SDK=1`, and `DEMO_GROUPING=source|severity` dogfood the
+  collapse threshold, persistence, the client-side filter, and source
+  grouping.
+
+### Changed
+
+- UI dependency ceremony for the templ-components v1.16.0 sweep (fifth
+  unguarded sweep; caught by the CI pin guard as designed): the full
+  browser suite re-ran green on v1.16.0 + go-datastar v0.5.0, the pin
+  guard now pins v1.16.0 (including the newly direct
+  `templ-components/utils` module), and the axe `definition-list`/
+  `dlitem` tolerance is retired — upstream #6 fixed the StatCard `<dl>`
+  markup in v1.16.0 (`dt`+`dd` grouped in one wrapper div), so
+  `TestBrowser_Accessibility` again fails on any serious/critical
+  violation. Guard header now encodes the ceremony rule: pin updates
+  land in the same change as any bump.
+
+### Fixed
+
+- Stale browsers after a graceful server restart: the LiveRegion now
+  uses the SDK's `RetryAlways` retry mode. A clean stream EOF (what a
+  restart produces) previously disposed the connection silently and
+  every open dashboard stayed frozen until manually reloaded.
+- `WithPersistCollapse` never actually survived an SSE patch (found by
+  the new end-to-end browser test): the SDK dispatches its
+  `datastar-patch-*` events before merging the patch into the DOM, so
+  re-applying on the event always targeted the replaced-away node; and
+  Datastar's inner-mode merge syncs attributes, whose removal of `open`
+  fired a `toggle` that overwrote the stored choice with the server
+  default. The persistence script now keys storage off summary clicks
+  (user intent, pre-toggle state read synchronously) and re-applies via
+  a scoped MutationObserver watching both the `open` attribute and
+  inserted nodes (guarded sets — an identical `setAttribute` still
+  queues a mutation record and would loop the observer forever). The
+  toggle, patch-survival, and reload-restoration paths are proven in
+  `TestBrowser_CollapsePersistInteract`.
+
+## [0.6.1] — 2026-09-05
+
+### Fixed
+
+- Follow templ-components v1.13.1+: `DatastarVersion1_0_2` was renamed to
+  `DatastarVersion1_0_3` (the name-matches-value truth pin) and the old name
+  now exists only as a deprecated literal compat alias. The dashboard pins
+  `DatastarVersion1_0_3` explicitly and requires
+  `templ-components/datastar v1.13.2`.
 
 ## [0.6.0] - 2026-09-04
 
@@ -540,7 +649,8 @@ development have been removed.
   Replaced by `fingerprintChecks` which sorts keys before concatenating
   (`status.go:215`)
 
-[Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.6.1...v0.7.0
 [0.6.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.3.1...v0.4.0

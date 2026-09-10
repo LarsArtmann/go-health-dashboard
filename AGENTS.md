@@ -2,7 +2,7 @@
 
 Real-time health dashboard that composes [go-health](https://github.com/larsartmann/go-health) (health-checking SDK), [templ-components](https://github.com/larsartmann/templ-components) (UI rendering), [go-datastar](https://github.com/larsartmann/go-datastar) (Datastar SSE patch protocol), and [go-sse](https://github.com/larsartmann/go-sse) (SSE transport). The dashboard lives at a dedicated route (`/health`) and uses Datastar SSE for real-time updates. `/health` serves HTML by default but returns JSON when the client sends `Accept: application/json`. Kubernetes probe endpoints (`/healthz`, `/readyz`, `/startupz`) are JSON-only.
 
-**Module**: `github.com/larsartmann/go-health-dashboard` · **Package**: `dashboard` · **Go**: 1.26.5 · **Status**: v0.6.0
+**Module**: `github.com/larsartmann/go-health-dashboard` · **Package**: `dashboard` · **Go**: 1.26.7 · **Status**: v0.7.0
 
 ---
 
@@ -74,7 +74,7 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   in-process probes (namespaced `source/check` keys, worst-of status) with zero
   dashboard knowledge of the aggregate type.
 - **Webhooks are change-only and best-effort** — fire on status/fingerprint change, independent of PushMode; initial state announced on Start. One goroutine per fire, 10s timeout, bounded in-flight, no retries, no logging (the URL may embed a secret). Receivers own thresholds and dedup.
-- **SSE-first, Datastar-powered** — the Datastar SDK handles connections, reconnection, and DOM patching client-side; `datastar.LiveRegion` wraps the health content with `data-init="@get('/health/sse')"`.
+- **SSE-first, Datastar-powered** — the Datastar SDK handles connections, reconnection, and DOM patching client-side; `datastar.LiveRegion` wraps the health content with `data-init="@get('/health/sse')"` and `Retry: RetryAlways` (the SDK treats a clean stream EOF — exactly what a graceful restart produces — as a completed request and never reconnects under the default retry mode, leaving browsers stale until reload; verified empirically and documented in templ-components/datastar `retry.go`).
 - **Content negotiation on `/health`** — HTML by default; `Accept: application/json` returns the full health response (200 pass/warn, 503 fail). Kubelet probes (`/healthz`, `/readyz`, `/startupz`) are JSON-only.
 - **Status mapping: direct constants** — go-health uses `pass`/`warn`/`fail`. We map directly to `BadgeType` constants and `FeedbackType` constants (not the deprecated `AlertType` alias).
 - **Broadcaster fan-out (internal)** — one pusher goroutine renders patches and broadcasts to N SSE clients via `sse.Broadcaster[sse.Event]`; an implementation detail.
@@ -110,6 +110,7 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **Runtime CSP is verified in a headless browser** — `browser_test.go` serves the page self-hosted (compiled CSS + embedded SDK) under strict CSP, waits for the SSE connection, and asserts the runtime DOM has zero `<style>` elements and no styled elements besides `<html>` (theme script uses CSSOM, CSP-safe by spec).
 - **SSE reconnection via retry field** — `WithRetryInterval(d)` sets the SSE `retry` field on every event, telling the browser how long to wait before reconnecting. The handler always sends current state on connect, so reconnecting clients immediately see the latest health — no event replay needed.
 - **Sub-path mounting via WithBasePath** — `WithBasePath("/admin")` prefixes all routes in `Config.Routes`. Combined with `RegisterRoutes(mux)` reading from `Config`, this ensures the HTML-referenced SSE URL always matches the registered handler.
+- **`LastUpdatedTime`/age is HTML-only by design** — the JSON health response stays byte-stable with go-health's own probe handlers (kubelets and scrapers diff payloads); freshness rides the trend/export endpoints instead. Revisit only if a JSON consumer asks for it.
 - **samber/do lifecycle integration** — `Dashboard` implements `do.HealthcheckerWithContext` and `do.Shutdowner` (compile-time asserted). `Register(injector, probe, opts...)` stores it via `do.ProvideValue`, so consumers with an injector get `do.Shutdown`/`do.HealthCheck` cascades for free.
 
 ### Data Flow
@@ -156,7 +157,17 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **Datastar SDK requires `script-src 'unsafe-eval'`** — the SDK compiles `data-*` expressions with the `Function` constructor. Under a strict CSP without it, the bundle throws `Error: GenerateExpression` during init and the SSE connection never opens (discovered by `browser_test.go`). Nonce-based script delivery still works; styles stay clean with `WithCSSPath`.
 - **Headless Chrome must be launched manually in tests** — this machine's Chromium binds the DevTools listener to IPv6 `[::1]` and never announces a websocket with `--remote-debugging-port=0`. `startHeadlessChrome` (browser_test.go) picks a concrete free port, parses the `DevTools listening on ...` stderr line, and hands it to `chromedp.NewRemoteAllocator`. The profile dir is removed with a bounded retry because renderer children outlive the browser process.
 - **Bisect wall `071c251..HEAD`** — five auto-daemon mid-edit commits do not compile (immutable history); `git bisect skip` them. Root cause class: the daemon snapshots half-wired trees — run `go build ./...` before walking away. Full audit: `docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
-- **UI dependencies are pinned and guarded** — templ-components v1.11.0 + go-datastar v0.4.0 (sub-modules included): v1.12.0's LiveRegion busy-script renders `nonce=""` (upstream templ-components#7) and the v0.5.0 SDK bundle is unaudited. Undocumented sweeps have landed four times; `scripts/check-ui-pins.sh` (CI Build+Test steps) now fails loudly on any movement. UI bumps require a green browser suite — the unit suite cannot see these regressions. Removal condition is documented in the script header.
+- **UI dependencies are pinned and guarded** — templ-components v1.16.0 + go-datastar v0.5.0, re-audited 2026-09-10 with a green browser suite. Upstream templ-components#6 (StatCard `<dl>` markup) is FIXED in v1.16.0; the axe `definition-list`/`dlitem` tolerance in `TestBrowser_Accessibility` is retired — the audit now fails on any serious/critical violation. Undocumented sweeps have landed five times; `scripts/check-ui-pins.sh` (CI Build+Test steps) fails loudly on any movement. UI bumps require a dedicated change with a green browser suite — the unit suite cannot see these regressions — and the guard pins must be updated IN THE SAME CHANGE as any bump (a bump without its guard update leaves CI red). Script-emitting upstream components (CopyButton, Tooltip) are vetted for nonce/CSP compatibility before adoption: per-element inline scripts and unconditional `nonce=""` attributes clash with the per-request-nonce and SSE-patch paths here.
+- **Datastar v1.0 attribute names are colon-keyed** — the SDK (pinned
+  v0.5.0 bundle) registers plugins by name and splits keys on `:`:
+  `data-bind="query"` (not the pre-1.0 `data-model`) and
+  `data-class:hidden="expr"` (not `data-class-hidden` — plugin names
+  contain hyphens, so hyphen-keyed class attributes silently match
+  nothing). Verified against the embedded bundle; the filter box and
+  collapse persistence depend on this. Also: patch application itself
+  dispatches `datastar-fetch` events with type `datastar-patch-*`, which
+  the connection pill maps to "live" (retry-success paths emit no
+  `started`/`finished`).
 - **Env toggles validate before use** — the example's `safeBasePath` is the
   pattern: any value read from an environment variable that reaches a route
   or a log line gets validated/normalized first (log-injection defense).

@@ -115,6 +115,9 @@ dash := dashboard.New(probe,
     dashboard.WithRetryInterval(2*time.Second),                // SSE reconnection delay (browser retry field)
     dashboard.WithTrend(60),                                   // Health trend sparkline (samples retained)
     dashboard.WithHideStatCards(),                             // Hide version/uptime/latency cards
+    dashboard.WithHealthyGroupCollapse(8),                     // Collapse healthy group at 8+ rows (default 8)
+    // dashboard.WithHealthyGroupExpanded(),                     // Never collapse the healthy group
+    dashboard.WithPersistCollapse(),                           // Remember collapse state in localStorage (opt-in)
     dashboard.WithMetrics(true),                               // Prometheus metrics at /health/metrics
     dashboard.WithMiddleware(myAuthMiddleware),                // Protect dashboard routes (see below)
     dashboard.WithShutdownDrain(5*time.Second),                // Wait for SSE clients on Shutdown
@@ -137,6 +140,31 @@ dash := dashboard.New(probe,
 dashboard-owned routes (dashboard HTML, SSE, favicon, metrics, trend,
 export) — not one bucket per route. Kubernetes probe endpoints are never
 limited.
+
+## Reading the Dashboard
+
+The page is organized for triage: **failures first, green last**.
+
+- **Status banner** — overall state at a glance: "All Systems Operational",
+  "Degraded — Non-Critical Issues", or "Unhealthy — Critical Failures". When
+  anything is failing, a **Jump to problems** link scrolls to the first
+  non-healthy group.
+- **Service tables** — grouped by severity (critical failures, non-critical
+  issues, healthy). Card titles carry row-count badges. Long check names are
+  shortened (`*github.com/org/repo/internal/.../handlers.Handlers` reads as
+  `handlers.Handlers`); the full key is in the table cell and on hover.
+- **Healthy group** — collapsed by default once 8+ services pass
+  (`WithHealthyGroupCollapse`); the summary line states the count. An SSE
+  patch re-applies the default state; `WithPersistCollapse` lets each
+  browser keep its choice.
+- **Filter** (self-hosted SDK setups) — type to narrow rows by short or raw
+  name, case-insensitive.
+- **Connection pill** — live / reconnecting / offline, driven by the SSE
+  stream's real lifecycle. The stream self-heals across server restarts.
+- **Header links** — Export CSV/JSON, trend history, and Prometheus metrics,
+  shown only when those endpoints are configured.
+- **Updated stamp** — absolute UTC time plus a coarse age; the stamp is the
+  time the health state was actually observed.
 
 ## Protecting the Dashboard
 
@@ -330,12 +358,12 @@ pass/fail every 15s), and one always failing. Watch the dashboard update live.
 
 Tested version matrix (`go.mod` is the live source of truth):
 
-| Dependency       | Version | Note                                                 |
-| ---------------- | ------- | ---------------------------------------------------- |
-| go-health        | v0.1.3  | `aggregate` package needs v0.1.0+                    |
-| templ-components | v1.11.0 | pinned — v1.12.0 busy-script nonce bug (upstream #7) |
-| go-datastar      | v0.4.0  | audited SDK bundle; needs CSP `unsafe-eval`          |
-| go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                       |
+| Dependency       | Version | Note                                                |
+| ---------------- | ------- | --------------------------------------------------- |
+| go-health        | v0.1.3  | `aggregate` package needs v0.1.0+                   |
+| templ-components | v1.16.0 | pinned — CI guard + browser-suite re-audit on bumps |
+| go-datastar      | v0.5.0  | audited SDK bundle; needs CSP `unsafe-eval`         |
+| go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                      |
 
 ## Dark Mode
 
@@ -346,6 +374,17 @@ toggle button for manual switching. The preference is persisted in
 ![Health dashboard in dark mode showing the same layout with a dark theme](docs/screenshot-dark.png)
 
 Dark screenshot captured by `screenshot_dark_test.go` (`SCREENSHOT_OUTPUT_DARK=docs/screenshot-dark.png`).
+
+## Failure State
+
+With a critical service down, the banner leads with the failure, a
+jump-to-problems link skips past the healthy bulk, and the Critical
+Failures card sorts to the top:
+
+![Health dashboard with a critical service failing: red status banner, jump-to-problems link, and a Critical Failures card](docs/screenshot-degraded.png)
+
+Degraded screenshot captured by `screenshot_test.go`
+(`SCREENSHOT_OUTPUT_DEGRADED=docs/screenshot-degraded.png`).
 
 ## Content-Security-Policy
 

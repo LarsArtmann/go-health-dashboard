@@ -2,13 +2,34 @@ package dashboard
 
 import (
 	"fmt"
+	"strconv"
+	"time"
+	"unicode/utf8"
 
+	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/datastar"
 	"github.com/larsartmann/templ-components/display"
 	"github.com/larsartmann/templ-components/feedback"
 	"github.com/larsartmann/templ-components/layout"
 	"github.com/larsartmann/templ-components/utils"
 )
+
+// collapseStorageKeyName is the localStorage key the persistence script
+// uses when WithPersistCollapse is enabled.
+const collapseStorageKeyName = "health-healthy-group-collapsed"
+
+// storageKey returns the CollapsibleSection persistence key when collapse
+// persistence is enabled, otherwise empty (no data-collapsible attribute).
+// Source-grouped pages never persist: they can render several pass-status
+// sections, and one localStorage key shared across them would couple their
+// open/closed states.
+func storageKey(data viewModel) string {
+	if data.PersistCollapse && data.Grouping != GroupBySource {
+		return collapseStorageKeyName
+	}
+
+	return ""
+}
 
 // View renders the full HTML dashboard page: Base shell (no HTMX), Datastar
 // SDK in head, header, StatCards, and a LiveRegion that auto-connects to the
@@ -33,7 +54,12 @@ templ View(data viewModel) {
 							Real-time health monitoring
 						</p>
 					</div>
-					@layout.ThemeToggle("Toggle theme", data.DatastarNonce)
+					<div class="flex items-center gap-3">
+						if data.HasDatastarRuntime {
+							@connectionPill(data.DatastarNonce)
+						}
+						@layout.ThemeToggle("Toggle theme", data.DatastarNonce)
+					</div>
 				</div>
 				if data.ShowStatCards {
 					@display.Grid(display.GridProps{Cols: display.GridCols3}) {
@@ -46,6 +72,16 @@ templ View(data viewModel) {
 							Label: "Uptime",
 						})
 						@display.StatCard(display.StatCardProps{
+							BaseProps: utils.BaseProps{
+								Attrs: templ.Attributes{
+									// Native hover tooltip: honest framing for the
+									// number without a script (the upstream Tooltip
+									// component emits its aria script with a nonce
+									// attribute even for nonce-less pages, which
+									// breaks the CSP-no-nonce contract).
+									"title": "Duration of the most recent probe batch across all services, refreshed every probe interval",
+								},
+							},
 							Value: fmt.Sprintf("%dms", data.LatencyMs),
 							Label: "Check Latency",
 						})
@@ -57,10 +93,20 @@ templ View(data viewModel) {
 						URL:       data.SSEURL,
 						AutoStart: true,
 						Live:      datastar.LivePolite,
+						// A graceful server restart ends the SSE stream with a
+						// clean EOF, which the SDK's default retry mode treats
+						// as a completed request and never reconnects — every
+						// browser would go stale until reloaded. RetryAlways
+						// re-runs the connect across restarts (the failure
+						// counter resets on every successful connect).
+						Retry: datastar.RetryAlways,
 					}) {
 						@dashboardContent(data)
 					}
 				</div>
+				if data.PersistCollapse {
+					@collapsePersistence(data.DatastarNonce)
+				}
 			</div>
 		}
 	}
@@ -84,7 +130,7 @@ templ dashboardHead(data viewModel) {
 	} else {
 		@datastar.SDKScript(datastar.SDKScriptProps{
 			BaseProps: utils.BaseProps{Nonce: data.DatastarNonce},
-			Version:   datastar.DatastarVersion1_0_2,
+			Version:   datastar.DatastarVersion1_0_3,
 		})
 	}
 	if data.CSSPath == "" {
@@ -114,6 +160,7 @@ templ dashboardContent(data viewModel) {
 	{{
 		trendMinVal := 0.0
 		trendMaxVal := 1.0
+		problemsAssigned := false
 	}}
 	@feedback.Alert(feedback.AlertProps{
 		Type:  data.FeedbackType,
@@ -121,7 +168,44 @@ templ dashboardContent(data viewModel) {
 	})
 	<p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
 		Updated { data.LastUpdated }
+		if !data.LastUpdatedTime.IsZero() {
+			<span class="text-gray-400 dark:text-gray-500">· { formatAge(data.LastUpdatedTime, time.Now().UTC()) }</span>
+		}
 	</p>
+	if data.ExportURL != "" || data.TrendURL != "" || data.MetricsURL != "" {
+		<p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+			if data.ExportURL != "" {
+				<a class="font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300" href={ data.ExportURL + "?format=csv" }>Export CSV</a>
+				<a class="font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300" href={ data.ExportURL }>Export JSON</a>
+			}
+			if data.TrendURL != "" {
+				<a class="font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300" href={ data.TrendURL }>Trend JSON</a>
+			}
+			if data.MetricsURL != "" {
+				<a class="font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300" href={ data.MetricsURL }>Metrics</a>
+			}
+		</p>
+	}
+	if hasProblems(data) {
+		<p class="mt-2 text-sm">
+			<a href="#group-problems" class="font-medium text-red-600 underline decoration-red-300 underline-offset-2 hover:text-red-700 dark:text-red-400 dark:decoration-red-700 dark:hover:text-red-300">
+				Jump to problems ↓
+			</a>
+		</p>
+	}
+	if data.DatastarSrc != "" && data.HasDatastarRuntime {
+		<div class="mt-6">
+			<label class="sr-only" for="health-filter">Filter services</label>
+			<input
+				id="health-filter"
+				type="search"
+				autocomplete="off"
+				placeholder="Filter services…"
+				data-bind="query"
+				class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+			/>
+		</div>
+	}
 	if len(data.History) >= 2 {
 		<div class="mt-6">
 			@display.Card(display.CardProps{Title: "Health Trend"}) {
@@ -162,23 +246,125 @@ templ dashboardContent(data viewModel) {
 	<div class="mt-6 space-y-6">
 		if len(data.Groups) == 0 {
 			@display.Card(display.CardProps{Title: "Service Status"}) {
-				@display.SimpleEmptyState("No registered services")
+				@display.SimpleEmptyState("No services registered yet.")
 			}
 		} else {
 			for _, group := range data.Groups {
-				@display.Card(display.CardProps{
-					Title:   group.Title,
-					Padding: display.CardPaddingNone,
-				}) {
-					@display.Table(display.TableProps{
-						Headers: []string{"Service", "Status", "Details"},
-						Rows:    rowsToTableRows(group.Rows),
-						Flush:   true,
-					})
+				if group.Status == health.StatusPass {
+					@display.CollapsibleSection(display.CollapsibleSectionProps{
+						Title:      healthyGroupSummary(group),
+						Collapsed:  data.HealthyCollapsed,
+						StorageKey: storageKey(data),
+					}) {
+						@groupTable(group)
+					}
+				} else if !problemsAssigned {
+					{{ problemsAssigned = true }}
+					@display.Card(display.CardProps{
+						BaseProps:    utils.BaseProps{ID: "group-problems"},
+						Title:        group.Title,
+						Padding:      display.CardPaddingNone,
+						HeaderAction: groupCountBadge(len(group.Rows)),
+					}) {
+						@groupTable(group)
+					}
+				} else {
+					@display.Card(display.CardProps{
+						Title:        group.Title,
+						Padding:      display.CardPaddingNone,
+						HeaderAction: groupCountBadge(len(group.Rows)),
+					}) {
+						@groupTable(group)
+					}
 				}
 			}
 		}
+		if data.DatastarSrc != "" && data.HasDatastarRuntime && len(data.Groups) > 0 {
+			<p
+				class="hidden text-sm text-gray-500 dark:text-gray-400"
+				role="status"
+				data-filter-empty
+				data-class:hidden={ filterEmptyExpr(data) }
+			>
+				No services match your filter.
+			</p>
+		}
 	</div>
+}
+
+// groupTable renders the service table shared by every group container.
+// Rows are rendered via the Body hook so each <tr> can carry the
+// client-side filter attributes.
+templ groupTable(group checkGroup) {
+	@display.Table(display.TableProps{
+		Headers: []string{"Service", "Status", "Details"},
+		Flush:   true,
+		Body:    groupRows(group),
+	})
+}
+
+// groupRows renders the table rows for a group, each carrying its filter
+// haystack and a data-class-hidden expression that hides the row while the
+// query signal is active and does not match. The haystack covers both the
+// short display name and the raw check key, case-insensitively.
+templ groupRows(group checkGroup) {
+	for _, row := range group.Rows {
+		<tr
+			data-filter-row={ filterHaystack(row) }
+			data-class:hidden={ "$query !== '' && !" + jsStringLiteral(filterHaystack(row)) + ".includes($query.toLowerCase())" }
+		>
+			<td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+				@serviceNameCell(row)
+			</td>
+			<td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+				@display.Badge(badgeForStatus(row.Status))
+			</td>
+			<td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+				@rowDetailsCell(row)
+			</td>
+		</tr>
+	}
+}
+
+// groupCountBadge renders the row count shown in a group card's header.
+templ groupCountBadge(count int) {
+	<span class={ "ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium tabular-nums", "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" } aria-label={ fmt.Sprintf("%d service%s", count, pluralS(count)) }>
+		{ strconv.Itoa(count) }
+	</span>
+}
+
+// pluralS returns "s" for counts other than exactly one.
+func pluralS(count int) string {
+	if count == 1 {
+		return ""
+	}
+	return "s"
+}
+
+// serviceNameCell renders the Service column: the shortened display name,
+// with the raw check key recoverable via the title attribute.
+templ serviceNameCell(row checkRow) {
+	<span class="font-medium text-gray-900 dark:text-gray-100" title={ row.Name }>{ row.displayName() }</span>
+}
+
+// rowDetailsCell renders the Details column: the error text (long errors
+// expand via a native <details>), plus the raw check key as a dim
+// monospace line whenever it differs from the shortened display name —
+// full fidelity without giving up scannability.
+templ rowDetailsCell(row checkRow) {
+	if row.Error == "" {
+		<span class="text-gray-400 dark:text-gray-500">—</span>
+	} else if utf8.RuneCountInString(row.Error) <= errorSummaryMax {
+		<span class="break-words text-gray-600 dark:text-gray-300">{ row.Error }</span>
+	} else {
+		<details class="min-w-0">
+			<summary class="cursor-pointer break-all text-gray-600 dark:text-gray-300">{ truncateError(row.Error) }</summary>
+			<span class="mt-1 block whitespace-pre-wrap break-words font-mono text-xs text-gray-600 dark:text-gray-400">{ row.Error }</span>
+		</details>
+	}
+	if row.hasShortDisplay() {
+		<span class="mt-0.5 block break-all font-mono text-xs text-gray-400 dark:text-gray-500">{ row.Name }</span>
+	}
 }
 
 // versionOrUnknown returns the version string or "unknown" when empty.
@@ -195,3 +381,150 @@ const (
 	trendWidth  = 480
 	trendHeight = 64
 )
+
+// connectionPill renders the SSE connection indicator: live, reconnecting,
+// or offline. The Datastar SDK reports its fetch/SSE lifecycle on the
+// document-level "datastar-fetch" event (detail.type: started, finished,
+// retrying, error, retries-failed); a nonce-carried script maps those to
+// the three states by toggling the HTML hidden attribute. All three states
+// are pre-rendered so no CSS or DOM construction is needed at runtime, and
+// state changes are announced via aria-live. The pill sits outside the
+// patched region, so its state survives SSE content updates.
+templ connectionPill(nonce string) {
+	<span class="inline-flex items-center gap-1.5 text-xs font-medium" aria-live="polite">
+		<span id="conn-state-live" class="inline-flex min-w-24 items-center justify-center gap-1.5 text-green-600 dark:text-green-400">
+			<span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+			Live
+		</span>
+		<span id="conn-state-reconnecting" hidden class="inline-flex min-w-24 items-center justify-center gap-1.5 text-amber-600 dark:text-amber-400">
+			<span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+			Reconnecting
+		</span>
+		<span id="conn-state-offline" hidden class="inline-flex min-w-24 items-center justify-center gap-1.5 text-red-600 dark:text-red-400">
+			<span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+			Offline
+		</span>
+	</span>
+	<script if nonce != "" {
+	nonce={ nonce }
+}>
+		(function () {
+			'use strict';
+			if (window.__healthConnInit) { return; }
+			window.__healthConnInit = true;
+			var states = ['live', 'reconnecting', 'offline'];
+			function setState(state) {
+				states.forEach(function (name) {
+					var el = document.getElementById('conn-state-' + name);
+					if (el) { el.hidden = (name !== state); }
+				});
+			}
+			document.addEventListener('datastar-fetch', function (e) {
+				var type = e.detail && e.detail.type;
+				if (type === 'started' || type === 'finished') { setState('live'); }
+				else if (type && type.indexOf('datastar-patch-') === 0) { setState('live'); }
+				else if (type === 'retrying') { setState('reconnecting'); }
+				else if (type === 'error' || type === 'retries-failed') { setState('offline'); }
+			});
+		})();
+	</script>
+}
+
+// collapsePersistence renders the opt-in script that stores the healthy
+// group's open/closed state in localStorage and re-applies it after every
+// SSE patch (patches re-derive the server-side default, which would
+// otherwise undo the operator's choice). Rendered outside the patched
+// region; storage keys off summary clicks (user intent) because patch
+// merges also flip the open attribute and would erase the stored choice.
+templ collapsePersistence(nonce string) {
+	<script if nonce != "" {
+	nonce={ nonce }
+}>
+		(function () {
+			'use strict';
+			if (window.__healthCollapseInit) { return; }
+			window.__healthCollapseInit = true;
+			var KEY = 'health-healthy-group-collapsed';
+			function apply() {
+				var d = document.querySelector('details[data-collapsible]');
+				if (!d) { return; }
+				var stored;
+				try { stored = localStorage.getItem(KEY); } catch (err) { return; }
+				// Only write when the state actually differs: setting
+				// .open queues a mutation record even for an identical
+				// value, which would feed this same observer forever.
+				if (stored === 'open' && !d.open) { d.open = true; }
+				else if (stored === 'closed' && d.open) { d.open = false; }
+			}
+			apply();
+			// Cross-tab consistency: another tab's collapse toggle writes the
+			// same localStorage key, and the storage event tells this tab to
+			// follow suit.
+			window.addEventListener('storage', function (e) {
+				if (e.key === KEY) { apply(); }
+			});
+			// Store USER intent only. A `toggle` listener cannot distinguish a
+			// user toggle from Datastar's patch merge, which syncs attributes
+			// and thereby removes `open` — that merge-driven toggle used to
+			// overwrite the stored choice with the server default. A click on
+			// the summary always precedes a user toggle (mouse and keyboard),
+			// and during click dispatch `details.open` still holds the
+			// pre-toggle state, so the flipped value is stored synchronously.
+			document.addEventListener('click', function (e) {
+				var target = e.target;
+				var summary = target && target.closest && target.closest('summary');
+				if (!summary || !summary.parentElement ||
+					!summary.parentElement.matches ||
+					!summary.parentElement.matches('details[data-collapsible]')) { return; }
+				var details = summary.parentElement;
+				try {
+					localStorage.setItem(KEY, details.open ? 'closed' : 'open');
+				} catch (err) {}
+			}, false);
+			// The SDK dispatches its datastar-patch-* fetch events BEFORE the
+			// patch is merged into the DOM, so applying on the event alone
+			// always re-opens the replaced-away node. A scoped MutationObserver
+			// reacts to the actual DOM change instead — deterministic for
+			// inner-mode element patches — with the fetch event kept as a
+			// belt-and-braces trigger.
+			document.addEventListener('datastar-fetch', function (e) {
+				var t = e.detail && e.detail.type;
+				if (t && t.indexOf('datastar-patch-') === 0) { apply(); }
+			});
+			if ('MutationObserver' in window) {
+				var selector = 'details[data-collapsible]';
+				var observer = new MutationObserver(function (records) {
+					for (var i = 0; i < records.length; i++) {
+						var record = records[i];
+						if (record.type === 'attributes') {
+							if (record.target.matches && record.target.matches(selector)) {
+								apply();
+								return;
+							}
+							continue;
+						}
+						var added = record.addedNodes;
+						for (var j = 0; j < added.length; j++) {
+							var node = added[j];
+							if (node.nodeType !== 1) { continue; }
+							if ((node.matches && node.matches(selector)) ||
+								(node.querySelector && node.querySelector(selector))) {
+								apply();
+								return;
+							}
+						}
+					}
+				});
+				// Inner-mode patches merge the existing <details> in place and
+				// sync its attributes — removing `open` — so both attribute
+				// flips and inserted nodes must re-apply the stored state.
+				observer.observe(document.body, {
+					childList: true,
+					subtree: true,
+					attributes: true,
+					attributeFilter: ['open']
+				});
+			}
+		})();
+	</script>
+}

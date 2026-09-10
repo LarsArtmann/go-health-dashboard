@@ -473,3 +473,48 @@ func FuzzWebhookPayload(f *testing.F) {
 		}
 	})
 }
+
+// FuzzShortDisplayName exercises the display-name shortener with arbitrary
+// input. Invariants: never panics, is deterministic, and never turns a
+// non-empty name into an empty display (an empty name stays empty).
+func FuzzShortDisplayName(f *testing.F) {
+	for _, seed := range []string{
+		"",
+		"database",
+		"database.Service",
+		"*github.com/LarsArtmann/CV/internal/features/healthdash/handlers.Handlers",
+		"github.com/larsartmann/go-health.Probe",
+		"github.com/larsartmann/go-health/aggregate.Aggregate",
+		"net/http.Client",
+		"fmt.Stringer",
+		"samber/do/v2.injector",
+		"cv/database",
+		"source/check",
+		".",
+		"..",
+		"a.",
+		".a",
+		"*/",
+		"a/b/c.d.e",
+		"emoji-\U0001F680.name",
+		strings.Repeat("github.com/x/", 40) + "pkg.Type",
+	} {
+		f.Add(seed)
+	}
+
+	f.Fuzz(func(t *testing.T, raw string) {
+		short := shortDisplayName(raw)
+
+		if again := shortDisplayName(raw); short != again {
+			t.Fatalf("shortDisplayName not deterministic for %q: %q then %q", raw, short, again)
+		}
+
+		if raw != "" && short == "" {
+			t.Errorf("shortDisplayName collapsed a non-empty name to empty: %q", raw)
+		}
+
+		if raw == "" && short != "" {
+			t.Errorf("shortDisplayName invented a name for empty input: %q", short)
+		}
+	})
+}

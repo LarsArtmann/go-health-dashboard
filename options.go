@@ -15,6 +15,10 @@ const (
 	// defaultHeartbeatInterval is the SSE keepalive interval when
 	// WithHeartbeatInterval is not set.
 	defaultHeartbeatInterval = 15 * time.Second
+	// defaultHealthyGroupCollapseThreshold collapses the healthy group once
+	// it reaches this many rows. Chosen so small services stay scannable
+	// while large aggregates collapse instead of burying the page.
+	defaultHealthyGroupCollapseThreshold = 8
 )
 
 // Config holds construction-only configuration for a Dashboard.
@@ -37,6 +41,19 @@ type Config struct {
 	Introspection     bool
 	HideStatCards     bool
 
+	// Grouping selects the axis that partitions checks into dashboard
+	// cards: GroupBySeverity (default) or GroupBySource for aggregate
+	// pages (per-source cards, worst-of status per card).
+	Grouping GroupMode
+
+	// NoDatastarRuntime marks the page as served WITHOUT the Datastar SDK
+	// runtime — e.g. by a custom patch client speaking the SSE wire
+	// protocol. SDK-expression UI (the client-side filter box) and
+	// SDK-event UI (the connection pill) are omitted, because both would
+	// render dead without the expression engine and fetch lifecycle
+	// events.
+	NoDatastarRuntime bool
+
 	// ShutdownDrain bounds how long Shutdown waits for connected SSE
 	// clients to disconnect before closing the broadcaster. Zero closes
 	// immediately (default).
@@ -56,6 +73,20 @@ type Config struct {
 	// and the metrics endpoint. Health JSON and probe endpoints are
 	// unaffected.
 	PublicMode bool
+
+	// HealthyGroupCollapseThreshold collapses the healthy group behind a
+	// native <details> element when at least this many checks are healthy,
+	// so a large all-green table never buries failures rendered above it.
+	// Zero keeps the group expanded always. Defaults to
+	// defaultHealthyGroupCollapseThreshold; set via WithHealthyGroupCollapse
+	// or disabled via WithHealthyGroupExpanded.
+	HealthyGroupCollapseThreshold int
+
+	// PersistCollapse stores the healthy group's open/closed state in the
+	// browser's localStorage and re-applies it after every SSE patch. Off
+	// by default: patches re-derive the collapse state server-side, which
+	// keeps every client consistent. Enable via WithPersistCollapse.
+	PersistCollapse bool
 
 	// BasePath is stored by WithBasePath and applied to Routes once after
 	// all options run (see resolveRoutes). Empty means no prefix.
@@ -136,6 +167,50 @@ func WithTrend(samples int) Option {
 			c.TrendSamples = samples
 		}
 	}
+}
+
+// WithHealthyGroupCollapse collapses the healthy group behind a native
+// <details> element once at least threshold checks are healthy. The summary
+// line shows the count so the group stays glanceable; users can expand it
+// manually. A threshold of zero (or less) keeps the group expanded always.
+func WithHealthyGroupCollapse(threshold int) Option {
+	return func(c *Config) {
+		if threshold < 0 {
+			threshold = 0
+		}
+
+		c.HealthyGroupCollapseThreshold = threshold
+	}
+}
+
+// WithPersistCollapse stores the healthy group's open/closed state in
+// localStorage and re-applies it after every SSE patch, so an operator's
+// choice survives reconnects and restarts. Off by default: without it, an
+// SSE patch re-applies the server-derived default collapse state.
+func WithPersistCollapse() Option {
+	return func(c *Config) { c.PersistCollapse = true }
+}
+
+// WithHealthyGroupExpanded keeps the healthy group expanded regardless of
+// size, for dashboards where the full healthy table is the point.
+func WithHealthyGroupExpanded() Option {
+	return WithHealthyGroupCollapse(0)
+}
+
+// WithNoDatastarRuntime omits the SDK-dependent UI (client-side filter box
+// and connection pill) for pages served without the Datastar SDK runtime —
+// e.g. behind a custom CSP-safe patch client. Server-rendered behavior
+// (collapse, names, badges, jump link, SSE patches) is unaffected.
+func WithNoDatastarRuntime() Option {
+	return func(c *Config) { c.NoDatastarRuntime = true }
+}
+
+// WithGrouping selects how checks are partitioned into dashboard cards:
+// GroupBySeverity (default) or GroupBySource — one card per aggregate
+// source/check prefix, worst-of status per card. Unknown modes fall back
+// to severity grouping at render time.
+func WithGrouping(mode GroupMode) Option {
+	return func(c *Config) { c.Grouping = mode }
 }
 
 // WithHideStatCards hides the version/uptime/latency stat card grid.

@@ -1,9 +1,9 @@
 # TODO List
 
 > Short-term, actionable, bounded work items, verified against the actual
-> code (docs-health HARVEST passes 2026-09-03 and 2026-09-04 — closed items
-> live in `CHANGELOG.md`, never here). For long-term vision and unrefined
-> ideas, see ROADMAP.md.
+> code (docs-health HARVEST passes 2026-09-03, 2026-09-04, and 2026-09-10 —
+> closed items live in `CHANGELOG.md`, never here). For long-term vision and
+> unrefined ideas, see ROADMAP.md.
 
 ## Status legend
 
@@ -15,41 +15,53 @@
 
 ## Next Up
 
-### Remaining from the v0.6.0 cycle plan
+Everything below survived the 2026-09-10 full-execution session (Pareto plan
+`docs/planning/2026-09-10_00-26_ci-green-and-backlog-pareto.html`, closing
+report `docs/status/2026-09-10_01-15_full-execution-session.md`).
 
-| Task                                                  | Status       | Impact | Effort | Notes                                                                                                                                                             |
-| ----------------------------------------------------- | ------------ | ------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| F5: per-check latency series + NDJSON export          | 🔴 `TODO`    | Low    | 60min  | `docs/planning/2026-09-04_22-27_v060-release-and-hardening-cycle.md` — two features: per-check latency histogram labels + `?format=ndjson` on the export endpoint |
-| F8: 20-source aggregate load test                     | 🔴 `TODO`    | Low    | 60min  | Depends on the F7 harness; record numbers in `docs/research/`                                                                                                     |
-| F11: `WithGrouping(BySource)` per-service cards       | 🔴 `TODO`    | Med    | 90min  | View-model grouping for aggregate pages                                                                                                                           |
-| U3: lift templ-components pin after #7 ships upstream | 🟡 `BLOCKED` | High   | 45min  | PR templ-components#8 open (LiveRegion nonce guard); blocked on upstream merge + release, then browser-validate + drop pin-guard                                  |
+### Release hygiene (post-v0.7.0, harvested from the 2026-09-10 release session)
 
-### Release
+| Task                                                                                                                                                                   | Status    | Impact | Effort | Notes                                                                                                                       |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------ | ------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Backfill the missing v0.6.1 GitHub Release from its CHANGELOG section                                                                                                  | 🔴 `TODO` | Medium | S      | Releases currently jump v0.6.0 → v0.7.0; two-minute fix but a new public act — wants user go-ahead (report 2026-09-10 g Q1) |
+| Codify release lessons in AGENTS.md: fmt AFTER the last `templ generate`, commit immediately vs the auto-daemon, tag-first push order, poll-loop external verification | 🔴 `TODO` | Medium | S      | All four bit or paid off during the v0.7.0 cut (report 2026-09-10 d/e)                                                      |
+| `scripts/verify-release.sh <ver>`: proxy hash == tag commit, sumdb, clean-dir `go get`, release state                                                                  | 🔴 `TODO` | Medium | S/M    | Makes the post-push tail of a release mechanical (report 2026-09-10 e-5)                                                    |
+| CHANGELOG structural lint in CI: exactly one `[Unreleased]`, first section only, monotonic version order                                                               | 🔴 `TODO` | Medium | S      | The sandwiched-`[Unreleased]` bug survived days of doc audits (report 2026-09-10 a-2)                                       |
+| Investigate the dependabot client_model 0.6.3 PR red (own branch)                                                                                                      | 🔴 `TODO` | Medium | S      | Observed failing 2026-09-09/10; likely a guard tripping on a go.sum-only bump; rebase and see                               |
 
-| Task                                                                                                                                                 | Status    | Impact | Effort | Notes                                                                                                                                                                                                                                                                        |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cut v0.6.0: re-head CHANGELOG `[Unreleased]` (already written), bump `Version` in the same commit as the tag, push `--follow-tags`, verify the proxy | 🟢 `DONE` | High   | 30min  | Done 2026-09-04: commit `26b85c5`, annotated tag `v0.6.0`, `--follow-tags` push; proxy resolved (`go list -m @v0.6.0`); all 6 CI jobs green on their first real run (run 33916788241: Test, Browser CSP, Lint, Build, Version-guard, Vuln scan) + coverage artifact uploaded |
-| Create GitHub Releases pages for v0.2.0–v0.5.0 from the CHANGELOG sections                                                                           | 🟢 `DONE` | Low    | 20min  | Done 2026-09-04: `gh release create` for v0.2.0, v0.3.0, v0.3.1, v0.4.0, v0.5.0, v0.6.0 — all six pages populated from CHANGELOG sections and verified (`gh release list`)                                                                                                   |
-| 🆕 CI pin-guard: fail CI while templ-components ≠ v1.11.0 (until #7 lands)                                                                           | 🔴 `TODO` | High   | 30min  | New from the v0.6.0 cycle plan (`docs/planning/2026-09-04_22-27_v060-release-and-hardening-cycle.md` G1) — mechanical enforcement after the dep sweep landed twice on 2026-09-04                                                                                             |
+### Polish & cleanup (Low impact)
 
-### Features & polish
-
-| Task                                                                                                                                                                             | Status    | Impact | Effort | Notes                                                                                                                                                                                                   |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Upstream PR to templ-components: StatCard `<dl>` fix (+ goldens); then remove the axe tolerance here                                                                             | 🔴 `TODO` | Low    | 60min  | templ-components#6 still open. Local side done: axe tolerance scoped to the StatCard signature (2026-09-04), so a fix upstream + bump retires it cleanly                                                |
-| Upstream PR to templ-components: guard the LiveRegion busy-script `nonce=""` (issue #7); then bump off the v1.11.0 pin and re-validate the Datastar bundle via the browser suite | 🔴 `TODO` | Medium | 60min  | The v1.12.0 regression was re-verified live on 2026-09-04 (three failing CSP tests before the pin restore — `CHANGELOG.md` `[Unreleased]`); until the guard ships, UI-dep bumps stay blocked by the pin |
+| Task                                                                                        | Status    | Impact | Effort | Notes                                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------- | --------- | ------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mobile: design decision + true row stacking (not just overflow containment)                 | 🔴 `TODO` | Medium | M      | Plan T9's original intent; visual design decision first (report 2026-09-09 b2)                                                                                          |
+| Extract the three inline page scripts (pill, persistence, theme) into one nonce'd bootstrap | 🔴 `TODO` | Low    | M      | Saves two script tags; deliberately deferred 2026-09-10 — three small tested scripts beat one merged risky refactor mid-session; revisit with a dedicated CSP-suite run |
+| `view.templ` split for pill/persistence if the file keeps growing                           | 🔴 `TODO` | Low    | M      | ADR-0001 file-split rationale; conditional on growth (~500 lines now)                                                                                                   |
+| Dark-mode contrast pass of pill/badge/link colors on the live page                          | 🔴 `TODO` | Low    | S      | Rides the CV rollout (axe already covers the harness-representable parts)                                                                                               |
+| Full `aria-live` filter-count announcer (scripted match counts)                             | 🔴 `TODO` | Low    | M      | The no-match hint is already a `role="status"` region; counts need a script — only if a screen-reader user asks                                                         |
+| `rg -r` habit guard (machine-level ripgrep config)                                          | 🔴 `TODO` | Low    | S      | Personal tooling, not project code — decide the mechanism (alias/config) yourself                                                                                       |
 
 ## Blocked (needs user decision)
 
-| Task                         | Status       | Why blocked                                                                                                       | Evidence                    |
-| ---------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| Build-tag gating for SSE     | 🔵 `BLOCKED` | Consumers who only want HTML shouldn't need GOEXPERIMENT=jsonv2. Requires decision: accept, fork go-sse, or gate. | `ROADMAP.md` Open Questions |
-| Fingerprint format stability | 🔵 `BLOCKED` | Length-prefix fix changed fingerprint values; documented as accepted in CHANGELOG pending a versioning decision.  | `ROADMAP.md` Open Questions |
+| Task                                                    | Status       | Why blocked                                                                                                                                                                                                                                                                 | Evidence                                                  |
+| ------------------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| CV-side adoption: bump go.mod, deploy, verify live page | 🔵 `BLOCKED` | Deploy pipeline + rollout order are the user's call (report g Q2). Verified 2026-09-10 (read-only): CV serves a CSP-safe mini-client, not the Datastar SDK — a safe bump needs `dashboard.WithNoDatastarRuntime()` (shipped in v0.7.0) or the filter/pill would render dead | CV `internal/di/health_dashboard.go` pins v0.6.1          |
+| Copy affordance for raw check keys                      | 🔵 `BLOCKED` | Product decision (report g Q3): title-attr + select-text vs a Datastar clipboard action                                                                                                                                                                                     | status report 2026-09-09 question 3                       |
+| Pin-guard keep sign-off                                 | 🔵 `BLOCKED` | Guard rewritten to v1.16.0 pins per the keep decision (fifth sweep caught 2026-09-10); the deviation from the original removal condition wants sign-off                                                                                                                     | `scripts/check-ui-pins.sh` header                         |
+| Per-check latency metric labels (F5 remainder)          | 🔵 `BLOCKED` | go-health `Check` carries no per-check duration; unblocked when [go-health#2](https://github.com/LarsArtmann/go-health/issues/2) ships `Check.Since`/`Duration`                                                                                                             | `docs/upstream/go-health-check-timestamps-issue-draft.md` |
+| Build-tag gating for SSE                                | 🔵 `BLOCKED` | Consumers who only want HTML shouldn't need GOEXPERIMENT=jsonv2. Requires decision: accept, fork go-sse, or gate.                                                                                                                                                           | `ROADMAP.md` Open Questions                               |
+| Fingerprint format stability                            | 🔵 `BLOCKED` | Length-prefix fix changed fingerprint values; documented as accepted in CHANGELOG pending a versioning decision.                                                                                                                                                            | `ROADMAP.md` Open Questions                               |
 
-Everything else from the v0.3.x cycle brainstorms, the 2026-09-04 sweep, and
-the integration-pivot reports either shipped (see `CHANGELOG.md` [Unreleased]
-and 0.5.0), was closed with a reason in the annotated reports under
-`docs/status/` (fully-executed reports are moved to `archived/`), or lives in
-`ROADMAP.md` as raw ideas. Known-broken-commit SHAs for `git bisect skip`:
-see AGENTS.md and
+Everything else from the v0.3.x–0.7.0 cycles either shipped (see
+`CHANGELOG.md` `[0.7.0]` for the 2026-09-10 session: v1.16.0 pin
+ceremony + axe tolerance retirement, PersistCollapse patch-survival fix,
+introspection completeness, NDJSON export, `WithGrouping(BySource)`,
+`WithNoDatastarRuntime`, example toggles, the RetryAlways×503 interplay
+test, golden renders, the load-test harness with recorded numbers, and the
+upstream go-health#2 filing), was closed with a reason in the annotated
+reports under `docs/status/` (fully-executed reports move to `archived/`),
+or lives in ROADMAP.md as raw ideas. v0.7.0 was released 2026-09-10
+(tagged, pushed, proxy-verified, GitHub Release published; CI fully
+green including version-guard). Session-closing gate:
+`scripts/pre-push-checks.sh`. Known-broken-commit SHAs for
+`git bisect skip`: see AGENTS.md and
 `docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
