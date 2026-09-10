@@ -147,6 +147,10 @@ func TestRender_ContrastSafeStatusColors(t *testing.T) {
 	for _, failing := range []string{
 		`text-green-600`, // 3.30:1 on white
 		`text-amber-600`, // 3.19:1 on white
+		// The pre-fix raw-key form (2.54:1 on white, 3.04:1 on dark). The
+		// failures fixture uses plain names, so the raw-key line itself may
+		// not render here — the assertion guards against reintroduction.
+		`font-mono text-xs text-gray-400 dark:text-gray-500`,
 	} {
 		if strings.Contains(body, failing) {
 			t.Errorf("rendered page uses contrast-failing color class %q", failing)
@@ -157,9 +161,9 @@ func TestRender_ContrastSafeStatusColors(t *testing.T) {
 		`text-green-700 dark:text-green-400`,
 		`text-amber-700 dark:text-amber-400`,
 		`text-red-600 dark:text-red-400`, // 4.83:1 on white — passes
-		// Raw check keys and the details dash: 2.54:1 -> 4.83:1 on white,
-		// and 3.04:1 -> 5.78:1 on the dark card surface.
-		`font-mono text-xs text-gray-500 dark:text-gray-400`,
+		// Details dash and raw check keys: 2.54:1 -> 4.83:1 on white, and
+		// 3.04:1 -> 5.78:1 on the dark card surface.
+		`text-gray-500 dark:text-gray-400`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("rendered page missing contrast-safe color class %q", want)

@@ -182,7 +182,7 @@ const evidenceTooltip = "A pass badge means only that no failure was observed. C
 // observed non-pass, turning a green row into backed claims. Non-pass rows
 // need no tooltip — the badge itself is the deviation.
 func badgeEvidenceTitle(row checkRow, s evidenceSummary) string {
-	if row.Status != health.StatusPass {
+	if row.Status != health.StatusPass || s.Since.IsZero() {
 		return ""
 	}
 

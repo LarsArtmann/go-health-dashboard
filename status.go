@@ -13,7 +13,6 @@ import (
 	templ "github.com/a-h/templ"
 	"github.com/larsartmann/templ-components/display"
 	"github.com/larsartmann/templ-components/feedback"
-	"github.com/larsartmann/templ-components/utils"
 )
 
 // mapStatusToBadge converts a go-health Status to the corresponding
@@ -480,15 +479,18 @@ func sortByName(rows []checkRow) {
 // unproven greens disclose that no deviation was ever seen, proven greens
 // cite their last non-pass (see badgeEvidenceTitle).
 func badgeForStatus(s health.Status, ev evidenceSummary, name string) display.BadgeProps {
-	return display.BadgeProps{
+	props := display.BadgeProps{
 		Text: string(s),
 		Type: mapStatusToBadge(s),
-		BaseProps: utils.BaseProps{
-			Attrs: templ.Attributes{
-				"title": badgeEvidenceTitle(checkRow{Name: name, Status: s}, ev),
-			},
-		},
 	}
+
+	if title := badgeEvidenceTitle(checkRow{Name: name, Status: s}, ev); title != "" {
+		props.BaseProps.Attrs = templ.Attributes{
+			"title": title,
+		}
+	}
+
+	return props
 }
 
 // displayName returns the shortened display name, falling back to the raw
