@@ -166,6 +166,10 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 		populateHistory(&vm, p.history, d.cfg.TimelineMaxAge)
 	}
 
+	if p := d.push.Load(); p != nil {
+		populateEvidence(&vm, p.evidence, resp)
+	}
+
 	return vm
 }
 

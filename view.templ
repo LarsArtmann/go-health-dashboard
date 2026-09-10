@@ -170,6 +170,11 @@ templ dashboardContent(data viewModel) {
 			· { formatAge(data.LastUpdatedTime, time.Now().UTC()) }
 		}
 	</p>
+	if !data.Evidence.Since.IsZero() && data.Evidence.Total > 0 {
+		<p class="mt-1 text-xs text-gray-500 dark:text-gray-400" title={ evidenceTooltip }>
+			{ evidenceSummaryText(data.Evidence) }
+		</p>
+	}
 	if data.ExportURL != "" || data.TrendURL != "" || data.MetricsURL != "" {
 		<p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs">
 			if data.ExportURL != "" {
@@ -254,7 +259,7 @@ templ dashboardContent(data viewModel) {
 						Collapsed:  data.HealthyCollapsed,
 						StorageKey: storageKey(data),
 					}) {
-						@groupTable(group)
+						@groupTable(group, data.Evidence)
 					}
 				} else if !problemsAssigned {
 					{{ problemsAssigned = true }}
@@ -264,7 +269,7 @@ templ dashboardContent(data viewModel) {
 						Padding:      display.CardPaddingNone,
 						HeaderAction: groupCountBadge(len(group.Rows)),
 					}) {
-						@groupTable(group)
+						@groupTable(group, data.Evidence)
 					}
 				} else {
 					@display.Card(display.CardProps{
@@ -272,7 +277,7 @@ templ dashboardContent(data viewModel) {
 						Padding:      display.CardPaddingNone,
 						HeaderAction: groupCountBadge(len(group.Rows)),
 					}) {
-						@groupTable(group)
+						@groupTable(group, data.Evidence)
 					}
 				}
 			}
@@ -301,11 +306,11 @@ templ dashboardContent(data viewModel) {
 // classes as the initial render. Requires Tailwind ≥3.1 (arbitrary
 // variants); the arbitrary variant on the table element is what hides
 // the upstream-rendered <thead>, which has no class hook of its own.
-templ groupTable(group checkGroup) {
+templ groupTable(group checkGroup, ev evidenceSummary) {
 	@display.Table(display.TableProps{
 		Headers:   []string{"Service", "Status", "Details"},
 		Flush:     true,
-		Body:      groupRows(group),
+		Body:      groupRows(group, ev),
 		BaseProps: utils.BaseProps{Class: "[&_thead]:max-sm:hidden"},
 	})
 }
@@ -323,7 +328,7 @@ templ groupTable(group checkGroup) {
 // variant rules sort later in the generated sheet). The guard raises the
 // stacking rule's specificity so filtering keeps winning on mobile; if
 // the filter ever stops using the `hidden` class, revisit this selector.
-templ groupRows(group checkGroup) {
+templ groupRows(group checkGroup, ev evidenceSummary) {
 	for _, row := range group.Rows {
 		<tr
 			data-filter-row={ filterHaystack(row) }
@@ -336,7 +341,7 @@ templ groupRows(group checkGroup) {
 			</td>
 			<td class="px-4 py-3 text-gray-700 dark:text-gray-300">
 				<span class="mb-0.5 block text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:hidden">Status</span>
-				@display.Badge(badgeForStatus(row.Status))
+				@display.Badge(badgeForStatus(row.Status, ev, row.Name))
 			</td>
 			<td class="px-4 py-3 text-gray-700 dark:text-gray-300">
 				<span class="mb-0.5 block text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:hidden">Details</span>

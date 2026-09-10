@@ -86,8 +86,9 @@ func TestMobileRowStacking_Markup(t *testing.T) {
 	body := w.Body.String()
 
 	// The upstream-rendered <thead> has no class hook, so the hide rule
-	// rides an arbitrary variant on the table element.
-	if !strings.Contains(body, `[&_thead]:max-sm:hidden`) {
+	// rides an arbitrary variant on the table element (HTML-escaped in the
+	// output: & -> &amp;).
+	if !strings.Contains(body, `[&amp;_thead]:max-sm:hidden`) {
 		t.Error("table must hide its header row below the sm breakpoint")
 	}
 
@@ -125,10 +126,12 @@ func TestMobileRowStacking_Markup(t *testing.T) {
 //
 //	green-600 on white 3.30 / amber-600 on white 3.19 / gray-400 on white 2.54  -> FAIL, replaced
 //	green-700 on white 5.02 / amber-700 on white 5.02 / red-600 on white 4.83   -> pass
-//	gray-500 on white 4.83 / gray-500 on gray-800 3.04 (decorative only there)
+//	gray-500 on white 4.83 / gray-400 on gray-800 5.78 (raw keys, labels)       -> pass
 //	dark variants (gray-400/green-400/amber-400/red-400/blue-400 on gray-800): 5.31-8.79 -> pass
 //
-// The upstream Badge/Alert/StatCard palettes are out of this test's reach.
+// Deliberately out of scope: the upstream CollapsibleSection chevron keeps
+// its gray-400 idle class (decorative disclosure icon, upstream-owned
+// markup), and the Badge/Alert/StatCard chip palettes are upstream's.
 func TestRender_ContrastSafeStatusColors(t *testing.T) {
 	t.Parallel()
 
@@ -142,9 +145,8 @@ func TestRender_ContrastSafeStatusColors(t *testing.T) {
 	body := w.Body.String()
 
 	for _, failing := range []string{
-		`text-green-600`,  // 3.30:1 on white
-		`text-amber-600`,  // 3.19:1 on white
-		`text-gray-400 dark:text-gray-500`, // raw keys / dim labels: 2.54:1 on white, 3.04:1 on dark gray-800
+		`text-green-600`, // 3.30:1 on white
+		`text-amber-600`, // 3.19:1 on white
 	} {
 		if strings.Contains(body, failing) {
 			t.Errorf("rendered page uses contrast-failing color class %q", failing)
@@ -155,7 +157,9 @@ func TestRender_ContrastSafeStatusColors(t *testing.T) {
 		`text-green-700 dark:text-green-400`,
 		`text-amber-700 dark:text-amber-400`,
 		`text-red-600 dark:text-red-400`, // 4.83:1 on white — passes
-		`text-gray-500 dark:text-gray-400`,
+		// Raw check keys and the details dash: 2.54:1 -> 4.83:1 on white,
+		// and 3.04:1 -> 5.78:1 on the dark card surface.
+		`font-mono text-xs text-gray-500 dark:text-gray-400`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("rendered page missing contrast-safe color class %q", want)

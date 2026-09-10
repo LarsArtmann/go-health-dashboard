@@ -49,6 +49,7 @@ type pusher struct {
 	connections   atomic.Int64
 	lastBroadcast atomic.Int64
 	history       *historyBuffer
+	evidence      *evidenceLog
 	ttl           int
 	ticks         int
 
@@ -76,6 +77,7 @@ func newPusher(d *Dashboard) *pusher {
 		retry:       d.cfg.RetryInterval,
 		maxLifetime: d.cfg.MaxConnectionLifetime,
 		history:     history,
+		evidence:    newEvidenceLog(),
 		ttl:         d.cfg.PushOnChangeTTL,
 	}
 }
@@ -106,10 +108,16 @@ func (p *pusher) broadcast() {
 	p.lastBroadcast.Store(time.Now().UnixNano())
 
 	resp := p.dashboard.currentResponse()
+	now := time.Now()
+
+	// Evidence accrues BEFORE change detection, on every tick, so the
+	// observational record stays complete even in PushOnChange mode (same
+	// discipline as the trend ring).
+	if p.evidence != nil {
+		p.evidence.observe(resp, now)
+	}
 
 	if p.history != nil {
-		now := time.Now()
-
 		p.history.record(sample{
 			At:     now,
 			Value:  statusValue(resp.Status),
@@ -162,6 +170,8 @@ func (p *pusher) renderPatch(resp health.Response) (sse.Event, bool) {
 	if p.history != nil {
 		populateHistory(&vm, p.history, p.dashboard.cfg.TimelineMaxAge)
 	}
+
+	populateEvidence(&vm, p.evidence, resp)
 
 	content := dashboardContent(vm)
 
