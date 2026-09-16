@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"testing"
+	"time"
 
 	health "github.com/larsartmann/go-health"
 )
@@ -137,6 +138,29 @@ func TestAnonymizeViewModel_MasksSourceTitles(t *testing.T) {
 		if group.Title == "api" || group.Title == "worker" || group.Title == groupTitleServices {
 			t.Errorf("group %d title %q leaks the source topology in public mode", i, group.Title)
 		}
+	}
+}
+
+func TestAnonymizeViewModel_KeepsMetadataTexts(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 9, 16, 12, 17, 0, 0, time.UTC)
+	resp := health.Response{
+		Status: health.StatusWarn,
+		Checks: map[string]health.Check{
+			"api/mail": {Status: health.StatusWarn, Error: "secret host unreachable", Since: now.Add(-17 * time.Minute)},
+		},
+	}
+
+	vm := buildViewModelAt(resp, "T", "/sse", GroupBySeverity, now)
+	anonymizeViewModel(&vm)
+
+	row := vm.Groups[0].Rows[0]
+	if row.Name == "api/mail" || row.Error != "" {
+		t.Errorf("identifying fields must be masked, got name %q error %q", row.Name, row.Error)
+	}
+	if row.SinceText != "since 12:00:00 UTC (17m)" {
+		t.Errorf("since metadata is non-identifying and must survive masking, got %q", row.SinceText)
 	}
 }
 

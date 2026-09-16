@@ -539,3 +539,153 @@ func TestFormatAge(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatStateAge(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 9, 16, 12, 17, 0, 0, time.UTC)
+
+	tests := []struct {
+		name  string
+		since time.Time
+		want  string
+	}{
+		{"under a minute", now.Add(-42 * time.Second), "<1m"},
+		{"future clamps", now.Add(5 * time.Minute), "<1m"},
+		{"minutes", now.Add(-17 * time.Minute), "17m"},
+		{"hours", now.Add(-5 * time.Hour), "5h"},
+		{"days", now.Add(-72 * time.Hour), "3d"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := formatStateAge(tt.since, now); got != tt.want {
+				t.Errorf("formatStateAge: want %q, got %q", tt.want, got)
+			}
+		})
+	}
+}
+
+func TestFormatCheckDuration(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		nanos int64
+		want  string
+	}{
+		{"zero is absent", 0, ""},
+		{"negative is absent", -5, ""},
+		{"sub-microsecond", 500, "<1µs"},
+		{"microseconds", int64(823 * time.Microsecond), "823µs"},
+		{"milliseconds", int64(42 * time.Millisecond), "42ms"},
+		{"seconds round to 10ms", int64(1234 * time.Millisecond), "1.23s"},
+		{"minutes stay duration-shaped", int64(61450 * time.Millisecond), "1m1.45s"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := formatCheckDuration(tt.nanos); got != tt.want {
+				t.Errorf("formatCheckDuration(%d): want %q, got %q", tt.nanos, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestRowMetadataTexts(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 9, 16, 12, 17, 0, 0, time.UTC)
+	since := time.Date(2026, 9, 16, 12, 0, 0, 0, time.UTC)
+
+	sinceText, durationText := rowMetadataTexts(since, now, int64(42*time.Millisecond))
+	if sinceText != "since 12:00:00 UTC (17m)" {
+		t.Errorf("sinceText: got %q", sinceText)
+	}
+	if durationText != "42ms" {
+		t.Errorf("durationText: got %q", durationText)
+	}
+
+	sinceText, durationText = rowMetadataTexts(time.Time{}, now, 0)
+	if sinceText != "" || durationText != "" {
+		t.Errorf("unknown metadata must render empty, got %q / %q", sinceText, durationText)
+	}
+
+	sinceText, durationText = rowMetadataTexts(time.Time{}, now, int64(42*time.Millisecond))
+	if sinceText != "" || durationText != "42ms" {
+		t.Errorf("duration-only: got %q / %q", sinceText, durationText)
+	}
+}
+
+func TestGroupChecks_CarriesCheckMetadata(t *testing.T) {
+	t.Parallel()
+
+	since := time.Date(2026, 9, 16, 12, 0, 0, 0, time.UTC)
+	checks := map[string]health.Check{
+		"api/postgres": {Status: health.StatusPass, Since: since, DurationNanos: int64(42 * time.Millisecond)},
+	}
+
+	for _, mode := range []GroupMode{GroupBySeverity, GroupBySource} {
+		groups := groupChecksBy(mode, checks)
+
+		var row *checkRow
+
+		for gi := range groups {
+			for ri := range groups[gi].Rows {
+				if groups[gi].Rows[ri].Name == "api/postgres" {
+					row = &groups[gi].Rows[ri]
+				}
+			}
+		}
+
+		if row == nil {
+			t.Fatalf("%s: api/postgres row not found", mode)
+		}
+		if !row.Since.Equal(since) {
+			t.Errorf("%s: Since: want %v, got %v", mode, since, row.Since)
+		}
+		if row.DurationNanos != int64(42*time.Millisecond) {
+			t.Errorf("%s: DurationNanos: got %d", mode, row.DurationNanos)
+		}
+	}
+}
+
+func TestBuildViewModelAt_DerivesMetadataTexts(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 9, 16, 12, 17, 0, 0, time.UTC)
+	resp := health.Response{
+		Status: health.StatusWarn,
+		Checks: map[string]health.Check{
+			"api/mail":     {Status: health.StatusWarn, Since: now.Add(-17 * time.Minute)},
+			"api/postgres": {Status: health.StatusPass, DurationNanos: int64(823 * time.Microsecond)},
+			"plain":        {Status: health.StatusPass},
+		},
+	}
+
+	vm := buildViewModelAt(resp, "T", "/sse", GroupBySeverity, now)
+
+	metadata := map[string]checkRow{}
+	for _, group := range vm.Groups {
+		for _, row := range group.Rows {
+			metadata[row.Name] = row
+		}
+	}
+
+	if got := metadata["api/mail"].SinceText; got != "since 12:00:00 UTC (17m)" {
+		t.Errorf("api/mail SinceText: got %q", got)
+	}
+	if got := metadata["api/mail"].DurationText; got != "" {
+		t.Errorf("api/mail DurationText: got %q", got)
+	}
+	if got := metadata["api/postgres"].DurationText; got != "823µs" {
+		t.Errorf("api/postgres DurationText: got %q", got)
+	}
+	if got := metadata["plain"].SinceText; got != "" || metadata["plain"].DurationText != "" {
+		t.Errorf("plain row must have no metadata, got %q / %q", metadata["plain"].SinceText, metadata["plain"].DurationText)
+	}
+}

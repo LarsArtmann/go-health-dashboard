@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	health "github.com/larsartmann/go-health"
 )
@@ -23,6 +24,10 @@ const prometheusContentType = "text/plain; version=0.0.4; charset=utf-8"
 //	dashboard_health_up              1 when overall status is pass, else 0
 //	dashboard_health_status          2 pass, 1 warn, 0 fail, -1 unknown
 //	dashboard_health_check{...}      1 when the check passes, else 0
+//	dashboard_health_check_last_duration_seconds{...}
+//	                                 last execution duration per check;
+//	                                 series absent when the executor does
+//	                                 not report timing
 //	dashboard_health_latency_ms      wall-clock time of last check batch
 //	dashboard_health_shutting_down   1 when the probe is shutting down
 //	dashboard_sse_connections        current SSE client count
@@ -73,6 +78,33 @@ func (d *Dashboard) renderMetrics() string {
 			escapeLabelValue(label),
 			escapeLabelValue(string(check.Status)),
 			boolGauge(check.Status == health.StatusPass),
+		)
+	}
+
+	// Per-check last-execution duration (go-health v0.2.0). Zero means the
+	// executor does not report timing, mirroring the wire's omitzero: the
+	// series is absent for that check rather than claiming a 0s execution.
+	// Labels reuse the check series' masking indexes so both metrics agree
+	// per check in public mode.
+	b.WriteString(
+		"# HELP dashboard_health_check_last_duration_seconds Duration of the most recent execution of each check, in seconds.\n",
+	)
+	b.WriteString("# TYPE dashboard_health_check_last_duration_seconds gauge\n")
+
+	for i, name := range sortedCheckNames(resp.Checks) {
+		check := resp.Checks[name]
+		if check.DurationNanos <= 0 {
+			continue
+		}
+
+		label := name
+		if d.cfg.PublicMode {
+			label = fmt.Sprintf("check-%d", i+1)
+		}
+
+		fmt.Fprintf(&b, "dashboard_health_check_last_duration_seconds{check=\"%s\"} %g\n",
+			escapeLabelValue(label),
+			float64(check.DurationNanos)/float64(time.Second),
 		)
 	}
 
