@@ -194,6 +194,27 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   job cannot lose a fetch race. (4) External-state verification (proxy
   hash, sumdb, clean-dir consumer, GitHub Release state, CI on the release
   commit) is a script, not a memory: `bash scripts/verify-release.sh <ver>`.
+- **erraudit blank-identifier policy** — response-writer discards are
+  centralized in `writeBody` (handlers.go) with ONE reasoned
+  `//nolint:erraudit`, instead of a suppression per call site.
+  `strings.Cut` blank identifiers are a known erraudit false positive
+  (the rule matches any `_, _ =` multi-return, not just errors) —
+  suppress with a reason, never restructure working code to appease it.
+  `//nolint:erraudit // reason` is the sanctioned form and
+  `erraudit nolint-audit` flags stale directives.
+- **go-structure-linter runs the `flat` preset** —
+  `.go-structure-linter.yaml` selects it because the root package IS the
+  public import path of this single-package library (same rationale as
+  go-datastar ADR-002). Use the named preset rather than a hand-maintained
+  exclude list that silently rots as rule names change.
+- **go-auto-upgrade's samber/lo suggestions are a deliberate non-adoption**
+  — stdlib2lo flags manual Filter/GroupBy loops and suggests adding
+  github.com/samber/lo; this module keeps zero runtime dependencies (same
+  policy as the hand-rolled rate limiter and metrics exposition), so those
+  suggestion warnings are noise, not work. BuildFlow runs the migrators
+  in-process and ignores `.go-auto-upgrade.json`, so there is currently no
+  per-project way to silence them — a fleet-level BuildFlow change, not a
+  per-repo script.
 
 ---
 

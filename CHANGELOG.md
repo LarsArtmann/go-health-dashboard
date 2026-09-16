@@ -15,13 +15,20 @@ forgetting.
 
 ## [Unreleased]
 
-### Added
+### Changed
 
-- Nothing yet.
+- Rate-limit JSON responses are encoded before the status line is
+  committed, so an (in practice unreachable) encode failure falls back to
+  a clean 429 instead of a torn response; the example server now reports
+  DI-container shutdown errors instead of discarding them.
 
 ### Fixed
 
-- Nothing yet.
+- Dockerfile pins the distroless runtime stage to the explicit `:nonroot`
+  tag (hadolint DL3006; rootless runtime as a bonus).
+- Dead release link in CHANGELOG (v0.1.0-alpha never had a git tag) now
+  points at the initial commit; CONTRIBUTING's Nix link migrated from the
+  retired nixos.wiki to wiki.nixos.org.
 
 ## [0.8.1] - 2026-09-16
 
