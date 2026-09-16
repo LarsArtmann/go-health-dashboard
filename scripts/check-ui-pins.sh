@@ -23,6 +23,12 @@
 # The v1.16.0 bump itself arrived as another unguarded sweep (fifth
 # occurrence, 2026-09-10) — the guard caught it in CI, as designed.
 #
+# Re-audited 2026-09-16 on templ-components v1.17.0 + go-datastar v0.5.0:
+#   - the v1.17.0 bump (a11y hardening + trust batch) arrived as another
+#     unguarded daemon sweep (sixth occurrence, 2026-09-16); adopted as a
+#     dedicated change after the full browser suite ran green on the
+#     bumped set under strict CSP.
+#
 # CEREMONY RULE: if you bump any of these dependencies, update the pins
 # in this file IN THE SAME CHANGE and re-run the browser suite. A bump
 # without its guard update leaves CI red for every subsequent commit.
@@ -32,9 +38,9 @@
 # change that updates these pins and re-runs the browser suite.
 set -euo pipefail
 
-expected_templ_components="v1.16.0"
-expected_templ_components_datastar="v1.16.0"
-expected_templ_components_utils="v1.16.0"
+expected_templ_components="v1.17.0"
+expected_templ_components_datastar="v1.17.0"
+expected_templ_components_utils="v1.17.0"
 expected_go_datastar="v0.5.0"
 
 fail=0

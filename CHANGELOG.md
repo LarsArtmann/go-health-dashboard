@@ -73,6 +73,12 @@ forgetting.
   push, the one-command verification, the poll-loop rule for slow
   surfaces, the `--latest=false` backfill convention, and refreshed
   v1.16.0 pin wording.
+- templ-components v1.16.0 → v1.17.0 (upstream a11y hardening + trust
+  batch) adopted as a dedicated audited change: the sweep itself landed
+  unguarded via the auto-daemon (sixth occurrence, caught by
+  `scripts/check-ui-pins.sh` as designed), so the guard pins, README
+  matrix, FEATURES, and checklist wording were updated in the same
+  change after the full browser suite ran green on the bumped set.
 
 ### Fixed
 

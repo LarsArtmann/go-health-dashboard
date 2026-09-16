@@ -8,8 +8,8 @@ Version history source of truth: `CHANGELOG.md` (Keep a Changelog).
 
 - [ ] `git fetch && git status` — clean tree, synced with `origin/master`.
 - [ ] Dependency pins intact: `scripts/check-ui-pins.sh` exits 0
-      (currently templ-components v1.16.0 + v1.16.0/datastar +
-      v1.16.0/utils + go-datastar v0.5.0).
+      (currently templ-components v1.17.0 + v1.17.0/datastar +
+      v1.17.0/utils + go-datastar v0.5.0).
       Any movement must be a dedicated, audited change with a green
       browser suite — never a silent sweep.
 - [ ] `TODO_LIST.md` rows intended for this release are done or deferred.
