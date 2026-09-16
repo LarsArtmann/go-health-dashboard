@@ -215,6 +215,15 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   in-process and ignores `.go-auto-upgrade.json`, so there is currently no
   per-project way to silence them — a fleet-level BuildFlow change, not a
   per-repo script.
+- **Detect-only advisories that are deliberate non-fixes** — branching-flow
+  flags `Config`/`viewModel` field counts and bool clusters as bit-flag
+  candidates: the With*-option surface is the library's public API and
+  named bools beat packed flags for readability; go-humanize-linter
+  suggests dustin/go-humanize (RelTime/Commaf), which would break the
+  zero-runtime-deps policy; jscpd flags repeated test scaffolding, where
+  per-test isolation is preferred over shared helpers. All three report
+  without gating — don't "fix" them into dependency additions or API
+  churn.
 
 ---
 
