@@ -26,7 +26,7 @@ require (
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.4.0 // indirect
 	github.com/larsartmann/go-branded-id v0.5.1 // indirect
-	github.com/larsartmann/go-error-family v0.10.0 // indirect
+	github.com/larsartmann/go-error-family v0.10.1 // indirect
 	github.com/larsartmann/templ-components/htmx v1.17.0 // indirect
 	github.com/larsartmann/templ-components/icons v1.17.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
