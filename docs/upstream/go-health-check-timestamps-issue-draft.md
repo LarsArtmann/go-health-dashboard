@@ -2,6 +2,15 @@
 
 > **Filed 2026-09-10 as [go-health#2](https://github.com/LarsArtmann/go-health/issues/2)** — claims re-verified against the v0.1.3 module cache before filing. Kept as the reasoning record.
 >
+> **✅ SHIPPED — go-health v0.2.0 (2026-09-16), issue closed upstream.** `Check.Since`
+> landed as proposed; the duration field became `DurationNanos int64` (`duration_ns`)
+> instead of `time.Duration` because encoding/json/v2 cannot marshal durations at all
+> (go.dev/issue/71631) — a plain integer keeps consumer re-marshaling lossless. Timing
+> is opt-in via `NewWithDetailedCheck` / `DetailedHealthRecorder`; the raw injector
+> path reports zero. Dashboard adoption (row metadata line +
+> `dashboard_health_check_last_duration_seconds`) shipped the same day — see
+> CHANGELOG `[Unreleased]`.
+>
 > Draft provenance: prepared per the verify-before-filing discipline:
 > every claim below was re-read from `types.go` in go-health v0.1.3 (module
 > cache, 2026-09-09) before being written.

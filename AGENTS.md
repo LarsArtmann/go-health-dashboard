@@ -81,7 +81,7 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **Content negotiation on `/health`** — HTML by default; `Accept: application/json` returns the full health response (200 pass/warn, 503 fail). Kubelet probes (`/healthz`, `/readyz`, `/startupz`) are JSON-only.
 - **Status mapping: direct constants** — go-health uses `pass`/`warn`/`fail`. We map directly to `BadgeType` constants and `FeedbackType` constants (not the deprecated `AlertType` alias).
 - **Broadcaster fan-out (internal)** — one pusher goroutine renders patches and broadcasts to N SSE clients via `sse.Broadcaster[sse.Event]`; an implementation detail.
-- **PushOnChange default** — broadcast only on overall-status or check-result change; `fingerprintChecks` with sorted keys, length-prefixed fields for determinism.
+- **PushOnChange default** — broadcast only on overall-status or check-result change; `fingerprintChecks` with sorted keys, length-prefixed fields for determinism. The fingerprint deliberately hashes only name/status/error: per-check duration (go-health v0.2.0) changes every tick and would turn PushOnChange into a broadcast storm, and `Check.Since` never changes without an accompanying name/status change, so nothing observable is missed.
 - **CachedResponse for zero-cost reads** — Dashboard reads `probe.CachedResponse()` which reads the atomic `p.latest` pointer. Lock-free.
 - **No HTMX loaded** — `layout.Base` is called with `HTMXVersion: ""` to disable HTMX injection. Datastar handles all real-time.
 - **`atomic.Pointer[pusher]` for safe concurrent access** — The `Dashboard.push` field is an `atomic.Pointer[pusher]`, not a bare `*pusher`. `Start()` calls `Store(p)`, `Shutdown()` calls `Swap(nil)`, and `sseHandler()` calls `Load()`. This prevents the data race that would occur when `Shutdown()` nils the pointer while `sseHandler()` reads it.
@@ -114,7 +114,8 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **SSE reconnection via retry field** — `WithRetryInterval(d)` sets the SSE `retry` field on every event, telling the browser how long to wait before reconnecting. The handler always sends current state on connect, so reconnecting clients immediately see the latest health — no event replay needed.
 - **Sub-path mounting via WithBasePath** — `WithBasePath("/admin")` prefixes all routes in `Config.Routes`. Combined with `RegisterRoutes(mux)` reading from `Config`, this ensures the HTML-referenced SSE URL always matches the registered handler.
 - **`LastUpdatedTime`/age is HTML-only by design** — the JSON health response stays byte-stable with go-health's own probe handlers (kubelets and scrapers diff payloads); freshness rides the trend/export endpoints instead. Revisit only if a JSON consumer asks for it.
-- **Greens are observations, not verification (evidence strip)** — per the health-washing thesis (samber-linter README §1: a dashboard's value equals the fraction of its checks that can actually fail), `evidenceLog` records per-check non-pass observations on every pusher tick (before change detection, like the trend ring), and the UI separates proven greens from unproven ones: a truth strip under the Updated stamp reports "X of N checks deviated from pass since <start>" (zero-proven is the explicit health-washing warning), and pass badges carry native `title` tooltips (unproven greens disclose, proven greens cite their last non-pass). The log cannot know WHY a check passes (`health.Check` is only `{Status, Error}`) — it claims only what is observable. Window = pusher lifetime (resets on restart, stated in the tooltip); zero `Since` (pusher not started) renders neither strip nor tooltips; proven counts intersect with the CURRENT response's checks so removed checks can't inflate the ratio; capped at `maxEvidenceChecks` names. HTML-only — the JSON/webhook/metrics contracts are untouched; evidence counts are non-identifying so public mode keeps them.
+- **Greens are observations, not verification (evidence strip)** — per the health-washing thesis (samber-linter README §1: a dashboard's value equals the fraction of its checks that can actually fail), `evidenceLog` records per-check non-pass observations on every pusher tick (before change detection, like the trend ring), and the UI separates proven greens from unproven ones: a truth strip under the Updated stamp reports "X of N checks deviated from pass since <start>" (zero-proven is the explicit health-washing warning), and pass badges carry native `title` tooltips (unproven greens disclose, proven greens cite their last non-pass). The log cannot know WHY a check passes (go-health v0.2.0 added `Check.Since`/`DurationNanos`, but a Check still carries no failure reason beyond `Error`) — it claims only what is observable. Window = pusher lifetime (resets on restart, stated in the tooltip); zero `Since` (pusher not started) renders neither strip nor tooltips; proven counts intersect with the CURRENT response's checks so removed checks can't inflate the ratio; capped at `maxEvidenceChecks` names. HTML-only — the JSON/webhook/metrics contracts are untouched; evidence counts are non-identifying so public mode keeps them.
+- **Per-check metadata is derived once per build (go-health v0.2.0)** — `buildViewModelAt` (injected clock) stamps `SinceText`/`DurationText` onto rows so HTML and SSE patches agree and golden files pin the clock instead of time-bombing; the row since-age, like the Updated stamp, only refreshes when a patch actually broadcasts. The metadata line renders for ANY status (a green "since" is as honest as a red one); public mode keeps it — timestamps and durations are non-identifying.
 - **samber/do lifecycle integration** — `Dashboard` implements `do.HealthcheckerWithContext` and `do.Shutdowner` (compile-time asserted). `Register(injector, probe, opts...)` stores it via `do.ProvideValue`, so consumers with an injector get `do.Shutdown`/`do.HealthCheck` cascades for free.
 
 ### Data Flow
@@ -275,9 +276,20 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 
 ### go-health (`github.com/larsartmann/go-health`)
 
-Provides `Probe`, `Response`, `Check`, `Status` (v0.1.3 in go.mod). The dashboard is a pure consumer — zero changes needed to go-health:
+Provides `Probe`, `Response`, `Check`, `Status` (v0.2.0 in go.mod). The dashboard is a pure consumer — zero changes needed to go-health:
 
 - `Probe.CachedResponse() Response` — reads atomic cache, overlays shutdown flag
+- `Check.Since` / `Check.DurationNanos` (since v0.2.0, additive, `omitzero` on the
+  wire) — probe-observed state-entry time and executor-reported execution
+  nanoseconds. Timing sources are opt-in: `NewWithDetailedCheck(fn)` (injector-free)
+  or a `HealthRecorder` implementing `DetailedHealthRecorder` (`CheckDetail` is the
+  raw outcome+duration report; classification stays with the probe). The raw
+  samber/do injector path reports zero duration. The wire field is `duration_ns`
+  (int64), not `time.Duration` — encoding/json/v2 cannot marshal time.Duration.
+  The dashboard surfaces both in the check rows (HTML) and as
+  `dashboard_health_check_last_duration_seconds` (metrics); since v0.2.0's own go
+  directive relaxed to `go 1.26`, but this module's floor stays `1.26.7` —
+  templ-components and go-datastar still require it
 - `SanitizeResponse(Response) Response` — replaces invalid UTF-8 with U+FFFD;
   the dashboard applies it once at the response choke point (`currentResponse`)
   so every write seam (JSON, webhook, SSE, metrics, CSV) stays valid under
