@@ -8,7 +8,7 @@ require (
 	github.com/chromedp/chromedp v0.16.0
 	github.com/larsartmann/go-datastar v0.5.0
 	github.com/larsartmann/go-datastar/static v0.5.0
-	github.com/larsartmann/go-health v0.1.3
+	github.com/larsartmann/go-health v0.2.0
 	github.com/larsartmann/go-sse v0.6.0
 	github.com/larsartmann/templ-components v1.17.0
 	github.com/larsartmann/templ-components/datastar v1.17.0

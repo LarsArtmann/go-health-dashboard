@@ -26,8 +26,8 @@ github.com/larsartmann/go-datastar/static v0.5.0 h1:ChzYyzDQIHSpdMOVpa7K4z2RkAe9
 github.com/larsartmann/go-datastar/static v0.5.0/go.mod h1:J5d13HKqAKSH67hTgOcGTQQtv8UXmm5jm5tcM4+/tnM=
 github.com/larsartmann/go-error-family v0.10.1 h1:lf1RNjpdK7k+tCzphkg5qRolAY76U8OGEc09ZsZ5S6A=
 github.com/larsartmann/go-error-family v0.10.1/go.mod h1:SYSVwVMTkw2GcqXI4khjMYOg7ey39o8sh7rXC9LfNcY=
-github.com/larsartmann/go-health v0.1.3 h1:MVNakBqoej2ko55y/KwwSzHq785Z8W8DaEIJXU0Givw=
-github.com/larsartmann/go-health v0.1.3/go.mod h1:AuHniwkxGZFEdTDAE0bml30QQfXZ8ZnZvFMl6VBzNUM=
+github.com/larsartmann/go-health v0.2.0 h1:otaP4VmGG3rbCLpAzMbAcHeDsCHlb2H2YbaMg2Vx57w=
+github.com/larsartmann/go-health v0.2.0/go.mod h1:WsyC1D/j8rCb+WnH8trDGEPHQBvRO2EdedHU0rSztEI=
 github.com/larsartmann/go-sse v0.6.0 h1:ITsMQi4Cfg+cXE5YYChk3p6wYsn33AxKJPVwd5hsiBY=
 github.com/larsartmann/go-sse v0.6.0/go.mod h1:ndYQ/lEnJVzTWqvF/h4+XMG/hJK/bEn6zSkfpkBAuUg=
 github.com/larsartmann/templ-components v1.17.0 h1:BlYoLYoF6TAMnZHXH73hhBhKnG3BlpIqIP98WioDENg=
