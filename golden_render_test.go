@@ -65,9 +65,17 @@ func goldenChecks() map[string]health.Check {
 // input (timestamps, uptime, latency, routes) is pinned so the rendered
 // bytes only change when the template or mapping logic changes.
 func goldenViewModel(t *testing.T) viewModel {
+	return goldenViewModelForMode(t, GroupBySeverity)
+}
+
+// goldenViewModelForMode builds the deterministic view model for the given
+// grouping axis: every volatile input (timestamps, since-ages, uptime,
+// latency, routes) is pinned so the rendered bytes only change when the
+// template or mapping logic changes.
+func goldenViewModelForMode(t *testing.T, mode GroupMode) viewModel {
 	t.Helper()
 
-	vm := buildViewModelAt(goldenRenderResponse(), "Golden Service", "/health/sse", GroupBySeverity, goldenNow)
+	vm := buildViewModelAt(goldenRenderResponse(), "Golden Service", "/health/sse", mode, goldenNow)
 	vm.LastUpdated = "12:00:00 UTC"
 	// Zeroed on purpose: the Updated-age span renders from the REAL clock
 	// (view.templ calls time.Now directly), so a real LastUpdatedTime would
@@ -102,15 +110,7 @@ func TestGoldenRender_Severity(t *testing.T) {
 func TestGoldenRender_Source(t *testing.T) {
 	t.Parallel()
 
-	vm := buildViewModel(goldenRenderResponse(), "Golden Service", "/health/sse", GroupBySource)
-	vm.LastUpdated = "12:00:00 UTC"
-	vm.LastUpdatedTime = time.Time{} // zeroed: see severity golden
-	vm.LatencyMs = 42
-	vm.CSSPath = "/static/app.css"
-	vm.DatastarSrc = "/static/datastar.js"
-	vm.ShowStatCards = true
-
-	goldenRender(t, "source", vm)
+	goldenRender(t, "source", goldenViewModelForMode(t, GroupBySource))
 }
 
 func goldenRender(t *testing.T, name string, vm viewModel) {
