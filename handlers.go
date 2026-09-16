@@ -111,7 +111,15 @@ func (d *Dashboard) serveJSON(w http.ResponseWriter) {
 	}
 
 	w.WriteHeader(code)
-	_, _ = w.Write(payload)
+	writeBody(w, payload)
+}
+
+// writeBody sends a pre-encoded response body. A failed Write here means the
+// client disconnected mid-response: the status line is already on the wire,
+// no handler action can recover, and the library deliberately does not log,
+// so the error is intentionally discarded.
+func writeBody(w http.ResponseWriter, data []byte) {
+	_, _ = w.Write(data) //nolint:erraudit // client disconnect after headers; nothing to recover or log
 }
 
 // SSEHandler returns an http.HandlerFunc that upgrades to an SSE connection
@@ -246,6 +254,6 @@ func (d *Dashboard) embeddedSDKHandler() http.Handler {
 
 		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 		w.Header().Set("Cache-Control", "public, max-age=86400")
-		_, _ = w.Write(dstarstatic.Bytes())
+		writeBody(w, dstarstatic.Bytes())
 	})
 }

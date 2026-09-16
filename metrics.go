@@ -34,7 +34,7 @@ func (d *Dashboard) MetricsHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", prometheusContentType)
 		w.Header().Set("Cache-Control", "no-cache")
-		_, _ = w.Write([]byte(d.renderMetrics()))
+		writeBody(w, []byte(d.renderMetrics()))
 	}
 }
 

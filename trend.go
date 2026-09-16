@@ -155,7 +155,7 @@ func (d *Dashboard) ExportHandler() http.HandlerFunc {
 				b.WriteByte('\n')
 			}
 
-			_, _ = w.Write([]byte(b.String()))
+			writeBody(w, []byte(b.String()))
 		case "json":
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Cache-Control", "no-cache")
@@ -181,8 +181,8 @@ func (d *Dashboard) ExportHandler() http.HandlerFunc {
 					return
 				}
 
-				_, _ = w.Write(line)
-				_, _ = w.Write([]byte{'\n'})
+				writeBody(w, line)
+				writeBody(w, []byte{'\n'})
 			}
 		default:
 			http.Error(w, "dashboard: unsupported export format "+format, http.StatusBadRequest)

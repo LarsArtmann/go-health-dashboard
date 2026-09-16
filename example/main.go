@@ -51,7 +51,11 @@ func main() {
 	defer cancel()
 
 	injector := do.New()
-	defer func() { _ = injector.Shutdown() }()
+	defer func() {
+		if report := injector.Shutdown(); len(report.Errors) > 0 {
+			log.Printf("injector shutdown: %v", report)
+		}
+	}()
 
 	var probeBundle struct {
 		prober   dashboard.Prober

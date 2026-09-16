@@ -81,17 +81,22 @@ func (d *Dashboard) applyRateLimit(next http.Handler) http.Handler {
 			w.Header().Set("Retry-After", strconv.Itoa(limiter.retryAfter()))
 
 			if wantsJSON(r) {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusTooManyRequests)
-
-				body, _ := json.Marshal(
+				body, err := json.Marshal(
 					rateLimitBody{
 						Error:      "dashboard: rate limit exceeded",
 						RetryAfter: limiter.retryAfter(),
 					},
 					json.Deterministic(true),
 				)
-				_, _ = w.Write(body)
+				if err != nil {
+					http.Error(w, "dashboard: rate limit exceeded", http.StatusTooManyRequests)
+
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusTooManyRequests)
+				writeBody(w, body)
 
 				return
 			}
