@@ -15,8 +15,24 @@ forgetting.
 
 ## [Unreleased]
 
+### Added
+
+- Per-check state metadata in the service tables (go-health v0.2.0's
+  `Check.Since`/`Check.DurationNanos`): rows show "since HH:MM:SS UTC
+  (age)" for checks reporting their state-entry time and the execution
+  duration ("42ms") when the check source reports timing. Unknown
+  metadata is omitted, never rendered as zero. Display-only — the JSON
+  and webhook wire contracts are untouched.
+- `dashboard_health_check_last_duration_seconds{check=...}` Prometheus
+  gauge: last execution duration per check. The series is absent for
+  checks whose executor reports no timing, and labels follow the
+  `dashboard_health_check` masking in public mode.
+
 ### Changed
 
+- go-health dependency bumped to v0.2.0 (additive release). The `/health`
+  JSON response now passes through the new per-check `since` and
+  `duration_ns` fields when sources produce them.
 - Rate-limit JSON responses are encoded before the status line is
   committed, so an (in practice unreachable) encode failure falls back to
   a clean 429 instead of a torn response; the example server now reports
