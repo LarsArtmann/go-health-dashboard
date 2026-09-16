@@ -179,7 +179,12 @@ func buildViewModel(resp health.Response, title, sseURL string, mode GroupMode) 
 // buildViewModelAt is buildViewModel with an injected clock: the Updated
 // stamp and the per-check since-ages all derive from now, so tests and
 // golden files pin it and never time-bomb.
-func buildViewModelAt(resp health.Response, title, sseURL string, mode GroupMode, now time.Time) viewModel {
+func buildViewModelAt(
+	resp health.Response,
+	title, sseURL string,
+	mode GroupMode,
+	now time.Time,
+) viewModel {
 	groups := groupChecksBy(mode, resp.Checks)
 
 	for gi := range groups {
@@ -541,7 +546,11 @@ func formatCheckDuration(nanos int64) string {
 // duration ("42ms"). Empty means unknown — the renderer omits the part.
 func rowMetadataTexts(since, now time.Time, durationNanos int64) (sinceText, durationText string) {
 	if !since.IsZero() {
-		sinceText = fmt.Sprintf("since %s (%s)", since.UTC().Format(updatedStampFormat), formatStateAge(since, now))
+		sinceText = fmt.Sprintf(
+			"since %s (%s)",
+			since.UTC().Format(updatedStampFormat),
+			formatStateAge(since, now),
+		)
 	}
 
 	durationText = formatCheckDuration(durationNanos)

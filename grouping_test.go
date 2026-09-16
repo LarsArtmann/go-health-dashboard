@@ -148,7 +148,11 @@ func TestAnonymizeViewModel_KeepsMetadataTexts(t *testing.T) {
 	resp := health.Response{
 		Status: health.StatusWarn,
 		Checks: map[string]health.Check{
-			"api/mail": {Status: health.StatusWarn, Error: "secret host unreachable", Since: now.Add(-17 * time.Minute)},
+			"api/mail": {
+				Status: health.StatusWarn,
+				Error:  "secret host unreachable",
+				Since:  now.Add(-17 * time.Minute),
+			},
 		},
 	}
 
@@ -160,7 +164,10 @@ func TestAnonymizeViewModel_KeepsMetadataTexts(t *testing.T) {
 		t.Errorf("identifying fields must be masked, got name %q error %q", row.Name, row.Error)
 	}
 	if row.SinceText != "since 12:00:00 UTC (17m)" {
-		t.Errorf("since metadata is non-identifying and must survive masking, got %q", row.SinceText)
+		t.Errorf(
+			"since metadata is non-identifying and must survive masking, got %q",
+			row.SinceText,
+		)
 	}
 }
 

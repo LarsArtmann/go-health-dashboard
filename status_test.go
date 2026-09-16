@@ -626,7 +626,11 @@ func TestGroupChecks_CarriesCheckMetadata(t *testing.T) {
 
 	since := time.Date(2026, 9, 16, 12, 0, 0, 0, time.UTC)
 	checks := map[string]health.Check{
-		"api/postgres": {Status: health.StatusPass, Since: since, DurationNanos: int64(42 * time.Millisecond)},
+		"api/postgres": {
+			Status:        health.StatusPass,
+			Since:         since,
+			DurationNanos: int64(42 * time.Millisecond),
+		},
 	}
 
 	for _, mode := range []GroupMode{GroupBySeverity, GroupBySource} {
@@ -661,9 +665,12 @@ func TestBuildViewModelAt_DerivesMetadataTexts(t *testing.T) {
 	resp := health.Response{
 		Status: health.StatusWarn,
 		Checks: map[string]health.Check{
-			"api/mail":     {Status: health.StatusWarn, Since: now.Add(-17 * time.Minute)},
-			"api/postgres": {Status: health.StatusPass, DurationNanos: int64(823 * time.Microsecond)},
-			"plain":        {Status: health.StatusPass},
+			"api/mail": {Status: health.StatusWarn, Since: now.Add(-17 * time.Minute)},
+			"api/postgres": {
+				Status:        health.StatusPass,
+				DurationNanos: int64(823 * time.Microsecond),
+			},
+			"plain": {Status: health.StatusPass},
 		},
 	}
 
@@ -686,6 +693,10 @@ func TestBuildViewModelAt_DerivesMetadataTexts(t *testing.T) {
 		t.Errorf("api/postgres DurationText: got %q", got)
 	}
 	if got := metadata["plain"].SinceText; got != "" || metadata["plain"].DurationText != "" {
-		t.Errorf("plain row must have no metadata, got %q / %q", metadata["plain"].SinceText, metadata["plain"].DurationText)
+		t.Errorf(
+			"plain row must have no metadata, got %q / %q",
+			metadata["plain"].SinceText,
+			metadata["plain"].DurationText,
+		)
 	}
 }
