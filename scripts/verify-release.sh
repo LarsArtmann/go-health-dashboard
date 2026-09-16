@@ -69,7 +69,7 @@ fi
 # so a passing download here IS the sumdb check.
 step "2. Proxy serves $TAG; Origin.Hash == tag commit; sumdb verified (fresh cache)"
 if [ -n "$local_commit" ]; then
-	dl_json=$(GOWORK=off GOFLAGS= GOMODCACHE="$TMP/gomodcache" go mod download -json "$MODULE@$TAG")
+	dl_json=$(GOWORK=off GOFLAGS='' GOMODCACHE="$TMP/gomodcache" go mod download -json "$MODULE@$TAG")
 	proxy_info=$(echo "$dl_json" | sed -n 's/^[[:space:]]*"Info": "\(.*\)",/\1/p')
 	proxy_hash=$(grep -o '"Hash":"[^"]*"' "$proxy_info" | head -1 | cut -d'"' -f4)
 	proxy_ref=$(grep -o '"Ref":"[^"]*"' "$proxy_info" | head -1 | cut -d'"' -f4)
@@ -96,7 +96,7 @@ if [ -n "$local_commit" ]; then
 	mkdir -p "$consumer"
 	(
 		cd "$consumer"
-		export GOWORK=off GOFLAGS= GOEXPERIMENT=jsonv2 GOMODCACHE="$TMP/gomodcache2"
+		export GOWORK=off GOFLAGS='' GOEXPERIMENT=jsonv2 GOMODCACHE="$TMP/gomodcache2"
 		go mod init consumer >/dev/null 2>&1
 		printf 'package main\n\nimport (\n\t"fmt"\n\n\t"github.com/larsartmann/go-health-dashboard"\n)\n\nfunc main() { fmt.Println(dashboard.Version) }\n' >main.go
 		go mod tidy >/dev/null
@@ -138,6 +138,7 @@ if [ -n "$local_commit" ]; then
 		if [ -z "$runs" ]; then
 			bad "no CI runs recorded for $local_commit"
 		elif echo "$runs" | grep -qvE '^(success|skipped|neutral)$'; then
+			# shellcheck disable=SC2001  # ${var//} has no ^ anchor; sed prefixing every line is the correct tool
 			echo "$runs" | sed 's/^/       run: /'
 			bad "CI on $local_commit has non-green runs (expected success/skipped/neutral only)"
 		else

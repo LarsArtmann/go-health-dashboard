@@ -751,4 +751,4 @@ development have been removed.
 [0.3.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/01277d3...v0.1.0
-[0.1.0-alpha]: https://github.com/LarsArtmann/go-health-dashboard/releases/tag/v0.1.0-alpha
+[0.1.0-alpha]: https://github.com/LarsArtmann/go-health-dashboard/commit/01277d35044e4a71b8f309d0ebc48f0972d5f596

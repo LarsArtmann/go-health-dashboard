@@ -11,7 +11,7 @@ Thanks for your interest in contributing!
 
 ## Development Setup
 
-This project uses [Nix flakes](https://nixos.wiki/wiki/Flakes) for all build
+This project uses [Nix flakes](https://wiki.nixos.org/wiki/Flakes) for all build
 and task automation. Enter the dev shell with `nix develop`.
 
 All Go commands require `GOEXPERIMENT=jsonv2` (the go-sse dependency uses
