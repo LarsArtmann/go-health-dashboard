@@ -28,7 +28,7 @@ none of today's work.**
    templ-generate re-raws `view_templ.go`/`page_scripts_templ.go` at 15:19:07; **nix-fmt repaired both
    at 15:19:12** (treefmt output "traversed 154 / formatted 2"; both file mtimes = 15:19:12 — nix-fmt
    runs the project treefmt, NOT bare dprint as the 14:55 report claimed); treefmt-check still failed
-   at 15:19:57 on gofumpt diffs of the *already-repaired-away* raw state. Conclusion: a nix command
+   at 15:19:57 on gofumpt diffs of the _already-repaired-away_ raw state. Conclusion: a nix command
    overlapping the raw window (nix-flake-update ran 15:19:04–15:19:16) ingested a `git+file` source
    snapshot mid-window and the check built from that stale snapshot. Generator-vs-nix-evaluator
    snapshot race — which also explains why DAG reshuffles changed pass/fail (04E passed, 064 failed).
@@ -68,7 +68,7 @@ none of today's work.**
    **ahead 10 commits** (all daemon heuristic commits since ~14:00). CI triggers on push; no runs
    exist after 11:35. Until a push happens, GitHub has zero knowledge of the erraudit fixes, the
    array-typed histogram, both skip gates, or the docs. Last observed CI on master: success at 11:35
-   (3-file commit); an 11:10 failure (8-file commit, `ba6fb6d`) was the session's *starting* state.
+   (3-file commit); an 11:10 failure (8-file commit, `ba6fb6d`) was the session's _starting_ state.
 2. **Fleet-level fix for the snapshot race** — root cause now correct, fix designed (order all
    tree-mutating generators before all nix-evaluating steps; optionally templ-generate
    skip-if-unchanged), not implemented anywhere: local patch vs upstream issue is open question 3.
@@ -84,7 +84,7 @@ none of today's work.**
 1. **Push + CI green run on today's commits** (needs authorization).
 2. **BuildFlow generator/nix ordering change** (fleet repo, needs question-3 answer).
 3. **templ upstream issue**: verify current templ still emits non-gofumpt generated Go; file or
-   pin-note. (Not started — today's evidence makes it *more* fileable: the raw window is the hazard.)
+   pin-note. (Not started — today's evidence makes it _more_ fileable: the raw window is the hazard.)
 4. **erraudit upstream filings**: (a) `strings.Cut` blank-identifier false positive; (b) nolint-audit
    accepting `./...` while silently scanning nothing (DX trap); (c) doctor-style binary-freshness
    check for erraudit itself.
@@ -106,7 +106,7 @@ none of today's work.**
 1. **I ran repo tooling concurrently with an active buildflow run — twice.** First `erraudit
    nolint-audit ./...` (15:20-ish, during run 072's go-mod steps) produced a bogus "go: updates to
    go.mod needed" that I initially misattributed to a loader-env bug; the true cause (torn go.mod
-   reads during buildflow's go-mod-update) only became clear when the failure repeated *after* the
+   reads during buildflow's go-mod-update) only became clear when the failure repeated _after_ the
    run finished. The second concurrency (nolint-audit during the background rerun) I caught before
    damage. The rule "never run Go tooling during a buildflow run" is now in AGENTS.md — earned the
    embarrassing way.
@@ -117,7 +117,7 @@ none of today's work.**
    cost two seconds.
 3. **The 14:55 session's root cause was wrong and I planned on it.** "nix-fmt = dprint with no Go
    coverage" was plausible, matched the log narrative, and was wrong: file mtimes proved nix-fmt
-   (treefmt) repaired the files 45 seconds *before* the check failed. The evidence needed —
+   (treefmt) repaired the files 45 seconds _before_ the check failed. The evidence needed —
    `stat` on the two files — costs one command and was available from run 064's artifacts. I
    formulated fleet-fix options (Q3, DAG redesign) on top of the wrong mechanism before falsifying
    it. Lesson now written down: in any ordering race, `stat` the files before theorizing about logs.
@@ -142,7 +142,7 @@ none of today's work.**
 4. **Read `--help` before first use of any subcommand** — `nolint-audit`'s directory-vs-pattern
    semantics silently no-op on `./...`.
 5. **Treat fleet binaries like buildflow does**: doctor checks buildflow's own freshness; erraudit
-   (and friends in `~/go/bin`) have no equivalent — a stale analyzer fails *weirdly*, not loudly.
+   (and friends in `~/go/bin`) have no equivalent — a stale analyzer fails _weirdly_, not loudly.
 6. **Check sync state before remote claims**: `git status -sb` (ahead/behind) before any "CI is
    green" statement.
 7. **Root-cause corrections must chase their downstream dependents** — correcting b4 in the old
