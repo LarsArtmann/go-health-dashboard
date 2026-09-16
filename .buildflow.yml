@@ -21,3 +21,19 @@ skip_steps:
   # real bugs (panic, split-brain, ro-leak) are missed until the fleet fix
   # lands (tracked in TODO_LIST.md, Blocked table).
   - branching-flow
+  # templ-generate re-raws view_templ.go / page_scripts_templ.go
+  # mid-run (templ emits unformatted Go; the canonical order here is
+  # generate → fmt, enforced by the CI hygiene job and the flake apps).
+  # The mutation window races BuildFlow's nix steps: a nix invocation
+  # (nix-flake-update / nix-fmt both evaluate the flake) snapshots the
+  # git+file source while the generated files are raw, and the flake's
+  # treefmt-check derivation then fails on gofumpt diffs against a tree
+  # state that no longer exists — measured nondeterministic across runs
+  # (passed with generate first, failed with generate first too; the
+  # deciding factor is which nix command ingests during the raw window).
+  # Skipping keeps the tree immutable for the whole pipeline, which makes
+  # treefmt-check deterministic; generated-file freshness stays owned by
+  # CI + `nix run .#build`/`.#test` (both regenerate as a pre-step).
+  # Unskip once BuildFlow orders tree-mutating generators before all
+  # nix-evaluating steps (tracked in TODO_LIST.md, Blocked table).
+  - templ-generate
