@@ -177,7 +177,7 @@ func escapeLabelValue(v string) string {
 // seconds, chosen to span fast local checks through slow timeouts.
 //
 //nolint:gochecknoglobals // immutable bucket bounds; a global keeps the\n// histogram zero-alloc and the exposition deterministic
-var latencyBucketBounds = []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10}
+var latencyBucketBounds = [...]float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10}
 
 // latencyHistogram is a fixed-bucket cumulative histogram of health-check
 // batch durations, hand-rolled to keep the module dependency-free. The
@@ -186,13 +186,13 @@ var latencyBucketBounds = []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1,
 const microsPerSecond = int64(1e6)
 
 type latencyHistogram struct {
-	buckets []atomic.Uint64 // per-bucket cumulative counts
-	sum     atomic.Int64    // observed seconds, scaled by 1e6 for atomicity
+	buckets [len(latencyBucketBounds)]atomic.Uint64 // per-bucket cumulative counts
+	sum     atomic.Int64                            // observed seconds, scaled by 1e6 for atomicity
 	count   atomic.Uint64
 }
 
 func newLatencyHistogram() *latencyHistogram {
-	return &latencyHistogram{buckets: make([]atomic.Uint64, len(latencyBucketBounds))}
+	return &latencyHistogram{}
 }
 
 // observe records one duration in seconds.

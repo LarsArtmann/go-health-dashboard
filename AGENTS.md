@@ -221,6 +221,18 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   in-process and ignores `.go-auto-upgrade.json`, so there is currently no
   per-project way to silence them — a fleet-level BuildFlow change, not a
   per-repo script.
+- **branching-flow is skip-gated pending a fleet fix** — the step gates on
+  24 PHANTOM_TYPE findings that demand named string types across the
+  PUBLIC option API (a breaking redesign needing a versioning decision)
+  and 2 BOOL_BLIND errors wanting Config/introspectModes bools packed
+  into bit flags. There is no scoping mechanism: `.branching-flow.yml`
+  carries only tuning knobs (no rule exclusion), BuildFlow's provider
+  hardcodes `analysis.RunAll` options, and the phantom/boolblind
+  analyzers ignore `//nolint` (only roleak/do honor it). The real-bug
+  analyzers (panic, split-brain, ro-leak) are missed meanwhile — the two
+  INDEX_OUT_OF_RANGE warnings it did surface here were false positives
+  made structurally impossible anyway (the latency histogram buckets are
+  now sized `[len(latencyBucketBounds)]` at the type level).
 - **Detect-only advisories that are deliberate non-fixes** — branching-flow
   flags `Config`/`viewModel` field counts and bool clusters as bit-flag
   candidates: the With*-option surface is the library's public API and
