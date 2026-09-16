@@ -408,3 +408,83 @@ func stripVaryingMetrics(body string) string {
 
 	return strings.Join(kept, "\n")
 }
+
+func TestMetrics_CheckDurationGauge(t *testing.T) {
+	t.Parallel()
+
+	resp := health.Response{
+		Status: health.StatusWarn,
+		Checks: map[string]health.Check{
+			"database": {Status: health.StatusPass, DurationNanos: int64(42 * time.Millisecond)},
+			"queue":    {Status: health.StatusWarn, Error: "slow", DurationNanos: int64(823 * time.Microsecond)},
+			"plain":    {Status: health.StatusPass},
+		},
+	}
+
+	dash := dashboard.New(newStubProber(resp), dashboard.WithMetrics(true))
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	body := doRequest(t, mux, "/health/metrics").Body.String()
+
+	wantLines := []string{
+		"# HELP dashboard_health_check_last_duration_seconds Duration of the most recent execution of each check, in seconds.",
+		"# TYPE dashboard_health_check_last_duration_seconds gauge",
+		`dashboard_health_check_last_duration_seconds{check="database"} 0.042`,
+		`dashboard_health_check_last_duration_seconds{check="queue"} 0.000823`,
+	}
+
+	for _, line := range wantLines {
+		if !strings.Contains(body, line+"\n") {
+			t.Errorf("exposition missing line %q\nbody:\n%s", line, body)
+		}
+	}
+
+	if strings.Contains(body, `last_duration_seconds{check="plain"`) {
+		t.Errorf("checks without reported timing must not emit a duration series:\n%s", body)
+	}
+}
+
+func TestMetrics_CheckDurationGaugePublicMode(t *testing.T) {
+	t.Parallel()
+
+	resp := health.Response{
+		Status: health.StatusWarn,
+		Checks: map[string]health.Check{
+			"database": {Status: health.StatusPass, DurationNanos: int64(42 * time.Millisecond)},
+			"queue":    {Status: health.StatusWarn, Error: "slow"},
+		},
+	}
+
+	dash := dashboard.New(
+		newStubProber(resp),
+		dashboard.WithMetrics(true),
+		dashboard.WithPublicMode(),
+	)
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	body := doRequest(t, mux, "/health/metrics").Body.String()
+
+	wantLines := []string{
+		`dashboard_health_check{check="check-1",status="pass"} 1`,
+		`dashboard_health_check_last_duration_seconds{check="check-1"} 0.042`,
+	}
+
+	for _, line := range wantLines {
+		if !strings.Contains(body, line+"\n") {
+			t.Errorf("exposition missing line %q\nbody:\n%s", line, body)
+		}
+	}
+
+	if strings.Contains(body, `last_duration_seconds{check="database"`) {
+		t.Errorf("duration gauge leaks the check name in public mode:\n%s", body)
+	}
+
+	// queue sorts second (check-2) and reports no timing: no series at all.
+	if strings.Contains(body, `last_duration_seconds{check="check-2"`) {
+		t.Errorf("unreported timing must not emit a series in public mode:\n%s", body)
+	}
+}
