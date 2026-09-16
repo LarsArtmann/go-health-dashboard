@@ -1,0 +1,5 @@
+# Single-package library: the root package IS the public import path
+# (github.com/larsartmann/go-health-dashboard). The layout is deliberately
+# flat, like go-datastar (ADR-002); the standard cmd/ + internal/ + pkg/
+# layout does not apply to root-level library packages.
+presets: [flat]

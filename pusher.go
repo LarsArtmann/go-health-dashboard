@@ -267,7 +267,7 @@ func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
 	defer push.connections.Add(-1)
 
 	stream := sse.NewStream(w, r)
-	defer func() { _ = stream.Close() }()
+	defer func() { _ = stream.Close() }() //nolint:erraudit // SSE handler exit; the client is disconnecting, close errors are unactionable
 
 	// Send initial state so the client doesn't wait for the next tick.
 	resp := d.currentResponse()
