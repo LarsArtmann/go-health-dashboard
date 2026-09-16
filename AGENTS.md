@@ -242,6 +242,32 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   per-test isolation is preferred over shared helpers. All three report
   without gating — don't "fix" them into dependency additions or API
   churn.
+- **templ-generate is skip-gated: it races nix source snapshots** — the
+  step re-raws `view_templ.go`/`page_scripts_templ.go` mid-run (templ
+  emits unformatted Go; canonical order is generate → fmt). BuildFlow
+  lets nix-evaluating steps run concurrently, and a `git+file` source
+  snapshot ingested during the raw window poisons the flake's
+  treefmt-check derivation: verified 2026-09-16, files were repaired by
+  nix-fmt at 15:19:12 yet treefmt-check failed at 15:19:57 on gofumpt
+  diffs against the already-gone raw state — the check never saw the
+  repaired tree. This made nix-build fail nondeterministically
+  (nix-build-verify 0/10 before the skip, green after). With the step
+  skipped the pipeline tree is immutable and runs are deterministic;
+  generated-file freshness stays owned by the CI hygiene job and the
+  flake apps (both regenerate pre-build). Unskip when BuildFlow orders
+  tree-mutating generators before all nix-evaluating steps (fleet-level
+  DAG change; TODO_LIST Blocked row — includes the upstream-file vs
+  local-patch decision).
+- **BuildFlow-adjacent tool traps** — (1) `erraudit nolint-audit` takes a
+  DIRECTORY argument, not a package pattern: `./...` doesn't exist as a
+  directory and its best-effort walk silently reports "No directives
+  found" — use `.`. (2) A stale erraudit binary fails the same audit
+  with a bogus "go: updates to go.mod needed" package-load error;
+  rebuilding from HEAD fixed it (same stale-binary class as the
+  buildflow doctor check — trust `erraudit version`/git log, not PATH).
+  (3) Never run Go tooling (erraudit, go list, tests) while a buildflow
+  run is active: its go-mod/templ steps mutate go.mod and `*_templ.go`
+  mid-flight and the concurrent loader reads torn state.
 
 ---
 
