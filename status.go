@@ -500,6 +500,13 @@ func formatAge(observation, now time.Time) string {
 	}
 }
 
+// hoursPerDay converts hour-based durations to whole days in formatStateAge.
+const hoursPerDay = 24
+
+// durationDisplayStep is the rounding granularity for second-scale check
+// durations: precise enough to stay honest, coarse enough to stay readable.
+const durationDisplayStep = 10 * time.Millisecond
+
 // formatStateAge renders a coarse age for "since <stamp> (<age>)" on a check
 // row: "<1m", "17m", "5h", or "3d". Future timestamps (clock skew) clamp to
 // "<1m" — a negative age must never render.
@@ -511,10 +518,10 @@ func formatStateAge(since, now time.Time) string {
 		return "<1m"
 	case d < time.Hour:
 		return fmt.Sprintf("%dm", int(d.Minutes()))
-	case d < 24*time.Hour:
+	case d < hoursPerDay*time.Hour:
 		return fmt.Sprintf("%dh", int(d.Hours()))
 	default:
-		return fmt.Sprintf("%dd", int(d.Hours()/24))
+		return fmt.Sprintf("%dd", int(d.Hours()/hoursPerDay))
 	}
 }
 
@@ -536,7 +543,7 @@ func formatCheckDuration(nanos int64) string {
 	case d < time.Second:
 		return d.Round(time.Millisecond).String()
 	default:
-		return d.Round(10 * time.Millisecond).String()
+		return d.Round(durationDisplayStep).String()
 	}
 }
 
@@ -544,7 +551,8 @@ func formatCheckDuration(nanos int64) string {
 // the go-health v0.2.0 Check fields: SinceText pins the wall-clock stamp plus
 // coarse age ("since 14:02:05 UTC (17m)"), DurationText the execution
 // duration ("42ms"). Empty means unknown — the renderer omits the part.
-func rowMetadataTexts(since, now time.Time, durationNanos int64) (sinceText, durationText string) {
+func rowMetadataTexts(since, now time.Time, durationNanos int64) (string, string) {
+	sinceText := ""
 	if !since.IsZero() {
 		sinceText = fmt.Sprintf(
 			"since %s (%s)",
@@ -553,7 +561,7 @@ func rowMetadataTexts(since, now time.Time, durationNanos int64) (sinceText, dur
 		)
 	}
 
-	durationText = formatCheckDuration(durationNanos)
+	durationText := formatCheckDuration(durationNanos)
 
 	return sinceText, durationText
 }

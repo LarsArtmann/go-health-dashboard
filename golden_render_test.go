@@ -65,6 +65,8 @@ func goldenChecks() map[string]health.Check {
 // input (timestamps, uptime, latency, routes) is pinned so the rendered
 // bytes only change when the template or mapping logic changes.
 func goldenViewModel(t *testing.T) viewModel {
+	t.Helper()
+
 	return goldenViewModelForMode(t, GroupBySeverity)
 }
 
