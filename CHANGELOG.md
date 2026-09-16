@@ -17,6 +17,25 @@ forgetting.
 
 ### Added
 
+- Nothing yet.
+
+### Fixed
+
+- Nothing yet.
+
+## [0.8.0] - 2026-09-16
+
+Operator trust release: the dashboard now distinguishes proven greens
+from unproven ones (failure-evidence truth strip + per-badge tooltips,
+per the health-washing thesis), status text colors meet WCAG AA on the
+live page, the service table stacks into labeled cards below the `sm`
+breakpoint, and the three client scripts consolidate into one
+nonce-carried bootstrap. Ships with templ-components v1.17.0 (audited,
+browser-suite green) and the release-verification tooling first used
+to cut this very release.
+
+### Added
+
 - Mobile row stacking: below the `sm` breakpoint (640px) the service
   table stops laying out as a table — the header row hides and each row
   stacks into a labeled card (Service / Status / Details). Pure Tailwind
