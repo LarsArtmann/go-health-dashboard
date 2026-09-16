@@ -17,6 +17,8 @@ import (
 // every shape the renderer distinguishes (severity groups, an aggregate
 // source/check key, a fully-qualified type name, a generic type, a long
 // error past the truncation threshold) in one deterministic response.
+// The go-health v0.2.0 per-check metadata is exercised in all three
+// shapes: since+duration, since-only, and duration-only.
 func goldenRenderResponse() health.Response {
 	return health.Response{
 		Status:       health.StatusFail,
@@ -27,18 +29,28 @@ func goldenRenderResponse() health.Response {
 	}
 }
 
+// goldenSince is the fixed state-entry time for fixture checks; paired
+// with goldenNow below it yields a stable "17m" age in the golden bytes.
+var goldenSince = time.Date(2026, 9, 16, 12, 0, 0, 0, time.UTC)
+
+// goldenNow is the pinned build clock for the golden view model.
+var goldenNow = time.Date(2026, 9, 16, 12, 17, 0, 0, time.UTC)
+
 func goldenChecks() map[string]health.Check {
 	longError := strings.Repeat("x", 120)
 
 	return map[string]health.Check{
-		"api/postgres": {Status: health.StatusPass},
+		"api/postgres": {Status: health.StatusPass, DurationNanos: int64(823 * time.Microsecond)},
 		"api/mail": {
 			Status: health.StatusWarn,
 			Error:  "smtp timeout after 5s",
+			Since:  goldenSince,
 		},
 		"worker/queue": {
-			Status: health.StatusFail,
-			Error:  "connection refused",
+			Status:        health.StatusFail,
+			Error:         "connection refused",
+			Since:         goldenSince,
+			DurationNanos: int64(42 * time.Millisecond),
 		},
 		"*github.com/x/y/handlers.Handlers": {Status: health.StatusPass},
 		"*github.com/x/repo/store.Store[string]": {
@@ -55,11 +67,13 @@ func goldenChecks() map[string]health.Check {
 func goldenViewModel(t *testing.T) viewModel {
 	t.Helper()
 
-	vm := buildViewModel(goldenRenderResponse(), "Golden Service", "/health/sse", GroupBySeverity)
+	vm := buildViewModelAt(goldenRenderResponse(), "Golden Service", "/health/sse", GroupBySeverity, goldenNow)
 	vm.LastUpdated = "12:00:00 UTC"
-	// Zeroed on purpose: a real timestamp would age past formatAge's
-	// "just now" bucket and time-bomb the golden. The zero-value guard
-	// omits the age span; formatAge has its own unit tests.
+	// Zeroed on purpose: the Updated-age span renders from the REAL clock
+	// (view.templ calls time.Now directly), so a real LastUpdatedTime would
+	// age past formatAge's "just now" bucket and time-bomb the golden. The
+	// row-level since-ages are safe: they are frozen into SinceText at
+	// build time from the pinned goldenNow clock.
 	vm.LastUpdatedTime = time.Time{}
 	vm.LatencyMs = 42
 	vm.CSSPath = "/static/app.css"

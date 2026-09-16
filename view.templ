@@ -390,6 +390,19 @@ templ rowDetailsCell(row checkRow) {
 	if row.hasShortDisplay() {
 		<span class="mt-0.5 block break-all font-mono text-xs text-gray-500 dark:text-gray-400">{ row.Name }</span>
 	}
+	if row.SinceText != "" || row.DurationText != "" {
+		<span class="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+			if row.SinceText != "" {
+				<span title="When the check entered its current status, as observed by the probe">{ row.SinceText }</span>
+			}
+			if row.DurationText != "" {
+				if row.SinceText != "" {
+					{ " · " }
+				}
+				<span title="How long the most recent execution of this check took">{ row.DurationText }</span>
+			}
+		</span>
+	}
 }
 
 // versionOrUnknown returns the version string or "unknown" when empty.

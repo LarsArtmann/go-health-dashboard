@@ -61,12 +61,19 @@ func mapStatusToText(s health.Status) string {
 
 // checkRow is a single service row in the dashboard table. Name is the raw
 // check key (often a fully-qualified Go type name); Display is the shortened
-// form shown in the table (see shortDisplayName).
+// form shown in the table (see shortDisplayName). Since and DurationNanos
+// carry the go-health v0.2.0 per-check metadata verbatim; SinceText and
+// DurationText are their render-ready forms (empty = unknown, the metadata
+// part is omitted), derived once per build so HTML and SSE patches agree.
 type checkRow struct {
-	Name    string
-	Display string
-	Status  health.Status
-	Error   string
+	Name          string
+	Display       string
+	Status        health.Status
+	Error         string
+	Since         time.Time
+	DurationNanos int64
+	SinceText     string
+	DurationText  string
 }
 
 // GroupMode selects the axis that partitions checks into dashboard cards.
@@ -166,7 +173,21 @@ const updatedStampFormat = "15:04:05 MST"
 // Checks are sorted alphabetically by name and grouped by the configured
 // mode: severity (failing first, then warnings, then healthy) or source.
 func buildViewModel(resp health.Response, title, sseURL string, mode GroupMode) viewModel {
+	return buildViewModelAt(resp, title, sseURL, mode, time.Now().UTC())
+}
+
+// buildViewModelAt is buildViewModel with an injected clock: the Updated
+// stamp and the per-check since-ages all derive from now, so tests and
+// golden files pin it and never time-bomb.
+func buildViewModelAt(resp health.Response, title, sseURL string, mode GroupMode, now time.Time) viewModel {
 	groups := groupChecksBy(mode, resp.Checks)
+
+	for gi := range groups {
+		for ri := range groups[gi].Rows {
+			row := &groups[gi].Rows[ri]
+			row.SinceText, row.DurationText = rowMetadataTexts(row.Since, now, row.DurationNanos)
+		}
+	}
 
 	feedbackType := mapStatusToFeedback(resp.Status)
 	statusText := mapStatusToText(resp.Status)
@@ -177,8 +198,8 @@ func buildViewModel(resp health.Response, title, sseURL string, mode GroupMode) 
 	}
 
 	return viewModel{
-		LastUpdated:     time.Now().UTC().Format(updatedStampFormat),
-		LastUpdatedTime: time.Now().UTC(),
+		LastUpdated:     now.Format(updatedStampFormat),
+		LastUpdatedTime: now,
 		Title:           title,
 		Status:          resp.Status,
 		FeedbackType:    feedbackType,
@@ -230,10 +251,12 @@ func groupChecks(checks map[string]health.Check) []checkGroup {
 
 	for name, check := range checks {
 		row := checkRow{
-			Name:    name,
-			Display: shortDisplayName(name),
-			Status:  check.Status,
-			Error:   check.Error,
+			Name:          name,
+			Display:       shortDisplayName(name),
+			Status:        check.Status,
+			Error:         check.Error,
+			Since:         check.Since,
+			DurationNanos: check.DurationNanos,
 		}
 
 		switch check.Status {
@@ -308,10 +331,12 @@ func groupChecksBySource(checks map[string]health.Check) []checkGroup {
 		}
 
 		rowsBySource[source] = append(rowsBySource[source], checkRow{
-			Name:    name,
-			Display: shortDisplayName(name),
-			Status:  check.Status,
-			Error:   check.Error,
+			Name:          name,
+			Display:       shortDisplayName(name),
+			Status:        check.Status,
+			Error:         check.Error,
+			Since:         check.Since,
+			DurationNanos: check.DurationNanos,
 		})
 	}
 
@@ -468,6 +493,60 @@ func formatAge(observation, now time.Time) string {
 	default:
 		return fmt.Sprintf("%dh ago", int(d.Hours()))
 	}
+}
+
+// formatStateAge renders a coarse age for "since <stamp> (<age>)" on a check
+// row: "<1m", "17m", "5h", or "3d". Future timestamps (clock skew) clamp to
+// "<1m" — a negative age must never render.
+func formatStateAge(since, now time.Time) string {
+	d := now.Sub(since)
+
+	switch {
+	case d < time.Minute:
+		return "<1m"
+	case d < time.Hour:
+		return fmt.Sprintf("%dm", int(d.Minutes()))
+	case d < 24*time.Hour:
+		return fmt.Sprintf("%dh", int(d.Hours()))
+	default:
+		return fmt.Sprintf("%dd", int(d.Hours()/24))
+	}
+}
+
+// formatCheckDuration renders an executor-reported execution duration for
+// display: "823µs", "42ms", "1.23s". Zero or negative (unknown — go-health
+// omits it via omitzero) renders as empty: absent, never "0s".
+func formatCheckDuration(nanos int64) string {
+	if nanos <= 0 {
+		return ""
+	}
+
+	d := time.Duration(nanos)
+
+	switch {
+	case d < time.Microsecond:
+		return "<1µs"
+	case d < time.Millisecond:
+		return d.Round(time.Microsecond).String()
+	case d < time.Second:
+		return d.Round(time.Millisecond).String()
+	default:
+		return d.Round(10 * time.Millisecond).String()
+	}
+}
+
+// rowMetadataTexts derives the render-ready per-check metadata strings from
+// the go-health v0.2.0 Check fields: SinceText pins the wall-clock stamp plus
+// coarse age ("since 14:02:05 UTC (17m)"), DurationText the execution
+// duration ("42ms"). Empty means unknown — the renderer omits the part.
+func rowMetadataTexts(since, now time.Time, durationNanos int64) (sinceText, durationText string) {
+	if !since.IsZero() {
+		sinceText = fmt.Sprintf("since %s (%s)", since.UTC().Format(updatedStampFormat), formatStateAge(since, now))
+	}
+
+	durationText = formatCheckDuration(durationNanos)
+
+	return sinceText, durationText
 }
 
 // sortByName sorts check rows alphabetically by service name.
