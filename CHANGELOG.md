@@ -23,6 +23,19 @@ forgetting.
 
 - Nothing yet.
 
+## [0.8.1] - 2026-09-16
+
+Metadata-only patch: the FEATURES test-suite counts (the CI drift
+guard's source of truth) were not recounted after the failure-evidence
+tests landed, leaving the v0.8.0 release commit's CI red on that guard
+alone. No code changes — the published v0.8.0 module is unaffected.
+
+### Fixed
+
+- FEATURES.md test-suite counts recounted (246 → 248 functions,
+  33 → 34 test files) so the drift guard is green on the release
+  commit.
+
 ## [0.8.0] - 2026-09-16
 
 Operator trust release: the dashboard now distinguishes proven greens
