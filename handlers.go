@@ -119,7 +119,9 @@ func (d *Dashboard) serveJSON(w http.ResponseWriter) {
 // no handler action can recover, and the library deliberately does not log,
 // so the error is intentionally discarded.
 func writeBody(w http.ResponseWriter, data []byte) {
-	_, _ = w.Write(data) //nolint:erraudit // client disconnect after headers; nothing to recover or log
+	_, _ = w.Write(
+		data,
+	) //nolint:erraudit // client disconnect after headers; nothing to recover or log
 }
 
 // SSEHandler returns an http.HandlerFunc that upgrades to an SSE connection

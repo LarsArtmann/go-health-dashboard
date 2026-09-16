@@ -299,7 +299,10 @@ func groupChecksBySource(checks map[string]health.Check) []checkGroup {
 	rowsBySource := map[string][]checkRow{}
 
 	for name, check := range checks {
-		source, _, namespaced := strings.Cut(name, "/") //nolint:erraudit // strings.Cut returns strings and a bool, no error
+		source, _, namespaced := strings.Cut(
+			name,
+			"/",
+		) //nolint:erraudit // strings.Cut returns strings and a bool, no error
 		if !namespaced || source == "" {
 			source = groupTitleServices
 		}

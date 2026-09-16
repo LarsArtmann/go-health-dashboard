@@ -181,7 +181,10 @@ func (n *webhookNotifier) post(resp health.Response) {
 	defer httpResp.Body.Close()
 
 	// Drain so the connection returns to the pool.
-	_, _ = io.Copy(io.Discard, httpResp.Body) //nolint:erraudit // best-effort drain; body read errors don't change delivery outcome
+	_, _ = io.Copy(
+		io.Discard,
+		httpResp.Body,
+	) //nolint:erraudit // best-effort drain; body read errors don't change delivery outcome
 
 	n.stats.record(
 		httpResp.StatusCode >= 200 && httpResp.StatusCode < 300,
