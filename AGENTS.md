@@ -202,11 +202,17 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   suppress with a reason, never restructure working code to appease it.
   `//nolint:erraudit // reason` is the sanctioned form and
   `erraudit nolint-audit` flags stale directives.
-- **go-structure-linter runs the `flat` preset** —
-  `.go-structure-linter.yaml` selects it because the root package IS the
-  public import path of this single-package library (same rationale as
-  go-datastar ADR-002). Use the named preset rather than a hand-maintained
-  exclude list that silently rots as rule names change.
+- **go-structure-linter is skip-gated until the fleet bump** — the step is
+  off in `.buildflow.yml` because BuildFlow pins go-structure-linter
+  v0.10.0, whose SDK `Lint()` does not call `LoadProjectConfig`: the
+  `.go-structure-linter.yaml` `flat` preset (the root package IS the
+  public import path of this single-package library, same rationale as
+  go-datastar ADR-002) stays inert and 17 root-package-files errors gate
+  every run. The config file is committed and becomes effective the
+  moment BuildFlow pins a release with project-config support; unskip
+  then (TODO_LIST Blocked row). Use the named preset rather than a
+  hand-maintained exclude list — it is the tool's own answer for
+  deliberately-flat packages.
 - **go-auto-upgrade's samber/lo suggestions are a deliberate non-adoption**
   — stdlib2lo flags manual Filter/GroupBy loops and suggests adding
   github.com/samber/lo; this module keeps zero runtime dependencies (same

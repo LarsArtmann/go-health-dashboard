@@ -1,0 +1,11 @@
+# BuildFlow project config — non-default information only; unknown keys
+# warn at every load (canonical keys: see buildflow skill references).
+skip_steps:
+  # go-structure-linter is pinned to v0.10.0 in BuildFlow, which predates
+  # project-config support: its SDK Lint() does not call LoadProjectConfig,
+  # so the .go-structure-linter.yaml `flat` preset for this deliberately
+  # flat single-package library is inert and the step reports 17
+  # root-package-files errors that the config would exclude. Unskip once
+  # BuildFlow pins a go-structure-linter release with project-config
+  # support (tracked in TODO_LIST.md, Blocked table).
+  - go-structure-linter
