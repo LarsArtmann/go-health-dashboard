@@ -416,8 +416,12 @@ func TestMetrics_CheckDurationGauge(t *testing.T) {
 		Status: health.StatusWarn,
 		Checks: map[string]health.Check{
 			"database": {Status: health.StatusPass, DurationNanos: int64(42 * time.Millisecond)},
-			"queue":    {Status: health.StatusWarn, Error: "slow", DurationNanos: int64(823 * time.Microsecond)},
-			"plain":    {Status: health.StatusPass},
+			"queue": {
+				Status:        health.StatusWarn,
+				Error:         "slow",
+				DurationNanos: int64(823 * time.Microsecond),
+			},
+			"plain": {Status: health.StatusPass},
 		},
 	}
 

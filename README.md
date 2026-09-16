@@ -153,6 +153,11 @@ The page is organized for triage: **failures first, green last**.
   issues, healthy). Card titles carry row-count badges. Long check names are
   shortened (`*github.com/org/repo/internal/.../handlers.Handlers` reads as
   `handlers.Handlers`); the full key is in the table cell and on hover.
+- **Per-check metadata** — rows answer "how long has it been like this?" and
+  "how slow is it?": a `since 14:02:05 UTC (17m)` stamp from the probe's own
+  state tracking, plus the execution duration (`42ms`) when your check
+  reports timing — no instrumentation required beyond go-health v0.2.0's
+  detailed-check sources.
 - **Healthy group** — collapsed by default once 8+ services pass
   (`WithHealthyGroupCollapse`); the summary line states the count. An SSE
   patch re-applies the default state; `WithPersistCollapse` lets each
@@ -206,6 +211,7 @@ format 0.0.4, zero extra dependencies):
 dashboard_health_up 1                           # 1 when overall status is pass
 dashboard_health_status 2                       # 2 pass, 1 warn, 0 fail, -1 unknown
 dashboard_health_check{check="postgres",status="pass"} 1
+dashboard_health_check_last_duration_seconds{check="postgres"} 0.042
 dashboard_health_latency_ms 12                  # last check batch duration
 dashboard_health_check_duration_seconds_bucket{le="0.01"} 42
 dashboard_health_check_duration_seconds_sum 0.42

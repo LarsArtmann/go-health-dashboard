@@ -1,7 +1,8 @@
 # Cookbook: probe-side option combos
 
 Validated recipes for combining go-health probe options with the
-dashboard. Option names are verified against go-health v0.1.3; run
+dashboard. Option names are verified against go-health v0.2.0 (additive
+release; every probe option used here still exists); run
 `nix run .#example` after adapting a recipe to confirm behavior in your
 setup.
 
