@@ -672,6 +672,37 @@ func TestBrowser_Accessibility(t *testing.T) {
 		t.Errorf("axe-core found serious/critical violations: %s", audit)
 	}
 
+	// Dark-mode re-audit: theming is CSS-class-only (the HTML is
+	// byte-identical between themes), but the toggle flips Tailwind classes
+	// and colorScheme at runtime, so structural a11y must still hold with
+	// the dark class applied. One Chrome launch covers both themes.
+	if err := chromedp.Run(ctx,
+		chromedp.Evaluate(`window.__axeViolations = undefined`, nil),
+		chromedp.Click(`[data-theme-toggle]`, chromedp.ByQuery),
+		chromedp.Evaluate(`document.documentElement.classList.contains("dark") + ""`, &audit),
+	); err != nil {
+		t.Fatalf("dark toggle: %v", err)
+	}
+
+	if audit != "true" {
+		t.Fatalf("theme toggle did not apply the dark class (got %q)", audit)
+	}
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(start, nil)); err != nil {
+		t.Fatalf("axe start (dark): %v", err)
+	}
+
+	waitForJS(
+		t, ctx,
+		`window.__axeViolations !== undefined`,
+		`window.__axeViolations`,
+		&audit,
+	)
+
+	if audit != "[]" {
+		t.Errorf("axe-core found serious/critical violations in dark mode: %s", audit)
+	}
+
 	assertNoBrowserErrors(t, errLog)
 }
 
