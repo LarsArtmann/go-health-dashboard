@@ -105,10 +105,18 @@ Raw ideas:
 - CI: `templ generate` drift check (fail when generated files differ)
 - CI: `actionlint` step for both workflow files; add a `nix flake check` job;
   Go version matrix (latest two 1.26.x patches)
+- CI: auto-draft the GitHub Release from the CHANGELOG `[X.Y.Z]` section on
+  tag push (removes the manual-notes step and the drift risk between them)
+- Browser-suite startup latency: re-measure serialized launches (the announce
+  timeout was raised to 45s on loaded machines); `WithRetryInterval` ×
+  max-connection-lifetime browser test; load-test harness env knobs beyond
+  the 20×3 fixture
+- `go.mod` retract runbook stub (write it before it's needed)
 - CI: upload browser screenshots as artifacts for visual diffs;
   Dependabot/renovate for GitHub Action SHA bumps (pins rot)
 - devShell: Chrome/Chromium in the flake so the browser suite runs locally
-- Coverage: push total > 80% (currently ~77%), then raise the CI floor
+- Coverage: push total > 80% (last measured 79.8% library-scoped vs the 78%
+  CI floor), then raise the CI floor
 - Nightly fuzztime budget review (4×60s → target the hottest target);
   rehearse the fuzz issue-on-failure path with a deliberately failing run
 - Fuzz targets: CSV exporter, `RecommendedCSP` injection attempts, webhook

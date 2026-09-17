@@ -101,6 +101,11 @@ cut left pkg.go.dev dangling ~12 min for exactly that reason).
       `--latest=false` when backfilling anything older than the current
       Latest).
 
+Release convention (decided 2026-09-17, codifying repo practice since
+v0.6.0): 0.x releases are FULL releases marked Latest — no `--prerelease`
+flag for pre-1.0 tags. Consumers pin versions; semver 0.x already signals
+instability.
+
 ## 7. Close the loop
 
 - [ ] Update `TODO_LIST.md` release rows to `DONE` with the tag/commit
