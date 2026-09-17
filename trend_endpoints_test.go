@@ -179,16 +179,98 @@ func TestExportHandler_JSON(t *testing.T) {
 		t.Fatalf("status: want 200, got %d", w.Code)
 	}
 
-	var samples []struct {
-		At     string `json:"at"`
-		Status string `json:"status"`
+	var payload struct {
+		Samples []struct {
+			At     string `json:"at"`
+			Status string `json:"status"`
+		} `json:"samples"`
+		Checks map[string]struct {
+			Since      string `json:"since"`
+			DurationNs int64  `json:"duration_ns"`
+		} `json:"checks"`
 	}
-	if err := json.Unmarshal(w.Body.Bytes(), &samples); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &payload); err != nil {
 		t.Fatalf("decode export: %v", err)
 	}
 
-	if len(samples) < 2 {
-		t.Errorf("samples: want >= 2, got %d", len(samples))
+	if len(payload.Samples) < 2 {
+		t.Errorf("samples: want >= 2, got %d", len(payload.Samples))
+	}
+
+	if len(payload.Checks) == 0 {
+		t.Errorf("checks object missing or empty: %s", w.Body.String())
+	}
+}
+
+// TestExportHandler_JSONCarriesCheckMetadata proves the export document —
+// the one dashboard-owned JSON shape — carries the current per-check
+// go-health v0.2.0 metadata: the state-entry since stamp and the executor
+// duration, with unknown facts omitted rather than rendered as zero.
+func TestExportHandler_JSONCarriesCheckMetadata(t *testing.T) {
+	t.Parallel()
+
+	since := time.Now().UTC().Add(-5 * time.Minute)
+	resp := health.Response{
+		Status: health.StatusPass,
+		Checks: map[string]health.Check{
+			"api/database": {
+				Status:        health.StatusPass,
+				Since:         since,
+				DurationNanos: int64(42 * time.Millisecond),
+			},
+			"api/plain": {Status: health.StatusPass},
+		},
+	}
+
+	dash := dashboard.New(newStubProber(resp), dashboard.WithTrend(8))
+	dash.push.Store(newPusher(dash))
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	w := doRequest(t, mux, "/health/export")
+	if w.Code != http.StatusOK {
+		t.Fatalf("status: want 200, got %d", w.Code)
+	}
+
+	var payload struct {
+		Checks map[string]struct {
+			Since      string `json:"since"`
+			DurationNs int64  `json:"duration_ns"`
+		} `json:"checks"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode export: %v\n%s", err, w.Body.String())
+	}
+
+	dbMeta, ok := payload.Checks["api/database"]
+	if !ok {
+		t.Fatalf("api/database missing from checks: %s", w.Body.String())
+	}
+
+	if got, want := dbMeta.DurationNs, int64(42*time.Millisecond); got != want {
+		t.Errorf("api/database duration_ns = %d, want %d", got, want)
+	}
+
+	parsed, err := time.Parse(time.RFC3339, dbMeta.Since)
+	if err != nil {
+		t.Fatalf("api/database since not RFC3339: %q", dbMeta.Since)
+	}
+
+	if d := parsed.Sub(since); d < -time.Second || d > time.Second {
+		t.Errorf("api/database since = %s, want within 1s of %s", parsed, since)
+	}
+
+	plainMeta, ok := payload.Checks["api/plain"]
+	if !ok {
+		t.Fatalf("api/plain missing from checks: %s", w.Body.String())
+	}
+
+	if plainMeta.DurationNs != 0 || plainMeta.Since != "" {
+		t.Errorf(
+			"check without reported metadata must omit both fields, got %+v",
+			plainMeta,
+		)
 	}
 }
 

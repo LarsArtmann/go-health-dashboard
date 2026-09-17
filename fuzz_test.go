@@ -554,7 +554,12 @@ func FuzzFormatCheckDuration(f *testing.F) {
 	f.Fuzz(func(t *testing.T, nanos int64) {
 		first := formatCheckDuration(nanos)
 		if again := formatCheckDuration(nanos); first != again {
-			t.Fatalf("formatCheckDuration not deterministic for %d: %q then %q", nanos, first, again)
+			t.Fatalf(
+				"formatCheckDuration not deterministic for %d: %q then %q",
+				nanos,
+				first,
+				again,
+			)
 		}
 
 		if nanos <= 0 && first != "" {

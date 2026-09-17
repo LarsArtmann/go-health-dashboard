@@ -175,10 +175,11 @@ func TestBadgeEvidenceTitle(t *testing.T) {
 		},
 	}
 	tests := []struct {
-		name string
-		row  checkRow
-		want string
-		zero bool
+		name    string
+		row     checkRow
+		want    string
+		notWant string
+		zero    bool
 	}{
 		{
 			name: "unproven pass discloses",
@@ -200,9 +201,10 @@ func TestBadgeEvidenceTitle(t *testing.T) {
 			want: "The probe reports this state since 11:30:00 UTC",
 		},
 		{
-			name: "proven pass without probe-side stamp stays silent about it",
-			row:  checkRow{Name: "db", Status: health.StatusPass},
-			want: "last non-pass observed at 12:00:00 UTC",
+			name:    "proven pass without probe-side stamp stays silent about it",
+			row:     checkRow{Name: "db", Status: health.StatusPass},
+			want:    "last non-pass observed at 12:00:00 UTC",
+			notWant: "probe reports",
 		},
 		{
 			name: "non-pass needs no tooltip",
@@ -238,6 +240,10 @@ func TestBadgeEvidenceTitle(t *testing.T) {
 
 			if !strings.Contains(got, tt.want) {
 				t.Fatalf("title = %q, want it to contain %q", got, tt.want)
+			}
+
+			if tt.notWant != "" && strings.Contains(got, tt.notWant) {
+				t.Fatalf("title = %q, want it to NOT contain %q", got, tt.notWant)
 			}
 		})
 	}
@@ -286,7 +292,10 @@ func TestBadgeForStatus_ProvenTooltipCitesProbeSince(t *testing.T) {
 
 	title, ok := withSince.Attrs["title"].(string)
 	if !ok || !strings.Contains(title, "The probe reports this state since 11:30:00 UTC") {
-		t.Fatalf("proven badge title = %v, want the probe-side since citation", withSince.Attrs["title"])
+		t.Fatalf(
+			"proven badge title = %v, want the probe-side since citation",
+			withSince.Attrs["title"],
+		)
 	}
 
 	withoutSince := badgeForStatus(checkRow{Name: "db", Status: health.StatusPass}, sum)

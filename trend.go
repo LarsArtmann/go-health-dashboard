@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	health "github.com/larsartmann/go-health"
 )
 
 // jsonSample is the wire form of one recorded status sample, shared by the
@@ -22,6 +24,46 @@ type jsonTransition struct {
 	At   string `json:"at"`
 	From string `json:"from"`
 	To   string `json:"to"`
+}
+
+// jsonCheckMeta is the wire form of one check's go-health v0.2.0 metadata.
+// Unknown facts are omitted (omitzero), never rendered as zero — mirroring
+// go-health's own omitzero discipline on the /health response.
+type jsonCheckMeta struct {
+	Since      string `json:"since,omitzero"`
+	DurationNs int64  `json:"duration_ns,omitzero"`
+}
+
+// jsonExportPayload is the export endpoint's JSON document: the recorded
+// samples plus the CURRENT per-check metadata snapshot. Export is
+// dashboard-owned (unlike the go-health-shaped /health response), so it is
+// the one endpoint where per-check since/duration ride along — freshness
+// and timing data for JSON consumers without touching HTML.
+type jsonExportPayload struct {
+	Samples []jsonSample `json:"samples"`
+	// Checks maps every check in the current response to its known
+	// metadata; fields absent when the source does not report them.
+	Checks map[string]jsonCheckMeta `json:"checks"`
+}
+
+// buildExportPayload assembles the export document from the trend buffer
+// and the current (sanitized) response. Checks is never nil so the payload
+// always decodes with a present, iterable checks object.
+func buildExportPayload(samples []sample, resp health.Response) jsonExportPayload {
+	checks := make(map[string]jsonCheckMeta, len(resp.Checks))
+	for name, check := range resp.Checks {
+		meta := jsonCheckMeta{DurationNs: check.DurationNanos}
+		if !check.Since.IsZero() {
+			meta.Since = check.Since.UTC().Format(time.RFC3339)
+		}
+
+		checks[name] = meta
+	}
+
+	return jsonExportPayload{
+		Samples: jsonSamples(samples),
+		Checks:  checks,
+	}
 }
 
 // jsonSamples maps history samples to their JSON wire form. Timestamps are
@@ -118,7 +160,17 @@ func (d *Dashboard) TrendHandler() http.HandlerFunc {
 // (?format=csv or Accept: text/csv), or newline-delimited JSON
 // (?format=ndjson — one sample object per line, streamed for consumers
 // that tail the export). Enabled together with WithTrend at Routes.Export
-// (default /health/export). CSV columns: timestamp, value, status.
+// (default /health/export).
+//
+// The JSON document is dashboard-owned and carries the current per-check
+// metadata (go-health v0.2.0 since/duration_ns) next to the samples:
+//
+//	{"samples":[{"at":"...","value":1,"status":"pass"}],
+//	 "checks":{"api/db":{"since":"...","duration_ns":42000000}}}
+//
+// CSV and NDJSON stay per-sample rows (check-level fields have no sample
+// column to live in); the /health JSON contract stays go-health-shaped by
+// design — export is the one endpoint that extends the shape.
 func (d *Dashboard) ExportHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		push := d.push.Load()
@@ -160,7 +212,9 @@ func (d *Dashboard) ExportHandler() http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Cache-Control", "no-cache")
 
-			if err := json.MarshalWrite(w, jsonSamples(samples)); err != nil {
+			out := buildExportPayload(samples, d.currentResponse())
+
+			if err := json.MarshalWrite(w, out); err != nil {
 				http.Error(w, "dashboard: failed to encode export", http.StatusInternalServerError)
 			}
 		case "ndjson":
