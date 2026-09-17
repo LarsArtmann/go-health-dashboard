@@ -33,9 +33,11 @@ In-process multi-service shipped in v0.5.0 (go-health `aggregate` + the
 
 Raw ideas:
 
-- Per-source staleness surface: last-refresh age per source (possible
-  since go-health v0.2.0's `Check.Since` — needs a design for aggregates
-  and for probe restarts resetting `Since`)
+- Per-source staleness surface: freeze detection at the dashboard (a
+  source whose contribution stops changing for k refresh intervals gets a
+  "stale?" marker + a `dashboard_health_source_stale` gauge) — designed
+  2026-09-17 in
+  `docs/design/2026-09-17_since-fed-timeline-stability-staleness.md`
 - Service grouping by custom tags or labels (not just severity)
 - Aggregate status across multiple instances or clusters
 - Federation: pull health from remote go-health instances via HTTP
@@ -72,11 +74,13 @@ Raw ideas:
 - Webhook hardening: HMAC signing (`WithWebhookSecret` → `X-Signature`)
   and a payload `"schema":1` version field before external consumers
   freeze the format (see Open Questions)
-- Timeline card fed by service-reported `Check.Since` (design first:
-  what happens when the probe restarts and `Since` resets?)
+- Timeline card fed by service-reported `Check.Since` — designed
+  2026-09-17 (hybrid: seed on Start from `Since`, ring for observed
+  flips, explicit reported/observed divider); see
+  `docs/design/2026-09-17_since-fed-timeline-stability-staleness.md`
 - Stable-group collapse: healthy group stays open, but the summary line
-  gains an honest "stable for 6h" (ages derive from `Since`; depends on
-  the timeline design above)
+  gains an honest "stable for 6h" (`WithStabilityThreshold(d)`, ages
+  derive from `Since`; designed in the same note)
 - Incident tracking (annotate status changes with context) — deferred; needs
   product thought beyond the timeline card that shipped in the v0.3.x cycle
 
