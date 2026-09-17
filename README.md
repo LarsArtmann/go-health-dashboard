@@ -219,6 +219,7 @@ dashboard_health_up 1                           # 1 when overall status is pass
 dashboard_health_status 2                       # 2 pass, 1 warn, 0 fail, -1 unknown
 dashboard_health_check{check="postgres",status="pass"} 1
 dashboard_health_check_last_duration_seconds{check="postgres"} 0.042
+dashboard_health_check_last_duration_seconds{check="service_1"} 0.017  # public mode: labels masked
 dashboard_health_latency_ms 12                  # last check batch duration
 dashboard_health_check_duration_seconds_bucket{le="0.01"} 42
 dashboard_health_check_duration_seconds_sum 0.42
@@ -359,6 +360,7 @@ All toggles are optional — plain `go run ./example` works too.
 | `DEMO_EMBEDDED_SDK=1`    | Serve the SDK from `/health/datastar.js` (`WithEmbeddedDatastarSDK`) |
 | `DEMO_GROUPING=source`   | Source-grouped cards for aggregates (`WithGrouping`)           |
 | `DEMO_AGGREGATE=1`       | Two-probe go-health aggregate demo (`aggregate.New`)           |
+| `DEMO_DETAILED=1`       | `NewWithDetailedCheck` source with self-timed mock deps        |
 | `DEMO_WEBHOOK=<url>`     | POST transitions to a validated receiver (`WithWebhook`)       |
 | `PORT`                   | Listen port (default 8080)                                     |
 
@@ -390,6 +392,21 @@ Tested version matrix (`go.mod` is the live source of truth):
 | templ-components | v1.17.0 | pinned — CI guard + browser-suite re-audit on bumps |
 | go-datastar      | v0.5.0  | audited SDK bundle; needs CSP `unsafe-eval`         |
 | go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                      |
+
+## Upgrading
+
+- **To v0.9.0:** display-only. Check rows gained per-check state metadata
+  ("since <time> (<age>) · <duration>") when check sources report it
+  (needs go-health v0.2.0); the JSON and webhook wire contracts are
+  untouched.
+- **To v0.7.0:** `WithBasePath` no longer mutates routes at option-run
+  time — the prefix is applied once after all options run. Code that
+  relied on `WithRoutes` after `WithBasePath` silently dropping the
+  prefix (a footgun) will now see the prefixed routes. The pusher
+  fingerprint values also changed (sorted, length-prefixed fields), so
+  `PushOnChange` re-announces the current state once after upgrading.
+- **Stability:** the exported API is 0.x and may still evolve; see
+  [ROADMAP.md](ROADMAP.md) "v1.0 Criteria" for what a 1.0 freeze means.
 
 ## Dark Mode
 
@@ -447,6 +464,11 @@ base-uri 'self';
 If you keep the Tailwind Play CDN (no `WithCSSPath`), that script injects a
 generated `<style>` element at runtime and therefore additionally requires
 `style-src 'unsafe-inline'`.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for how to report vulnerabilities and
+which versions receive fixes.
 
 ## License
 

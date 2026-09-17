@@ -26,8 +26,8 @@ nix run .#vulncheck  # govulncheck
 nix fmt              # format code (gofumpt, goimports, golines, nixfmt)
 ```
 
-CI enforces a **75% coverage floor** on the race/coverage job (baseline
-76.9%). Check locally with `nix run .#coverage` before pushing.
+CI enforces a **78% coverage floor** on the race/coverage job (baseline
+83.4%). Check locally with `nix run .#coverage` before pushing.
 
 Without Nix, prefix all Go commands with `GOEXPERIMENT=jsonv2` and run
 `templ generate` before building.
@@ -71,6 +71,32 @@ reconcile, re-head the CHANGELOG, bump the `Version` const in the same
 commit as the annotated tag, run every gate, then push and verify the
 proxy, CI, and the GitHub Release page.
 
+## Guard Scripts
+
+Four scripts guard contributions; CI runs them and each fails loudly with
+a reason:
+
+| Script                       | What it checks                                                                                        |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `scripts/check-changelog.sh` | CHANGELOG structure: exactly one `[Unreleased]` first, semver-descending version sections             |
+| `scripts/check-ui-pins.sh`   | UI dependency pins (templ-components, go-datastar) match the audited versions documented in AGENTS.md |
+| `scripts/pre-push-checks.sh` | The desk gate: build, tests, lint, formatting — run before claiming work is pushable                  |
+| `scripts/verify-release.sh`  | Post-release external state: tag, proxy resolution, CI, GitHub Release page (`verify-release.sh <version>`) |
+
+Run them locally the same way CI does:
+
+```bash
+bash scripts/check-changelog.sh
+bash scripts/check-ui-pins.sh
+bash scripts/pre-push-checks.sh
+```
+
+Two conventions the guards assume: generated templ code is regenerated
+before every build (`nix run .#build` does this), and `nix fmt` runs AFTER
+the last generation — generating produces unformatted Go, so
+fmt-before-generate gets undone and the CI hygiene check goes red.
+
 ## Reporting Issues
 
-Please use GitHub Issues to report bugs or request features.
+Please use GitHub Issues to report bugs or request features. Security
+issues follow [SECURITY.md](SECURITY.md) instead.

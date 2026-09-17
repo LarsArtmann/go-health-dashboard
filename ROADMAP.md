@@ -166,6 +166,29 @@ Raw ideas:
 - Sign release tags (`tag.gpgSign`, documented in `docs/release-checklist.md`;
   compare links shipped in the CHANGELOG footer 2026-09-04)
 
+## v1.0 Criteria
+
+v1.0 is a commitment, not a milestone to reach by version-number
+inflation. It happens when ALL of the following hold:
+
+1. **API freeze** — the exported surface (options, routes, types,
+   sentinels) has had one full release cycle with zero breaking changes
+   and no pending breaking redesigns (the phantom-type and bool-flag
+   questions from the branching-flow triage are resolved or explicitly
+   declined).
+2. **Consumer signal** — at least one production consumer beyond the CV
+   deployment has run a release for a full cycle without hotfixes.
+3. **Compatibility policy** — this document and the CHANGELOG state the
+   support policy: latest minor line, security fixes per SECURITY.md,
+   and a deprecation process for options (one minor with a deprecation
+   notice before removal).
+4. **Contract hardening** — the wire contracts (`/health` JSON go-health
+   shape, export shape, webhook payload, metric names) are golden- or
+   test-locked so 1.0 consumers can rely on them.
+
+Until then the module stays 0.x and behavior changes ship as CHANGELOG
+"Compatibility" notes (the v0.7.0 `WithBasePath` precedent).
+
 ## Non-goals
 
 Things we are deliberately NOT pursuing and why:
