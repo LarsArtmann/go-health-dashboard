@@ -83,9 +83,19 @@
 | FuzzFormatStateAge      | 5,390,262   | +3 (17 total)   | no failure |
 | FuzzShortDisplayName    | 65,096      | +0 (24 total)   | no failure |
 | FuzzFingerprintChecks   | 5,792,695   | +5 (80 total)   | no failure |
+| FuzzCSVExport           | 4,799,398   | +1 (33 total)   | no failure |
+| FuzzRecommendedCSP      | 5,533,427   | +0 (43 total)   | no failure |
+| FuzzEvidenceSummaryText | 5,252,618   | +5 (18 total)   | no failure |
 
 Reading: all four campaigns exited clean (rc=0, zero crashers). The
 formatter invariants held under fuzzing (unknown renders absent, never
 "0s"; clock skew never renders a negative age); "new interesting" entries
 are corpus growth, cached under GOCACHE — re-run whenever the formatters
-change.
+change. The second campaign round (2026-09-17, plan M93/M94 verification)
+added the CSV-export, CSP-builder, and evidence-strip targets: all clean
+too. A mutation spot-check on `fingerprintChecks` (plan M86) found the
+determinism assertion was too weak to catch a removed sort — the unit
+test now iterates a 12-key map 200 times, and the re-run mutation fails
+loudly. `BenchmarkRenderPatch` sizes the per-tick render at ~0.35ms for a
+60-check metadata-bearing response with the retry stamping inside noise,
+and `BenchmarkDashboard_HealthCheck` at ~3ns / 0 allocs.

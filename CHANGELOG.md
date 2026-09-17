@@ -54,6 +54,16 @@ forgetting.
 - Dark-mode accessibility re-audit: the axe run now toggles the theme and
   re-audits in the same browser session — zero serious/critical findings
   in either theme.
+- Fuzz and mutation hardening of the change-detection core: a
+  `FuzzEvidenceSummaryText` target locks the evidence strip (one line,
+  empty for a zero window, no leaked fmt verbs), 60s campaigns on the
+  CSV-export, CSP-builder, and evidence targets surfaced no failures,
+  and a mutation spot-check proved the fingerprint determinism
+  assertion was too weak to catch a removed sort — the unit test now
+  iterates a 12-key map 200 times. `BenchmarkRenderPatch` (~0.35ms per
+  60-check tick, retry stamping within noise) and
+  `BenchmarkDashboard_HealthCheck` (~3ns, 0 allocs) record the
+  lifecycle costs.
 
 ### Changed
 

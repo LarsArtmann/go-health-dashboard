@@ -191,7 +191,10 @@ func TestWebhook_ConcurrentTransitionsDeliverExactlyOnce(t *testing.T) {
 	}
 
 	if !finalArrived {
-		t.Errorf("the final state (fail) never arrived; delivered:\n%s", strings.Join(payloads, "\n"))
+		t.Errorf(
+			"the final state (fail) never arrived; delivered:\n%s",
+			strings.Join(payloads, "\n"),
+		)
 	}
 }
 
@@ -227,7 +230,11 @@ func auditWebhookDeliveries(t *testing.T, payloads []string) (bool, bool, bool) 
 
 		for name, check := range payload.Checks {
 			if check.Since != nil {
-				t.Errorf("check %q: the v0.2.0 metadata must stay off the webhook wire (since=%v)", name, check.Since)
+				t.Errorf(
+					"check %q: the v0.2.0 metadata must stay off the webhook wire (since=%v)",
+					name,
+					check.Since,
+				)
 			}
 		}
 
@@ -276,7 +283,9 @@ func TestShutdown_HeartbeatGoroutinesExit(t *testing.T) {
 	}()
 
 	for range clients {
-		resp, err := http.Get(server.URL + "/health/sse") //nolint:bodyclose // closed via the deferred open-slice sweep
+		resp, err := http.Get(
+			server.URL + "/health/sse",
+		) //nolint:bodyclose // closed via the deferred open-slice sweep
 		if err != nil {
 			t.Fatalf("client connect: %v", err)
 		}

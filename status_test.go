@@ -241,17 +241,25 @@ func TestBuildViewModel_ShuttingDown(t *testing.T) {
 func TestFingerprintChecks_Deterministic(t *testing.T) {
 	t.Parallel()
 
-	checks := map[string]health.Check{
-		"db":    {Status: health.StatusPass},
-		"cache": {Status: health.StatusWarn, Error: "slow"},
-		"queue": {Status: health.StatusFail, Error: "timeout"},
+	// A 12-key map: small maps can iterate identically by luck, which a
+	// mutation spot-check (2026-09-17) proved — removing the sort survived
+	// the original three-key version. Many keys times many iterations make
+	// an unsorted concatenation collide with probability ~0.
+	checks := make(map[string]health.Check)
+
+	for i := range 12 {
+		checks[fmt.Sprintf("service-%02d", i)] = health.Check{
+			Status: health.StatusPass,
+			Error:  fmt.Sprintf("err-%02d", i),
+		}
 	}
 
 	fp1 := fingerprintChecks(checks)
-	fp2 := fingerprintChecks(checks)
 
-	if fp1 != fp2 {
-		t.Errorf("fingerprint must be deterministic:\n  fp1=%q\n  fp2=%q", fp1, fp2)
+	for range 200 {
+		if fp2 := fingerprintChecks(checks); fp1 != fp2 {
+			t.Fatalf("fingerprint must be deterministic:\n  fp1=%q\n  fp2=%q", fp1, fp2)
+		}
 	}
 }
 
