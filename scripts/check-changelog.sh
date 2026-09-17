@@ -71,6 +71,17 @@ else
 	fi
 fi
 
+# 4. Every version section has a footer compare-link definition (M108):
+# a missing [X.Y.Z]: def silently renders a broken compare link.
+for version in $(echo "$version_order" | tr '\t' ' ' | awk '{print $1}'); do
+	if grep -qE "^\[$version\]: " "$changelog"; then
+		echo "OK   link def present for [$version]"
+	else
+		echo "::error::$changelog has no footer link definition for [$version] — add '[$version]: <compare-url>' to the footer"
+		fail=1
+	fi
+done
+
 if [ "$fail" -ne 0 ]; then
 	echo "changelog lint: FAILED"
 	exit 1

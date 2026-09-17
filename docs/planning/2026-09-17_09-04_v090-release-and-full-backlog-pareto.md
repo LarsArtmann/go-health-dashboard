@@ -181,16 +181,16 @@ items…) — nothing dropped, nothing silently de-scoped.
 | M82 | Race-stress: 50 concurrent SSE clients vs `SubscriberCount` consistency | 12 | — |
 | M83 | Webhook delivery-ordering test under concurrent transitions | 12 | — |
 | M84 | Heartbeat-goroutine leak test on Shutdown/broadcaster close | 12 | — |
-| M85 | Benchmarks: `renderPatch` retry-stamping overhead + `BenchmarkHealthCheck` | 12 | — |
-| M86 | Mutation-test spot check on `fingerprintChecks` (survives ⇒ assertions real) | 12 | — |
-| M87 | Public-mode leak-scanner test (grep rendered HTML for registered service names) | 12 | — |
+| ~~M85~~ | ~~Benchmarks: `renderPatch` retry-stamping overhead + `BenchmarkHealthCheck`~~ done — BenchmarkRenderPatch (retry stamping within noise) and BenchmarkDashboard_HealthCheck (~3ns/0 allocs) recorded in the research doc | ~~12~~ | ~~—~~ |
+| ~~M86~~ | ~~Mutation-test spot check on `fingerprintChecks` (survives ⇒ assertions real)~~ done — mutation spot-check executed 2026-09-17: the sort-removal survived the original weak test, which now iterates a 12-key map 200 times and fails the mutation loudly | ~~12~~ | ~~—~~ |
+| ~~M87~~ | ~~Public-mode leak-scanner test (grep rendered HTML for registered service names)~~ done at `d0c9f7d` | ~~12~~ | ~~—~~ |
 | M88 | Keyboard-navigation a11y smoke (tab order, visible focus on new controls) | 12 | — |
 | M89 | Browser test: metrics endpoint under strict CSP | 12 | — |
-| M90 | Browser: `WithRetryInterval` × max-connection-lifetime interplay | 12 | — |
+| ~~M90~~ | ~~Browser: `WithRetryInterval` × max-connection-lifetime interplay~~ done at `858b4b2` | ~~12~~ | ~~—~~ |
 | M91 | Browser-suite startup latency: measure serialized launches vs the 45s timeout | 12 | — |
 | M92 | Load test: env knobs beyond 20×3 fixture; re-run with evidence enabled; record | 12 | — |
-| M93 | Fuzz targets batch 1: CSV exporter + `RecommendedCSP` injection | 12 | — |
-| M94 | Fuzz targets batch 2: introspection marshal + view-model `buildData` + evidence text | 12 | — |
+| ~~M93~~ | ~~Fuzz targets batch 1: CSV exporter + `RecommendedCSP` injection~~ done — targets pre-existed (FuzzCSVExport, FuzzRecommendedCSP); 60s campaigns clean 2026-09-17 (research doc) | ~~12~~ | ~~—~~ |
+| ~~M94~~ | ~~Fuzz targets batch 2: introspection marshal + view-model `buildData` + evidence text~~ done — FuzzEvidenceSummaryText added with a clean 60s campaign; introspection/buildData deliberately not fuzzed (no adversarial input surface; FuzzWantsJSON covers Accept parsing) | ~~12~~ | ~~—~~ |
 | M95 | Spike: `client_golang` bridge (recommendation: stay zero-deps unless demand) | 12 | — |
 | M96 | Feature: watchdog gauge `dashboard_pusher_last_tick_seconds` (report-only stays) | 12 | — |
 | M97 | Feature: rate-limit `X-RateLimit-*` response headers | 12 | — |
