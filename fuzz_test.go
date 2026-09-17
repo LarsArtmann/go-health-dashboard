@@ -587,7 +587,7 @@ func FuzzFormatStateAge(f *testing.F) {
 		{0, int64(time.Hour)},
 		{0, int64(23 * time.Hour)},
 		{0, int64(hoursPerDay) * int64(time.Hour)},
-		{0, int64(365 * hoursPerDay) * int64(time.Hour)},
+		{0, int64(365*hoursPerDay) * int64(time.Hour)},
 		{0, 1 << 62},
 		{1 << 62, 0},
 		{0, -int64(5 * time.Second)},
