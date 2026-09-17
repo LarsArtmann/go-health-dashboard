@@ -142,7 +142,7 @@ to cut this very release.
 ## [0.7.0] — 2026-09-10
 
 Dashboard UI/UX overhaul, executed as a Pareto plan
-(`docs/planning/2026-09-09_19-21_dashboard-ui-ux-pareto.md`): maximize
+(`docs/planning/archived/2026-09-09_19-21_dashboard-ui-ux-pareto.md`): maximize
 operator signal-per-glance with the existing design system — no visual
 redesign, no CSP regressions — plus route ergonomics and observability
 groundwork: the `WithBasePath` ordering footgun is gone, the resolved

@@ -69,33 +69,35 @@ none of today's work.**
    exist after 11:35. Until a push happens, GitHub has zero knowledge of the erraudit fixes, the
    array-typed histogram, both skip gates, or the docs. Last observed CI on master: success at 11:35
    (3-file commit); an 11:10 failure (8-file commit, `ba6fb6d`) was the session's _starting_ state.
+   _(Still open — the push still has not happened; TODO_LIST top row.)_
 2. **Fleet-level fix for the snapshot race** — root cause now correct, fix designed (order all
    tree-mutating generators before all nix-evaluating steps; optionally templ-generate
    skip-if-unchanged), not implemented anywhere: local patch vs upstream issue is open question 3.
+   _(Still blocked — TODO_LIST fleet row.)_
 3. **Doctor noise reduction** — classified (see a12) but not fixed: the few tools that would matter
-   (govulncheck, go-licenses, shellcheck in PATH) are still not installed host-wide.
+   (govulncheck, go-licenses, shellcheck in PATH) are still not installed host-wide. _(Open — host tooling, environmental.)_
 4. **Detect-only advisory waivers** — go-humanize-linter (3) and jscpd (18) are documented as
    deliberate non-fixes in AGENTS.md, but no machine-readable waiver exists (jscpd/humanize have no
-   per-project config path in BuildFlow), so they will resurface in every summary forever.
-5. **The three session questions** — unchanged and now more pointed (see g).
+   per-project config path in BuildFlow), so they will resurface in every summary forever. _(Open — fleet gap.)_
+5. **The three session questions** — unchanged and now more pointed (see g). _(Still open — user decisions.)_
 
 ## c) NOT STARTED
 
-1. **Push + CI green run on today's commits** (needs authorization).
-2. **BuildFlow generator/nix ordering change** (fleet repo, needs question-3 answer).
+1. **Push + CI green run on today's commits** (needs authorization). _(Still open — TODO_LIST top row.)_
+2. **BuildFlow generator/nix ordering change** (fleet repo, needs question-3 answer). _(Still blocked — TODO_LIST fleet row.)_
 3. **templ upstream issue**: verify current templ still emits non-gofumpt generated Go; file or
-   pin-note. (Not started — today's evidence makes it _more_ fileable: the raw window is the hazard.)
+   pin-note. (Not started — today's evidence makes it _more_ fileable: the raw window is the hazard.) _(Open — upstream filing.)_
 4. **erraudit upstream filings**: (a) `strings.Cut` blank-identifier false positive; (b) nolint-audit
    accepting `./...` while silently scanning nothing (DX trap); (c) doctor-style binary-freshness
-   check for erraudit itself.
-5. **`~/go/bin` stale-tool prune** (only erraudit was rebuilt; structure-linter & co unchecked).
+   check for erraudit itself. _(Open — upstream filings, unfiled.)_
+5. **`~/go/bin` stale-tool prune** (only erraudit was rebuilt; structure-linter & co unchecked). _(Open (half).)_
 6. **`buildflow timings --regressions` baseline** after the green run.
 7. **gitleaks + codespell** on-demand runs (skipped by every build mode by design).
 8. **jscpd disposition** (extract shared test scaffolding or explicit per-file waiver).
 9. **README screenshot captures** (`SCREENSHOT_OUTPUT=docs/screenshot.png`, env-guarded) — not run
-   since the handler refactors.
+   since the handler refactors. _(Open — TODO_LIST row since 2026-09-17.)_
 10. **Metrics histogram regression test** asserting bucket-count == len(bounds) (guards the
-    array-typing fix from the earlier half).
+    array-typing fix from the earlier half). _(Open — TODO_LIST row since 2026-09-17.)_
 11. **Example server shutdown-path exercise** (`DEMO_AGGREGATE` + SIGTERM → observe the new
     shutdown-report log line).
 12. **Post-fix stability watch**: confirm the daemon's future sweeps don't re-fossilize raw
@@ -156,110 +158,110 @@ none of today's work.**
 
 **A. Repo — close today out**
 
-1. Push master (10 commits) once authorized; watch the CI run land green on the erraudit/metrics/
+1. Push master (10 commits) once authorized; watch the CI run land green on the erraudit/metrics/ _(Still open — push gated on authorization; TODO_LIST top row.)_
    skip-gate state. _(Needs user authorization — CRUSH forbids unrequested pushes.)_
-2. Re-run `buildflow --build-mode dev` after the daemon's latest commits (report annotations landed
+2. ~~Re-run `buildflow --build-mode dev` after the daemon's latest commits (report annotations landed~~ done — the 2026-09-17 v0.2.0 session ran a full buildflow: 69 success / 0 failed (34.0s)
    post-17:43) to confirm green is stable, not a one-off.
-3. Answer g-questions 1–3 (they gate five rows below).
-4. Verify templ's current output against gofumpt; file the upstream issue (raw window as hazard) or
+3. Answer g-questions 1–3 (they gate five rows below). _(Still open — user decisions g1–g3.)_
+4. Verify templ's current output against gofumpt; file the upstream issue (raw window as hazard) or _(Open — upstream filing.)_
    pin-note in AGENTS.md.
-5. File erraudit upstream: strings.Cut FP; nolint-audit `./...` silent no-op; freshness-check idea.
-6. Prune `~/go/bin`: audit each tool against its repo HEAD (erraudit done; structure-linter & co).
-7. `buildflow timings --regressions` baseline of today's fixes.
-8. `buildflow -s gitleaks` + `-s codespell` once (on-demand-only steps, never yet run here).
-9. jscpd 18 findings: extract or explicitly waive test scaffolding per file.
-10. go-humanize-linter 3 findings: document the zero-deps relative-time helpers as the answer.
-11. Install the four doctor-relevant host tools (govulncheck, go-licenses, shellcheck, dprint) or
+5. File erraudit upstream: strings.Cut FP; nolint-audit `./...` silent no-op; freshness-check idea. _(Open — upstream filings.)_
+6. Prune `~/go/bin`: audit each tool against its repo HEAD (erraudit done; structure-linter & co). _(Open (half) — erraudit done; the rest unaudited.)_
+7. `buildflow timings --regressions` baseline of today's fixes. _(Open — small idea, unrouted.)_
+8. `buildflow -s gitleaks` + `-s codespell` once (on-demand-only steps, never yet run here). _(Open — on-demand-only steps, never run.)_
+9. jscpd 18 findings: extract or explicitly waive test scaffolding per file. _(Open — accepted finding class, no waiver mechanism.)_
+10. ~~go-humanize-linter 3 findings: document the zero-deps relative-time helpers as the answer.~~ done — AGENTS.md detect-only-advisories gotcha documents go-humanize-linter as deliberate non-adoption
+11. Install the four doctor-relevant host tools (govulncheck, go-licenses, shellcheck, dprint) or _(Open — host tooling, environmental.)_
     document per-host expectation.
-12. README screenshot captures via the env-guarded suite.
-13. Add the bucket-count == len(bounds) regression test.
-14. Exercise the example shutdown-logging path (DEMO_AGGREGATE + SIGTERM).
-15. Watch the next daemon sweeps for re-fossilized raw `*_templ.go` (should be gone with
+12. README screenshot captures via the env-guarded suite. _(Open — TODO_LIST row since 2026-09-17.)_
+13. Add the bucket-count == len(bounds) regression test. _(Open — TODO_LIST row since 2026-09-17.)_
+14. Exercise the example shutdown-logging path (DEMO_AGGREGATE + SIGTERM). _(Open — small idea, unrouted.)_
+15. Watch the next daemon sweeps for re-fossilized raw `*_templ.go` (should be gone with _(Open — watch item.)_
     templ-generate skipped); revert to investigating if any appear.
 
 **B. BuildFlow (fleet) — root-cause fixes**
 
-16. DAG ordering: every tree-mutating generator must complete before any nix-evaluating step
+16. DAG ordering: every tree-mutating generator must complete before any nix-evaluating step _(Still blocked — TODO_LIST fleet row.)_
     (flake-update, flake-check, build, hash-fix, vulnix…). Regression test asserting the order.
-17. templ-generate: skip-if-generated-content-unchanged (kills mtime churn at the source).
-18. nix source snapshot hygiene: re-ingest `git+file` sources after any step that mutated the tree
+17. templ-generate: skip-if-generated-content-unchanged (kills mtime churn at the source). _(Still blocked — TODO_LIST fleet row.)_
+18. nix source snapshot hygiene: re-ingest `git+file` sources after any step that mutated the tree _(Still blocked — TODO_LIST fleet row.)_
     (or snapshot once, up front, and use that tree for all steps — the deterministic design).
-19. Result-cache keys must include each tool's project config file (`.go-structure-linter.yaml`
+19. Result-cache keys must include each tool's project config file (`.go-structure-linter.yaml` _(Open — fleet idea.)_
     replayed stale findings until `BUILDFLOW_NO_RESULT_CACHE=1`).
-20. Surface per-project config to in-process SDK tools (go-auto-upgrade ignores
+20. Surface per-project config to in-process SDK tools (go-auto-upgrade ignores _(Open — fleet idea.)_
     `.go-auto-upgrade.json`; branching-flow's `.branching-flow.yml` bypassed by `RunAll`).
-21. go-auto-upgrade: per-migrator include/exclude plumbing into `registry.All()`.
-22. Findings-gate semantics: document whether detect-only error-severity findings gate (behavior
+21. go-auto-upgrade: per-migrator include/exclude plumbing into `registry.All()`. _(Open — fleet idea.)_
+22. Findings-gate semantics: document whether detect-only error-severity findings gate (behavior _(Open — fleet idea.)_
     drifted between binaries; the ✗-vs-warning display mismatch observed today).
-23. `buildflow history`: expose per-run exit verdict separately from step percentage.
-24. Auto-suggest skip lines in the summary for 100%-failing steps (nix-hash-fix class).
-25. Doctor: distinguish "tool missing but nix-fallback works" from "tool missing, step will fail".
+23. `buildflow history`: expose per-run exit verdict separately from step percentage. _(Open — fleet idea.)_
+24. Auto-suggest skip lines in the summary for 100%-failing steps (nix-hash-fix class). _(Open — fleet idea.)_
+25. Doctor: distinguish "tool missing but nix-fallback works" from "tool missing, step will fail". _(Open — fleet idea.)_
 
 **C. go-structure-linter (fleet)**
 
-26. Cut the release carrying `LoadProjectConfig` in `Lint()` (checkout is ~95 commits past v0.10.0).
-27. Bump BuildFlow's pin; `.go-structure-linter.yaml` flips inert→effective; remove repo skip row.
+26. Cut the release carrying `LoadProjectConfig` in `Lint()` (checkout is ~95 commits past v0.10.0). _(Still blocked — TODO_LIST fleet row.)_
+27. Bump BuildFlow's pin; `.go-structure-linter.yaml` flips inert→effective; remove repo skip row. _(Still blocked — TODO_LIST fleet row.)_
 
 **D. branching-flow (fleet)**
 
-28. Honor `//nolint:branching-flow[:rule]` in phantom + boolblind analyzers.
-29. Rule exclusions / severity overrides in `.branching-flow.yml`.
-30. Route provider options through project config (kill the hardcoded `RunAll`).
-31. Revisit phantom-type severities (critical/error defaults make released-API adoption impossible).
+28. Honor `//nolint:branching-flow[:rule]` in phantom + boolblind analyzers. _(Open — fleet idea.)_
+29. Rule exclusions / severity overrides in `.branching-flow.yml`. _(Open — fleet idea.)_
+30. Route provider options through project config (kill the hardcoded `RunAll`). _(Open — fleet idea.)_
+31. Revisit phantom-type severities (critical/error defaults make released-API adoption impossible). _(Open — fleet idea.)_
 
 **E. Repo — public API (needs the user's versioning decision)**
 
-32. Phantom-type campaign on the option surface as v0.9.0 (breaking) — adopt vs tune decision.
-33. Bit-flag decision for Config/introspectModes bools (recommendation: keep named bools).
-34. `record(ok, …)` FLAG_PARAM parameter-order fix (webhook stats).
-35. statusTransition/jsonTransition composition note or mixin.
-36. DO_service-locator sanction note for the example composition root.
+32. Phantom-type campaign on the option surface as v0.9.0 (breaking) — adopt vs tune decision. _(Open — needs the user versioning decision.)_
+33. Bit-flag decision for Config/introspectModes bools (recommendation: keep named bools). _(Open — needs the user versioning decision.)_
+34. `record(ok, …)` FLAG_PARAM parameter-order fix (webhook stats). _(Open — small, lost to the skip.)_
+35. statusTransition/jsonTransition composition note or mixin. _(Open — small idea, unrouted.)_
+36. DO_service-locator sanction note for the example composition root. _(Open — expected at the composition root.)_
 
 **F. Repo — quality debt, small and bounded**
 
-37. Link struct-size rationales (Config 32 / viewModel 29 / pusher 17 fields) to the
+37. ~~Link struct-size rationales (Config 32 / viewModel 29 / pusher 17 fields) to the~~ done — AGENTS.md detect-only-advisories gotcha carries the struct-size rationale
     branching-flow suppression decision.
-38. Cross-link the three TODO Blocked rows to the fleet repos' own TODOs.
-39. Close-the-loop ritual: when B16–B18 land, re-verify both skipped tools AND the ordering in one
+38. Cross-link the three TODO Blocked rows to the fleet repos' own TODOs. _(Open — small doc task, unrouted.)_
+39. Close-the-loop ritual: when B16–B18 land, re-verify both skipped tools AND the ordering in one _(Open — gated on the fleet fixes.)_
     run, then delete all three skip entries.
-40. Consider `--strict` dry-run in the pre-change checklist (would have flagged the 064-class
+40. Consider `--strict` dry-run in the pre-change checklist (would have flagged the 064-class _(Open — small idea, unrouted.)_
     regression before it shipped).
-41. Decide the daemon/push gap systemically (see g-2): a push step, a reminder, or documented
+41. Decide the daemon/push gap systemically (see g-2): a push step, a reminder, or documented _(Open — user-infrastructure question.)_
     "local-only until manual push" policy.
 
 **G. Upstream / ecosystem**
 
-42. Fleet wiki/AGENTS entry: "templ projects in BuildFlow" — the full source-snapshot-race anatomy.
-43. dprint: document that its pass can never cover Go (no plugin) so formatter claims must name
+42. Fleet wiki/AGENTS entry: "templ projects in BuildFlow" — the full source-snapshot-race anatomy. _(Open — fleet doc idea.)_
+43. dprint: document that its pass can never cover Go (no plugin) so formatter claims must name _(Open — small doc task, unrouted.)_
     treefmt explicitly.
-44. go-auto-upgrade: a project-level "no-new-deps" signal instead of eternal warnings.
-45. Re-check gopls stdversion dismissal on the next gopls upgrade (existing ROADMAP note, untouched
+44. go-auto-upgrade: a project-level "no-new-deps" signal instead of eternal warnings. _(Open — fleet idea.)_
+45. ~~Re-check gopls stdversion dismissal on the next gopls upgrade (existing ROADMAP note, untouched~~ done (routed — ROADMAP Theme 5 gopls re-check note)
     today — listed so it doesn't rot).
 
 **H. Hygiene**
 
-46. Rotate `/tmp/bf-final.log` + `/tmp/bf-final2.log` into `docs/status/` artifacts or delete (they
+46. Rotate `/tmp/bf-final.log` + `/tmp/bf-final2.log` into `docs/status/` artifacts or delete (they _(Open — evidence logs in /tmp; rotate or delete.)_
     are the evidence chain for a2/a3).
-47. After push: annotate AGENTS.md release-discipline with the daemon-never-pushes fact (it changes
+47. ~~After push: annotate AGENTS.md release-discipline with the daemon-never-pushes fact (it changes~~ done — 2026-09-17: AGENTS.md release-discipline (0) records the daemon-never-pushes fact + `git status -sb` rule
     what "verify on CI" means locally).
-48. Session-stats: confirm the doctor's binary-freshness warning class (e0dd63a binary vs BuildFlow
+48. Session-stats: confirm the doctor's binary-freshness warning class (e0dd63a binary vs BuildFlow _(Open — fleet hygiene.)_
     HEAD drifts again with every daemon commit there — decide who rebuilds and when).
-49. Template note: status reports in `.md` (user override) vs the skill's HTML default — pick one
+49. Template note: status reports in `.md` (user override) vs the skill's HTML default — pick one _(Open — template decision.)_
     canonical for `docs/status/`.
-50. When TODO_LIST harvests f-items, apply docs-health routing rigor: bounded → TODO_LIST; ideas →
+50. ~~When TODO_LIST harvests f-items, apply docs-health routing rigor: bounded → TODO_LIST; ideas →~~ done — 2026-09-17 docs-health pass (bounded → TODO_LIST, ideas → ROADMAP, fleet items → their repos)
     ROADMAP; fleet items → their repos, not this one.
 
 ## g) Questions I cannot answer myself
 
 1. **Push authorization**: master is 10 daemon commits ahead with the entire session's verified work
    (erraudit fixes, array-typed histogram, all three skip gates, docs) and CI has seen none of it.
-   Push now and verify the CI run, or is there a pre-push ritual I don't know about?
+   Push now and verify the CI run, or is there a pre-push ritual I don't know about? _(Still open — the ritual now exists (`pre-push-checks.sh`); the push itself is still gated. TODO_LIST top row.)_
 2. **The daemon's push contract** (extends the 14:55 g-2): it commits continuously but never pushes —
    is that deliberate (you push manually at milestones) or a gap? It decides whether "green locally +
-   CI-blind" is an acceptable steady state or a standing incident.
+   CI-blind" is an acceptable steady state or a standing incident. _(Still open — the fact is now recorded in AGENTS.md release-discipline (0), 2026-09-17.)_
 3. **BuildFlow fix delivery for the snapshot race** (14:55 g-3, now with corrected mechanism): patch
    BuildFlow locally + reinstall today (fast, you own the repo, unblocks the templ-generate skip
-   eventually), or file the issue upstream and hold the fleet fix for a release?
+   eventually), or file the issue upstream and hold the fleet fix for a release? _(Still open — TODO_LIST fleet row.)_
 
 ---
 

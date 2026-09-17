@@ -21,8 +21,8 @@
 6. **buildflow binary rebuilt and reinstalled** (`9d11c8f`, was 66h stale — the staleness had silently changed erraudit's finding count and branching-flow's gate classification between runs).
 7. **INDEX_OUT_OF_RANGE ×2 (metrics.go)**: false positives (bucket slice is sized from the same bounds) made **structurally impossible**: `latencyBucketBounds` → `[...]float64`, histogram `buckets` → `[len(latencyBucketBounds)]atomic.Uint64`. Build + full test suite green after.
 8. **`.go-structure-linter.yaml`** written: `presets: [flat]` — the tool's own sanctioned answer for deliberately-flat root-package libraries (go-datastar ADR-002 rationale). Currently inert (see b2) but becomes effective the moment the fleet pin moves.
-9. ~~**`.buildflow.yml`** created with `skip_steps` + full rationale comments for go-structure-linter and branching-flow.~~ done — doctor re-run + classified 2026-09-16 18:13 (a12: host tool-availability noise, environmental)
-10. ~~**Docs/memory**: AGENTS.md +4 gotcha entries (erraudit policy, structure-linter skip gate, branching-flow skip gate, detect-only deliberate non-fixes); CHANGELOG `[Unreleased]` (Changed + Fixed); TODO_LIST 2 new 🔵 BLOCKED rows (unskip structure-linter, unskip branching-flow).~~ done — daemon committed the report; tree formatted
+9. **`.buildflow.yml`** created with `skip_steps` + full rationale comments for go-structure-linter and branching-flow.
+10. **Docs/memory**: AGENTS.md +4 gotcha entries (erraudit policy, structure-linter skip gate, branching-flow skip gate, detect-only deliberate non-fixes); CHANGELOG `[Unreleased]` (Changed + Fixed); TODO_LIST 2 new 🔵 BLOCKED rows (unskip structure-linter, unskip branching-flow).
 11. **Code health after every change**: `go build ./...`, `go vet ./...`, full `go test ./...` (5.0s, ok), `gofumpt -l` clean — verified at each step.
 
 ## b) PARTIALLY DONE
@@ -71,7 +71,7 @@
 2. Commit-intent the working tree right after (1) is green — per release discipline, before the daemon sweeps context away.
 3. Investigate `nix-hash-fix` 50/50 + `nix-build-verify` 10/10 after (1): confirm they clear, else run `buildflow -s nix-hash-fix --fix`. _(Open — environmental host noise; classified 18:13 a12.)_
 4. `sqlite3 ~/.cache/buildflow/buildflow.db VACUUM` (2.71 GB, WAL-lock noise).
-5. `erraudit nolint-audit` over the four new directives. _(Open — on-demand-only steps, never run.)_
+5. ~~`erraudit nolint-audit` over the four new directives.~~ done — 2026-09-16 17:49: 4 directives, 4 needed, 0 stale, exit 0 (after rebuilding the stale erraudit binary; 18:13 report a4)
 6. AGENTS.md: extend the templ gotcha with the in-pipeline split-brain (dprint≠treefmt, DAG race) once the fleet fix lands, and reference the status report. _(Open — accepted finding class, no waiver mechanism.)_
 7. HARVEST this report's section f into TODO_LIST/ROADMAP (docs-health rules: bounded → TODO_LIST, ideas → ROADMAP). _(Open — upstream idea, unfiled.)_
 8. Confirm CI green on the daemon commits that carry today's code changes (`gh run list --commit b84abbb`). _(Still open — nothing has been pushed; CI blind since 2026-09-16 morning.)_

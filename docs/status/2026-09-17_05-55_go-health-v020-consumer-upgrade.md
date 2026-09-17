@@ -259,3 +259,11 @@ Nothing shipped broken — every gate is green and the tree is clean. Honest lis
 *Report is a point-in-time snapshot. The f-list above is brainstorm input for `docs-health` HARVEST, not
 a commitment list. Nothing was pushed; nothing was released; no user-visible surface changed beyond the
 documented feature work.*
+
+**Continuation (2026-09-17 docs-health session):** f16 HARVEST executed (f1–f15, f17–f20 routed into
+`TODO_LIST.md`/`ROADMAP.md`/`docs/release-checklist.md`/AGENTS.md — the dep-bump checklist is a
+TODO_LIST row, the desk-gate reflex + daemon-never-pushes fact are in AGENTS.md release-discipline (0),
+the fleet go-floor ask is a ROADMAP Theme 5 idea); f19 done (both 2026-09-16 reports annotated inline
+with this report as the continuation chain). Still open at the top: **push master** (f1) and the
+**v0.9.0 release decision** (f2). The 09-16 reports' still-open fleet/buildflow rows are labeled in
+place, not re-harvested.
