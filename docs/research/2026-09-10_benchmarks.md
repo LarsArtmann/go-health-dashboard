@@ -68,3 +68,24 @@
   numbers, not the 2026-09-10 table.
 - Cross-tree runs on a loaded shared machine inherit its noise;
   `Handler_HTMLRendering` remains documented-bimodal. Medians, not mins.
+
+## Fuzz runs on the v0.9.0 metadata formatters (2026-09-17)
+
+|             |                                                                                                                                                             |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Date**    | 2026-09-17                                                                                                                                                  |
+| **Command** | `GOEXPERIMENT=jsonv2 GOWORK=off go test -run '^<Target>$' -fuzz '^<Target>$' -fuzztime 60s .` per target, on the tree with the v0.9.0 metadata feature. |
+| **Context** | Plan M29: the two new duration formatters (`formatCheckDuration`, `formatStateAge`) gained fuzz targets with hostile seeds; the plan asked for real 60s campaigns, and the two pre-existing high-risk targets were re-run alongside. |
+
+| Target                  | Execs (60s) | New interesting | Result     |
+| ----------------------- | ----------- | --------------- | ---------- |
+| FuzzFormatCheckDuration | 4,355,437   | +2 (17 total)   | no failure |
+| FuzzFormatStateAge      | 5,390,262   | +3 (17 total)   | no failure |
+| FuzzShortDisplayName    | 65,096      | +0 (24 total)   | no failure |
+| FuzzFingerprintChecks   | 5,792,695   | +5 (80 total)   | no failure |
+
+Reading: all four campaigns exited clean (rc=0, zero crashers). The
+formatter invariants held under fuzzing (unknown renders absent, never
+"0s"; clock skew never renders a negative age); "new interesting" entries
+are corpus growth, cached under GOCACHE — re-run whenever the formatters
+change.

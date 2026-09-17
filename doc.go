@@ -7,7 +7,10 @@
 // The dashboard lives at /health and uses Datastar SSE for real-time updates.
 // It serves HTML by default but returns JSON when the client sends
 // Accept: application/json. Kubernetes probe endpoints (/healthz, /readyz,
-// /startupz) are wired separately as JSON-only.
+// /startupz) are wired separately as JSON-only. When check sources report
+// timing (go-health v0.2.0 metadata), service-table rows render each check's
+// state-entry time and execution duration, and a failure-evidence strip
+// separates proven greens from unproven ones.
 //
 // # Quick Start
 //

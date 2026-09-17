@@ -28,10 +28,18 @@ const prometheusContentType = "text/plain; version=0.0.4; charset=utf-8"
 //	                                 last execution duration per check;
 //	                                 series absent when the executor does
 //	                                 not report timing
+//	dashboard_health_check_duration_seconds_bucket{le=...}
+//	dashboard_health_check_duration_seconds_sum
+//	dashboard_health_check_duration_seconds_count
+//	                                 latency histogram over check batches
 //	dashboard_health_latency_ms      wall-clock time of last check batch
 //	dashboard_health_shutting_down   1 when the probe is shutting down
 //	dashboard_sse_connections        current SSE client count
 //	dashboard_pusher_active          1 when the SSE pusher is running
+//
+// Name reservation: `…_check_duration_seconds*` is the histogram family;
+// the per-check gauge deliberately uses `…_check_last_duration_seconds`
+// so the two never collide.
 //
 // The exposition is hand-rolled to keep this module dependency-free; point
 // Prometheus at the route and scrape as usual.

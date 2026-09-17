@@ -159,6 +159,8 @@ func WithMetrics(enabled bool) Option {
 // WithTrend enables the health trend sparkline and sets how many status
 // samples it retains. One sample is recorded per push interval (pass=1,
 // warn=0.5, fail=0); the card appears once at least two samples exist.
+// Samples record the overall status only — per-check since/duration facts
+// ride the service tables, the evidence strip, and /health/export.
 // A sample count of 60 at the default 2s interval covers the last two
 // minutes. Non-positive values leave the trend disabled (the default).
 func WithTrend(samples int) Option {

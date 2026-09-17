@@ -27,7 +27,9 @@ forgetting.
 - Fuzz targets `FuzzFormatCheckDuration` and `FuzzFormatStateAge` with
   hostile seeds (negative, zero, huge, sub-microsecond), locking their
   contracts: unknown durations render absent (never "0s") and clock skew
-  never renders a negative age.
+  never renders a negative age. Sixty-second campaigns on the four
+  highest-risk targets surfaced no failures
+  (`docs/research/2026-09-10_benchmarks.md`).
 - Proven-green evidence tooltips now also cite the probe-side state-entry
   stamp (`Check.Since`), pairing the dashboard-observed last non-pass with
   when the probe entered the current state.
