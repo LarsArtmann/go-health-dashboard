@@ -107,11 +107,14 @@ If a slow external surface (pkg.go.dev, proxy indexing) lags, poll on a
 bounded loop (e.g. 30×10s) — never two fetches and a shrug (the v0.7.0
 cut left pkg.go.dev dangling ~12 min for exactly that reason).
 
-- [ ] `gh release create vX.Y.Z --title vX.Y.Z --notes-file <notes>`
-      using the section extracted from `CHANGELOG.md` (historical
-      releases get their pages backfilled the same way; pass
-      `--latest=false` when backfilling anything older than the current
-      Latest).
+- [ ] Publish the draft the `release-draft.yml` workflow created at tag
+      push (`gh release edit vX.Y.Z --draft=false --latest`; review its
+      notes against `CHANGELOG.md` first — the workflow extracts the
+      section automatically). Historical releases without a draft get
+      their pages created the old way:
+      `gh release create vX.Y.Z --title vX.Y.Z --notes-file <notes>`
+      (pass `--latest=false` when backfilling anything older than the
+      current Latest).
 
 Release convention (decided 2026-09-17, codifying repo practice since
 v0.6.0): 0.x releases are FULL releases marked Latest — no `--prerelease`

@@ -10,6 +10,15 @@ updates:
         update-types:
           - minor
           - patch
+      # The UI family must move as ONE change: AGENTS.md requires every UI
+      # bump to ship with a green browser suite and a same-change pin-guard
+      # update, so templ-components/go-datastar/go-sse land together (the
+      # * patterns cover the submodule modules like templ-components/utils).
+      ui-family:
+        patterns:
+          - "github.com/larsartmann/templ-components*"
+          - "github.com/larsartmann/go-datastar*"
+          - "github.com/larsartmann/go-sse"
   - package-ecosystem: github-actions
     directory: /
     schedule:

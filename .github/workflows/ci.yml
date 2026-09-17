@@ -50,14 +50,21 @@ jobs:
         run: go build ./...
 
   test:
-    name: Test
+    name: Test (go${{ matrix.go }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The pinned floor plus the latest 1.26.x patch (verified against
+        # the official golang/go tags 2026-09-17): catches patch-level
+        # toolchain regressions without widening to new minors.
+        go: ["1.26.7", "1.26.8"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
-          go-version-file: go.mod
+          go-version: ${{ matrix.go }}
 
       - name: UI dependency pin guard
         run: bash scripts/check-ui-pins.sh
@@ -129,6 +136,28 @@ jobs:
         run: go test ./... -count=1 -run TestBrowser -timeout=120s -v
         env:
           GO_HEALTH_DASHBOARD_CHROME: /usr/bin/google-chrome-stable
+
+      # Regenerate the README captures in CI so screenshot drift (or a
+      # regression visible only in the rendered page) shows up as a
+      # downloadable artifact instead of a local-only surprise.
+      - name: Capture README screenshots
+        run: |
+          go test . -count=1 -run 'TestCaptureREADME_Screenshot$' -timeout=120s
+          go test . -count=1 -run 'TestCaptureREADME_ScreenshotDark' -timeout=120s
+          go test . -count=1 -run 'TestCaptureREADME_ScreenshotDegraded' -timeout=120s
+        env:
+          GO_HEALTH_DASHBOARD_CHROME: /usr/bin/google-chrome-stable
+          SCREENSHOT_OUTPUT: /tmp/screenshot.png
+          SCREENSHOT_OUTPUT_DARK: /tmp/screenshot-dark.png
+          SCREENSHOT_OUTPUT_DEGRADED: /tmp/screenshot-degraded.png
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        name: Upload screenshot artifacts
+        if: always()
+        with:
+          name: screenshots
+          path: /tmp/screenshot*.png
+          if-no-files-found: ignore
 
   lint:
     name: Lint

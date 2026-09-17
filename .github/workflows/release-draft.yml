@@ -1,0 +1,59 @@
+name: Release draft
+
+# Drafts the GitHub Release from the tag's CHANGELOG section the moment a
+# version tag lands, so publishing becomes a review step instead of a
+# copy step. The release checklist stays authoritative: CI must be green
+# on the release commit and the draft reviewed before it is published
+# (`gh release edit <tag> --draft=false --latest`) — verify-release.sh
+# then checks the published external state.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-draft-${{ github.ref }}
+
+jobs:
+  draft:
+    name: Draft release notes from CHANGELOG
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # The version-guard discipline guarantees the tag's commit carries
+      # the re-headed CHANGELOG section (Version const + section + tag in
+      # the same change), so the section always exists at the tag.
+      - name: Extract the tag's CHANGELOG section
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v pat="^## \\[$version\\]" '
+            $0 ~ pat { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::error::no CHANGELOG section found for ${version} — re-head [Unreleased] to this version in the tag's commit"
+            exit 1
+          fi
+          cat release-notes.md
+
+      - name: Create or update the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" --jq '.draft' 2>/dev/null || echo "absent")
+          case "$state" in
+            absent)
+              gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --notes-file release-notes.md
+              ;;
+            true)
+              gh release edit "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md
+              ;;
+            false)
+              echo "Release ${GITHUB_REF_NAME} is already published — leaving it untouched (never unpublish a live page)."
+              ;;
+          esac
