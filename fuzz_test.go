@@ -702,7 +702,12 @@ func FuzzEvidenceSummaryText(f *testing.F) {
 		}
 
 		if strings.Contains(first, "%!") {
-			t.Errorf("unexpanded fmt verb in strip for total=%d proven=%d: %q", total, proven, first)
+			t.Errorf(
+				"unexpanded fmt verb in strip for total=%d proven=%d: %q",
+				total,
+				proven,
+				first,
+			)
 		}
 	})
 }
