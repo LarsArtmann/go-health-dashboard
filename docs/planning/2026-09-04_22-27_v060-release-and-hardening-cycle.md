@@ -73,40 +73,40 @@ format stability · webhook hardening (HMAC + `"schema"` version).
 
 | #   | Task                                                                                                                        | Est   | Impact | Effort | Value       | Depends     |
 | --- | --------------------------------------------------------------------------------------------------------------------------- | ----- | ------ | ------ | ----------- | ----------- |
-| R1  | Push master; watch every CI job's first real run; triage anything red                                                       | 30min | High   | Low    | **Highest** | gates green |
-| R2  | Cut v0.6.0: re-head CHANGELOG, bump `Version` in the same commit, tag, push, proxy-verify                                   | 45min | High   | Low    | High        | R1          |
-| R3  | GitHub Releases pages v0.2.0–v0.6.0 from CHANGELOG sections                                                                 | 25min | Med    | Low    | Med         | R2          |
-| G1  | CI pin-guard: fail while templ-components ≠ v1.11.0 (until #7 lands)                                                        | 30min | High   | Low    | High        | R1          |
-| G2  | CI docs drift-guard: FEATURES test count vs `rg -c` recount                                                                 | 30min | Med    | Low    | Med         | R1          |
-| G4  | Chrome/Chromium in the flake devShell; run the browser suite locally once                                                   | 30min | High   | Med    | High        | R1          |
-| U1  | templ-components#7 PR: busy-script nonce guard + goldens                                                                    | 60min | High   | Med    | High        | —           |
-| R4  | `docs/release-checklist.md` + CONTRIBUTING link                                                                             | 30min | Med    | Low    | Med         | R2          |
+| R1 | ~~Push master; watch every CI job's first real run; triage anything red~~ done — pushed + all CI jobs verified green (v0.6.0 shipped 2026-09-04; CHANGELOG 0.6.0 Verified) | 30min | High   | Low    | **Highest** | gates green |
+| R2 | ~~Cut v0.6.0: re-head CHANGELOG, bump `Version` in the same commit, tag, push, proxy-verify~~ done — v0.6.0 shipped 2026-09-04; later cuts through v0.8.1 | 45min | High   | Low    | High        | R1          |
+| R3 | ~~GitHub Releases pages v0.2.0–v0.6.0 from CHANGELOG sections~~ done — release pages created 2026-09-04 (verified via `gh release list` 2026-09-17) | 25min | Med    | Low    | Med         | R2          |
+| G1 | ~~CI pin-guard: fail while templ-components ≠ v1.11.0 (until #7 lands)~~ done — `scripts/check-ui-pins.sh` shipped (CI + pre-push) | 30min | High   | Low    | High        | R1          |
+| G2 | ~~CI docs drift-guard: FEATURES test count vs `rg -c` recount~~ done — CI FEATURES drift guard + `scripts/pre-push-checks.sh` (in place by v0.8.0) | 30min | Med    | Low    | Med         | R1          |
+| G4 | ~~Chrome/Chromium in the flake devShell; run the browser suite locally once~~ done — devShell provides Chromium (`GO_HEALTH_DASHBOARD_CHROME`); local browser suites green since | 30min | High   | Med    | High        | R1          |
+| U1 | ~~templ-components#7 PR: busy-script nonce guard + goldens~~ done — #7 nonce guard fixed upstream, shipped in v1.13.2 (verified 2026-09-09) | 60min | High   | Med    | High        | —           |
+| R4 | ~~`docs/release-checklist.md` + CONTRIBUTING link~~ done — `docs/release-checklist.md` exists; evolved through v0.7.0/v0.8.0 (desk gate + ordering rules added 2026-09-17) | 30min | Med    | Low    | Med         | R2          |
 | G3  | CI jobs: `actionlint`, `templ generate` drift check, `nix flake check`                                                      | 45min | Med    | Low    | Med         | R1          |
-| T1  | Fuzz target: CSV exporter                                                                                                   | 45min | Med    | Med    | Med         | —           |
-| T2  | Fuzz target: `RecommendedCSP` (injection attempts)                                                                          | 45min | Med    | Med    | Med         | —           |
-| T3  | Fuzz target: webhook payload marshal                                                                                        | 45min | Med    | Med    | Med         | —           |
-| T4  | Keyboard-navigation a11y smoke in the browser suite                                                                         | 60min | Med    | Med    | Med         | G4          |
-| T5  | Browser-test the metrics endpoint under strict CSP                                                                          | 45min | Med    | Med    | Med         | G4          |
-| D1  | ADR: options/handlers/history split + error-sentinel family                                                                 | 45min | Med    | Low    | Med         | —           |
-| U2  | templ-components#6 PR: StatCard `<dl>` structure + goldens                                                                  | 60min | Med    | Med    | Med         | —           |
-| U3  | After U1 lands upstream: bump templ-components, drop pin + pin-guard, browser-validate, re-land go-datastar v0.5.0 decision | 45min | High   | Med    | High        | U1, G4      |
-| T6  | Coverage >80% (profile, add tests); raise CI floor to 78%                                                                   | 90min | Med    | High   | Med         | R1          |
-| D2  | Investigate the gopls stdversion warnings; fix or document dismissal                                                        | 45min | Low    | Med    | Low         | —           |
-| D3  | AGENTS.md prune pass toward ~18 KB (grow-and-prune rule)                                                                    | 60min | Low    | Med    | Low         | —           |
-| D4  | Cookbook: probe-side option combos (`WithGETOnly`, hooks, throttle, `InstanceID`)                                           | 45min | Low    | Low    | Low         | —           |
-| D5  | Tag signing + Keep-a-Changelog compare links                                                                                | 30min | Low    | Low    | Low         | R2          |
-| F1  | Introspection endpoint (JSON: routes, limits, modes)                                                                        | 60min | Med    | Med    | Med         | R2          |
-| F2  | 429 JSON body + Retry-After on drain-window 503s                                                                            | 60min | Med    | Med    | Med         | R2          |
-| F3  | Webhook delivery metrics (counters + duration, behind `WithMetrics`)                                                        | 60min | Med    | Med    | Med         | R2          |
-| F4  | PushOnChange TTL + timeline age cap                                                                                         | 60min | Low    | Med    | Low         | R2          |
-| F5  | Per-check latency series + NDJSON export                                                                                    | 60min | Low    | Med    | Low         | R2          |
-| F6  | Embedded Datastar SDK serving helper (`WithCSSPath` analog)                                                                 | 60min | Med    | Med    | Med         | R2          |
-| F7  | Example aggregate/webhook demo modes + aggregate browser test                                                               | 60min | Med    | Med    | Med         | G4, R2      |
-| F8  | Load test: 20-source aggregate under concurrent SSE + scrape                                                                | 60min | Low    | Med    | Low         | F7          |
-| F9  | `Routes()` accessor + `BasePath` resolved after all options                                                                 | 60min | Low    | Med    | Low         | R2          |
-| F10 | Self-monitoring decision doc (Dashboard in its own health table?)                                                           | 30min | Low    | Low    | Low         | —           |
-| F11 | `WithGrouping(BySource)` per-service cards                                                                                  | 90min | Med    | High   | Med         | R2          |
-| F12 | Public-mode leak-scanner test + `InstanceID` UI decision                                                                    | 45min | Low    | Med    | Low         | R2          |
+| T1 |  Fuzz target: CSV exporter _(Routed — ROADMAP Theme 5 fuzz ideas.)_ | 45min | Med    | Med    | Med         | —           |
+| T2 |  Fuzz target: `RecommendedCSP` (injection attempts) _(Routed — ROADMAP Theme 5 fuzz ideas.)_ | 45min | Med    | Med    | Med         | —           |
+| T3 |  Fuzz target: webhook payload marshal _(Routed — ROADMAP Theme 5 fuzz ideas.)_ | 45min | Med    | Med    | Med         | —           |
+| T4 |  Keyboard-navigation a11y smoke in the browser suite _(Routed — ROADMAP Theme 5.)_ | 60min | Med    | Med    | Med         | G4          |
+| T5 |  Browser-test the metrics endpoint under strict CSP _(Routed — ROADMAP Theme 5.)_ | 45min | Med    | Med    | Med         | G4          |
+| D1 | ~~ADR: options/handlers/history split + error-sentinel family~~ done — ADR-0001 + ADR-0002 in `docs/adr/` | 45min | Med    | Low    | Med         | —           |
+| U2 | ~~templ-components#6 PR: StatCard `<dl>` structure + goldens~~ done — #6 fixed upstream (landed on master), shipped in v1.16.0 | 60min | Med    | Med    | Med         | —           |
+| U3 | ~~After U1 lands upstream: bump templ-components, drop pin + pin-guard, browser-validate, re-land go-datastar v0.5.0 decision~~ done — pin lifts executed 2026-09-09/10/16 (v1.13.2→v1.17.0), each browser-audited; the guard was KEPT by decision (sign-off blocked row) | 45min | High   | Med    | High        | U1, G4      |
+| T6 |  Coverage >80% (profile, add tests); raise CI floor to 78% _(Partial — floor at 78% since 2026-09-04; the >80% push is a ROADMAP idea.)_ | 90min | Med    | High   | Med         | R1          |
+| D2 | ~~Investigate the gopls stdversion warnings; fix or document dismissal~~ done — dismissed via `.vscode/settings.json` (2026-09-04); ROADMAP note records the re-check condition | 45min | Low    | Med    | Low         | —           |
+| D3 |  AGENTS.md prune pass toward ~18 KB (grow-and-prune rule) _(Open — AGENTS.md has only grown; prune still pending.)_ | 60min | Low    | Med    | Low         | —           |
+| D4 | ~~Cookbook: probe-side option combos (`WithGETOnly`, hooks, throttle, `InstanceID`)~~ done — `docs/cookbook-probe-options.md` verified against go-health v0.2.0 (2026-09-17) | 45min | Low    | Low    | Low         | —           |
+| D5 | ~~Tag signing + Keep-a-Changelog compare links~~ done — tag signing in use since v0.7.0; compare links in the CHANGELOG footer (2026-09-04) | 30min | Low    | Low    | Low         | R2          |
+| F1 | ~~Introspection endpoint (JSON: routes, limits, modes)~~ done — shipped in v0.7.0 (`WithIntrospection` + `/health/introspect`) | 60min | Med    | Med    | Med         | R2          |
+| F2 | ~~429 JSON body + Retry-After on drain-window 503s~~ done — shipped in v0.7.0 (429 JSON + Retry-After) | 60min | Med    | Med    | Med         | R2          |
+| F3 | ~~Webhook delivery metrics (counters + duration, behind `WithMetrics`)~~ done — shipped in v0.7.0 (webhook delivery metrics) | 60min | Med    | Med    | Med         | R2          |
+| F4 | ~~PushOnChange TTL + timeline age cap~~ done — shipped in v0.7.0 (TTL + timeline age cap) | 60min | Low    | Med    | Low         | R2          |
+| F5 | ~~Per-check latency series + NDJSON export~~ done — NDJSON export shipped v0.7.0; per-check duration series landed via go-health v0.2.0 (2026-09-17) | 60min | Low    | Med    | Low         | R2          |
+| F6 | ~~Embedded Datastar SDK serving helper (`WithCSSPath` analog)~~ done — shipped in v0.7.0 (`WithEmbeddedDatastarSDK`) | 60min | Med    | Med    | Med         | R2          |
+| F7 | ~~Example aggregate/webhook demo modes + aggregate browser test~~ done — shipped in v0.7.0 (`DEMO_AGGREGATE`/`DEMO_WEBHOOK` + aggregate browser test 2026-09-10) | 60min | Med    | Med    | Med         | G4, R2      |
+| F8 | ~~Load test: 20-source aggregate under concurrent SSE + scrape~~ done — 2026-09-10 load test (numbers in `docs/research/2026-09-10_aggregate-load-test.md`) | 60min | Low    | Med    | Low         | F7          |
+| F9 | ~~`Routes()` accessor + `BasePath` resolved after all options~~ done — shipped in v0.7.0 (`Routes()` accessor; `WithBasePath` applied after all options) | 60min | Low    | Med    | Low         | R2          |
+| F10 | ~~Self-monitoring decision doc (Dashboard in its own health table?)                                                           | 30min~~ done — decided + verified: feature, keep as-is (`selfmonitor_test.go`; ROADMAP Decisions 2026-09-04) | Low    | Low    | Low         | —           |
+| F11 | ~~`WithGrouping(BySource)` per-service cards                                                                                  | 90min~~ done — shipped in v0.7.0 (`WithGrouping(GroupBySource)`) | Med    | High   | Med         | R2          |
+| F12 | Public-mode leak-scanner test + `InstanceID` UI decision                                                                    | 45min _(Partial — leak-scanner test still a ROADMAP idea; InstanceID decided: defer.)_ | Low    | Med    | Low         | R2          |
 
 **Deferred / blocked (not in this cycle)**: build-tag gating (user), fingerprint
 stability (user), webhook HMAC + schema version (user), `go-health-otel` (sibling
