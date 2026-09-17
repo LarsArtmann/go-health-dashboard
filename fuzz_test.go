@@ -646,3 +646,63 @@ func FuzzFormatStateAge(f *testing.F) {
 		}
 	})
 }
+
+// FuzzEvidenceSummaryText exercises the failure-evidence strip builder with
+// arbitrary proven/total counts. Invariants: never panics, deterministic, a
+// zero total renders the empty strip (no window, no strip), any non-zero
+// total renders exactly one line, and fmt verbs never leak through
+// unexpanded.
+func FuzzEvidenceSummaryText(f *testing.F) {
+	for _, seed := range []struct{ total, proven int }{
+		{0, 0},
+		{1, 0},
+		{1, 1},
+		{60, 0},
+		{60, 6},
+		{60, 60},
+		{-1, 0},
+		{0, 1},
+		{60, 61},
+		{-60, -90},
+		{math.MaxInt32, math.MaxInt32},
+		{math.MaxInt32, 0},
+		{math.MinInt32, math.MinInt32},
+	} {
+		f.Add(seed.total, seed.proven)
+	}
+
+	f.Fuzz(func(t *testing.T, total, proven int) {
+		s := evidenceSummary{
+			Since:  fuzzAgeBase,
+			Total:  total,
+			Proven: proven,
+		}
+
+		first := evidenceSummaryText(s)
+		if again := evidenceSummaryText(s); first != again {
+			t.Fatalf(
+				"evidence summary text not deterministic for total=%d proven=%d: %q then %q",
+				total,
+				proven,
+				first,
+				again,
+			)
+		}
+
+		if total == 0 && first != "" {
+			t.Errorf("zero total must render the empty strip, got %q", first)
+		}
+
+		if total != 0 && first == "" {
+			t.Errorf("non-zero total must render a strip, got empty for total=%d", total)
+		}
+
+		if strings.Contains(first, "\n") {
+			t.Errorf("strip must stay one line for total=%d proven=%d: %q", total, proven, first)
+		}
+
+		if strings.Contains(first, "%!") {
+			t.Errorf("unexpanded fmt verb in strip for total=%d proven=%d: %q", total, proven, first)
+		}
+	})
+}
