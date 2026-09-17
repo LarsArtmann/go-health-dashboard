@@ -33,7 +33,7 @@ func TestSSE_RaceStress_SubscriberCountConsistency(t *testing.T) {
 	defer cleanup()
 
 	var (
-		mu     sync.Mutex
+		mutex  sync.Mutex
 		bodies []*http.Response
 		wg     sync.WaitGroup
 	)
@@ -58,9 +58,9 @@ func TestSSE_RaceStress_SubscriberCountConsistency(t *testing.T) {
 				return
 			}
 
-			mu.Lock()
+			mutex.Lock()
 			bodies = append(bodies, resp)
-			mu.Unlock()
+			mutex.Unlock()
 		}()
 	}
 
@@ -80,12 +80,12 @@ func TestSSE_RaceStress_SubscriberCountConsistency(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 	}
 
-	mu.Lock()
+	mutex.Lock()
 	for _, body := range bodies {
 		_ = body.Body.Close()
 	}
 	bodies = nil
-	mu.Unlock()
+	mutex.Unlock()
 
 	deadline = time.Now().Add(5 * time.Second)
 	for dash.SubscriberCount() != 0 {
@@ -103,27 +103,27 @@ func TestSSE_RaceStress_SubscriberCountConsistency(t *testing.T) {
 // --- Webhook delivery under concurrent transitions (plan M83) ---
 
 // TestWebhook_ConcurrentTransitionsDeliverExactlyOnce pins the webhook's
-// delivery contract when the status flaps: every delivery carries a valid
-// transition payload (no v0.2.0 metadata on the wire), no identical payload
-// is delivered twice (the dedup under the notifier lock), the final state
-// always arrives, and no status outside the toggled states ever appears.
-// Delivery ORDER is deliberately best-effort (one goroutine per fire, no
-// retries), so the receiver-side assertions are set-based, not sequence-
-// based — that asymmetry is the documented contract this test locks.
+// delivery contract when the status flaps. Fire count is transition-based
+// (the notifier announces a state only when it differs from the last
+// announced one), while DELIVERY order is best-effort: one goroutine per
+// fire, no retries, and the payload's second-granular changed_at makes
+// same-second fires byte-indistinguishable — so the receiver-side
+// assertions are set-based, never sequence-based. That asymmetry is the
+// documented contract this test locks.
 func TestWebhook_ConcurrentTransitionsDeliverExactlyOnce(t *testing.T) {
 	t.Parallel()
 
 	var (
-		mu        sync.Mutex
+		mutex     sync.Mutex
 		delivered []string
 	)
 
 	receiver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 
-		mu.Lock()
+		mutex.Lock()
 		delivered = append(delivered, string(body))
-		mu.Unlock()
+		mutex.Unlock()
 
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -151,9 +151,9 @@ func TestWebhook_ConcurrentTransitionsDeliverExactlyOnce(t *testing.T) {
 	// local in practice) land before auditing the receiver.
 	deadline := time.Now().Add(3 * time.Second)
 	for {
-		mu.Lock()
+		mutex.Lock()
 		count := len(delivered)
-		mu.Unlock()
+		mutex.Unlock()
 
 		if count >= 4 {
 			break
@@ -168,25 +168,41 @@ func TestWebhook_ConcurrentTransitionsDeliverExactlyOnce(t *testing.T) {
 
 	time.Sleep(200 * time.Millisecond)
 
-	mu.Lock()
+	mutex.Lock()
 	payloads := append([]string(nil), delivered...)
-	mu.Unlock()
+	mutex.Unlock()
 
 	if len(payloads) < 3 {
 		t.Fatalf("deliveries: want >= 3 transitions, got %d", len(payloads))
 	}
 
-	seen := make(map[string]bool, len(payloads))
+	// Transition-based fires: 8 toggles plus the initial announcement can
+	// produce at most 9 fires — more means the notifier is spamming per
+	// tick instead of per change.
+	if len(payloads) > 9 {
+		t.Errorf("deliveries: want <= 9 (initial + 8 toggles), got %d", len(payloads))
+	}
 
-	var finalArrived bool
+	sawPass, sawFail, finalArrived := auditWebhookDeliveries(t, payloads)
+
+	if !sawPass || !sawFail {
+		t.Errorf("both toggled states must arrive (pass=%v fail=%v)", sawPass, sawFail)
+	}
+
+	if !finalArrived {
+		t.Errorf("the final state (fail) never arrived; delivered:\n%s", strings.Join(payloads, "\n"))
+	}
+}
+
+// auditWebhookDeliveries validates every delivered payload's structure and
+// reports which states arrived. Malformed payloads fail the test inline;
+// the booleans summarize the observed status set.
+func auditWebhookDeliveries(t *testing.T, payloads []string) (bool, bool, bool) {
+	t.Helper()
+
+	var sawPass, sawFail, finalArrived bool
 
 	for _, raw := range payloads {
-		if seen[raw] {
-			t.Errorf("duplicate payload delivered:\n%s", raw)
-		}
-
-		seen[raw] = true
-
 		var payload struct {
 			Status string `json:"status"`
 			Checks map[string]struct {
@@ -199,7 +215,12 @@ func TestWebhook_ConcurrentTransitionsDeliverExactlyOnce(t *testing.T) {
 			t.Fatalf("invalid delivery payload %s: %v", raw, err)
 		}
 
-		if payload.Status != "pass" && payload.Status != "fail" {
+		switch payload.Status {
+		case "pass":
+			sawPass = true
+		case "fail":
+			sawFail = true
+		default:
 			t.Errorf("unexpected delivered status %q", payload.Status)
 		}
 
@@ -209,15 +230,12 @@ func TestWebhook_ConcurrentTransitionsDeliverExactlyOnce(t *testing.T) {
 			}
 		}
 
-		// The final toggle leaves the service unhealthy.
 		if payload.Status == "fail" {
 			finalArrived = true
 		}
 	}
 
-	if !finalArrived {
-		t.Errorf("the final state (fail) never arrived; delivered:\n%s", strings.Join(payloads, "\n"))
-	}
+	return sawPass, sawFail, finalArrived
 }
 
 // --- Heartbeat goroutine lifetime (plan M84) ---
@@ -257,7 +275,7 @@ func TestShutdown_HeartbeatGoroutinesExit(t *testing.T) {
 	}()
 
 	for range clients {
-		resp, err := http.Get(server.URL + "/health/sse")
+		resp, err := http.Get(server.URL + "/health/sse") //nolint:bodyclose // closed via the deferred open-slice sweep
 		if err != nil {
 			t.Fatalf("client connect: %v", err)
 		}
