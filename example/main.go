@@ -129,7 +129,7 @@ func buildSingleProbe(ctx context.Context, injector *do.RootScope) probeBundle {
 	registerService(
 		injector,
 		"metrics-exporter",
-		&alwaysFailing{reason: "exporter endpoint unreachable"},
+		&alwaysFailing{reason: exporterUnreachableReason},
 	)
 
 	probe := health.New(injector,
@@ -159,7 +159,7 @@ func buildAggregateProbe(ctx context.Context, withDetailed bool) probeBundle {
 	registerService(
 		workerInjector,
 		"metrics-exporter",
-		&alwaysFailing{reason: "exporter endpoint unreachable"},
+		&alwaysFailing{reason: exporterUnreachableReason},
 	)
 
 	apiProbe := health.New(apiInjector,
@@ -238,7 +238,7 @@ func detailedDemoChecks(_ context.Context) map[string]health.CheckDetail {
 	}{
 		{name: "postgres", work: 3 * time.Millisecond},
 		{name: "redis", work: 12 * time.Millisecond},
-		{name: "metrics-exporter", work: 40 * time.Millisecond, issue: "exporter endpoint unreachable"},
+		{name: "metrics-exporter", work: 40 * time.Millisecond, issue: exporterUnreachableReason},
 	}
 
 	details := make(map[string]health.CheckDetail, len(deps))
@@ -412,6 +412,11 @@ func isBasePathRune(r rune) bool {
 		return false
 	}
 }
+
+// exporterUnreachableReason is the shared demo failure text; one constant
+// keeps the three demo probe builders honest about showing the same
+// broken dependency.
+const exporterUnreachableReason = "exporter endpoint unreachable"
 
 // healthChecker is the interface samber/do uses for health checks.
 type healthChecker interface {
