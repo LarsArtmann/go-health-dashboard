@@ -283,9 +283,10 @@ func TestShutdown_HeartbeatGoroutinesExit(t *testing.T) {
 	}()
 
 	for range clients {
+		//nolint:bodyclose // closed via the deferred open-slice sweep
 		resp, err := http.Get(
 			server.URL + "/health/sse",
-		) //nolint:bodyclose // closed via the deferred open-slice sweep
+		)
 		if err != nil {
 			t.Fatalf("client connect: %v", err)
 		}
