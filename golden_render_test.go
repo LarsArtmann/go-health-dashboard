@@ -115,6 +115,48 @@ func TestGoldenRender_Source(t *testing.T) {
 	goldenRender(t, "source", goldenViewModelForMode(t, GroupBySource))
 }
 
+// goldenEvidenceStart is the fixed observation-window start for the
+// evidence goldens; paired with goldenNow it yields stable strip wording.
+var goldenEvidenceStart = time.Date(2026, 9, 16, 11, 0, 0, 0, time.UTC)
+
+// TestGoldenRender_ZeroProvenWarning locks the exact wording of the
+// health-washing warning: a fully green table whose evidence log has never
+// seen a deviation must render the explicit "green rows are unproven"
+// strip, and every pass badge must carry the unproven disclosure tooltip.
+func TestGoldenRender_ZeroProvenWarning(t *testing.T) {
+	t.Parallel()
+
+	vm := goldenViewModel(t)
+	vm.Evidence = evidenceSummary{
+		Since: goldenEvidenceStart,
+		Total: len(goldenChecks()),
+	}
+
+	goldenRender(t, "zeroproven", vm)
+}
+
+// TestGoldenRender_PublicMode locks the anonymized render exactly as
+// production builds it: anonymizeViewModel runs BEFORE the evidence
+// summary is attached, so names and errors are masked while the strip
+// keeps its (non-identifying) counts — and, keyed by the original names,
+// every pass badge honestly renders as unproven in public mode.
+func TestGoldenRender_PublicMode(t *testing.T) {
+	t.Parallel()
+
+	vm := goldenViewModel(t)
+	anonymizeViewModel(&vm)
+	vm.Evidence = evidenceSummary{
+		Since:  goldenEvidenceStart,
+		Total:  len(goldenChecks()),
+		Proven: 1,
+		lastNonPassBy: map[string]time.Time{
+			"api/mail": goldenSince,
+		},
+	}
+
+	goldenRender(t, "publicmode", vm)
+}
+
 func goldenRender(t *testing.T, name string, vm viewModel) {
 	t.Helper()
 
