@@ -17,7 +17,43 @@ forgetting.
 
 ### Added
 
-- Nothing yet.
+- Regression tests locking the v0.9.0 metadata surfaces: real SSE patch
+  payloads (both the connect-time snapshot and subsequent broadcasts) must
+  carry the "since (age) · duration" metadata line and the zero-proven
+  evidence-strip warning; aggregate renders must carry namespaced
+  `source/check` keys with their since/duration metadata; the latency
+  histogram's bucket/bounds pairing and cumulative placement are pinned at
+  the value level.
+- Fuzz targets `FuzzFormatCheckDuration` and `FuzzFormatStateAge` with
+  hostile seeds (negative, zero, huge, sub-microsecond), locking their
+  contracts: unknown durations render absent (never "0s") and clock skew
+  never renders a negative age.
+- Proven-green evidence tooltips now also cite the probe-side state-entry
+  stamp (`Check.Since`), pairing the dashboard-observed last non-pass with
+  when the probe entered the current state.
+- `/health/export` JSON payload gains a per-check `checks` object (`since`
+  RFC3339, `duration_ns`; omitted when unknown). Export is the one
+  dashboard-owned wire shape that may grow: the `/health` JSON contract
+  stays go-health-shaped, and CSV/NDJSON are unchanged (per-sample rows
+  have no check-level column).
+- Golden fixtures locking the zero-proven health-washing warning wording
+  and the public-mode masked render. Dark mode needs no golden: theming is
+  CSS-class-only and the HTML is byte-identical.
+- Example `DEMO_DETAILED=1` toggle: a `NewWithDetailedCheck` probe with
+  self-timed mock dependencies so the demo shows real durations,
+  composable with `DEMO_AGGREGATE`.
+
+### Changed
+
+- `prometheus/client_model` bumped 0.6.2 → 0.6.3.
+- README light/dark screenshots regenerated through the detailed-check
+  recorder fixture: the metadata line and the failure-evidence strip are
+  visible in both themes with real measured durations.
+- Benchmark evidence recorded for the metadata feature: the per-tick
+  stamping loop costs ~0.21µs and 6 allocs per row (negligible per tick);
+  the full render is honestly ~25-60% pricier per page from the metadata
+  line's templ scaffolding (`docs/research/2026-09-10_benchmarks.md`
+  re-baselined).
 
 ### Fixed
 
@@ -156,7 +192,7 @@ to cut this very release.
 
 - Nothing yet.
 
-## [0.7.0] — 2026-09-10
+## [0.7.0] - 2026-09-10
 
 Dashboard UI/UX overhaul, executed as a Pareto plan
 (`docs/planning/archived/2026-09-09_19-21_dashboard-ui-ux-pareto.md`): maximize
@@ -287,7 +323,7 @@ the running configuration.
   toggle, patch-survival, and reload-restoration paths are proven in
   `TestBrowser_CollapsePersistInteract`.
 
-## [0.6.1] — 2026-09-05
+## [0.6.1] - 2026-09-05
 
 ### Fixed
 
@@ -730,6 +766,12 @@ development have been removed.
 
 ## [0.1.0-alpha] - 2026-08-08
 
+*2026-09-17 audit: the link target `01277d3` is the bare module-init commit
+(only `doc.go` and `go.mod`). The bullets below describe the development
+window between module init and v0.1.0 rather than the state of that commit —
+verified against it: `pusher.go`, `fingerprintChecks`, and the test suite
+did not exist at `01277d3`.*
+
 ### Added
 
 - Initial project structure: `go.mod`, `doc.go`, `example/`
@@ -782,7 +824,10 @@ development have been removed.
   Replaced by `fingerprintChecks` which sorts keys before concatenating
   (`status.go:215`)
 
-[Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.8.1...v0.9.0
+[0.8.1]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.8.0...v0.8.1
+[0.8.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.6.1...v0.7.0
 [0.6.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.4.0...v0.5.0
