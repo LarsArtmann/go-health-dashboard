@@ -1,9 +1,10 @@
 # TODO List
 
 > Short-term, actionable, bounded work items, verified against the actual
-> code (docs-health HARVEST passes 2026-09-03, 2026-09-04, 2026-09-10, and
-> 2026-09-17 — closed items live in `CHANGELOG.md`, never here). For
-> long-term vision and unrefined ideas, see ROADMAP.md.
+> code (docs-health HARVEST passes 2026-09-03, 2026-09-04, 2026-09-10,
+> 2026-09-17 morning, and 2026-09-17 evening — closed items live in
+> `CHANGELOG.md`, never here). For long-term vision and unrefined ideas,
+> see ROADMAP.md.
 
 ## Status legend
 
@@ -15,65 +16,62 @@
 
 ## Next Up
 
-Harvested 2026-09-17 from `docs/status/2026-09-17_05-55_go-health-v020-consumer-upgrade.md`
-(f-list), the 2026-09-16 release/buildflow sessions, and the living docs.
-Ordered by impact; every row survived verification against the current tree
-(`Version = "0.9.0"`, go-health v0.2.0, 256 test functions / 34 files).
+Harvested 2026-09-17 (morning docs-health pass + evening post-v0.9.0
+batch executed by two parallel sessions). Ground truth:
+`Version = "0.9.0"`, go-health v0.2.0, 267 top-level test/benchmark/fuzz
+functions across 36 test files
+(`rg -c '^func (Test\|Benchmark\|Fuzz)' *_test.go`).
 
-| Task                                                                 | Status      | Why it matters / notes                                                                                                                                                                       | Evidence                                                                        |
-| -------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Regenerate README screenshots (light + dark)                         | 🔴 `TODO`   | The screenshots predate the per-check metadata line (and the v0.8.0 evidence strip was captured, but metadata postdates). Env-guarded: `SCREENSHOT_OUTPUT=docs/screenshot.png` (+ `_DARK`).    | status report 2026-09-17 f5, 2026-09-16 18:13 c9                                |
-| Patch-content test: SSE patch carries the metadata line              | 🔴 `TODO`   | Golden files prove the initial HTML; no content-level assertion exists that a patch payload carries new view content (metadata must transit `buildViewModelAt` — unproven by a test). Closes the gap for every future view change. | status report 2026-09-17 b2/f6                                                  |
-| Benchmark the per-tick stamping loop                                 | 🔴 `TODO`   | `buildViewModelAt` adds per-row stamping on every pusher tick; almost certainly negligible, but `BenchmarkHandler_HTMLRendering` exists for exactly this. Run before/after and record in `docs/research/2026-09-10_benchmarks.md`. | status report 2026-09-17 b4/f7                                                  |
-| Histogram bucket-count regression test                               | 🟢 `TODO`   | Assert `len(buckets) == len(latencyBucketBounds)` in a test — guards the array-typed fix from the 2026-09-16 triage (currently only type-level).                                              | status reports 2026-09-16 14:55 f39, 18:13 c10                                  |
-| Merge the three green dependabot PRs (#13/#12/#4)                    | 🔴 `TODO`   | Root-caused (stale branches predating the v1.16.0 pins + v0.7.0 tag), `gh pr update-branch` fixed all three; each is 10/10 green. Merge is a one-command user decision.                        | TODO_LIST 2026-09-10 sweep note; `gh pr list` (all still open)                  |
-| Dep-bump verification checklist, written down                       | 🟡 `TODO`   | build+test+race+lint+buildflow ran ad-hoc in the v0.2.0 session; vulncheck/coverage/benchmark were skipped. Fix: extend the AGENTS.md dependency-notes or a `scripts/verify-dep-bump.sh` (fleet question: one script per repo or shared?). | status report 2026-09-17 e4/f17                                                 |
-| Example server: detailed-check source demo                           | 🟡 `TODO`   | The example shows no durations — the best showcase for the v0.2.0 metadata feature. Add a `NewWithDetailedCheck`-style source.                                                                | status report 2026-09-17 c7/f8                                                  |
-| Integration test: metadata transits the aggregate path               | 🟡 `TODO`   | Upstream locks `since` fields in its aggregate golden; the dashboard-side end-to-end (stub aggregate + detailed sources → rendered metadata) is untested.                                     | status report 2026-09-17 c5/f9                                                  |
-| Fuzz seeds for the new formatters                                    | 🟡 `TODO`   | `formatCheckDuration`/`formatStateAge` have unit tests but no seeds (negative, huge, sub-µs inputs).                                                                                          | status report 2026-09-17 c6/f10                                                 |
-| Evidence tooltips cite `Check.Since`                                 | 🟡 `TODO`   | Strengthens the health-washing story: pair the dashboard-observed last non-pass with the probe-side state-entry stamp (v0.2.0 made it available).                                             | status report 2026-09-17 f13                                                    |
-| `since`/`duration` in `/health/export` (JSON/CSV)                    | 🟡 `TODO`   | Design decision: the `/health` JSON contract stays go-health-shaped, but export is dashboard-owned and could carry them.                                                                      | status report 2026-09-17 f14                                                    |
-| Check `deploy/` for a Grafana panel for the new gauge                | 🔴 `TODO`   | Unaudited whether `deploy/` assets should visualize `dashboard_health_check_last_duration_seconds`.                                                                                           | status report 2026-09-17 c9/f15                                                 |
-| Golden fixtures: public-mode + dark + zero-proven warning            | 🔴 `TODO`   | `testdata/golden/` has severity + source only. Lock the exact wording of the zero-proven health-washing warning and the public-mode render.                                                   | `testdata/golden/`; evidence report f28, 09-10 01-39 f34, 09-10 02-56 f47        |
-| Dark-mode axe pass                                                   | 🔴 `TODO`   | Contrast is WCAG AA-locked since v0.8.0; structural a11y (axe) in dark mode is untested.                                                                                                      | 09-10 02-56 f31                                                                 |
-| CHANGELOG historical audit                                           | 🔴 `TODO`   | The ancient `[0.1.0-alpha]` section contains bullets that chronologically belong to later versions; relocate + verify every section against its tag.                                          | 09-10 01-39 c3/f14, 09-10 02-56 c5/f15                                          |
-| README "Upgrading" section                                           | 🔴 `TODO`   | The `WithBasePath` behavior change (v0.7.0 Compatibility) has no README migration note; CHANGELOG is the only record.                                                                         | 09-10 01-39 f35, 09-10 02-56 f26                                                |
-| SECURITY.md with a reporting contact                                 | 🔴 `TODO`   | The public module now has consumers beyond CV; no vulnerability-reporting contact exists.                                                                                                     | 09-10 01-39 f37, 09-10 02-56 f25                                                |
-| ROADMAP: define v1.0 criteria                                        | 🔴 `TODO`   | API freeze / consumer count / backward-compat policy, so 0.x has an exit.                                                                                                                     | 09-10 01-39 f22, 09-10 02-56 f23                                                |
-| Tag protection rule on GitHub (`v*` immutable)                       | 🔴 `TODO`   | Belt-and-suspenders under proxy immutability; needs repo-admin settings.                                                                                                                      | 09-10 01-39 f16, 09-10 02-56 f17                                                |
-| CONTRIBUTING: document check-changelog + verify-release + desk gate  | 🔴 `TODO`   | Contributors don't know why the new guards fail; CONTRIBUTING covers only browser/screenshot tests today.                                                                                     | 09-10 02-56 f14                                                                 |
+| Task                                             | Status    | Why it matters / notes                                                                                                                                                        | Evidence                                                     |
+| ------------------------------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| CHANGELOG per-bullet tag audit for v0.3.0–v0.8.0 | 🔴 `TODO` | The 2026-09-17 audit verified the `[0.1.0]`/`[0.2.0]` claims against their tags (all TRUE — including dark mode and connection limits, contrary to the old stray-bullets premise), fixed the `[0.1.0-alpha]` scope note (its link target `01277d3` is the bare module-init commit), added the missing `[0.8.0]`/`[0.8.1]`/`[0.9.0]` link defs, re-pointed `[Unreleased]` to `v0.9.0...HEAD`, and normalized heading dashes. The remaining sections' bullets are spot-checked only, not diffed feature-by-feature against each tag. | CHANGELOG alpha audit note + footer; `git grep`/`git cat-file` tag checks |
 
 Shipped since the last sweep (2026-09-10): v0.8.0 + v0.8.1 (evidence strip,
 mobile stacking, WCAG AA, single bootstrap, templ-components v1.17.0,
 verify-release.sh, changelog lint, release-lesson codification), the
 BuildFlow red→green triage (erraudit 13→0, three skip gates with rationale,
-treefmt snapshot-race root cause + templ-generate skip), and the go-health
+treefmt snapshot-race root cause + templ-generate skip), the go-health
 v0.2.0 consumer upgrade (per-check since/duration UI + the new duration
-gauge — the F5 remainder row left the Blocked table; the upstream draft is
-annotated SHIPPED in `docs/upstream/go-health-check-timestamps-issue-draft.md`),
-cut as **v0.9.0 on 2026-09-17**: signed tag, tag-first push,
+gauge), and v0.9.0 (2026-09-17: signed tag, tag-first push,
 `verify-release.sh v0.9.0` 9/9 green, vulncheck clean, coverage 82.0% vs
-the 78% floor, browser suite 15/15 (0 skipped) — v0.9.0 is Latest.
-The release-checklist now carries the desk gate (pre-push-checks.sh as gate
-0), the publish-ordering rule (CI green before `gh release create`), and the
-no-pipes-on-gates rule (docs fixes from the 2026-09-16 release session).
+the 78% floor, browser suite 15/15 — Latest).
 
-Everything else from the v0.3.x–0.8.x cycles either shipped (see
+Shipped in the 2026-09-17 evening post-v0.9.0 batch (two parallel
+sessions, per the pareto plan's 4% + 20% tiers): the metadata test-gap
+proofs (SSE patch payloads carry the metadata line and the zero-proven
+evidence-strip warning — connect-time AND broadcast; aggregate transit
+with namespaced keys; latency-histogram bucket/bounds pairing at the
+value level), `/health/export` JSON per-check `checks` object, evidence
+tooltips citing the probe-side `Check.Since` stamp, fuzz targets for the
+two duration formatters with hostile seeds plus clean 60s campaigns on
+four targets (results in `docs/research/2026-09-10_benchmarks.md`
+alongside the stamping-loop benchmark: ~0.21µs/6 allocs per row),
+regenerated light/dark/degraded screenshots (all three eyeballed:
+metadata line + evidence strip visible), golden fixtures for the
+zero-proven warning and public-mode render (dark mode needs none —
+CSS-class-only theming), the dark-mode axe re-audit (one Chrome launch,
+both themes, zero serious/critical findings), `DEMO_DETAILED=1` example
+toggle, `scripts/verify-dep-bump.sh` (per-repo gate chain; the fleet-level
+placement question stays open), and the docs batch (SECURITY.md, README
+"Upgrading" + security link, CONTRIBUTING guard-scripts section,
+ROADMAP v1.0 criteria, CHANGELOG audit fixes). All rows closed here ship
+in `CHANGELOG.md` `[Unreleased]`.
+
+Everything else from the v0.3.x–0.9.0 cycles either shipped (see
 `CHANGELOG.md`), was closed with a reason in the annotated reports under
 `docs/status/` (fully-executed reports move to `archived/` — 2026-09-17
-docs-health pass), or lives in ROADMAP.md as raw ideas. v0.8.0 was released
-2026-09-16 (tagged, pushed, proxy-verified, GitHub Release published) and
-immediately followed by v0.8.1 — the v0.8.0 commit's CI failed only the
-FEATURES test-count drift guard, and immutable tags mean the fix ships as a
-patch. v0.9.0 (2026-09-17, commit `5f71fa6`) is now Latest.
-Session-closing gate: `scripts/pre-push-checks.sh`. Known-broken-commit SHAs
-for `git bisect skip`: see AGENTS.md and
+docs-health pass), or lives in ROADMAP.md as raw ideas. v0.9.0 (2026-09-17,
+commit `5f71fa6`) is Latest.
+Session-closing gate: `scripts/pre-push-checks.sh`; dependency bumps now
+have `scripts/verify-dep-bump.sh`. Known-broken-commit SHAs for
+`git bisect skip`: see AGENTS.md and
 `docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
 
 ## Blocked (needs user decision)
 
 | Task                                                    | Status       | Why blocked                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Evidence                                                                                                 |
 | ------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Tag protection rule on GitHub (`v*` immutable)          | 🔵 `BLOCKED` | Belt-and-suspenders under proxy immutability; needs repo-admin settings (ruleset via `gh api` or manual). Part of the M112–M120 user-decision batch.                                                                                                                                                                                                                                                                                                            | 09-10 01-39 f16, 09-10 02-56 f17; evening report g2                                                      |
 | CV-side adoption: bump go.mod, deploy, verify live page | 🔵 `BLOCKED` | Deploy pipeline + rollout order are the user's call (report g Q2). Verified 2026-09-10 (read-only): CV serves a CSP-safe mini-client, not the Datastar SDK — a safe bump needs `dashboard.WithNoDatastarRuntime()` (shipped in v0.7.0) or the filter/pill would render dead                                                                                                                                                                                                                                                     | CV `internal/di/health_dashboard.go` pins v0.6.1                                                         |
 | Copy affordance for raw check keys                      | 🔵 `BLOCKED` | Product decision (report g Q3): title-attr + select-text vs a Datastar clipboard action                                                                                                                                                                                                                                                                                                                                                                                                                                         | status report 2026-09-09 question 3                                                                      |
 | Pin-guard keep sign-off                                 | 🔵 `BLOCKED` | Guard rewritten to v1.17.0 pins per the keep decision (sixth sweep caught 2026-09-16: the daemon swept the bump unguarded); the deviation from the original removal condition wants sign-off                                                                                                                                                                                                                                                                                                                                    | `scripts/check-ui-pins.sh` header                                                                        |

@@ -242,3 +242,70 @@ failing/warning card), so operators land on what hurts.
 A **sample** is one recorded overall-status point (`{At, Value, Status}`);
 **transitions** are derived flips between statuses. Samples power the trend
 sparkline, `/health/trend`, `/health/export`, and the timeline card.
+
+## Evidence Terms (0.8.x)
+
+### Failure-evidence strip
+
+The one-line report under the Updated stamp: "Failure evidence: X of N
+checks have deviated from pass at least once since <start>". It exists
+because a dashboard's value equals the fraction of its checks that can
+actually fail — greens alone prove nothing.
+
+### Proven green
+
+A pass row whose check was OBSERVED in a non-pass status at least once
+during the observation window. Its badge tooltip cites the last non-pass
+and the probe-side state-entry stamp (`Check.Since`): this green is backed
+by a check that has demonstrably deviated.
+
+### Unproven green
+
+A pass row with no recorded non-pass observation. The badge discloses:
+"this green is unproven (the check may be unable to fail)" — a check
+registered without a real health function verifies nothing while staying
+green.
+
+### Observation window
+
+The span over which evidence accrues: the pusher's lifetime. It starts
+when the pusher starts and resets on restart (stated in the tooltip).
+Zero-`Since` (pusher not started) renders neither strip nor tooltips.
+Proven counts intersect with the CURRENT response's checks so removed
+checks cannot inflate the ratio.
+
+## Presentation Terms (0.8.x layout)
+
+### Single bootstrap
+
+One templ-defined script renders the page's interactive behavior; every
+inline script carries the per-request nonce. No per-element scripts —
+script-emitting upstream components are vetted against this before
+adoption.
+
+### Mobile stacking
+
+Below the small-screen breakpoint the stat cards and check cards stack
+vertically (single column) instead of shrinking a grid into
+unreadability.
+
+### Contrast (WCAG AA)
+
+All status colors meet WCAG AA contrast in light AND dark themes — locked
+since v0.8.0 and re-audited structurally (axe) in both themes.
+
+## Metadata Terms (0.9.0)
+
+### since (state-entry stamp)
+
+`Check.Since` from go-health v0.2.0: when the probe entered the check's
+current status. Rendered per row as "since HH:MM:SS UTC (<age>)" —
+probe-observed, so it survives dashboard restarts and aggregate merges.
+Unknown metadata is omitted, never rendered as zero.
+
+### duration
+
+`Check.DurationNanos`: the check source's own execution-time measurement,
+rendered like "42ms". Present only when the source reports timing
+(`NewWithDetailedCheck` or a `DetailedHealthRecorder`); absent otherwise,
+never zero.
