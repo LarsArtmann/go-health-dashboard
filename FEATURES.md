@@ -173,7 +173,7 @@
 | Example app              | 🟢 `FULLY_FUNCTIONAL` | `example/main.go` — DEMO_TREND/DEMO_METRICS/DEMO_AUTH/DEMO_RATELIMIT/DEMO_DRAIN/DEMO_PUBLIC/DEMO_BASE_PATH env toggles                                                                                                                                               |
 | Docker + Prometheus demo | 🟢 `FULLY_FUNCTIONAL` | `Dockerfile`, `deploy/docker-compose.yml`, `deploy/prometheus.yml` — example + scraper                                                                                                                                                                               |
 | Domain language docs     | 🟢 `FULLY_FUNCTIONAL` | `docs/DOMAIN_LANGUAGE.md` — ubiquitous language glossary                                                                                                                                                                                                             |
-| Released (pkg.go.dev)    | 🟢 `FULLY_FUNCTIONAL` | Tagged v0.8.1 (`verify-release.sh v0.8.1` all green 2026-09-16); v0.5.0+ proxy-resolved; zero replace directives                                                                                     |
+| Released (pkg.go.dev)    | 🟢 `FULLY_FUNCTIONAL` | Tagged v0.9.0 (`verify-release.sh v0.9.0` all green 2026-09-17); v0.5.0+ proxy-resolved; zero replace directives                                                                                     |
 
 ## Known Gaps
 

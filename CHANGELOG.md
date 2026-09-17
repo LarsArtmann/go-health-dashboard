@@ -17,6 +17,23 @@ forgetting.
 
 ### Added
 
+- Nothing yet.
+
+### Fixed
+
+- Nothing yet.
+
+## [0.9.0] - 2026-09-17
+
+Per-check observability release: service-table rows now show each check's
+state-entry time ("since HH:MM:SS UTC (age)") and execution duration when
+check sources report them (go-health v0.2.0 metadata), and Prometheus gains
+a per-check last-duration gauge. Ships with rate-limit response hardening,
+a distroless-pinned Dockerfile, and dead-link fixes. Display-only — the
+JSON and webhook wire contracts are untouched.
+
+### Added
+
 - Per-check state metadata in the service tables (go-health v0.2.0's
   `Check.Since`/`Check.DurationNanos`): rows show "since HH:MM:SS UTC
   (age)" for checks reporting their state-entry time and the execution
