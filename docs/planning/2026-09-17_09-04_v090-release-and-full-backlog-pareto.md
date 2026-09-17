@@ -200,12 +200,12 @@ items…) — nothing dropped, nothing silently de-scoped.
 | M101 | Lifecycle: `Register` auto-start via do container (design + spike) | 12 | — |
 | M102 | Grouping: custom tags/labels design note (severity + source + tags) | 12 | — |
 | M103 | Unit-test the version-guard grep logic (script drift protection) | 12 | — |
-| M104 | Example build smoke in CI (`go build ./example` + flag parse) | 10 | — |
+| ~~M104~~ | ~~Example build smoke in CI (`go build ./example` + flag parse)~~ done — the CI Build job already runs go build ./... which compiles the example module; flag-parse smoke remains open | ~~10~~ | ~~—~~ |
 | M105 | doc.go: webhook+public-mode combo example; `WithBasePath` example | 12 | — |
 | M106 | Amend the bisect-wall audit (new daemon scars since 2026-09-04) | 12 | — |
 | M107 | Nightly job: verify a GitHub Release page exists for every tag | 12 | — |
-| M108 | Test guarding CHANGELOG compare links (one per version heading) | 12 | — |
-| M109 | Coverage push >80% (targeted tests), then raise the CI floor | 12 | — |
+| ~~M108~~ | ~~Test guarding CHANGELOG compare links (one per version heading)~~ done — the changelog lint now verifies every version section has a footer compare-link def; first run caught the missing [0.6.1] def, added 2026-09-17 | ~~12~~ | ~~—~~ |
+| ~~M109~~ | ~~Coverage push >80% (targeted tests), then raise the CI floor~~ done — floor raised 78% to 80% with 81.8% measured at the change (baseline 83.4%) | ~~12~~ | ~~—~~ |
 | M110 | Spike: deprecate `WithNonce` in favor of `WithNonceExtractor` (deprecation policy draft) | 12 | — |
 | M111 | Reconcile: ROADMAP mirror-check (TODO_LIST ↔ Themes agree); docs-health HARVEST of this plan | 12 | — |
 | M112 | User-decision batch: answers to g-questions; update BLOCKED rows + ROADMAP Open Questions | 30* | C27 |
