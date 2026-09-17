@@ -402,10 +402,12 @@ func WithRetryInterval(d time.Duration) Option {
 //
 // The prefix is stored and applied once after all options run, so the order
 // of WithBasePath relative to WithRoutes does not matter (the historical
-// ordering footgun is gone).
+// ordering footgun is gone). Any number of trailing slashes is stripped
+// ("/admin/" and "//" both normalize), so the value can never produce a
+// double-slash route.
 func WithBasePath(prefix string) Option {
 	return func(cfg *Config) {
-		cfg.BasePath = strings.TrimSuffix(prefix, "/")
+		cfg.BasePath = strings.TrimRight(prefix, "/")
 	}
 }
 
