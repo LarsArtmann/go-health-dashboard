@@ -96,18 +96,18 @@
 
 ## b) PARTIALLY DONE
 
-1. **Full aria-live filter counts** — the no-match hint announces (role
+1. ~~**Full aria-live filter counts** — the no-match hint announces (role
    status), but per-keystroke match counts need a script; parked unless a
-   screen-reader user asks.
-2. **Dark-mode contrast pass** — harness-verifiable parts covered by axe;
-   the live-page manual pass intentionally rides the CV rollout.
+   screen-reader user asks.~~ **Won't implement — the row's own gate ("only if a screen-reader user asks") is unmet; the no-match hint already announces via its `role="status"` region. Reopen on the first request.**
+2. ~~**Dark-mode contrast pass** — harness-verifiable parts covered by axe;
+   the live-page manual pass intentionally rides the CV rollout.~~ done — shipped in v0.8.0 (WCAG AA on the live page: green-700/amber-700, gray-500/gray-400 swap; ratios locked by `TestRender_ContrastSafeStatusColors`)
 
 ## c) NOT STARTED (deliberately deferred, rationale in TODO_LIST)
 
-1. Mobile row stacking (needs the visual design decision first).
-2. Single nonce'd bootstrap script (three small tested scripts beat one
-   merged mid-session refactor; revisit with a dedicated CSP-suite run).
-3. `view.templ` split (conditional on growth; ~500 lines now).
+1. ~~Mobile row stacking (needs the visual design decision first).~~ done — shipped in v0.8.0 (labeled-card stacking below `sm`)
+2. ~~Single nonce'd bootstrap script (three small tested scripts beat one
+   merged mid-session refactor; revisit with a dedicated CSP-suite run).~~ done — shipped in v0.8.0 (one nonce-carried bootstrap in `page_scripts.templ`; the CSP browser suite proves it)
+3. ~~`view.templ` split (conditional on growth; ~500 lines now).~~ done — split in v0.8.0 per ADR-0001 (`page_scripts.templ`, 531 → 403 lines)
 
 ## d) TOTALLY FUCKED UP
 
@@ -143,10 +143,10 @@
 
 | # | Decision                                                                                                                                                                                                                                                                                              | Where it blocks                         |
 | - | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| 1 | Tag `v0.7.0` vs cut `v0.8.0` — `[Unreleased]` is now substantial (introspection, NDJSON, grouping, ceremony, the PersistCollapse fix). Folding it into 0.7.0 ships a much bigger tag than its CHANGELOG section describes; 0.8.0 keeps both honest. Then push `--follow-tags` (greens version-guard). | CI version-guard job; release checklist |
-| 2 | CV rollout order (report g Q2). The bump is now SAFE with `WithNoDatastarRuntime()`; deploy pipeline is yours.                                                                                                                                                                                        | `~/projects/CV` go.mod pin at v0.6.1    |
-| 3 | Copy affordance for raw keys (report g Q3) — still open as a product call.                                                                                                                                                                                                                            | TODO_LIST blocked                       |
-| 4 | Pin-guard keep sign-off (guard retained by decision; deviation documented).                                                                                                                                                                                                                           | `scripts/check-ui-pins.sh` header       |
+| 1 | ~~Tag `v0.7.0` vs cut `v0.8.0` — `[Unreleased]` is now substantial (introspection, NDJSON, grouping, ceremony, the PersistCollapse fix). Folding it into 0.7.0 ships a much bigger tag than its CHANGELOG section describes; 0.8.0 keeps both honest. Then push `--follow-tags` (greens version-guard).~~ done — v0.7.0 cut 2026-09-10 with the section folded in (tag-first; version-guard green); since superseded by v0.8.0/v0.8.1 | CI version-guard job; release checklist |
+| 2 | CV rollout order (report g Q2). The bump is now SAFE with `WithNoDatastarRuntime()`; deploy pipeline is yours. _(Still blocked — standing TODO_LIST row.)_ | `~/projects/CV` go.mod pin at v0.6.1 |
+| 3 | Copy affordance for raw keys (report g Q3) — still open as a product call. _(Still blocked — standing TODO_LIST row.)_ | TODO_LIST blocked |
+| 4 | Pin-guard keep sign-off (guard retained by decision; deviation documented). _(Still blocked — standing TODO_LIST row.)_ | `scripts/check-ui-pins.sh` header |
 
 ## CV findings mapping (report f46, from CV's 2026-09-09 architecture review)
 
