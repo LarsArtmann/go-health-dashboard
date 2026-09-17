@@ -17,6 +17,8 @@
 //	DEMO_PUBLIC=1                public status-page mode (WithPublicMode)
 //	DEMO_BASE_PATH=/status       mount the dashboard under a sub-path (WithBasePath)
 //	DEMO_AGGREGATE=1             serve a two-probe aggregate instead of one probe (go-health aggregate)
+//	DEMO_DETAILED=1              add a detailed-check source (NewWithDetailedCheck) whose self-timed
+//	                             checks make the dashboard show per-check since/age and duration
 //	DEMO_WEBHOOK=<url>           POST transitions to this receiver (WithWebhook)
 //	DEMO_COLLAPSE=<n>            healthy-group collapse threshold (0 = always expanded)
 //	DEMO_PERSIST=1               persist the healthy group's open/closed state (WithPersistCollapse)
@@ -62,7 +64,9 @@ func main() {
 		shutdown func()
 	}
 	if os.Getenv("DEMO_AGGREGATE") != "" {
-		probeBundle = buildAggregateProbe(ctx)
+		probeBundle = buildAggregateProbe(ctx, os.Getenv("DEMO_DETAILED") != "")
+	} else if os.Getenv("DEMO_DETAILED") != "" {
+		probeBundle = buildDetailedProbe(ctx)
 	} else {
 		probeBundle = buildSingleProbe(ctx, injector)
 	}
@@ -144,8 +148,9 @@ func buildSingleProbe(ctx context.Context, injector *do.RootScope) probeBundle {
 // buildAggregateProbe builds two independent probes (api + worker service
 // groups) merged with go-health's aggregate — the multi-service dashboard
 // from AGENTS.md. Sources must have unique, slash-free names (go-health
-// v0.1.3 contract).
-func buildAggregateProbe(ctx context.Context) probeBundle {
+// v0.1.3 contract). With withDetailed, a third self-timed source joins the
+// aggregate so the demo shows per-check metadata for one source.
+func buildAggregateProbe(ctx context.Context, withDetailed bool) probeBundle {
 	apiInjector := do.New()
 	registerService(apiInjector, "postgres", &alwaysHealthy{})
 	registerService(apiInjector, "redis", &flappingService{failEvery: 15 * time.Second})
@@ -166,28 +171,90 @@ func buildAggregateProbe(ctx context.Context) probeBundle {
 		health.WithRefreshInterval(2*time.Second),
 	)
 
-	agg, err := aggregate.New(
-		aggregate.Source{Name: "api", Probe: apiProbe},
-		aggregate.Source{Name: "worker", Probe: workerProbe},
-	)
+	sources := []aggregate.Source{
+		{Name: "api", Probe: apiProbe},
+		{Name: "worker", Probe: workerProbe},
+	}
+
+	shuttingDown := []func(){apiProbe.Shutdown, workerProbe.Shutdown}
+
+	if withDetailed {
+		detailedProbe := health.NewWithDetailedCheck(
+			detailedDemoChecks,
+			health.WithRefreshInterval(2*time.Second),
+		)
+		sources = append(sources, aggregate.Source{Name: "detailed", Probe: detailedProbe})
+		shuttingDown = append(shuttingDown, detailedProbe.Shutdown)
+		log.Println("detailed source: self-timed checks show since/age and duration (DEMO_DETAILED set)")
+	}
+
+	agg, err := aggregate.New(sources...)
 	if err != nil {
 		log.Fatalf("aggregate.New: %v", err)
 	}
 
-	if err := apiProbe.Start(ctx); err != nil {
-		log.Fatalf("api probe.Start: %v", err)
-	}
-	if err := workerProbe.Start(ctx); err != nil {
-		log.Fatalf("worker probe.Start: %v", err)
+	for _, source := range sources {
+		if err := source.Probe.Start(ctx); err != nil {
+			log.Fatalf("%s probe.Start: %v", source.Name, err)
+		}
 	}
 
 	return probeBundle{
 		prober: agg,
 		shutdown: func() {
-			apiProbe.Shutdown()
-			workerProbe.Shutdown()
+			for _, fn := range shuttingDown {
+				fn()
+			}
 		},
 	}
+}
+
+// buildDetailedProbe serves one probe built from a self-timed check
+// function (go-health v0.2.0's NewWithDetailedCheck, no injector
+// involved) — the smallest complete showcase for the per-check metadata
+// UI: rows render the state-entry since/age and the executor duration.
+func buildDetailedProbe(ctx context.Context) probeBundle {
+	probe := health.NewWithDetailedCheck(
+		detailedDemoChecks,
+		health.WithVersion("1.2.3"),
+		health.WithRefreshInterval(2*time.Second),
+	)
+
+	if err := probe.Start(ctx); err != nil {
+		log.Fatalf("probe.Start: %v", err)
+	}
+
+	return probeBundle{prober: probe, shutdown: probe.Shutdown}
+}
+
+// detailedDemoChecks is the self-timed check batch: each dependency sleeps
+// for its simulated work and reports the REAL elapsed time, so the rendered
+// durations are honest measurements, not scripted constants.
+func detailedDemoChecks(_ context.Context) map[string]health.CheckDetail {
+	deps := []struct {
+		name  string
+		work  time.Duration
+		issue string
+	}{
+		{name: "postgres", work: 3 * time.Millisecond},
+		{name: "redis", work: 12 * time.Millisecond},
+		{name: "metrics-exporter", work: 40 * time.Millisecond, issue: "exporter endpoint unreachable"},
+	}
+
+	details := make(map[string]health.CheckDetail, len(deps))
+	for _, dep := range deps {
+		started := time.Now()
+		time.Sleep(dep.work)
+
+		detail := health.CheckDetail{Duration: time.Since(started)}
+		if dep.issue != "" {
+			detail.Err = fmt.Errorf("unhealthy: %s", dep.issue)
+		}
+
+		details[dep.name] = detail
+	}
+
+	return details
 }
 
 // buildOptions assembles the demo option set from environment toggles so
