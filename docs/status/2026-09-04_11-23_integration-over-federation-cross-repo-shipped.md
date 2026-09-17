@@ -95,28 +95,28 @@ failures were real:
 | -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | 1  | Wire the first real Lars-stack service into Gatus + SigNoz using the cookbook (pilot validation)                                                                                | infra     |
 | 2  | SystemNix `lib/go-health.nix` generator consuming cookbook semantics                                                                                                            | SystemNix |
-| 3  | Webhook delivery metrics: `dashboard_webhook_deliveries_total{result}` + duration histogram behind `WithMetrics`                                                                | dashboard |
-| 4  | Retroactive GitHub Releases for v0.1.0 and v0.5.0 from CHANGELOG sections                                                                                                       | both      |
-| 5  | Verify post-push CI green on both tags; fix red if found                                                                                                                        | both      |
+| 3  | ~~Webhook delivery metrics: `dashboard_webhook_deliveries_total{result}` + duration histogram behind `WithMetrics`                                                               ~~ done — shipped in v0.7.0 (`dashboard_webhook_deliveries_total` + duration histogram) | dashboard |
+| 4  | ~~Retroactive GitHub Releases for v0.1.0 and v0.5.0 from CHANGELOG sections~~ done — release pages exist for v0.1.0 and v0.5.0 (created 2026-09-04) | both      |
+| 5  | ~~Verify post-push CI green on both tags; fix red if found~~ done — CI green on release commits verified repeatedly (CHANGELOG Verified sections, v0.7.0/v0.8.1 cuts) | both      |
 | 6  | Trigger + review pkg.go.dev docs for `aggregate` package                                                                                                                        | go-health |
 | 7  | HMAC request signing: `WithWebhookSecret` → `X-Signature` header                                                                                                                | dashboard |
 | 8  | Payload schema version field (`"schema":1`) before external consumers appear                                                                                                    | dashboard |
 | 9  | Fuzz targets: webhook payload marshal, aggregate merge (follow `fuzz_test.go` pattern)                                                                                          | dashboard |
 | 10 | Benchmarks: `aggregate.CachedResponse` at 1/5/20 sources; `buildPayload`                                                                                                        | go-health |
-| 11 | `WithGrouping(BySource)`: per-service cards by splitting namespaced keys                                                                                                        | dashboard |
+| 11  | ~~`WithGrouping(BySource)`: per-service cards by splitting namespaced keys~~ done — shipped in v0.7.0 (`WithGrouping(GroupBySource)`) | dashboard |
 | 12 | Switch PapDashboard ingest from Gatus custom-provider template to `WithWebhook`                                                                                                 | infra     |
-| 13 | Update `FEATURES.md` + `TODO_LIST.md` in both repos (aggregate, webhook, Prober)                                                                                                | both      |
-| 14 | Add empty `[Unreleased]` placeholder to dashboard CHANGELOG                                                                                                                     | dashboard |
-| 15 | docs-health HARVEST: route this report's section (f) into TODO_LIST/ROADMAP                                                                                                     | dashboard |
-| 16 | Example server: aggregate + webhook demo mode (`nix run .#example`)                                                                                                             | dashboard |
-| 17 | Browser test: CSP-clean runtime for an aggregate-rendered page                                                                                                                  | dashboard |
+| 13  | ~~Update `FEATURES.md` + `TODO_LIST.md` in both repos (aggregate, webhook, Prober)~~ done — dashboard side done in the 2026-09-04 docs-health pass | both      |
+| 14  | ~~Add empty `[Unreleased]` placeholder to dashboard CHANGELOG~~ done — the `[Unreleased]` convention is codified in CHANGELOG + `check-changelog.sh` (2026-09-10) | dashboard |
+| 15  | ~~docs-health HARVEST: route this report's section (f) into TODO_LIST/ROADMAP~~ done — subsequent docs-health HARVEST passes (2026-09-04, 09-10, 09-17) | dashboard |
+| 16  | ~~Example server: aggregate + webhook demo mode (`nix run .#example`)~~ done — shipped in v0.7.0 (`DEMO_AGGREGATE=1`, `DEMO_WEBHOOK=<url>`) | dashboard |
+| 17  | ~~Browser test: CSP-clean runtime for an aggregate-rendered page~~ done — aggregate browser test shipped (2026-09-10 full-execution session) | dashboard |
 | 18 | Kuma section of cookbook validated against a live Kuma instance                                                                                                                 | docs      |
 | 19 | Ship a Grafana dashboard JSON (status panel + per-check) in docs/                                                                                                               | dashboard |
 | 20 | Prometheus alert rules starter pack (rules file, not just PromQL snippets)                                                                                                      | dashboard |
-| 21 | Regenerate README screenshots (new sections exist; `screenshot_test` env-guarded)                                                                                               | dashboard |
-| 22 | `nix flake check` both repos (not run this session)                                                                                                                             | both      |
-| 23 | govulncheck + gosec over new code                                                                                                                                               | both      |
-| 24 | CI: assert `GOEXPERIMENT=jsonv2` env explicitly in workflows for both repos                                                                                                     | both      |
+| 21  | ~~Regenerate README screenshots (new sections exist; `screenshot_test` env-guarded)~~ done — screenshots regenerated in the v0.7.0 (Phase D) and v0.8.0 sessions | dashboard |
+| 22  | ~~`nix flake check` both repos (not run this session)~~ done — green runs recorded in CHANGELOG Verified sections since v0.6.0 | both      |
+| 23  | ~~govulncheck + gosec over new code~~ done — govulncheck green repeatedly (CHANGELOG Verified); gosec still unrun | both      |
+| 24  | ~~CI: assert `GOEXPERIMENT=jsonv2` env explicitly in workflows for both repos~~ done — `GOEXPERIMENT: jsonv2` set in ci.yml + fuzz.yml env blocks | both      |
 | 25 | Webhook: configurable retry (attempts + backoff), demand-driven                                                                                                                 | dashboard |
 | 26 | Aggregate staleness surface: per-source last-refresh age (needs go-health timestamp API)                                                                                        | go-health |
 | 27 | Document wire-shape difference: aggregate liveness omits `uptime`/`version` that Probe liveness includes                                                                        | go-health |

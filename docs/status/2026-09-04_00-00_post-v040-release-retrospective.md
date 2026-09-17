@@ -152,57 +152,57 @@ Upstream
 Tests & verification
 13. ~~Run `nix run .#coverage`; record baseline; add CI coverage floor.~~ done at `db8621f`
 14. ~~Run `nix run .#vulncheck` (post prometheus/common + chromedp adds).~~ done (done in the 2026-09-03 docs-health pass - no vulnerabilities)
-15. Fuzz target for the CSV exporter.
-16. Fuzz target for `RecommendedCSP` (injection attempts).
-17. Public-mode leak-scanner test (grep rendered HTML for real service
+15. ~~Fuzz target for the CSV exporter.~~ done (routed to ROADMAP Theme 5 raw ideas at `c7e4f13` 2026-09-04)
+16. ~~Fuzz target for `RecommendedCSP` (injection attempts).~~ done (routed to ROADMAP Theme 5 raw ideas at `c7e4f13` 2026-09-04)
+17. ~~Public-mode leak-scanner test (grep rendered HTML for real service~~ done (routed to ROADMAP Theme 3 raw ideas at `c7e4f13` 2026-09-04)
 names).
-18. Keyboard-navigation a11y smoke in the browser suite.
-19. Browser-test the metrics endpoint under strict CSP.
-20. Scope the axe `definition-list` tolerance to specific nodes, not the
+18. ~~Keyboard-navigation a11y smoke in the browser suite.~~ done (routed to ROADMAP Theme 5 raw ideas at `c7e4f13` 2026-09-04)
+19. ~~Browser-test the metrics endpoint under strict CSP.~~ done (routed to ROADMAP Theme 5 raw ideas at `c7e4f13` 2026-09-04)
+20. ~~Scope the axe `definition-list` tolerance to specific nodes, not the~~ done — scoped to StatCard in v0.6.0 (`db8621f`); tolerance retired entirely in the v1.16.0 ceremony (2026-09-10)
 whole rule (until #10).
-21. Add a test that `Version` matches the latest git tag in CI (same as 4,
+21. ~~Add a test that `Version` matches the latest git tag in CI (same as 4,~~ done — CI version-guard job shipped in v0.6.0 (`db8621f`)
 implementation side).
 
 Code quality
-22. Split dashboard.go (config/options vs lifecycle vs handlers).
-23. Extract historyBuffer into history.go.
-24. Deduplicate sample→JSON mapping in TrendHandler/ExportHandler.
-25. Fix TrendHandler 503 message ("not started" vs "not enabled").
-26. Rename `BenchmarkDashboard_PatchRender` honestly.
-27. Simplify `maxRequestsInvalid` in the example.
+22. ~~Split dashboard.go (config/options vs lifecycle vs handlers).~~ done — options.go/handlers.go/history.go in v0.6.0 (`db8621f`)
+23. ~~Extract historyBuffer into history.go.~~ done — v0.6.0 (`db8621f`)
+24. ~~Deduplicate sample→JSON mapping in TrendHandler/ExportHandler.~~ done — shared jsonSamples/jsonTransitions in v0.6.0 (`db8621f`)
+25. ~~Fix TrendHandler 503 message ("not started" vs "not enabled").~~ done — v0.6.0 (`db8621f`)
+26. ~~Rename `BenchmarkDashboard_PatchRender` honestly.~~ done — `BenchmarkDashboard_FullHTML` in v0.6.0 (`db8621f`)
+27. ~~Simplify `maxRequestsInvalid` in the example.~~ done — inlined in the 2026-09-04 sweep (`db8621f`)
 
 Features & polish
-28. Refresh stamp: observation time (last sample At), not render time.
-29. Rate-limit response headers: X-RateLimit-Limit/Remaining/Reset.
-30. Rate limiter: document shared-bucket semantics in README; optional
+28. ~~Refresh stamp: observation time (last sample At), not render time.~~ done — shipped in v0.6.0 (`db8621f`)
+29. ~~Rate-limit response headers: X-RateLimit-Limit/Remaining/Reset.~~ done (routed to ROADMAP Theme 1 raw ideas at `c7e4f13` 2026-09-04)
+30. ~~Rate limiter: document shared-bucket semantics in README; optional~~ done — shared-bucket documented in v0.6.0 (`db8621f`); per-route buckets rejected (ROADMAP)
 per-route buckets.
-31. Drain: Retry-After on 503s during the drain window.
-32. MaxConnectionLifetime: optional reconnect jitter.
-33. `dashboard_pusher_last_tick_seconds` gauge (watchdog observability).
-34. Optional opt-in pusher auto-restart hook.
-35. `dashboard_build_info{version}` gauge.
-36. `dashboard_health_checks_total` counter.
-37. Trend JSON `?since=` incremental polling.
-38. Export ETag/If-None-Match.
-39. `WithTrendWindow(duration)` alternative to sample count.
-40. Public mode: redact-JSON option + loud docs that /health JSON stays
+31. ~~Drain: Retry-After on 503s during the drain window.~~ done — shipped in v0.7.0 (CHANGELOG 0.7.0 Added)
+32. ~~MaxConnectionLifetime: optional reconnect jitter.~~ done (routed to ROADMAP Theme 1 raw ideas at `c7e4f13` 2026-09-04)
+33. ~~`dashboard_pusher_last_tick_seconds` gauge (watchdog observability).~~ done (routed to ROADMAP Theme 1 raw ideas at `c7e4f13` 2026-09-04)
+34. ~~Optional opt-in pusher auto-restart hook.~~ done (routed to ROADMAP Theme 1 raw ideas at `c7e4f13` 2026-09-04)
+35. ~~`dashboard_build_info{version}` gauge.~~ done (routed to ROADMAP Theme 3 raw ideas at `c7e4f13` 2026-09-04)
+36. ~~`dashboard_health_checks_total` counter.~~ done (routed to ROADMAP Theme 3 raw ideas at `c7e4f13` 2026-09-04)
+37. ~~Trend JSON `?since=` incremental polling.~~ done (routed to ROADMAP Theme 3 raw ideas at `c7e4f13` 2026-09-04)
+38. ~~Export ETag/If-None-Match.~~ done (routed to ROADMAP Theme 3 raw ideas at `c7e4f13` 2026-09-04)
+39. ~~`WithTrendWindow(duration)` alternative to sample count.~~ done (routed to ROADMAP Theme 3 raw ideas at `c7e4f13` 2026-09-04)
+40. ~~Public mode: redact-JSON option + loud docs that /health JSON stays~~ done — verbatim JSON documented (AGENTS.md); redact option routed to ROADMAP Theme 3 (`c7e4f13`)
 verbatim.
-41. Example: `DEMO_PUBLIC=1` and `DEMO_BASE_PATH=/status` toggles.
+41. ~~Example: `DEMO_PUBLIC=1` and `DEMO_BASE_PATH=/status` toggles.~~ done at `db8621f`
 
 Docs & process
-42. Embed `docs/screenshot-dark.png` in the README Dark Mode section.
-43. README options snippet: add `WithDescription`/`WithPublicMode` rows.
-44. README Prometheus section: histogram mention + scrape snippet.
-45. AGENTS.md file inventory: add csp.go, ratelimit.go, trend.go,
+42. ~~Embed `docs/screenshot-dark.png` in the README Dark Mode section.~~ done — embedded with capture note in the 2026-09-03 docs-health pass
+43. ~~README options snippet: add `WithDescription`/`WithPublicMode` rows.~~ done — 2026-09-03 docs-health pass
+44. ~~README Prometheus section: histogram mention + scrape snippet.~~ done — 2026-09-03 docs-health pass
+45. ~~AGENTS.md file inventory: add csp.go, ratelimit.go, trend.go,~~ done — 2026-09-03 docs-health pass
 metrics.go and new test files.
-46. AGENTS.md: record the two new process lessons (empirical bisect
+46. ~~AGENTS.md: record the two new process lessons (empirical bisect~~ done — empirical-bisect + no-backslash-heredoc lessons live in the global AGENTS.md cross-cutting section
 first; no backslash-built heredocs).
-47. Create docs/release-checklist.md (reconcile → changelog → version →
+47. ~~Create docs/release-checklist.md (reconcile → changelog → version →~~ done — `docs/release-checklist.md` exists (scar-tissue doc from the v0.3.x–v0.5.x cycles; formalized through v0.7.0/v0.8.0 with the desk gate + publish-ordering rules)
 tag → push → proxy-verify → CI watch).
 48. Adopt a lint+build pre-commit gate (lefthook/pre-commit) to end the
 lint-churn commits.
-49. Pin golangci-lint and templ versions in CI (currently `latest`).
-50. Add a CI concurrency group; decide a Renovate/Dependabot policy that
+49. ~~Pin golangci-lint and templ versions in CI (currently `latest`).~~ done — pinned v2.13.1 / v0.3.1020 in v0.6.0 (`db8621f`)
+50. ~~Add a CI concurrency group; decide a Renovate/Dependabot policy that~~ done — concurrency group in v0.6.0 (`db8621f`); the UI-bump policy is the pin-guard + same-change ceremony rule (AGENTS.md gotcha)
 requires the browser suite for UI-library bumps.
 
 ## g) QUESTIONS (cannot be answered from the repo)
@@ -216,6 +216,6 @@ requires the browser suite for UI-library bumps.
    upstream in go-sse, or fork? My recommendation is "request upstream
    support, accept jsonv2 meanwhile", but it touches your sibling-repo
    roadmap.
-3. **Upstream fixes (#6/#7):** want me to open PRs against
-   templ-components myself (same owner, fastest), or do you/another
-   session handle that repo's code changes?
+3. ~~**Upstream fixes (#6/#7):** want me to open PRs against~~ done — both fixed upstream: #6 landed on templ-components master (shipped v1.16.0), #7's nonce guard fixed in v1.13.2
+   ~~templ-components myself (same owner, fastest), or do you/another~~
+   ~~session handle that repo's code changes?~~

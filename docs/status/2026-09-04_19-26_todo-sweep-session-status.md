@@ -48,27 +48,27 @@ bisect wall).
 
 ## b) PARTIALLY DONE
 
-1. **CI changes unverified in the real runner** — version-guard, pins,
-   floor, artifact upload, concurrency, fuzz-issue are locally validated
-   (YAML parse + logic + SHAs) but need a push to execute. Nothing was
-   pushed (no-push rule).
-2. **Axe tolerance scoping** — regex + node-logic verified offline, but no
-   Chrome exists on this machine, so the real headless audit did NOT run
-   locally. CI's browser job is the oracle.
-3. **Issue-on-failure step** — completely unexercised end-to-end (needs a
-   failing run to fire; would open a real issue). Dedup logic reviewed, not
-   executed.
-4. **Upstream templ-components#6 work** — local preparation done (tolerance
-   now signature-scoped so a upstream fix + bump retires it cleanly), but
-   the actual fix + goldens + PR in the sibling repo: NOT started.
-5. **Coverage floor** — value chosen (75%) but not yet observed in CI; race
-   mode coverage may differ from the 76.9% baseline measurement.
+1. ~~**CI changes unverified in the real runner** — version-guard, pins,~~ done — all verified on real runs: v0.6.0 shipped with the full gate chain green (CHANGELOG 0.6.0 Verified section); version-guard green on the v0.7.0 tag-first cut
+   ~~floor, artifact upload, concurrency, fuzz-issue are locally validated~~
+   ~~(YAML parse + logic + SHAs) but need a push to execute. Nothing was~~
+   ~~pushed (no-push rule).~~
+2. ~~**Axe tolerance scoping** — regex + node-logic verified offline, but no~~ done — scoped to StatCard in v0.6.0; tolerance retired entirely in the v1.16.0 ceremony (2026-09-10) after upstream #6 shipped
+   ~~Chrome exists on this machine, so the real headless audit did NOT run~~
+   ~~locally. CI's browser job is the oracle.~~
+3. ~~**Issue-on-failure step** — completely unexercised end-to-end (needs a~~ done — dispatch validated end-to-end (run 33896794771, CHANGELOG 0.6.0 Verified); the deliberate-failure rehearsal remains a ROADMAP raw idea
+   ~~failing run to fire; would open a real issue). Dedup logic reviewed, not~~
+   ~~executed.~~
+4. ~~**Upstream templ-components#6 work** — local preparation done (tolerance~~ done — fixed upstream, shipped in templ-components v1.16.0; tolerance retired 2026-09-10
+   ~~now signature-scoped so a upstream fix + bump retires it cleanly), but~~
+   ~~the actual fix + goldens + PR in the sibling repo: NOT started.~~
+5. ~~**Coverage floor** — value chosen (75%) but not yet observed in CI; race~~ done — floor enforced in CI since v0.6.0 and raised 75→78% on 2026-09-04 (green runs since)
+   ~~mode coverage may differ from the 76.9% baseline measurement.~~
 
 ## c) NOT STARTED
 
-1. templ-components#6 upstream PR (StatCard `<dl>` fix + goldens; then
+1. ~~templ-components#6 upstream PR (StatCard `<dl>` fix + goldens; then~~ done — fixed upstream (landed on templ-components master), shipped in v1.16.0; tolerance retired 2026-09-10
    remove the tolerance here + bump) — the only remaining TODO_LIST item.
-2. v0.6.0 release (this batch is additive: 2 new sentinels, tests, CI) —
+2. ~~v0.6.0 release (this batch is additive: 2 new sentinels, tests, CI) —~~ done — v0.6.0 shipped 2026-09-04 (tagged, pushed, CHANGELOG re-headed); since superseded by v0.8.1
    CHANGELOG `[Unreleased]` is ready to re-head.
 3. ~~FEATURES.md refresh — count is now STALE: says "154 functions across 19~~ done (done at 381d64e (FEATURES now says 166 functions / 20 files))
    ~~files", reality is **166 across 20** (verified `rg -c`).~~
@@ -204,15 +204,15 @@ green, vet green, flake check green). Honest failures this session:
 
 ## g) QUESTIONS (cannot answer myself)
 
-1. **Push & release timing**: Nothing was pushed (no-push rule). The new
-   CI steps only prove themselves on a real runner. Push master now and
-   cut v0.6.0 immediately after green, or batch more work first?
-2. **templ-components#6 upstream PR**: implement the StatCard `<dl>` fix +
-   goldens in the sibling repo and open the PR this cycle (~60min), or
-   leave it parked in TODO_LIST?
-3. **Coverage floor**: keep 75% with ~2pt headroom, drop the floor and
-   keep only the artifact upload, or set it at 76% and accept occasional
-   red until coverage grows?
+1. ~~**Push & release timing**: Nothing was pushed (no-push rule). The new~~ done — answered: pushed + v0.6.0 cut 2026-09-04; the release discipline is now the release-checklist ritual
+   ~~CI steps only prove themselves on a real runner. Push master now and~~
+   ~~cut v0.6.0 immediately after green, or batch more work first?~~
+2. ~~**templ-components#6 upstream PR**: implement the StatCard `<dl>` fix +~~ done — fixed upstream (shipped v1.16.0); moot
+   ~~goldens in the sibling repo and open the PR this cycle (~60min), or~~
+   ~~leave it parked in TODO_LIST?~~
+3. ~~**Coverage floor**: keep 75% with ~2pt headroom, drop the floor and~~ done — kept (75% at the time, raised to 78% on 2026-09-04 with green runs since)
+   ~~keep only the artifact upload, or set it at 76% and accept occasional~~
+   ~~red until coverage grows?~~
 
 ---
 
