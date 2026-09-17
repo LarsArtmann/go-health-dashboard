@@ -1,6 +1,7 @@
 package dashboard_test
 
 import (
+	"context"
 	"encoding/json/v2"
 	"net/http"
 	"strings"
@@ -223,10 +224,17 @@ func TestExportHandler_JSONCarriesCheckMetadata(t *testing.T) {
 	}
 
 	dash := dashboard.New(newStubProber(resp), dashboard.WithTrend(8))
-	dash.push.Store(newPusher(dash))
 
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	if err := dash.Start(ctx); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+	defer dash.Shutdown()
 
 	w := doRequest(t, mux, "/health/export")
 	if w.Code != http.StatusOK {
