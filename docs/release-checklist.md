@@ -33,6 +33,16 @@ Version history source of truth: `CHANGELOG.md` (Keep a Changelog).
 
 ## 4. Gates (all green before anything is pushed)
 
+Gate 0, before any edits: `bash scripts/pre-push-checks.sh` — the desk
+consolidation of the FEATURES-count, version-vs-tag, and pin-guard
+formulas. It exists so a stale count or pin is discovered AT THE DESK,
+not by CI after tagging (the v0.8.0→v0.8.1 incident: the drift guard
+that failed CI is its check #1).
+
+Pipes are banned on gates: run `cmd > log 2>&1; rc=$?` and read `rc` —
+`nix flake check | tail; echo $?` once reported tail's exit code on a
+FAILING gate (the v0.8.0 near-miss false green).
+
 Ordering rule: `nix fmt` runs AFTER the last `templ generate` — every
 build/test app regenerates `view_templ.go` and undoes an earlier fmt,
 which is exactly what the CI hygiene drift check catches (v0.7.0 cut,
@@ -75,6 +85,11 @@ commit, sumdb-verified fresh-cache download, clean-dir consumer
 get/build/run, GitHub Release state, CI runs on the release commit):
 
 - [ ] `bash scripts/verify-release.sh vX.Y.Z`
+
+Publish-ordering rule: `gh release create` runs ONLY after
+`verify-release.sh` is green AND CI is green on the release commit —
+the v0.8.0 page was published 90 seconds before its CI went red
+(FEATURES drift guard) and permanently points at a red-CI commit.
 
 If a slow external surface (pkg.go.dev, proxy indexing) lags, poll on a
 bounded loop (e.g. 30×10s) — never two fetches and a shrug (the v0.7.0

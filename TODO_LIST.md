@@ -1,9 +1,9 @@
 # TODO List
 
 > Short-term, actionable, bounded work items, verified against the actual
-> code (docs-health HARVEST passes 2026-09-03, 2026-09-04, and 2026-09-10 —
-> closed items live in `CHANGELOG.md`, never here). For long-term vision and
-> unrefined ideas, see ROADMAP.md.
+> code (docs-health HARVEST passes 2026-09-03, 2026-09-04, 2026-09-10, and
+> 2026-09-17 — closed items live in `CHANGELOG.md`, never here). For
+> long-term vision and unrefined ideas, see ROADMAP.md.
 
 ## Status legend
 
@@ -15,31 +15,60 @@
 
 ## Next Up
 
-Everything below survived the 2026-09-10 full-execution session (Pareto plan
-`docs/planning/2026-09-10_00-26_ci-green-and-backlog-pareto.html`, closing
-report `docs/status/2026-09-10_01-15_full-execution-session.md`).
+Harvested 2026-09-17 from `docs/status/2026-09-17_05-55_go-health-v020-consumer-upgrade.md`
+(f-list), the 2026-09-16 release/buildflow sessions, and the living docs.
+Ordered by impact; every row survived verification against the current tree
+(`Version = "0.8.1"`, go-health v0.2.0, 256 test functions / 34 files).
 
-The 2026-09-10 late-session sweep emptied both tables below: all five
-release-hygiene rows and all six polish rows shipped or closed. See
-`CHANGELOG.md` `[0.8.0]` for what shipped (verify-release.sh, the
-CHANGELOG structural lint in CI, the release-lesson codification, the
-v0.6.1 GitHub Release backfill, mobile row stacking, the single nonce'd
-page bootstrap + `page_scripts.templ` split, and the WCAG AA contrast
-pass) and the notes here for the two closed-without-code rows:
+| Task                                                                 | Status      | Why it matters / notes                                                                                                                                                                       | Evidence                                                                        |
+| -------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Push master                                                          | 🔴 `TODO`   | Two sessions of verified work (erraudit hardening, per-check metadata, buildflow green run) are local-only; CI has seen none of it. Needs user authorization. After push: annotate AGENTS.md release-discipline with the daemon-never-pushes fact. | `git status -sb` (ahead N); status report 2026-09-17 f1, 2026-09-16 18:13 c1     |
+| Cut v0.9.0 (per-check metadata UI + gauge)                           | 🔴 `TODO`   | A complete feature release sits in CHANGELOG `[Unreleased]` (metadata display + `dashboard_health_check_last_duration_seconds`). Ritual: `nix fmt` after last generate, tag-first push, `bash scripts/verify-release.sh v0.9.0`, CI green BEFORE `gh release create` (now in the checklist). | CHANGELOG `[Unreleased]`; status report 2026-09-17 f2                           |
+| `nix run .#vulncheck` on the v0.2.0 tree                             | 🔴 `TODO`   | Standard dep-bump step, skipped in the v0.2.0 session. Low risk (additive release), but the floor is non-negotiable.                                                                          | status report 2026-09-17 f3                                                     |
+| Regenerate README screenshots (light + dark)                         | 🟠 `TODO`   | The screenshots predate the per-check metadata line (and the v0.8.0 evidence strip was captured, but metadata postdates). Env-guarded: `SCREENSHOT_OUTPUT=docs/screenshot.png` (+ `_DARK`).    | status report 2026-09-17 f5, 2026-09-16 18:13 c9                                |
+| Patch-content test: SSE patch carries the metadata line              | 🟠 `TODO`   | Golden files prove the initial HTML; no content-level assertion exists that a patch payload carries new view content (metadata must transit `buildViewModelAt` — unproven by a test). Closes the gap for every future view change. | status report 2026-09-17 b2/f6                                                  |
+| Benchmark the per-tick stamping loop                                 | 🟠 `TODO`   | `buildViewModelAt` adds per-row stamping on every pusher tick; almost certainly negligible, but `BenchmarkHandler_HTMLRendering` exists for exactly this. Run before/after and record in `docs/research/2026-09-10_benchmarks.md`. | status report 2026-09-17 b4/f7                                                  |
+| Local coverage pre-check (`nix run .#coverage`)                      | 🟠 `TODO`   | The CI floor (78%) judges on push; the 8 new test functions should push coverage up, but no local pre-check ran after the v0.2.0 change.                                                      | status report 2026-09-17 f4                                                     |
+| Merge the three green dependabot PRs (#13/#12/#4)                    | 🔴 `TODO`   | Root-caused (stale branches predating the v1.16.0 pins + v0.7.0 tag), `gh pr update-branch` fixed all three; each is 10/10 green. Merge is a one-command user decision.                        | TODO_LIST 2026-09-10 sweep note; `gh pr list` (all still open)                  |
+| Dep-bump verification checklist, written down                       | 🟡 `TODO`   | build+test+race+lint+buildflow ran ad-hoc in the v0.2.0 session; vulncheck/coverage/benchmark were skipped. Fix: extend the AGENTS.md dependency-notes or a `scripts/verify-dep-bump.sh` (fleet question: one script per repo or shared?). | status report 2026-09-17 e4/f17                                                 |
+| Example server: detailed-check source demo                           | 🟡 `TODO`   | The example shows no durations — the best showcase for the v0.2.0 metadata feature. Add a `NewWithDetailedCheck`-style source.                                                                | status report 2026-09-17 c7/f8                                                  |
+| Integration test: metadata transits the aggregate path               | 🟡 `TODO`   | Upstream locks `since` fields in its aggregate golden; the dashboard-side end-to-end (stub aggregate + detailed sources → rendered metadata) is untested.                                     | status report 2026-09-17 c5/f9                                                  |
+| Fuzz seeds for the new formatters                                    | 🟡 `TODO`   | `formatCheckDuration`/`formatStateAge` have unit tests but no seeds (negative, huge, sub-µs inputs).                                                                                          | status report 2026-09-17 c6/f10                                                 |
+| Evidence tooltips cite `Check.Since`                                 | 🟡 `TODO`   | Strengthens the health-washing story: pair the dashboard-observed last non-pass with the probe-side state-entry stamp (v0.2.0 made it available).                                             | status report 2026-09-17 f13                                                    |
+| `since`/`duration` in `/health/export` (JSON/CSV)                    | 🟡 `TODO`   | Design decision: the `/health` JSON contract stays go-health-shaped, but export is dashboard-owned and could carry them.                                                                      | status report 2026-09-17 f14                                                    |
+| Check `deploy/` for a Grafana panel for the new gauge                | 🔴 `TODO`   | Unaudited whether `deploy/` assets should visualize `dashboard_health_check_last_duration_seconds`.                                                                                           | status report 2026-09-17 c9/f15                                                 |
+| Golden fixtures: public-mode + dark + zero-proven warning            | 🔴 `TODO`   | `testdata/golden/` has severity + source only. Lock the exact wording of the zero-proven health-washing warning and the public-mode render.                                                   | `testdata/golden/`; evidence report f28, 09-10 01-39 f34, 09-10 02-56 f47        |
+| Dark-mode axe pass                                                   | 🔴 `TODO`   | Contrast is WCAG AA-locked since v0.8.0; structural a11y (axe) in dark mode is untested.                                                                                                      | 09-10 02-56 f31                                                                 |
+| CHANGELOG historical audit                                           | 🔴 `TODO`   | The ancient `[0.1.0-alpha]` section contains bullets that chronologically belong to later versions; relocate + verify every section against its tag.                                          | 09-10 01-39 c3/f14, 09-10 02-56 c5/f15                                          |
+| README "Upgrading" section                                           | 🔴 `TODO`   | The `WithBasePath` behavior change (v0.7.0 Compatibility) has no README migration note; CHANGELOG is the only record.                                                                         | 09-10 01-39 f35, 09-10 02-56 f26                                                |
+| SECURITY.md with a reporting contact                                 | 🔴 `TODO`   | The public module now has consumers beyond CV; no vulnerability-reporting contact exists.                                                                                                     | 09-10 01-39 f37, 09-10 02-56 f25                                                |
+| ROADMAP: define v1.0 criteria                                        | 🔴 `TODO`   | API freeze / consumer count / backward-compat policy, so 0.x has an exit.                                                                                                                     | 09-10 01-39 f22, 09-10 02-56 f23                                                |
+| Tag protection rule on GitHub (`v*` immutable)                       | 🔴 `TODO`   | Belt-and-suspenders under proxy immutability; needs repo-admin settings.                                                                                                                      | 09-10 01-39 f16, 09-10 02-56 f17                                                |
+| CONTRIBUTING: document check-changelog + verify-release + desk gate  | 🔴 `TODO`   | Contributors don't know why the new guards fail; CONTRIBUTING covers only browser/screenshot tests today.                                                                                     | 09-10 02-56 f14                                                                 |
 
-- Dependabot reds (PRs #13/#12/#4): root-caused — stale branches created
-  before the v1.16.0 pin ceremony and the v0.7.0 tag, so the pin guard
-  and version guard failed on their own branches exactly as designed.
-  `gh pr update-branch` fixed all three; each is now 10/10 green and
-  merge is a one-command user decision (`gh pr merge <n>`).
-- `rg -r` habit guard: already satisfied machine-level by
-  `~/.config/fish/conf.d/01-rg-replace-guard.fish` (2026-08-30,
-  deliberate warn-only tripwire: replacement is a legitimate rg feature).
-  A duplicate written this session was removed.
-- Full `aria-live` filter-count announcer: closed without code — the
-  row's own gate ("only if a screen-reader user asks") is unmet; the
-  no-match hint already announces via its `role="status"` region.
-  Reopen on the first screen-reader user request.
+Shipped since the last sweep (2026-09-10): v0.8.0 + v0.8.1 (evidence strip,
+mobile stacking, WCAG AA, single bootstrap, templ-components v1.17.0,
+verify-release.sh, changelog lint, release-lesson codification), the
+BuildFlow red→green triage (erraudit 13→0, three skip gates with rationale,
+treefmt snapshot-race root cause + templ-generate skip), and the go-health
+v0.2.0 consumer upgrade (per-check since/duration UI + the new duration
+gauge — the F5 remainder row left the Blocked table; the upstream draft is
+annotated SHIPPED in `docs/upstream/go-health-check-timestamps-issue-draft.md`).
+The release-checklist now carries the desk gate (pre-push-checks.sh as gate
+0), the publish-ordering rule (CI green before `gh release create`), and the
+no-pipes-on-gates rule (docs fixes from the 2026-09-16 release session).
+
+Everything else from the v0.3.x–0.8.x cycles either shipped (see
+`CHANGELOG.md`), was closed with a reason in the annotated reports under
+`docs/status/` (fully-executed reports move to `archived/` — 2026-09-17
+docs-health pass), or lives in ROADMAP.md as raw ideas. v0.8.0 was released
+2026-09-16 (tagged, pushed, proxy-verified, GitHub Release published) and
+immediately followed by v0.8.1 — the v0.8.0 commit's CI failed only the
+FEATURES test-count drift guard, and immutable tags mean the fix ships as a
+patch; `verify-release.sh v0.8.1` is all green and v0.8.1 is Latest.
+Session-closing gate: `scripts/pre-push-checks.sh`. Known-broken-commit SHAs
+for `git bisect skip`: see AGENTS.md and
+`docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
 
 ## Blocked (needs user decision)
 
@@ -50,36 +79,7 @@ pass) and the notes here for the two closed-without-code rows:
 | Pin-guard keep sign-off                                 | 🔵 `BLOCKED` | Guard rewritten to v1.17.0 pins per the keep decision (sixth sweep caught 2026-09-16: the daemon swept the bump unguarded); the deviation from the original removal condition wants sign-off                                                                                                                                                                                                                                                                                                                                    | `scripts/check-ui-pins.sh` header                                                                        |
 | Build-tag gating for SSE                                | 🔵 `BLOCKED` | Consumers who only want HTML shouldn't need GOEXPERIMENT=jsonv2. Requires decision: accept, fork go-sse, or gate.                                                                                                                                                                                                                                                                                                                                                                                                               | `ROADMAP.md` Open Questions                                                                              |
 | Fingerprint format stability                            | 🔵 `BLOCKED` | Length-prefix fix changed fingerprint values; documented as accepted in CHANGELOG pending a versioning decision.                                                                                                                                                                                                                                                                                                                                                                                                                | `ROADMAP.md` Open Questions                                                                              |
+| Evidence strip machine contract + persistence           | 🔵 `BLOCKED` | Two product decisions from the evidence-strip design (report g Q2/Q3): should proven/unproven counts surface in metrics + trend/export JSON (HTML-only contract today), and should the observation window persist across restarts (opt-in store) instead of resetting?                                                                                                                                                                                                                                                          | `docs/status/2026-09-10_03-24_evidence-strip-health-washing-status.md` §g; `ROADMAP.md` Open Questions   |
 | Unskip go-structure-linter in BuildFlow                 | 🔵 `BLOCKED` | BuildFlow pins go-structure-linter v0.10.0, whose SDK predates project-config support — the committed `.go-structure-linter.yaml` (`flat` preset for this deliberately flat root-package library) is inert, so the step is skipped in `.buildflow.yml`. Unskip when BuildFlow pins a release where `Lint` calls `LoadProjectConfig`.                                                                                                                                                                                            | go-structure-linter v0.10.0 `pkg/sdk/sdk.go` (no `LoadProjectConfig`) vs current checkout `sdk.go:132`   |
 | Unskip branching-flow in BuildFlow                      | 🔵 `BLOCKED` | The step gates on 24 PHANTOM_TYPE findings spanning the public option API (breaking redesign → versioning decision) and 2 BOOL_BLIND bit-flag demands; no scoping exists (`//nolint` ignored by phantom/boolblind, `.branching-flow.yml` has no rule exclusion, BuildFlow's provider hardcodes `analysis.RunAll`). Unskip after a fleet decision: per-project rule config in branching-flow honored through BuildFlow, severity tuning, or the phantom-type adoption in a major version.                                        | `.buildflow.yml` skip rationale; branching-flow `pkg/core/ignore_comments.go` consumers (roleak/do only) |
-| Unskip templ-generate in BuildFlow (fleet DAG ordering) | 🔵 `BLOCKED` | BuildFlow lets nix-evaluating steps (nix-flake-update, nix-fmt) run concurrently with tree-mutating generators; a nix `git+file` source snapshot ingested during templ's raw-output window made treefmt-check fail on a tree state that no longer existed (verified 2026-09-16: files formatted at 15:19:12, check still failed at 15:19:57 on the stale snapshot). Skipped locally; unskip when BuildFlow orders all generators before all nix-evaluating steps. Also decide upstream-file vs local-patch (report question 3). | `/tmp/bf-final.log` timeline; `.buildflow.yml` skip rationale; status report 2026-09-16 §c               |
-
-Shipped since the list above was written: the F5 remainder ("per-check
-latency metric labels") left the Blocked table on 2026-09-16 — go-health
-v0.2.0 shipped [go-health#2](https://github.com/LarsArtmann/go-health/issues/2)
-(`Check.Since`/`Check.DurationNanos`), and the dashboard now renders the
-per-check state stamp + execution duration in the service tables and
-exposes `dashboard_health_check_last_duration_seconds` (see CHANGELOG
-`[Unreleased]`). The upstream draft behind the blocker is annotated as
-shipped in `docs/upstream/go-health-check-timestamps-issue-draft.md`.
-
-Everything else from the v0.3.x–0.7.0 cycles either shipped (see
-`CHANGELOG.md` `[0.7.0]` for the 2026-09-10 session: v1.16.0 pin
-ceremony + axe tolerance retirement, PersistCollapse patch-survival fix,
-introspection completeness, NDJSON export, `WithGrouping(BySource)`,
-`WithNoDatastarRuntime`, example toggles, the RetryAlways×503 interplay
-test, golden renders, the load-test harness with recorded numbers, and the
-upstream go-health#2 filing), was closed with a reason in the annotated
-reports under `docs/status/` (fully-executed reports move to `archived/`),
-or lives in ROADMAP.md as raw ideas. v0.8.0 was released 2026-09-16
-(evidence strip, mobile stacking, WCAG AA, single bootstrap script,
-templ-components v1.17.0; tagged, pushed, proxy-verified, GitHub
-Release published) and immediately followed by v0.8.1 — the v0.8.0
-commit's CI failed only the FEATURES test-count drift guard (counts
-predate the evidence tests), and immutable tags mean the fix ships as
-a patch; `verify-release.sh v0.8.1` is all green. v0.7.0 was released
-2026-09-10 (tagged, pushed, proxy-verified, GitHub Release published;
-CI fully green including version-guard). Session-closing gate:
-`scripts/pre-push-checks.sh`. Known-broken-commit SHAs for
-`git bisect skip`: see AGENTS.md and
-`docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
+| Unskip templ-generate in BuildFlow (fleet DAG ordering) | 🔵 `BLOCKED` | BuildFlow lets nix-evaluating steps run concurrently with tree-mutating generators; a nix `git+file` source snapshot ingested during templ's raw-output window made treefmt-check fail on a tree state that no longer existed (verified 2026-09-16: files formatted at 15:19:12, check still failed at 15:19:57 on the stale snapshot). Skipped locally; unskip when BuildFlow orders all generators before all nix-evaluating steps. Also decide upstream-file vs local-patch (report question 3). | `/tmp/bf-final.log` timeline; `.buildflow.yml` skip rationale; status report 2026-09-16 §c               |

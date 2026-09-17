@@ -2,7 +2,7 @@
 
 Real-time health dashboard that composes [go-health](https://github.com/larsartmann/go-health) (health-checking SDK), [templ-components](https://github.com/larsartmann/templ-components) (UI rendering), [go-datastar](https://github.com/larsartmann/go-datastar) (Datastar SSE patch protocol), and [go-sse](https://github.com/larsartmann/go-sse) (SSE transport). The dashboard lives at a dedicated route (`/health`) and uses Datastar SSE for real-time updates. `/health` serves HTML by default but returns JSON when the client sends `Accept: application/json`. Kubernetes probe endpoints (`/healthz`, `/readyz`, `/startupz`) are JSON-only.
 
-**Module**: `github.com/larsartmann/go-health-dashboard` · **Package**: `dashboard` · **Go**: 1.26.7 · **Status**: v0.8.0
+**Module**: `github.com/larsartmann/go-health-dashboard` · **Package**: `dashboard` · **Go**: 1.26.7 · **Status**: v0.8.1
 
 ---
 
@@ -180,6 +180,14 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   logic.
 - **go-health marks non-critical failing checks `warn`, not `fail`** — only critical services produce `fail` per-check statuses (and overall fail). `setupDashboardWithFailures` yields cache/queue `warn` checks with overall `warn`; metrics tests assert accordingly.
 - **Release discipline (all four bit or paid off during the v0.7.0 cut)** —
+  (0) **Commit beats the daemon — verify batch → commit immediately.** The
+  auto-daemon commits continuously and NEVER pushes: master can sit
+  arbitrarily ahead of origin with CI blind to it. So: the moment a batch
+  is verified (build+tests green), `git add` + commit in the same
+  tool-call chain, before starting the NEXT batch (the v0.7.0 release
+  commit's message was lost this way, `ebf52d0`; four batches in the
+  2026-09-17 session); and run `git status -sb` before any "CI is green"
+  claim, pushing deliberately at milestones (push needs authorization).
   (1) `nix fmt` runs AFTER the last `templ generate`: every build/test app
   regenerates `view_templ.go` in raw form, so fmt-before-generate gets
   undone and the CI hygiene drift check goes red; canonical order is

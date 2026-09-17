@@ -31,11 +31,9 @@ In-process multi-service shipped in v0.5.0 (go-health `aggregate` + the
 
 Raw ideas:
 
-- `WithGrouping(BySource)` view option: per-service cards by splitting
-  namespaced `source/check` keys (severity grouping already renders
-  aggregates fine)
-- Per-source staleness surface: last-refresh age per source (needs a
-  timestamp API in go-health)
+- Per-source staleness surface: last-refresh age per source (possible
+  since go-health v0.2.0's `Check.Since` — needs a design for aggregates
+  and for probe restarts resetting `Since`)
 - Service grouping by custom tags or labels (not just severity)
 - Aggregate status across multiple instances or clusters
 - Federation: pull health from remote go-health instances via HTTP
@@ -43,8 +41,6 @@ Raw ideas:
   go-health, not the dashboard — see Design Spikes)
 - `Register` auto-start: wire `Start(ctx)` into the samber/do container
   lifecycle so `Register` + container start needs no manual `Start` call
-- Example/demo: aggregate + webhook demo modes in `nix run .#example`
-  (it still demos a single probe)
 
 ### 3. Observability and History
 
@@ -68,19 +64,17 @@ Raw ideas:
 - Public mode hardening: leak-scanner test (grep rendered HTML for registered
   service names), optional redaction of the `/health` JSON (which stays
   verbatim today — documented in AGENTS.md)
-- Webhook delivery observability: `dashboard_webhook_deliveries_total{result}`
-  - duration histogram behind `WithMetrics` (deliveries are silently
-    best-effort today — "it didn't arrive" is undebuggable)
+- Evidence-strip evolution: persistence across restarts (opt-in store),
+  machine-readable proven counts, and evidence-based grouping (auto-collapse
+  "unproven greens" separately) — posture gated on the Open Question
 - Webhook hardening: HMAC signing (`WithWebhookSecret` → `X-Signature`)
   and a payload `"schema":1` version field before external consumers
   freeze the format (see Open Questions)
-- Introspection endpoint (JSON: enabled routes, limits, modes) for ops
-- Rate-limit 429 body: include Retry-After as JSON for API clients
-- PushMode: PushOnChange with TTL (re-assert state every N intervals)
-- Timeline card: cap entries by age as well as count (5 entries can
-  span days)
-- Per-check latency histogram series in metrics (currently total only)
-- NDJSON export format option on `/health/export`
+- Timeline card fed by service-reported `Check.Since` (design first:
+  what happens when the probe restarts and `Since` resets?)
+- Stable-group collapse: healthy group stays open, but the summary line
+  gains an honest "stable for 6h" (ages derive from `Since`; depends on
+  the timeline design above)
 - Incident tracking (annotate status changes with context) — deferred; needs
   product thought beyond the timeline card that shipped in the v0.3.x cycle
 
@@ -153,6 +147,9 @@ Raw ideas:
   `GOEXPERIMENT=jsonv2` on gopls v0.23.0 even though `json.Unmarshal` is
   fully supported on go1.26 under the experiment; golangci-lint — the
   authoritative gate — does not enable stdversion)
+- Fleet ask: templ-components + go-datastar relax `go 1.26.7` → `go 1.26`
+  so this module's floor can normalize (mirrors go-health v0.2.0's
+  relaxation; blocked until both UI modules move)
 - Sign release tags (`tag.gpgSign`, documented in `docs/release-checklist.md`;
   compare links shipped in the CHANGELOG footer 2026-09-04)
 
@@ -190,6 +187,11 @@ These require user decisions and cannot be resolved by reading code:
   your ingests, or do you want HMAC signing (`WithWebhookSecret` →
   `X-Signature`) and an explicit payload `"schema":1` version field before
   any external consumer freezes the format?
+- **Evidence-strip posture:** the strip shipped default-on and HTML-only
+  (counts are non-identifying; proven/unproven is presentation). Do you want
+  a machine contract (metrics gauges / trend+export JSON fields) and/or
+  persistence across restarts, or is per-pusher-lifetime truth the intended
+  steady state?
 
 ## Design Spikes (v0.3.x cycle, not implemented)
 
