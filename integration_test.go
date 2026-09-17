@@ -3,6 +3,7 @@ package dashboard_test
 import (
 	"context"
 	"encoding/json/v2"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -371,6 +372,93 @@ func TestDashboard_RendersAggregateOfTwoProbes(t *testing.T) {
 
 	if ready.StatusCode != http.StatusOK {
 		t.Fatalf("GET /readyz status = %d, want 200 (warn stays 200)", ready.StatusCode)
+	}
+}
+
+// TestDashboard_AggregateCarriesCheckMetadata proves the go-health v0.2.0
+// per-check metadata survives the full aggregate path end-to-end: two
+// detailed-check sources (NewWithDetailedCheck, the injector-free probe
+// form) merged via aggregate.New, rendered by the dashboard with the
+// namespaced source/check keys, their state-entry "since" stamps, and the
+// executor-reported durations visible in the HTML. Upstream pins Since in
+// its own aggregate golden; this is the dashboard-side contract.
+func TestDashboard_AggregateCarriesCheckMetadata(t *testing.T) {
+	t.Parallel()
+
+	detailedProbe := func(critical bool) *health.Probe {
+		opts := []health.Option{health.WithRefreshInterval(20 * time.Millisecond)}
+		if critical {
+			opts = append(opts, health.WithCriticalServices("postgres"))
+		}
+
+		probe := health.NewWithDetailedCheck(
+			func(_ context.Context) map[string]health.CheckDetail {
+				return map[string]health.CheckDetail{
+					"postgres": {Duration: 5 * time.Millisecond},
+					"queue":    {Err: errors.New("backlog"), Duration: 250 * time.Millisecond},
+				}
+			},
+			opts...,
+		)
+
+		ctx, cancel := context.WithCancel(t.Context())
+		t.Cleanup(cancel)
+
+		if err := probe.Start(ctx); err != nil {
+			t.Fatalf("probe.Start: %v", err)
+		}
+
+		return probe
+	}
+
+	agg, err := aggregate.New(
+		aggregate.Source{Name: "api", Probe: detailedProbe(true)},
+		aggregate.Source{Name: "worker", Probe: detailedProbe(false)},
+	)
+	if err != nil {
+		t.Fatalf("aggregate.New: %v", err)
+	}
+
+	dash := dashboard.New(agg)
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/health")
+	if err != nil {
+		t.Fatalf("GET /health: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read dashboard HTML: %v", err)
+	}
+
+	html := string(body)
+
+	// Namespaced keys land with both sources' metadata: the durations
+	// render verbatim and the state-entry line carries its "since" stamp.
+	for _, want := range []string{
+		"api/postgres",
+		"worker/queue",
+		"since ",
+		"5ms",
+		"250ms",
+	} {
+		if !strings.Contains(html, want) {
+			t.Fatalf("aggregate dashboard HTML missing %q", want)
+		}
+	}
+
+	// The "since" stamp must be attached to the checks, not an accident of
+	// some other markup: every detailed check renders the row-metadata
+	// span with its explanatory title.
+	if !strings.Contains(html, "When the check entered its current status") {
+		t.Fatal("aggregate dashboard HTML missing the since tooltip title")
 	}
 }
 

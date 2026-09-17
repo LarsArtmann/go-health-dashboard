@@ -248,6 +248,61 @@ func TestSSE_PushOnChange_DetectsRecovery(t *testing.T) {
 	stream.waitFor(t, isHealthyEvent, 2*time.Second)
 }
 
+// TestSSE_PatchCarriesCheckMetadata proves the patch payload itself — not
+// just the initial HTML — carries the go-health v0.2.0 per-check metadata
+// line. The golden files pin the initial render; this closes the remaining
+// gap by asserting a real SSE patch payload (initial connect patch AND a
+// subsequent broadcast patch) transits the same view content, so any future
+// view change that stops reaching SSE clients fails here.
+func TestSSE_PatchCarriesCheckMetadata(t *testing.T) {
+	t.Parallel()
+
+	resp := health.Response{
+		Status: health.StatusPass,
+		Checks: map[string]health.Check{
+			"api/database": {
+				Status:        health.StatusPass,
+				Since:         time.Now().UTC().Add(-17 * time.Minute),
+				DurationNanos: int64(42 * time.Millisecond),
+			},
+		},
+	}
+
+	dash := dashboard.New(newStubProber(resp),
+		dashboard.WithPushInterval(50*time.Millisecond),
+		dashboard.WithPushMode(dashboard.PushAlways),
+	)
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	if err := dash.Start(ctx); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+	defer dash.Shutdown()
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	streamResp, stream := connectSSE(t, server)
+	defer func() { _ = streamResp.Body.Close() }()
+
+	// The metadata must appear in patch payloads, not merely the initial
+	// HTML: "since <stamp> (17m)" from the probe-side state-entry time and
+	// "42ms" from the executor-reported duration. Waiting for a SECOND
+	// matching event proves broadcast patches (not only the connect-time
+	// snapshot) carry the view content.
+	carriesMetadata := func(evt string) bool {
+		return strings.Contains(evt, "since ") && strings.Contains(evt, "42ms")
+	}
+
+	stream.waitFor(t, carriesMetadata, 2*time.Second)
+	stream.waitFor(t, carriesMetadata, 2*time.Second)
+}
+
 // --- Connection limit tests ---.
 
 // WithMaxSSEConnections(0) is the default: unlimited. Several clients must
