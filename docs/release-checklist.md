@@ -58,6 +58,13 @@ fumble d-2). Canonical tail: build → `nix fmt` → flake check.
       regressions): `nix develop -c go test -run TestBrowser`
 - [ ] `nix run .#vulncheck`
 
+Contradiction stop-loss: if two tools disagree about the same gate
+(`nix fmt` said "0 changed" while the treefmt check said "2 changed" —
+v0.8.0), HALT the release until explained. The stale-cache recipe is
+`nix fmt -- --no-cache`. A release-gating test run should print pass vs
+skip counts (`-v` or counting `--- PASS`/`--- SKIP`) so "green" cannot
+mean "silently skipped".
+
 ## 5. Commit, tag, push
 
 Commit discipline: the auto-daemon commits continuously. Commit each
@@ -72,7 +79,9 @@ release commit's message to a `chore: auto-commit` heuristic (v0.7.0's
       `git tag -a` produces signed tags).
 - [ ] Screenshots refreshed when the render changed:
       `SCREENSHOT_OUTPUT=docs/screenshot.png nix develop -c go test -run 'TestCaptureREADME_Screenshot$'`
-      and the dark variant with `SCREENSHOT_OUTPUT_DARK`.
+      and the dark variant with `SCREENSHOT_OUTPUT_DARK` — then EYEBALL
+      both PNGs before pushing (v0.8.0 was eyeballed only post-push; it
+      happened to be fine).
 - [ ] Push order: TAG FIRST (`git push origin vX.Y.Z`), then master.
       The master CI run's `fetch-depth: 0` checkout then sees the tag and
       the version-guard job cannot lose a fetch race (validated on the
@@ -90,6 +99,9 @@ Publish-ordering rule: `gh release create` runs ONLY after
 `verify-release.sh` is green AND CI is green on the release commit —
 the v0.8.0 page was published 90 seconds before its CI went red
 (FEATURES drift guard) and permanently points at a red-CI commit.
+Known-exception: a historical release commit whose CI failed can never
+green check 5 retroactively (immutable tags) — expected, not actionable;
+the v0.8.0 page discloses it.
 
 If a slow external surface (pkg.go.dev, proxy indexing) lags, poll on a
 bounded loop (e.g. 30×10s) — never two fetches and a shrug (the v0.7.0
