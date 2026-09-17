@@ -47,6 +47,7 @@
 | Graceful shutdown state display                      | 🟢 `FULLY_FUNCTIONAL` | `status.go:111` — buildViewModel overrides banner to "Shutting Down"                                                                                              |
 | Dark mode toggle                                     | 🟢 `FULLY_FUNCTIONAL` | `view.templ:36` — layout.ThemeToggle, nonce-aware, persisted in localStorage                                                                                      |
 | Favicon endpoint                                     | 🟢 `FULLY_FUNCTIONAL` | `favicon.go:13` — embedded SVG green-heart, served at `/favicon.svg`                                                                                              |
+| Failure-evidence truth strip + badge tooltips        | 🟢 `FULLY_FUNCTIONAL` | `evidence.go` — per-check non-pass observations on every pusher tick; strip under the Updated stamp (zero-proven = explicit warning), `pass` badges cite last non-pass or disclose unproven; window = pusher lifetime; HTML-only |
 
 ## Real-Time Updates
 
@@ -104,6 +105,8 @@
 | JSON content on `/health`       | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` `wantsJSON()` — RFC 7231 q-value Accept negotiation; 200 pass/warn, 503 fail                 |
 | Trend JSON endpoint             | 🟢 `FULLY_FUNCTIONAL` | `trend.go` — samples + transitions at `/health/trend` with `WithTrend`                                      |
 | JSON/CSV/NDJSON export endpoint | 🟢 `FULLY_FUNCTIONAL` | `trend.go` — `/health/export`, `?format=csv`, `Accept: text/csv`, or `?format=ndjson` (one object per line) |
+| Introspection endpoint          | 🟢 `FULLY_FUNCTIONAL` | `introspect.go` — `/health/introspect` deterministic JSON of the resolved config (metadata-only); opt-in via `WithIntrospection` |
+| Embedded Datastar SDK serving   | 🟢 `FULLY_FUNCTIONAL` | `routes.go` + `WithEmbeddedDatastarSDK()` — pinned bundle at `/health/datastar.js`; same-origin script, no CDN |
 
 ## Configuration
 
@@ -132,6 +135,14 @@
 | WithDatastarSrc                  | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` — self-hosted Datastar SDK for strict CSP                                                                                                                          |
 | WithWebhook                      | 🟢 `FULLY_FUNCTIONAL` | `options.go:190` — JSON snapshot push on every status transition                                                                                                                  |
 | WithWebhookHeaders               | 🟢 `FULLY_FUNCTIONAL` | `options.go:202` — auth headers for webhook deliveries                                                                                                                            |
+| WithHealthyGroupCollapse         | 🟢 `FULLY_FUNCTIONAL` | `options.go:176` — healthy-group `<details>` threshold (default 8); `WithHealthyGroupExpanded` disables collapsing                                                                 |
+| WithPersistCollapse              | 🟢 `FULLY_FUNCTIONAL` | `options.go:190` — localStorage persistence of the collapse choice, re-applied after every SSE patch                                                                              |
+| WithGrouping                     | 🟢 `FULLY_FUNCTIONAL` | `options.go:212` — severity (default) or `GroupBySource` cards for aggregate `source/check` keys                                                                                  |
+| WithNoDatastarRuntime            | 🟢 `FULLY_FUNCTIONAL` | `options.go:204` — omit SDK-dependent UI (filter box, pill) for custom patch clients                                                                                              |
+| WithIntrospection                | 🟢 `FULLY_FUNCTIONAL` | `options.go:461` — enable `/health/introspect`                                                                                                                                    |
+| WithEmbeddedDatastarSDK          | 🟢 `FULLY_FUNCTIONAL` | `options.go:475` — serve the pinned SDK at `Routes.DatastarJS`                                                                                                                    |
+| WithPushOnChangeTTL              | 🟢 `FULLY_FUNCTIONAL` | `options.go:487` — periodic state re-assert in PushOnChange mode (self-heal for missed events)                                                                                    |
+| WithTimelineMaxAge               | 🟢 `FULLY_FUNCTIONAL` | `options.go:498` — hide timeline entries older than the age (trend/export keep full history)                                                                                      |
 | samber/do lifecycle (`Register`) | 🟢 `FULLY_FUNCTIONAL` | `di.go` — participates in `do.Shutdown`/`do.HealthCheck` cascades; `ErrPusherNotActive`/`ErrPusherNotStarted`/`ErrPusherShutDown`/`ErrPusherStale` sentinels; `lifecycle_test.go` |
 
 ## Observability
@@ -157,12 +168,12 @@
 | templ generate workflow  | 🟢 `FULLY_FUNCTIONAL` | Pre-build step in all Nix apps                                                                                                                                                                                                                                       |
 | `.golangci.yml` config   | 🟢 `FULLY_FUNCTIONAL` | 80+ linters, pragmatic test/example exclusions, **0 issues**                                                                                                                                                                                                         |
 | Test suite               | 🟢 `FULLY_FUNCTIONAL` | 256 top-level test/benchmark/fuzz functions across 34 test files, all passing with `-race` (counted via `rg -c '^func (Test\|Benchmark\|Fuzz)' *_test.go`)                                                                                                           |
-| CI/CD                    | 🟢 `FULLY_FUNCTIONAL` | `.github/workflows/ci.yml` — build, test-race+coverage (78% floor + artifact), lint, vulncheck, browser job, version-guard. all 7 jobs green on real runs 2026-09-04 (incl. new hygiene job, run 33919924925); 75→78% coverage floor raised 2026-09-04 (local 84.8%) |
+| CI/CD                    | 🟢 `FULLY_FUNCTIONAL` | `.github/workflows/ci.yml` — build, test-race+coverage (78% floor + artifact), lint, vulncheck, browser job, version-guard, hygiene (changelog lint + templ drift). Green on the v0.8.1 release commit `69585bc` (verify-release 6/6) |
 | Dependabot               | 🟢 `FULLY_FUNCTIONAL` | `.github/dependabot.yml` — Go modules + GitHub Actions                                                                                                                                                                                                               |
 | Example app              | 🟢 `FULLY_FUNCTIONAL` | `example/main.go` — DEMO_TREND/DEMO_METRICS/DEMO_AUTH/DEMO_RATELIMIT/DEMO_DRAIN/DEMO_PUBLIC/DEMO_BASE_PATH env toggles                                                                                                                                               |
 | Docker + Prometheus demo | 🟢 `FULLY_FUNCTIONAL` | `Dockerfile`, `deploy/docker-compose.yml`, `deploy/prometheus.yml` — example + scraper                                                                                                                                                                               |
 | Domain language docs     | 🟢 `FULLY_FUNCTIONAL` | `docs/DOMAIN_LANGUAGE.md` — ubiquitous language glossary                                                                                                                                                                                                             |
-| Released (pkg.go.dev)    | 🟢 `FULLY_FUNCTIONAL` | Tagged v0.8.0 (verify via `bash scripts/verify-release.sh v0.8.0` immediately after push); v0.5.0+ proxy-resolved; zero replace directives                                                                                                                           |
+| Released (pkg.go.dev)    | 🟢 `FULLY_FUNCTIONAL` | Tagged v0.8.1 (`verify-release.sh v0.8.1` all green 2026-09-16); v0.5.0+ proxy-resolved; zero replace directives                                                                                     |
 
 ## Known Gaps
 

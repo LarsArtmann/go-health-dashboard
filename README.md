@@ -95,6 +95,8 @@ builds a probe from a plain function — use it with `dashboard.New` +
 | `/health/metrics` | GET    | text/plain                    | Prometheus exposition with latency histogram (only when `WithMetrics(true)`)                                              |
 | `/health/trend`   | GET    | application/json              | Status history + transitions (only when `WithTrend`)                                                                      |
 | `/health/export`  | GET    | application/json or text/csv  | History export, `?format=csv` or `Accept: text/csv` (only when `WithTrend`)                                               |
+| `/health/introspect` | GET | application/json              | Resolved configuration as JSON (only when `WithIntrospection()`)                                                          |
+| `/health/datastar.js` | GET | application/javascript        | Embedded Datastar SDK bundle (only when `WithEmbeddedDatastarSDK()`)                                                      |
 | `/healthz`        | GET    | application/json              | Liveness probe (always 200, no dependency checks)                                                                         |
 | `/readyz`         | GET    | application/json              | Readiness probe (503 when critical services fail)                                                                         |
 | `/startupz`       | GET    | application/json              | Startup probe (latched once all critical services pass)                                                                   |
@@ -126,6 +128,11 @@ dash := dashboard.New(probe,
     dashboard.WithDescription("Status page for My Service"),   // Meta description + Open Graph tags
     dashboard.WithPublicMode(),                                // Anonymize check names/errors in HTML + metrics
     dashboard.WithDatastarSrc("/static/datastar.js"),          // Self-hosted Datastar SDK (CSP 'self')
+    dashboard.WithEmbeddedDatastarSDK(),                       // Serve the pinned SDK from /health/datastar.js (script-src 'self')
+    dashboard.WithGrouping(dashboard.GroupBySource),           // One card per aggregate source/check prefix (default: severity)
+    dashboard.WithPushOnChangeTTL(10),                         // In PushOnChange mode, re-assert unchanged state every 10th tick
+    dashboard.WithTimelineMaxAge(24 * time.Hour),              // Hide timeline entries older than 24h
+    dashboard.WithIntrospection(),                             // GET /health/introspect: resolved config as JSON
     dashboard.WithBasePath("/admin"),                          // Prefix all routes for sub-path mounting
     dashboard.WithRoutes(dashboard.Routes{
         Dashboard: "/status",
@@ -347,6 +354,12 @@ All toggles are optional — plain `go run ./example` works too.
 | `DEMO_DRAIN=5s`          | Graceful SSE drain window on shutdown (`WithShutdownDrain`)    |
 | `DEMO_PUBLIC=1`          | Public mode — anonymized check names (`WithPublicMode`)        |
 | `DEMO_BASE_PATH=/status` | Mount the dashboard under `/status` (`WithBasePath`)           |
+| `DEMO_COLLAPSE=<n>`      | Collapse healthy group at n rows (`WithHealthyGroupCollapse`)  |
+| `DEMO_PERSIST=1`         | Persist collapse state (`WithPersistCollapse`)                 |
+| `DEMO_EMBEDDED_SDK=1`    | Serve the SDK from `/health/datastar.js` (`WithEmbeddedDatastarSDK`) |
+| `DEMO_GROUPING=source`   | Source-grouped cards for aggregates (`WithGrouping`)           |
+| `DEMO_AGGREGATE=1`       | Two-probe go-health aggregate demo (`aggregate.New`)           |
+| `DEMO_WEBHOOK=<url>`     | POST transitions to a validated receiver (`WithWebhook`)       |
 | `PORT`                   | Listen port (default 8080)                                     |
 
 The example includes mock services: one always healthy, one flapping (alternates
@@ -373,7 +386,7 @@ Tested version matrix (`go.mod` is the live source of truth):
 
 | Dependency       | Version | Note                                                |
 | ---------------- | ------- | --------------------------------------------------- |
-| go-health        | v0.1.3  | `aggregate` package needs v0.1.0+                   |
+| go-health        | v0.2.0  | `aggregate` needs v0.1.0+; per-check since/duration metadata needs v0.2.0+ |
 | templ-components | v1.17.0 | pinned — CI guard + browser-suite re-audit on bumps |
 | go-datastar      | v0.5.0  | audited SDK bundle; needs CSP `unsafe-eval`         |
 | go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                      |
