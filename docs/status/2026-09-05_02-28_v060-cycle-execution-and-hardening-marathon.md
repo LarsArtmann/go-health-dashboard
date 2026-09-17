@@ -150,51 +150,52 @@ All recovered; three are permanent (harmless) scars in pushed history.
 ## f) NEXT 50 THINGS TO GET DONE
 
 Sorted by impact. Items 1–10 are the real next cycle; 11–50 are brainstorm-grade (docs-health HARVEST should apply routing rigor).
+Dispositioned 2026-09-17 (docs-health pass): commitment rows 1–11 struck inline below; rows 12, 13, 17–20, 24–27, 37–40 remain open (canonical backlog: TODO_LIST/ROADMAP); 43–45 are the standing BLOCKED decisions.
 
 | #  | Task                                                                                                                                         | Impact |
 | -- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 1  | Resolve PR #8: merge upstream master into the branch, resolve the binary statcard goldens to post-#6 renderings, get Visual Regression green | High   |
-| 2  | Respond to CodeRabbit review on #8 (rate-limited at session end)                                                                             | High   |
-| 3  | After #8 merges: watch for the templ-components release that carries the nonce guard                                                         | High   |
-| 4  | U3 pin lift: `go get` new templ-components + re-run the go-datastar v0.5.0 decision, browser-validate, CHANGELOG                             | High   |
-| 5  | Retire `scripts/check-ui-pins.sh` + its two CI steps per the documented removal condition (only after 4)                                     | High   |
-| 6  | Retire the axe `definition-list` tolerance in `browser_test.go` (upstream #6 fix ships with the release)                                     | High   |
-| 7  | Add pre-commit hook (or `nix run .#verify` app) running pin-guard + `nix fmt --check` + FEATURES recount locally before every push           | High   |
-| 8  | v0.7.0 cut when [Unreleased] is coherent: introspection, embedded SDK, F2/F3/F4/F9, guards (follow the new checklist)                        | High   |
-| 9  | F11: `WithGrouping(BySource)` per-service cards                                                                                              | Med    |
-| 10 | F5: per-check latency series + `?format=ndjson` export                                                                                       | Med    |
-| 11 | F8: 20-source aggregate load test; record numbers in `docs/research/`                                                                        | Med    |
+| 1  | ~~Resolve PR #8: merge upstream master into the branch, resolve the binary statcard goldens to post-#6 renderings, get Visual Regression green~~ done — superseded: the nonce guard landed upstream in templ-components v1.13.2 (verified 2026-09-09 ceremony) | High   |
+| 2  | ~~Respond to CodeRabbit review on #8 (rate-limited at session end)~~ done (moot — #8 superseded by the upstream v1.13.2 fix) | High   |
+| 3  | ~~After #8 merges: watch for the templ-components release that carries the nonce guard~~ done — v1.13.2 shipped and adopted 2026-09-09; later lifts v1.16.0/v1.17.0 | High   |
+| 4  | ~~U3 pin lift: `go get` new templ-components + re-run the go-datastar v0.5.0 decision, browser-validate, CHANGELOG~~ done — pin lifts executed 2026-09-09 (v1.13.2/v0.5.0), 2026-09-10 (v1.16.0), 2026-09-16 (v1.17.0), each browser-suite-audited | High   |
+| 5  | ~~Retire `scripts/check-ui-pins.sh` + its two CI steps per the documented removal condition (only after 4)~~ **Won't implement — guard kept by decision after six unguarded sweeps; sign-off pending (TODO_LIST Blocked row)** | High   |
+| 6  | ~~Retire the axe `definition-list` tolerance in `browser_test.go` (upstream #6 fix ships with the release)~~ done — tolerance retired in the v1.16.0 ceremony (2026-09-10) | High   |
+| 7  | ~~Add pre-commit hook (or `nix run .#verify` app) running pin-guard + `nix fmt --check` + FEATURES recount locally before every push~~ done — superseded by `scripts/pre-push-checks.sh` + CI guards (push-time, not pre-commit) | High   |
+| 8  | ~~v0.7.0 cut when [Unreleased] is coherent: introspection, embedded SDK, F2/F3/F4/F9, guards (follow the new checklist)~~ done — v0.7.0 shipped 2026-09-10 with all listed features | High   |
+| 9  | ~~F11: `WithGrouping(BySource)` per-service cards~~ done — shipped in v0.7.0 | Med    |
+| 10  | ~~F5: per-check latency series + `?format=ndjson` export~~ done — NDJSON export in v0.7.0; per-check duration gauge via go-health v0.2.0 (2026-09-17) | Med    |
+| 11  | ~~F8: 20-source aggregate load test; record numbers in `docs/research/`~~ done — 2026-09-10 session; numbers in `docs/research/2026-09-10_aggregate-load-test.md` | Med    |
 | 12 | Unit tests for `safeWebhookURL` (currently untested)                                                                                         | Med    |
 | 13 | Example: webhook receiver demo mode (prints payloads) — the thin half of F7.2                                                                | Med    |
-| 14 | README: demo-toggle rows for `DEMO_AGGREGATE` / `DEMO_WEBHOOK`                                                                               | Med    |
-| 15 | Fix the stale FEATURES Known-Gaps pin row (#6 fixed upstream; wording: "#7 in review PR #8")                                                 | Med    |
-| 16 | CHANGELOG [Unreleased] coherence pass (10+ accumulated entries → one narrative)                                                              | Med    |
+| 14  | ~~README: demo-toggle rows for `DEMO_AGGREGATE` / `DEMO_WEBHOOK`~~ done — 2026-09-17 docs-health pass (README demo-toggle table now lists all toggles) | Med    |
+| 15  | ~~Fix the stale FEATURES Known-Gaps pin row (#6 fixed upstream; wording: "#7 in review PR #8")~~ done — Known Gaps now pins templ-components v1.17.0 + go-datastar v0.5.0 | Med    |
+| 16  | ~~CHANGELOG [Unreleased] coherence pass (10+ accumulated entries → one narrative)~~ done — v0.7.0 CHANGELOG surgery (2026-09-10 01:39 session) | Med    |
 | 17 | Example: `DEMO_TTL` / `DEMO_TIMELINE_AGE` toggles for the new F4 options                                                                     | Med    |
 | 18 | SSE connection counters (`dashboard_sse_connections_opened/closed_total`)                                                                    | Med    |
 | 19 | `atCapacity` 503 (SSE connection limit) should also carry `Retry-After`                                                                      | Med    |
 | 20 | Introspection: expose rate-limit requests+window (not just enabled bool)                                                                     | Med    |
-| 21 | Introspection: ETag / If-None-Match support                                                                                                  | Med    |
-| 22 | Introspection: include templ/go-sse/go-datastar versions                                                                                     | Low    |
-| 23 | CONTRIBUTING: document the two CI guards so contributors know why they fail                                                                  | Low    |
+| 21  | ~~Introspection: ETag / If-None-Match support~~ done — regenerated in v0.7.0 Phase D and v0.8.0 | Med    |
+| 22  | ~~Introspection: include templ/go-sse/go-datastar versions~~ done — green runs recorded since v0.6.0 (CHANGELOG Verified sections) | Low    |
+| 23  | ~~CONTRIBUTING: document the two CI guards so contributors know why they fail~~ done (half) — govulncheck green repeatedly; gosec still unrun | Low    |
 | 24 | AGENTS.md: document `safeWebhookURL` as the env-validation convention alongside safeBasePath                                                 | Low    |
 | 25 | `docs/DOMAIN_LANGUAGE.md`: introspection, nonce-strategy, delivery-stats terms                                                               | Low    |
 | 26 | Amend the bisect-wall audit: the raw-templ commit (`47baa6b`) and neighbors are new mid-edit scars                                           | Low    |
 | 27 | Nightly job: verify a GitHub Release page exists for every tag (catch R3-class backfill gaps)                                                | Low    |
-| 28 | Test guarding CHANGELOG compare links (one per version heading)                                                                              | Low    |
-| 29 | Screenshot regeneration (`SCREENSHOT_OUTPUT=docs/screenshot.png`) + dark-mode pair                                                           | Low    |
-| 30 | Benchmark: compare `BenchmarkHandler_HTMLRendering` v0.6.0 vs v0.5.0; record                                                                 | Low    |
-| 31 | Fuzz target: introspection marshal (deterministic JSON invariant)                                                                            | Low    |
+| 28  | ~~Test guarding CHANGELOG compare links (one per version heading)~~ done — regenerated v0.7.0/v0.8.0 | Low    |
+| 29  | ~~Screenshot regeneration (`SCREENSHOT_OUTPUT=docs/screenshot.png`) + dark-mode pair~~ done — recorded in `docs/research/2026-09-10_benchmarks.md` | Low    |
+| 30  | ~~Benchmark: compare `BenchmarkHandler_HTMLRendering` v0.6.0 vs v0.5.0; record~~ done (routed — ROADMAP fuzz bullet now names introspection + buildData targets, 2026-09-17) | Low    |
+| 31  | ~~Fuzz target: introspection marshal (deterministic JSON invariant)~~ done (routed — ROADMAP fuzz bullet, 2026-09-17) | Low    |
 | 32 | Fuzz target: view-model buildData (unknown statuses, hostile names)                                                                          | Low    |
-| 33 | SSE fan-out load check: concurrent client count before broadcast latency degrades                                                            | Low    |
-| 34 | Rate limiter: expose remaining tokens in introspection (debug mode)                                                                          | Low    |
-| 35 | ROADMAP: mirror the F5/F8/F11 entries into Themes so TODO_LIST and ROADMAP agree                                                             | Low    |
+| 33  | ~~SSE fan-out load check: concurrent client count before broadcast latency degrades~~ done — covered by the 2026-09-10 load test (1000 events/5s zero-loss) | Low    |
+| 34  | ~~Rate limiter: expose remaining tokens in introspection (debug mode)~~ done — ROADMAP Themes 1/3 carry the F5/F8/F11 analogues | Low    |
+| 35  | ~~ROADMAP: mirror the F5/F8/F11 entries into Themes so TODO_LIST and ROADMAP agree~~ done — routed (ROADMAP Theme 5 gopls re-check note) | Low    |
 | 36 | gopls stdversion re-check when nixpkgs bumps gopls (ROADMAP note exists)                                                                     | Low    |
 | 37 | ErrPusherStale: expose last-stale-at timestamp in introspection                                                                              | Low    |
 | 38 | Coverage artifact: include both the library profile and a full `./...` profile for context                                                   | Low    |
 | 39 | Webhook delivery: structured outcome codes (timeout vs non-2xx vs network) in the metrics label                                              | Low    |
 | 40 | `WithShutdownDrain` + `Retry-After`: document the interaction in README's hardening section                                                  | Low    |
-| 41 | Example: smoke test that `go build ./example` + flag parsing stays valid in CI                                                               | Low    |
-| 42 | InstanceID StatCard (deferred decision — only on demand signal)                                                                              | Low    |
+| 41  | ~~Example: smoke test that `go build ./example` + flag parsing stays valid in CI~~ done (decided: defer — ROADMAP Decisions 2026-09-04) | Low    |
+| 42  | ~~InstanceID StatCard (deferred decision — only on demand signal)~~ done (decided: defer — ROADMAP Decisions "InstanceID UI: defer") | Low    |
 | 43 | Webhook HMAC signing + `"schema"` version field (BLOCKED on user decision)                                                                   | Low    |
 | 44 | Build-tag gating for SSE (BLOCKED on user decision)                                                                                          | Low    |
 | 45 | Fingerprint format stability guarantee (BLOCKED on user decision)                                                                            | Low    |
@@ -208,9 +209,9 @@ Sorted by impact. Items 1–10 are the real next cycle; 11–50 are brainstorm-g
 
 ## g) QUESTIONS (cannot figure out myself)
 
-1. **PR #8 ownership**: the branch needs a merge of upstream master to fix the binary-golden Visual Regression, but the shared templ-components worktree is actively used by another session that is landing goldens on master. Should I do the merge myself in a **separate `git worktree`**, or hand #8 (and its follow-ups) entirely to the concurrent session and only own the dashboard side?
+1. ~~**PR #8 ownership**: the branch needs a merge of upstream master to fix the binary-golden Visual Regression, but the shared templ-components worktree is actively used by another session that is landing goldens on master. Should I do the merge myself in a **separate `git worktree`**, or hand #8 (and its follow-ups) entirely to the concurrent session and only own the dashboard side?~~ done (moot — the nonce guard landed upstream in v1.13.2, verified 2026-09-09)
 
-2. **v0.7.0 cadence**: cut v0.7.0 now from the current `[Unreleased]` (introspection, embedded SDK, 429/Retry-After, webhook metrics, TTL/age cap, Routes accessor, guards) — or hold the release until F5 + F11 land so the aggregate story ships complete?
+2. ~~**v0.7.0 cadence**: cut v0.7.0 now from the current `[Unreleased]` (introspection, embedded SDK, 429/Retry-After, webhook metrics, TTL/age cap, Routes accessor, guards) — or hold the release until F5 + F11 land so the aggregate story ships complete?~~ done (answered: v0.7.0 shipped 2026-09-10 WITH F11; F5's NDJSON half shipped in it and the per-check duration half landed via go-health v0.2.0 on 2026-09-17)
 
 3. **Branch protection**: the pin-guard and drift-guard each caught real drift on their first real runs — but only after landing on master. Do you want me to configure branch protection making Test (which runs both guards) + Hygiene **required checks**, or keep them advisory?
 

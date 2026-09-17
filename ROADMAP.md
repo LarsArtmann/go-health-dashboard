@@ -19,7 +19,9 @@ Raw ideas:
 - Rate limiter response headers: `X-RateLimit-Limit` / `X-RateLimit-Remaining`
   / `X-RateLimit-Reset` (basic 429 + Retry-After shipped in v0.3.x cycle)
 - Optional jitter on `WithMaxConnectionLifetime` to avoid reconnect herds
-- Retry-After header on 503s during the shutdown-drain window
+- Retry-After header on 503s during the shutdown-drain window (shipped
+  v0.7.0) and on connection-limit 503s (`atCapacity`)
+- SSE connection counters `dashboard_sse_connections_opened/closed_total`
 - Watchdog gauge `dashboard_pusher_last_tick_seconds` and an opt-in
   auto-restart hook (current watchdog is report-only by design)
 - Request logging middleware option (slog) for dashboard routes
@@ -110,7 +112,8 @@ Raw ideas:
 - Nightly fuzztime budget review (4×60s → target the hottest target);
   rehearse the fuzz issue-on-failure path with a deliberately failing run
 - Fuzz targets: CSV exporter, `RecommendedCSP` injection attempts, webhook
-  payload marshal, aggregate merge (follow the `fuzz_test.go` pattern)
+  payload marshal, aggregate merge, introspection marshal, view-model
+  `buildData` (follow the `fuzz_test.go` pattern)
 - Browser golden-screenshot diff test (catch visual drift)
 - Keyboard-navigation a11y smoke in the browser suite; browser-test the
   metrics endpoint under strict CSP
