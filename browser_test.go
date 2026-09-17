@@ -620,8 +620,6 @@ func TestBrowser_Accessibility(t *testing.T) {
 		return
 	}
 
-	var audit string
-
 	inject := `(function () {
 		if (window.axe) { return; }
 		var s = document.createElement("script");
@@ -657,18 +655,7 @@ func TestBrowser_Accessibility(t *testing.T) {
 		window.__axeViolations = "AXE_ERROR: " + e;
 	})`
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(start, nil)); err != nil {
-		t.Fatalf("axe start: %v", err)
-	}
-
-	waitForJS(
-		t, ctx,
-		`window.__axeViolations !== undefined`,
-		`window.__axeViolations`,
-		&audit,
-	)
-
-	if audit != "[]" {
+	if audit := runAxeAudit(t, ctx, start); audit != "[]" {
 		t.Errorf("axe-core found serious/critical violations: %s", audit)
 	}
 
@@ -676,21 +663,42 @@ func TestBrowser_Accessibility(t *testing.T) {
 	// byte-identical between themes), but the toggle flips Tailwind classes
 	// and colorScheme at runtime, so structural a11y must still hold with
 	// the dark class applied. One Chrome launch covers both themes.
+	var darkClass string
+
 	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(`window.__axeViolations = undefined`, nil),
 		chromedp.Click(`[data-theme-toggle]`, chromedp.ByQuery),
-		chromedp.Evaluate(`document.documentElement.classList.contains("dark") + ""`, &audit),
+		chromedp.Evaluate(`document.documentElement.classList.contains("dark") + ""`, &darkClass),
 	); err != nil {
 		t.Fatalf("dark toggle: %v", err)
 	}
 
-	if audit != "true" {
-		t.Fatalf("theme toggle did not apply the dark class (got %q)", audit)
+	if darkClass != "true" {
+		t.Fatalf("theme toggle did not apply the dark class (got %q)", darkClass)
+	}
+
+	if audit := runAxeAudit(t, ctx, start); audit != "[]" {
+		t.Errorf("axe-core found serious/critical violations in dark mode: %s", audit)
+	}
+
+	assertNoBrowserErrors(t, errLog)
+}
+
+// runAxeAudit resets the violation slot, runs the axe audit expression,
+// and returns the JSON string of serious/critical violations. Safe to
+// call repeatedly: every call resets before running, so a second audit
+// (e.g. after the dark-mode toggle) can never read the first one's result.
+func runAxeAudit(t *testing.T, ctx context.Context, start string) string {
+	t.Helper()
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.__axeViolations = undefined`, nil)); err != nil {
+		t.Fatalf("axe reset: %v", err)
 	}
 
 	if err := chromedp.Run(ctx, chromedp.Evaluate(start, nil)); err != nil {
-		t.Fatalf("axe start (dark): %v", err)
+		t.Fatalf("axe start: %v", err)
 	}
+
+	var audit string
 
 	waitForJS(
 		t, ctx,
@@ -699,11 +707,7 @@ func TestBrowser_Accessibility(t *testing.T) {
 		&audit,
 	)
 
-	if audit != "[]" {
-		t.Errorf("axe-core found serious/critical violations in dark mode: %s", audit)
-	}
-
-	assertNoBrowserErrors(t, errLog)
+	return audit
 }
 
 // waitForJS polls a JavaScript predicate until it is truthy (bounded by a
