@@ -2,7 +2,7 @@
 
 Real-time health dashboard that composes [go-health](https://github.com/larsartmann/go-health) (health-checking SDK), [templ-components](https://github.com/larsartmann/templ-components) (UI rendering), [go-datastar](https://github.com/larsartmann/go-datastar) (Datastar SSE patch protocol), and [go-sse](https://github.com/larsartmann/go-sse) (SSE transport). The dashboard lives at a dedicated route (`/health`) and uses Datastar SSE for real-time updates. `/health` serves HTML by default but returns JSON when the client sends `Accept: application/json`. Kubernetes probe endpoints (`/healthz`, `/readyz`, `/startupz`) are JSON-only.
 
-**Module**: `github.com/larsartmann/go-health-dashboard` · **Package**: `dashboard` · **Go**: 1.26.7 · **Status**: v0.8.1
+**Module**: `github.com/larsartmann/go-health-dashboard` · **Package**: `dashboard` · **Go**: 1.26.7 · **Status**: v0.9.0
 
 ---
 
@@ -200,7 +200,11 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   on 2026-09-10 two freshly written release scripts were swept into an
   adjacent auto-commit seconds before their intent commit landed. New
   files: commit right after their first successful run, before long
-  verification chains. (3) Push the TAG first, then master — the master
+  verification chains. And a long gate chain is ONE GIANT uncommitted
+  window: on 2026-09-17 (v0.9.0) the daemon swept the raw templ output
+  MID-CHAIN (`bdcb69c`, between the build's regenerate and nix fmt), so
+  fmt + commit must run back-to-back at the chain's tail and the daemon
+  commit gets folded forward, never rebased away. (3) Push the TAG first, then master — the master
   run's `fetch-depth: 0` checkout then sees the tag and the version-guard
   job cannot lose a fetch race. (4) External-state verification (proxy
   hash, sumdb, clean-dir consumer, GitHub Release state, CI on the release

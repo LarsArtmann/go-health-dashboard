@@ -18,18 +18,14 @@
 Harvested 2026-09-17 from `docs/status/2026-09-17_05-55_go-health-v020-consumer-upgrade.md`
 (f-list), the 2026-09-16 release/buildflow sessions, and the living docs.
 Ordered by impact; every row survived verification against the current tree
-(`Version = "0.8.1"`, go-health v0.2.0, 256 test functions / 34 files).
+(`Version = "0.9.0"`, go-health v0.2.0, 256 test functions / 34 files).
 
 | Task                                                                 | Status      | Why it matters / notes                                                                                                                                                                       | Evidence                                                                        |
 | -------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Push master                                                          | 🔴 `TODO`   | Two sessions of verified work (erraudit hardening, per-check metadata, buildflow green run) are local-only; CI has seen none of it. Needs user authorization. After push: annotate AGENTS.md release-discipline with the daemon-never-pushes fact. | `git status -sb` (ahead N); status report 2026-09-17 f1, 2026-09-16 18:13 c1     |
-| Cut v0.9.0 (per-check metadata UI + gauge)                           | 🔴 `TODO`   | A complete feature release sits in CHANGELOG `[Unreleased]` (metadata display + `dashboard_health_check_last_duration_seconds`). Ritual: `nix fmt` after last generate, tag-first push, `bash scripts/verify-release.sh v0.9.0`, CI green BEFORE `gh release create` (now in the checklist). | CHANGELOG `[Unreleased]`; status report 2026-09-17 f2                           |
-| `nix run .#vulncheck` on the v0.2.0 tree                             | 🔴 `TODO`   | Standard dep-bump step, skipped in the v0.2.0 session. Low risk (additive release), but the floor is non-negotiable.                                                                          | status report 2026-09-17 f3                                                     |
 | Regenerate README screenshots (light + dark)                         | 🔴 `TODO`   | The screenshots predate the per-check metadata line (and the v0.8.0 evidence strip was captured, but metadata postdates). Env-guarded: `SCREENSHOT_OUTPUT=docs/screenshot.png` (+ `_DARK`).    | status report 2026-09-17 f5, 2026-09-16 18:13 c9                                |
 | Patch-content test: SSE patch carries the metadata line              | 🔴 `TODO`   | Golden files prove the initial HTML; no content-level assertion exists that a patch payload carries new view content (metadata must transit `buildViewModelAt` — unproven by a test). Closes the gap for every future view change. | status report 2026-09-17 b2/f6                                                  |
 | Benchmark the per-tick stamping loop                                 | 🔴 `TODO`   | `buildViewModelAt` adds per-row stamping on every pusher tick; almost certainly negligible, but `BenchmarkHandler_HTMLRendering` exists for exactly this. Run before/after and record in `docs/research/2026-09-10_benchmarks.md`. | status report 2026-09-17 b4/f7                                                  |
 | Histogram bucket-count regression test                               | 🟢 `TODO`   | Assert `len(buckets) == len(latencyBucketBounds)` in a test — guards the array-typed fix from the 2026-09-16 triage (currently only type-level).                                              | status reports 2026-09-16 14:55 f39, 18:13 c10                                  |
-| Local coverage pre-check (`nix run .#coverage`)                      | 🔴 `TODO`   | The CI floor (78%) judges on push; the 8 new test functions should push coverage up, but no local pre-check ran after the v0.2.0 change.                                                      | status report 2026-09-17 f4                                                     |
 | Merge the three green dependabot PRs (#13/#12/#4)                    | 🔴 `TODO`   | Root-caused (stale branches predating the v1.16.0 pins + v0.7.0 tag), `gh pr update-branch` fixed all three; each is 10/10 green. Merge is a one-command user decision.                        | TODO_LIST 2026-09-10 sweep note; `gh pr list` (all still open)                  |
 | Dep-bump verification checklist, written down                       | 🟡 `TODO`   | build+test+race+lint+buildflow ran ad-hoc in the v0.2.0 session; vulncheck/coverage/benchmark were skipped. Fix: extend the AGENTS.md dependency-notes or a `scripts/verify-dep-bump.sh` (fleet question: one script per repo or shared?). | status report 2026-09-17 e4/f17                                                 |
 | Example server: detailed-check source demo                           | 🟡 `TODO`   | The example shows no durations — the best showcase for the v0.2.0 metadata feature. Add a `NewWithDetailedCheck`-style source.                                                                | status report 2026-09-17 c7/f8                                                  |
@@ -54,7 +50,10 @@ BuildFlow red→green triage (erraudit 13→0, three skip gates with rationale,
 treefmt snapshot-race root cause + templ-generate skip), and the go-health
 v0.2.0 consumer upgrade (per-check since/duration UI + the new duration
 gauge — the F5 remainder row left the Blocked table; the upstream draft is
-annotated SHIPPED in `docs/upstream/go-health-check-timestamps-issue-draft.md`).
+annotated SHIPPED in `docs/upstream/go-health-check-timestamps-issue-draft.md`),
+cut as **v0.9.0 on 2026-09-17**: signed tag, tag-first push,
+`verify-release.sh v0.9.0` 9/9 green, vulncheck clean, coverage 82.0% vs
+the 78% floor, browser suite 15/15 (0 skipped) — v0.9.0 is Latest.
 The release-checklist now carries the desk gate (pre-push-checks.sh as gate
 0), the publish-ordering rule (CI green before `gh release create`), and the
 no-pipes-on-gates rule (docs fixes from the 2026-09-16 release session).
@@ -66,7 +65,7 @@ docs-health pass), or lives in ROADMAP.md as raw ideas. v0.8.0 was released
 2026-09-16 (tagged, pushed, proxy-verified, GitHub Release published) and
 immediately followed by v0.8.1 — the v0.8.0 commit's CI failed only the
 FEATURES test-count drift guard, and immutable tags mean the fix ships as a
-patch; `verify-release.sh v0.8.1` is all green and v0.8.1 is Latest.
+patch. v0.9.0 (2026-09-17, commit `5f71fa6`) is now Latest.
 Session-closing gate: `scripts/pre-push-checks.sh`. Known-broken-commit SHAs
 for `git bisect skip`: see AGENTS.md and
 `docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
