@@ -629,5 +629,20 @@ func FuzzFormatStateAge(f *testing.F) {
 		if now.Sub(since) < 0 && first != "<1m" {
 			t.Errorf("future since must clamp to \"<1m\", got %q", first)
 		}
+
+		// Cross-check: below the 1h boundary both age formatters derive
+		// from the same minute count, so their labels must agree ("17m"
+		// vs "17m ago"). At and above 1h formatAge's coarse hours are a
+		// different display contract, not an agreement target.
+		if d := now.Sub(since); d >= time.Minute && d < time.Hour {
+			if coarse := formatAge(since, now); strings.TrimSuffix(coarse, " ago") != first {
+				t.Errorf(
+					"age formatters disagree below 1h for age %d: formatStateAge=%q formatAge=%q",
+					d,
+					first,
+					coarse,
+				)
+			}
+		}
 	})
 }

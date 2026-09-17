@@ -157,6 +157,28 @@ func TestGoldenRender_PublicMode(t *testing.T) {
 	goldenRender(t, "publicmode", vm)
 }
 
+// TestGoldenRender_SourceProvenTooltips locks the grouped-cards render when
+// evidence and metadata coexist on the source axis: the pass row's badge
+// carries the PROVEN tooltip (last non-pass paired with the probe-side
+// Since stamp) while the source card keeps its namespaced keys. source.html
+// predates the tooltip pairing on grouped cards; this fixture closes that
+// gap.
+func TestGoldenRender_SourceProvenTooltips(t *testing.T) {
+	t.Parallel()
+
+	vm := goldenViewModelForMode(t, GroupBySource)
+	vm.Evidence = evidenceSummary{
+		Since:  goldenEvidenceStart,
+		Total:  len(goldenChecks()),
+		Proven: 1,
+		lastNonPassBy: map[string]time.Time{
+			"api/postgres": goldenSince.Add(-time.Hour),
+		},
+	}
+
+	goldenRender(t, "sourceproven", vm)
+}
+
 func goldenRender(t *testing.T, name string, vm viewModel) {
 	t.Helper()
 
