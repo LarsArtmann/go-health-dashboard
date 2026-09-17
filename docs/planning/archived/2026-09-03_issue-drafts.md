@@ -9,7 +9,7 @@ the second upstream issue (#7, LiveRegion busy-script `nonce=""`) was filed
 2026-09-04 during the v0.4.0 cycle. Follow-up PRs are tracked in
 `TODO_LIST.md`. File archived — fully executed.
 
-## 1. templ-components — StatCard `<dl>` structure trips axe `definition-list`
+## ~~1. templ-components — StatCard `<dl>` structure trips axe `definition-list`~~ filed as templ-components#6 (2026-09-04); FIXED upstream, shipped in v1.16.0
 
 **Repo**: LarsArtmann/templ-components · **Component**: `display.StatCard`
 (`display/card.templ`, `statCardFigures`)

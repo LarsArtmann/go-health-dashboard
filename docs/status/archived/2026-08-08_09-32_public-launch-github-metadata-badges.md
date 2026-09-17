@@ -76,9 +76,9 @@ Nothing was broken this session. All changes were metadata-only (GitHub API + RE
 
 7. **AGENTS.md describes a different API surface than the README.** AGENTS.md lists option functions `WithRefreshInterval`, `WithRefreshMode`, `WithRoutes`, `WithSSEPush` and methods `PartialHandler()`, `SSEHandler()`. README lists `WithPushInterval`, `WithPushMode`, `WithNonce`, `WithRoutes`. These are different APIs. One of them (or both) is stale.
 
-8. **Replace directives in go.mod.** `go-datastar` and `go-sse` both have `replace` directives pointing to `../go-datastar` and `../go-sse`. This is noted in AGENTS.md gotchas but means the repo is NOT publishable as-is — `go get` from the public module path will fail until the replace directives are removed and upstream repos are tagged.
+8. ~~**Replace directives in go.mod.** `go-datastar` and `go-sse` both have `replace` directives pointing to `../go-datastar` and `../go-sse`. This is noted in AGENTS.md gotchas but means the repo is NOT publishable as-is — `go get` from the public module path will fail until the replace directives are removed and upstream repos are tagged.~~ done — removed before the v0.1.0 release (AGENTS.md: "No replace directives in the released module"); proxy-resolved since v0.1.0
 
-9. **No CI/CD workflow.** No `.github/workflows/` directory was visible. For a public repo, this means no automated testing, no lint, no vulncheck. The flake.nix defines `nix run .#test`, `.#lint`, `.#vulncheck` but nothing runs them on push/PR.
+9. ~~**No CI/CD workflow.** No `.github/workflows/` directory was visible. For a public repo, this means no automated testing, no lint, no vulncheck. The flake.nix defines `nix run .#test`, `.#lint`, `.#vulncheck` but nothing runs them on push/PR.~~ done — CI/CD shipped in the v0.3.x–v0.4.0 cycles (`.github/workflows/ci.yml`, 7+ green jobs; CHANGELOG)
 
 10. **No git tags or releases.** Repo is at v0.1.0 per AGENTS.md status, but there's no `v0.1.0` git tag. pkg.go.dev uses tags to determine version display.
 

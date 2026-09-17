@@ -38,7 +38,7 @@ Out-of-scope table below held as written. Frozen design contracts held.
 
 ---
 
-## Pareto Breakdown
+## ~~Pareto Breakdown~~ executed 2026-09-04 — see `docs/status/2026-09-04_11-23_integration-over-federation-cross-repo-shipped.md` (annotated 2026-09-17)
 
 ### 1% → 51% of result
 
@@ -74,7 +74,7 @@ Out-of-scope table below held as written. Frozen design contracts held.
 
 ---
 
-## Comprehensive Plan (30–100 min tasks, sorted by impact/effort/customer-value)
+## ~~Comprehensive Plan (30–100 min tasks, sorted by impact/effort/customer-value)~~ executed — shipped items struck in the 2026-09-17 annotation pass; residue routed to ROADMAP
 
 | #  | Task                                                                           | Repo      | Est.  | Impact | Effort | Value       | Depends on |
 | -- | ------------------------------------------------------------------------------ | --------- | ----- | ------ | ------ | ----------- | ---------- |
@@ -89,7 +89,7 @@ Out-of-scope table below held as written. Frozen design contracts held.
 | 9  | README + AGENTS.md cross-repo documentation                                    | both      | 30min | Med    | Low    | Med         | 7,8        |
 | 10 | Full verification, detailed commits, push both repos                           | both      | 45min | High   | Low    | High        | 9          |
 
-## Micro Plan (≤12 min tasks, ALL todos, execution order)
+## ~~Micro Plan (≤12 min tasks, ALL todos, execution order)~~ executed 2026-09-04 (aggregate + Prober shipped in v0.5.0)
 
 | #    | Task                                                                                      | Est | Verify by                 |
 | ---- | ----------------------------------------------------------------------------------------- | --- | ------------------------- |

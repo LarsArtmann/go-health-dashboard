@@ -21,7 +21,7 @@ snapshots taken mid-edit (pushed history, immutable). Tagged releases
 
 ## Guidance
 
-- `git bisect skip` those five SHAs; the range bisects cleanly otherwise.
+- ~~`git bisect skip` those five SHAs; the range bisects cleanly otherwise.~~ done — the five SHAs are documented in AGENTS.md (bisect-wall gotcha) for `git bisect skip`
 - Root cause class: the auto-commit daemon commits whatever the working
   tree looks like when it fires. Mitigation for future sessions: run
   `go build ./...` before stepping away from a half-wired refactor.

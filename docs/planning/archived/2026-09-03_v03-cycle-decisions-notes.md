@@ -6,7 +6,7 @@ code.
 
 ## Release engineering
 
-### The stray v0.3.0 tag (2026-09-02)
+### ~~The stray v0.3.0 tag (2026-09-02)~~ resolved — handled during the v0.3.x cycle (tag discipline recorded below; the CI version-guard job later made the const↔tag drift class a build failure, v0.6.0)
 
 A v0.3.0 tag existed on the remote pointing at `3b9abd8` (2026-08-10), a
 commit whose `Version` constant still said `0.2.0` and whose CHANGELOG

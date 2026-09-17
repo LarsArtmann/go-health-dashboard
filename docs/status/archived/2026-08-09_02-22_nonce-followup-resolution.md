@@ -64,4 +64,4 @@ then recompute `vendorHash`. This is out of scope for the nonce work.
 
 ## Cannot verify from CLI
 
-- **Live browser check at `https://renamer.home.lan/health`** — still requires a human to open the deployed dashboard and confirm zero CSP console errors. The integration test (`TestNonceFlow_CSPHeaderMatchesHTMLNonce`) proves the nonce wiring is correct end-to-end, which is the strongest CLI-verifiable substitute.
+- ~~**Live browser check at `https://renamer.home.lan/health`** — still requires a human to open the deployed dashboard and confirm zero CSP console errors. The integration test (`TestNonceFlow_CSPHeaderMatchesHTMLNonce`) proves the nonce wiring is correct end-to-end, which is the strongest CLI-verifiable substitute.~~ done — superseded by `browser_test.go` (headless-Chrome strict-CSP runtime check shipped in the v0.3.x cycle; FEATURES row "Runtime CSP verification")
