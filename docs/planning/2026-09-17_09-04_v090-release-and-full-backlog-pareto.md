@@ -8,6 +8,11 @@ momentum on the trust/test batch, then the long tail — without Verschlimmbesse
 **Format note**: the pareto-planning skill's canonical output is a styled HTML report; the user
 explicitly requested `.md` with a mermaid/d2 graph at a `.md` path, so Markdown was used (same
 override pattern as the status reports).
+**Status (2026-09-17, annotated)**: the 1% (M1–M2), the full v0.9.0 release chain (M3–M18), the 4%
+integrity tier (M19–M21), and the 20% quality/tests/docs tier (M22–M53, M57–M59, M29, M46–M51)
+are DONE — two parallel sessions plus this plan's own bookkeeping; see the inline `done at`
+markers in Step 3. Still open: the design notes M54–M56, the tail M60–M111, and the user-decision
+gates M112–M120 (BLOCKED on answers, untouched by design).
 
 ---
 
@@ -92,65 +97,65 @@ items…) — nothing dropped, nothing silently de-scoped.
 
 | # | Task | Min | C-task |
 | - | ---- | --- | ------ |
-| M1 | `git status` clean-check + `bash scripts/pre-push-checks.sh` (desk gate; assert all green) | 5 | C1 |
-| M2 | Push master (`git push`); open the Actions run; confirm 7 jobs green | 5 | C1 |
-| M3 | `nix run .#vulncheck`; record result (expect: no vulnerabilities) | 5 | C3 |
-| M4 | `nix run .#coverage`; compare vs 78% floor; note delta | 10 | C4 |
-| M5 | Reconcile TODO_LIST release rows → v0.9.0 cut plan; re-read checklist §1–§3 | 10 | C2 |
-| M6 | CHANGELOG: re-head `[Unreleased]` → `[0.9.0] - <today>` + 3–5 line blurb + fresh empty `[Unreleased]` | 10 | C2 |
-| M7 | `bash scripts/check-changelog.sh` + pin guard + FEATURES count check (guards after edits) | 5 | C2 |
-| M8 | Bump `const Version = "0.9.0"` in dashboard.go; update FEATURES Released row; verify with `rg` | 5 | C2 |
-| M9 | Full gate tail: build → test-race → lint → vet → flake check (teed, no pipes) | 12 | C2 |
-| M10 | Browser suite (`nix develop -c go test -run TestBrowser`) — render unchanged but release ritual | 12 | C2 |
-| M11 | `nix fmt` (after the last generate); re-run flake check | 5 | C2 |
-| M12 | Commit `chore(release): v0.9.0 — per-check metadata` immediately (G6); verify daemon didn't race | 5 | C2 |
-| M13 | Signed annotated tag `git tag -a v0.9.0 -m "…"`; `git tag -v` check | 5 | C2 |
-| M14 | Push TAG first, then master; confirm version-guard green on the master run | 5 | C2 |
-| M15 | `bash scripts/verify-release.sh v0.9.0` (teed; poll loops for slow surfaces) | 12 | C2 |
-| M16 | CI-green confirmation on the release commit (full SHA in `gh run list --commit`) | 5 | C2 |
-| M17 | Extract `[0.9.0]` notes → `gh release create v0.9.0 --title v0.9.0 --notes-file …` (Latest) | 10 | C2 |
-| M18 | `gh release list` + `gh api …/releases/latest` sanity: v0.9.0 is Latest; TODO_LIST release rows closed | 5 | C2 |
-| M19 | Merge dependabot #13, #12, #4 (`gh pr merge`); confirm CI on master after | 10 | C5 |
-| M20 | Histogram regression test: write `TestLatencyHistogram_BucketCountMatchesBounds` | 12 | C7 |
-| M21 | Run new test + full suite; commit intent (`test: …`) | 5 | C7 |
-| M22 | Patch-content test: capture an SSE patch body in a test, assert the metadata line present | 12 | C8 |
-| M23 | Extend to evidence strip line + since text (one test, three assertions); run; commit | 12 | C8 |
-| M24 | Benchmark run: `go test -bench BenchmarkHandler_HTMLRendering -benchmem` (before-numbers already recorded) | 10 | C9 |
-| M25 | Stamp-loop micro-bench if numbers warrant; append results to `docs/research/2026-09-10_benchmarks.md`; commit | 12 | C9 |
-| M26 | Aggregate metadata integration test: stub aggregate + `DetailedHealthRecorder` sources | 12 | C10 |
-| M27 | Assert rendered row carries since/duration through `aggregate`; run; commit | 12 | C10 |
-| M28 | Fuzz seeds: add hostile cases to `fuzz_test.go` seed corpus for the two formatters | 12 | C11 |
-| M29 | `go test -fuzz FuzzShortDisplayName -fuzztime 60s` + FingerprintChecks run; record; commit | 12 | C11 |
-| M30 | Golden: public-mode fixture builder (`-golden-update` flow with `WithPublicMode` page) | 12 | C12 |
-| M31 | Golden: dark-mode fixture + zero-proven warning state fixture; review diffs line-by-line | 12 | C12 |
-| M32 | `rg 'title=""'` + CSP asserts on new goldens; run suite; commit | 5 | C12 |
-| M33 | Dark-mode axe: extend `TestBrowser_Accessibility` to toggle dark and re-run axe | 12 | C13 |
-| M34 | Fix any serious/critical findings (or document tolerance with evidence); commit | 12 | C13 |
-| M35 | Example: wire a `DetailedHealthRecorder`-backed service into `example/main.go` | 12 | C14 |
-| M36 | Example: render `dashboard.Version` in a footer line; exercise shutdown log via SIGTERM | 12 | C14 |
-| M37 | Example README rows update (new toggle if any); commit | 10 | C14 |
-| M38 | SECURITY.md: reporting contact, supported versions, 90-day disclosure note | 12 | C15 |
-| M39 | Link SECURITY.md from README (Badges/Support section); commit | 5 | C15 |
-| M40 | README "Upgrading": v0.7.0 WithBasePath note + fingerprint note + v0.2.0 metadata note | 12 | C16 |
-| M41 | Review pass + link sweep; commit | 8 | C16 |
-| M42 | CONTRIBUTING: "Guard scripts" section (what each checks, why it fails, how to run locally) | 12 | C17 |
-| M43 | CONTRIBUTING: desk-gate + release-checklist pointer; commit | 8 | C17 |
-| M44 | CHANGELOG audit: diff each historical section against its tag's actual content | 12 | C18 |
-| M45 | Relocate the misplaced `[0.1.0-alpha]` bullets; verify section ordering; changelog lint; commit | 12 | C18 |
-| M46 | Dep-bump checklist: draft the fixed list (build, test, race, lint, buildflow, vulncheck, coverage, bench, docs) | 12 | C19 |
-| M47 | Land as AGENTS.md dependency-note bullet OR `scripts/verify-dep-bump.sh` (pick per fleet answer); commit | 12 | C19 |
-| M48 | DOMAIN_LANGUAGE: evidence terms (proven/unproven/observation window) | 12 | C20 |
-| M49 | DOMAIN_LANGUAGE: bootstrap/stacking/contrast terms; commit | 8 | C20 |
-| M50 | ROADMAP: v1.0 criteria section (freeze, consumers, compat policy) | 12 | C21 |
-| M51 | Cross-link from README ("Stability" note); commit | 8 | C21 |
-| M52 | Evidence tooltips: extend `badgeEvidenceTitle` to include `Check.Since` when present | 12 | C22 |
-| M53 | Update evidence tests + goldens; browser suite; commit | 12 | C22 |
+| ~~M1~~ | ~~`git status` clean-check + `bash scripts/pre-push-checks.sh` (desk gate; assert all green)~~ done at `5f71fa6` | ~~5~~ | ~~C1~~ |
+| ~~M2~~ | ~~Push master (`git push`); open the Actions run; confirm 7 jobs green~~ done at `5f71fa6` | ~~5~~ | ~~C1~~ |
+| ~~M3~~ | ~~`nix run .#vulncheck`; record result (expect: no vulnerabilities)~~ done at `5f71fa6` | ~~5~~ | ~~C3~~ |
+| ~~M4~~ | ~~`nix run .#coverage`; compare vs 78% floor; note delta~~ done at `5f71fa6` | ~~10~~ | ~~C4~~ |
+| ~~M5~~ | ~~Reconcile TODO_LIST release rows → v0.9.0 cut plan; re-read checklist §1–§3~~ done at `0a1dc1a` | ~~10~~ | ~~C2~~ |
+| ~~M6~~ | ~~CHANGELOG: re-head `[Unreleased]` → `[0.9.0] - <today>` + 3–5 line blurb + fresh empty `[Unreleased]`~~ done at `0a1dc1a` | ~~10~~ | ~~C2~~ |
+| ~~M7~~ | ~~`bash scripts/check-changelog.sh` + pin guard + FEATURES count check (guards after edits)~~ done at `0a1dc1a` | ~~5~~ | ~~C2~~ |
+| ~~M8~~ | ~~Bump `const Version = "0.9.0"` in dashboard.go; update FEATURES Released row; verify with `rg`~~ done at `0a1dc1a` | ~~5~~ | ~~C2~~ |
+| ~~M9~~ | ~~Full gate tail: build → test-race → lint → vet → flake check (teed, no pipes)~~ done at `5f71fa6` | ~~12~~ | ~~C2~~ |
+| ~~M10~~ | ~~Browser suite (`nix develop -c go test -run TestBrowser`) — render unchanged but release ritual~~ done at `5f71fa6` | ~~12~~ | ~~C2~~ |
+| ~~M11~~ | ~~`nix fmt` (after the last generate); re-run flake check~~ done at `5f71fa6` | ~~5~~ | ~~C2~~ |
+| ~~M12~~ | ~~Commit `chore(release): v0.9.0 — per-check metadata` immediately (G6); verify daemon didn't race~~ done at `0a1dc1a`, `5f71fa6` | ~~5~~ | ~~C2~~ |
+| ~~M13~~ | ~~Signed annotated tag `git tag -a v0.9.0 -m "…"`; `git tag -v` check~~ done at `5f71fa6` | ~~5~~ | ~~C2~~ |
+| ~~M14~~ | ~~Push TAG first, then master; confirm version-guard green on the master run~~ done at `5f71fa6` | ~~5~~ | ~~C2~~ |
+| ~~M15~~ | ~~`bash scripts/verify-release.sh v0.9.0` (teed; poll loops for slow surfaces)~~ done at `5f71fa6` | ~~12~~ | ~~C2~~ |
+| ~~M16~~ | ~~CI-green confirmation on the release commit (full SHA in `gh run list --commit`)~~ done at `5f71fa6` | ~~5~~ | ~~C2~~ |
+| ~~M17~~ | ~~Extract `[0.9.0]` notes → `gh release create v0.9.0 --title v0.9.0 --notes-file …` (Latest)~~ done at `5f71fa6` | ~~10~~ | ~~C2~~ |
+| ~~M18~~ | ~~`gh release list` + `gh api …/releases/latest` sanity: v0.9.0 is Latest; TODO_LIST release rows closed~~ done at `4650cb9` | ~~5~~ | ~~C2~~ |
+| ~~M19~~ | ~~Merge dependabot #13, #12, #4 (`gh pr merge`); confirm CI on master after~~ done at `f28aa00`, `51149e6`, `57d1d0e` | ~~10~~ | ~~C5~~ |
+| ~~M20~~ | ~~Histogram regression test: write `TestLatencyHistogram_BucketCountMatchesBounds`~~ done at `931e694` | ~~12~~ | ~~C7~~ |
+| ~~M21~~ | ~~Run new test + full suite; commit intent (`test: …`)~~ done at `931e694`, `b6de6e7` | ~~5~~ | ~~C7~~ |
+| ~~M22~~ | ~~Patch-content test: capture an SSE patch body in a test, assert the metadata line present~~ done at `c26ef9c` | ~~12~~ | ~~C8~~ |
+| ~~M23~~ | ~~Extend to evidence strip line + since text (one test, three assertions); run; commit~~ done at `ee5dda1` | ~~12~~ | ~~C8~~ |
+| ~~M24~~ | ~~Benchmark run: `go test -bench BenchmarkHandler_HTMLRendering -benchmem` (before-numbers already recorded)~~ done at `52f140c` | ~~10~~ | ~~C9~~ |
+| ~~M25~~ | ~~Stamp-loop micro-bench if numbers warrant; append results to `docs/research/2026-09-10_benchmarks.md`; commit~~ done at `52f140c` | ~~12~~ | ~~C9~~ |
+| ~~M26~~ | ~~Aggregate metadata integration test: stub aggregate + `DetailedHealthRecorder` sources~~ done at `c26ef9c` | ~~12~~ | ~~C10~~ |
+| ~~M27~~ | ~~Assert rendered row carries since/duration through `aggregate`; run; commit~~ done at `c26ef9c` | ~~12~~ | ~~C10~~ |
+| ~~M28~~ | ~~Fuzz seeds: add hostile cases to `fuzz_test.go` seed corpus for the two formatters~~ done at `6789a5e` | ~~12~~ | ~~C11~~ |
+| ~~M29~~ | ~~`go test -fuzz FuzzShortDisplayName -fuzztime 60s` + FingerprintChecks run; record; commit~~ done at `ff67ff7` | ~~12~~ | ~~C11~~ |
+| ~~M30~~ | ~~Golden: public-mode fixture builder (`-golden-update` flow with `WithPublicMode` page)~~ done at `d04865d` | ~~12~~ | ~~C12~~ |
+| ~~M31~~ | ~~Golden: dark-mode fixture + zero-proven warning state fixture; review diffs line-by-line~~ done — zero-proven golden in d04865d; dark-mode fixture N/A (theming is CSS-class-only, HTML byte-identical) and covered by the dark screenshot | ~~12~~ | ~~C12~~ |
+| ~~M32~~ | ~~`rg 'title=""'` + CSP asserts on new goldens; run suite; commit~~ done at `d04865d` | ~~5~~ | ~~C12~~ |
+| ~~M33~~ | ~~Dark-mode axe: extend `TestBrowser_Accessibility` to toggle dark and re-run axe~~ done at `cacd7d4`, `3a8e104` | ~~12~~ | ~~C13~~ |
+| ~~M34~~ | ~~Fix any serious/critical findings (or document tolerance with evidence); commit~~ done — zero serious/critical axe findings in both themes; nothing to fix | ~~12~~ | ~~C13~~ |
+| ~~M35~~ | ~~Example: wire a `DetailedHealthRecorder`-backed service into `example/main.go`~~ done at `cacaca0` | ~~12~~ | ~~C14~~ |
+| ~~M36~~ | ~~Example: render `dashboard.Version` in a footer line; exercise shutdown log via SIGTERM~~ done at `cacaca0`, `d0dd504` | ~~12~~ | ~~C14~~ |
+| ~~M37~~ | ~~Example README rows update (new toggle if any); commit~~ done at `ba720f9` | ~~10~~ | ~~C14~~ |
+| ~~M38~~ | ~~SECURITY.md: reporting contact, supported versions, 90-day disclosure note~~ done at `ba720f9` | ~~12~~ | ~~C15~~ |
+| ~~M39~~ | ~~Link SECURITY.md from README (Badges/Support section); commit~~ done at `ba720f9` | ~~5~~ | ~~C15~~ |
+| ~~M40~~ | ~~README "Upgrading": v0.7.0 WithBasePath note + fingerprint note + v0.2.0 metadata note~~ done at `ba720f9` | ~~12~~ | ~~C16~~ |
+| ~~M41~~ | ~~Review pass + link sweep; commit~~ done at `ba720f9` | ~~8~~ | ~~C16~~ |
+| ~~M42~~ | ~~CONTRIBUTING: "Guard scripts" section (what each checks, why it fails, how to run locally)~~ done at `ba720f9` | ~~12~~ | ~~C17~~ |
+| ~~M43~~ | ~~CONTRIBUTING: desk-gate + release-checklist pointer; commit~~ done at `ba720f9` | ~~8~~ | ~~C17~~ |
+| ~~M44~~ | ~~CHANGELOG audit: diff each historical section against its tag's actual content~~ done at `d7e0e33` | ~~12~~ | ~~C18~~ |
+| ~~M45~~ | ~~Relocate the misplaced `[0.1.0-alpha]` bullets; verify section ordering; changelog lint; commit~~ done at `d7e0e33` | ~~12~~ | ~~C18~~ |
+| ~~M46~~ | ~~Dep-bump checklist: draft the fixed list (build, test, race, lint, buildflow, vulncheck, coverage, bench, docs)~~ done at `671de9e` | ~~12~~ | ~~C19~~ |
+| ~~M47~~ | ~~Land as AGENTS.md dependency-note bullet OR `scripts/verify-dep-bump.sh` (pick per fleet answer); commit~~ done at `671de9e` | ~~12~~ | ~~C19~~ |
+| ~~M48~~ | ~~DOMAIN_LANGUAGE: evidence terms (proven/unproven/observation window)~~ done at `3098ff5` | ~~12~~ | ~~C20~~ |
+| ~~M49~~ | ~~DOMAIN_LANGUAGE: bootstrap/stacking/contrast terms; commit~~ done at `3098ff5` | ~~8~~ | ~~C20~~ |
+| ~~M50~~ | ~~ROADMAP: v1.0 criteria section (freeze, consumers, compat policy)~~ done at `ba720f9` | ~~12~~ | ~~C21~~ |
+| ~~M51~~ | ~~Cross-link from README ("Stability" note); commit~~ done at `ba720f9` | ~~8~~ | ~~C21~~ |
+| ~~M52~~ | ~~Evidence tooltips: extend `badgeEvidenceTitle` to include `Check.Since` when present~~ done at `a881f21` | ~~12~~ | ~~C22~~ |
+| ~~M53~~ | ~~Update evidence tests + goldens; browser suite; commit~~ done at `a881f21`, `3ea1d9a` | ~~12~~ | ~~C22~~ |
 | M54 | Timeline-from-Since design doc: restart semantics, aggregates, reset behavior | 12 | C23 |
 | M55 | Stable-group collapse design (ages from Since) + ROADMAP update; commit | 12 | C23 |
 | M56 | Per-source staleness design note (Since-based, aggregate worst-of) | 12 | — |
-| M57 | `/health/export` since/duration: design note (wire-stability tradeoffs) | 12 | — |
-| M58 | deploy/ audit: inventory Grafana/monitoring assets; note gauge-panel gap | 10 | — |
-| M59 | Grafana panel JSON for the duration gauge (if assets exist) | 12 | — |
+| ~~M57~~ | ~~`/health/export` since/duration: design note (wire-stability tradeoffs)~~ done — implemented directly in a881f21 (jsonExportPayload) with the wire-shape decision recorded in the handler doc and the AGENTS design bullet | ~~12~~ | ~~—~~ |
+| ~~M58~~ | ~~deploy/ audit: inventory Grafana/monitoring assets; note gauge-panel gap~~ done — deploy/ audited 2026-09-17: only docker-compose.yml + prometheus.yml, no Grafana assets exist | ~~10~~ | ~~—~~ |
+| ~~M59~~ | ~~Grafana panel JSON for the duration gauge (if assets exist)~~ **Won't implement — no deploy/ Grafana assets exist to extend; the gauge plots in any stock Grafana via the documented prometheus.yml scrape config.** | ~~12~~ | ~~—~~ |
 | M60 | Fleet (their repo): BuildFlow DAG ordering change + regression test | 12 | C24 |
 | M61 | Fleet: result-cache keys include project config files | 12 | C24 |
 | M62 | Fleet: templ-generate skip-if-unchanged option | 12 | C24 |
