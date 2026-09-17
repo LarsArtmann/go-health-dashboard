@@ -13,9 +13,9 @@ import (
 func TestLatencyHistogram_BucketCountMatchesBounds(t *testing.T) {
 	t.Parallel()
 
-	h := newLatencyHistogram()
+	hist := newLatencyHistogram()
 
-	if got := len(h.buckets); got != len(latencyBucketBounds) {
+	if got := len(hist.buckets); got != len(latencyBucketBounds) {
 		t.Fatalf(
 			"histogram has %d buckets for %d latencyBucketBounds — resize the buckets array with the bounds",
 			got,
@@ -24,7 +24,7 @@ func TestLatencyHistogram_BucketCountMatchesBounds(t *testing.T) {
 	}
 
 	var b strings.Builder
-	h.renderPrometheus(&b)
+	hist.renderPrometheus(&b)
 
 	if got := strings.Count(b.String(), "_bucket{le="); got != len(latencyBucketBounds)+1 {
 		t.Errorf(

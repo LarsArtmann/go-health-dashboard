@@ -25,8 +25,10 @@ const screenshotFileMode = 0o644
 // carry Since only, so the duration column would read as unknown).
 type timedScreenshotRecorder struct{}
 
-var _ health.DetailedHealthRecorder = timedScreenshotRecorder{}
-var _ health.HealthRecorder = timedScreenshotRecorder{}
+var (
+	_ health.DetailedHealthRecorder = timedScreenshotRecorder{}
+	_ health.HealthRecorder         = timedScreenshotRecorder{}
+)
 
 func (timedScreenshotRecorder) RecordDetailedHealthCheckWithContext(
 	ctx context.Context,
