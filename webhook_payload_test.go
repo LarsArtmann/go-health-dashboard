@@ -8,6 +8,10 @@ import (
 	health "github.com/larsartmann/go-health"
 )
 
+// webhookPinHookURL is only a constructor prerequisite — buildPayload is
+// pure and never dials.
+const webhookPinHookURL = "https://webhook.invalid/hook"
+
 // webhookPinSince is the fixed state-entry time for the payload pin.
 var webhookPinSince = time.Date(2026, 9, 17, 12, 0, 0, 0, time.UTC)
 
@@ -20,7 +24,7 @@ var webhookPinSince = time.Date(2026, 9, 17, 12, 0, 0, 0, time.UTC)
 func TestWebhookPayload_PinWireShape(t *testing.T) {
 	t.Parallel()
 
-	notifier := newWebhookNotifier(Config{})
+	notifier := newWebhookNotifier(Config{WebhookURL: webhookPinHookURL})
 
 	resp := health.Response{
 		Status: health.StatusWarn,
@@ -51,7 +55,7 @@ func TestWebhookPayload_PinWireShape(t *testing.T) {
 func TestWebhookPayload_PublicModeMasksNames(t *testing.T) {
 	t.Parallel()
 
-	notifier := newWebhookNotifier(Config{PublicMode: true})
+	notifier := newWebhookNotifier(Config{WebhookURL: webhookPinHookURL, PublicMode: true})
 
 	resp := health.Response{
 		Status: health.StatusWarn,
@@ -75,7 +79,11 @@ func TestWebhookPayload_PublicModeMasksNames(t *testing.T) {
 	})
 }
 
-func assertWebhookWireShape(t *testing.T, payload webhookPayload, wantChecks map[string]map[string]string) {
+func assertWebhookWireShape(
+	t *testing.T,
+	payload webhookPayload,
+	wantChecks map[string]map[string]string,
+) {
 	t.Helper()
 
 	body, err := json.Marshal(payload, json.Deterministic(true))
@@ -89,16 +97,30 @@ func assertWebhookWireShape(t *testing.T, payload webhookPayload, wantChecks map
 		t.Fatalf("unmarshal webhook payload %s: %v", body, err)
 	}
 
+	assertWebhookTopLevelKeys(t, decoded, body)
+	assertWebhookCheckEntries(t, decoded, wantChecks, body)
+}
+
+// assertWebhookTopLevelKeys verifies the payload's top-level shape: exactly
+// status/checks/changed_at/shutting_down, with changed_at RFC3339-formatted.
+// Under encoding/json/v2 semantics `omitempty` does not drop a false bool
+// (that requires omitzero), so shutting_down:false legitimately rides the
+// wire — this pin documents that reality.
+func assertWebhookTopLevelKeys(t *testing.T, decoded map[string]any, body []byte) {
+	t.Helper()
+
 	for key := range decoded {
 		switch key {
-		case "status", "checks", "changed_at":
+		case "status", "checks", "changed_at", "shutting_down":
 		default:
 			t.Errorf("unexpected top-level key %q in payload %s", key, body)
 		}
 	}
 
-	if _, ok := decoded["shutting_down"]; ok {
-		t.Error("shutting_down must stay omitted when false (omitempty contract)")
+	if v, ok := decoded["shutting_down"]; ok {
+		if _, isBool := v.(bool); !isBool {
+			t.Errorf("shutting_down must be a JSON bool: %s", body)
+		}
 	}
 
 	changedAt, ok := decoded["changed_at"].(string)
@@ -109,6 +131,18 @@ func assertWebhookWireShape(t *testing.T, payload webhookPayload, wantChecks map
 	if _, err := time.Parse(time.RFC3339, changedAt); err != nil {
 		t.Errorf("changed_at %q is not RFC3339: %v", changedAt, err)
 	}
+}
+
+// assertWebhookCheckEntries verifies each check entry carries exactly the
+// expected status/error pair — any extra key (e.g. a v0.2.0 since or
+// duration_ns leaking onto the wire) fails the pin.
+func assertWebhookCheckEntries(
+	t *testing.T,
+	decoded map[string]any,
+	wantChecks map[string]map[string]string,
+	body []byte,
+) {
+	t.Helper()
 
 	checks, ok := decoded["checks"].(map[string]any)
 	if !ok {
