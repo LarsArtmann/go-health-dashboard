@@ -43,14 +43,25 @@ forgetting.
   CSS-class-only and the HTML is byte-identical.
 - Example `DEMO_DETAILED=1` toggle: a `NewWithDetailedCheck` probe with
   self-timed mock dependencies so the demo shows real durations,
-  composable with `DEMO_AGGREGATE`.
+  composable with `DEMO_AGGREGATE`. The example's startup line now
+  identifies the serving build (`go-health-dashboard v<version>`).
+- `scripts/verify-dep-bump.sh`: the fixed gate chain for a dependency
+  bump (build, tests, race, lint, vet, vulncheck, coverage, bench smoke,
+  UI pins, changelog lint, canonical formatting) so a bump cannot skip
+  gates by forgetting them — a per-repo answer mirroring
+  `scripts/verify-release.sh`; the fleet-level placement question stays
+  open.
+- Dark-mode accessibility re-audit: the axe run now toggles the theme and
+  re-audits in the same browser session — zero serious/critical findings
+  in either theme.
 
 ### Changed
 
 - `prometheus/client_model` bumped 0.6.2 → 0.6.3.
-- README light/dark screenshots regenerated through the detailed-check
-  recorder fixture: the metadata line and the failure-evidence strip are
-  visible in both themes with real measured durations.
+- README light/dark/degraded screenshots regenerated through the
+  detailed-check recorder fixture: the metadata line and the
+  failure-evidence strip are visible in all three with real measured
+  durations.
 - Benchmark evidence recorded for the metadata feature: the per-tick
   stamping loop costs ~0.21µs and 6 allocs per row (negligible per tick);
   the full render is honestly ~25-60% pricier per page from the metadata

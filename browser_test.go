@@ -690,7 +690,10 @@ func TestBrowser_Accessibility(t *testing.T) {
 func runAxeAudit(t *testing.T, ctx context.Context, start string) string {
 	t.Helper()
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.__axeViolations = undefined`, nil)); err != nil {
+	if err := chromedp.Run(
+		ctx,
+		chromedp.Evaluate(`window.__axeViolations = undefined`, nil),
+	); err != nil {
 		t.Fatalf("axe reset: %v", err)
 	}
 

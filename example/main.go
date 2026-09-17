@@ -86,7 +86,11 @@ func main() {
 	dash.RegisterRoutes(mux)
 
 	addr := ":" + envOrDefault("PORT", "8080")
-	log.Printf("dashboard: http://localhost%s/health (go-health-dashboard v%s)", addr, dashboard.Version)
+	log.Printf(
+		"dashboard: http://localhost%s/health (go-health-dashboard v%s)",
+		addr,
+		dashboard.Version,
+	)
 	log.Printf("readiness: http://localhost%s/readyz", addr)
 
 	server := &http.Server{
