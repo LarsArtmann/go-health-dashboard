@@ -573,17 +573,19 @@ func sortByName(rows []checkRow) {
 	})
 }
 
-// badgeForStatus creates a display.BadgeProps for the given status. Pass
-// badges carry the observational evidence as a native title tooltip:
+// badgeForStatus creates a display.BadgeProps for the given row's status.
+// Pass badges carry the observational evidence as a native title tooltip:
 // unproven greens disclose that no deviation was ever seen, proven greens
-// cite their last non-pass (see badgeEvidenceTitle).
-func badgeForStatus(s health.Status, evidence evidenceSummary, name string) display.BadgeProps {
+// cite their last non-pass and — when the probe reports a state-entry
+// time — pair it with the probe-side Check.Since stamp
+// (see badgeEvidenceTitle).
+func badgeForStatus(row checkRow, evidence evidenceSummary) display.BadgeProps {
 	props := display.BadgeProps{
-		Text: string(s),
-		Type: mapStatusToBadge(s),
+		Text: string(row.Status),
+		Type: mapStatusToBadge(row.Status),
 	}
 
-	if title := badgeEvidenceTitle(checkRow{Name: name, Status: s}, evidence); title != "" {
+	if title := badgeEvidenceTitle(row, evidence); title != "" {
 		props.Attrs = templ.Attributes{
 			"title": title,
 		}

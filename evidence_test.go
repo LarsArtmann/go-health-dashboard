@@ -191,6 +191,20 @@ func TestBadgeEvidenceTitle(t *testing.T) {
 			want: "last non-pass observed at 12:00:00 UTC",
 		},
 		{
+			name: "proven pass pairs the probe-side state-entry stamp",
+			row: checkRow{
+				Name:   "db",
+				Status: health.StatusPass,
+				Since:  time.Date(2026, 9, 10, 11, 30, 0, 0, time.UTC),
+			},
+			want: "The probe reports this state since 11:30:00 UTC",
+		},
+		{
+			name: "proven pass without probe-side stamp stays silent about it",
+			row:  checkRow{Name: "db", Status: health.StatusPass},
+			want: "last non-pass observed at 12:00:00 UTC",
+		},
+		{
 			name: "non-pass needs no tooltip",
 			row:  checkRow{Name: "db", Status: health.StatusFail},
 			want: "",
@@ -239,7 +253,7 @@ func TestBadgeForStatus_CarriesTitle(t *testing.T) {
 		lastNonPassBy: map[string]time.Time{"db": observedAt},
 	}
 
-	props := badgeForStatus(health.StatusPass, sum, "cache")
+	props := badgeForStatus(checkRow{Name: "cache", Status: health.StatusPass}, sum)
 
 	title, ok := props.Attrs["title"].(string)
 	if !ok || !strings.Contains(title, "unproven") {
@@ -248,6 +262,38 @@ func TestBadgeForStatus_CarriesTitle(t *testing.T) {
 
 	if props.Text != string(health.StatusPass) || props.Type != display.BadgeSuccess {
 		t.Errorf("badge = %q/%v, want pass/Success", props.Text, props.Type)
+	}
+}
+
+// TestBadgeForStatus_ProvenTooltipCitesProbeSince proves the pairing: a
+// proven green whose row carries a probe-side state-entry stamp cites it,
+// and the citation disappears when the source reports no Since.
+func TestBadgeForStatus_ProvenTooltipCitesProbeSince(t *testing.T) {
+	t.Parallel()
+
+	observedAt := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
+
+	sum := evidenceSummary{
+		Since:         observedAt.Add(-time.Hour),
+		lastNonPassBy: map[string]time.Time{"db": observedAt},
+	}
+
+	withSince := badgeForStatus(checkRow{
+		Name:   "db",
+		Status: health.StatusPass,
+		Since:  time.Date(2026, 9, 10, 11, 30, 0, 0, time.UTC),
+	}, sum)
+
+	title, ok := withSince.Attrs["title"].(string)
+	if !ok || !strings.Contains(title, "The probe reports this state since 11:30:00 UTC") {
+		t.Fatalf("proven badge title = %v, want the probe-side since citation", withSince.Attrs["title"])
+	}
+
+	withoutSince := badgeForStatus(checkRow{Name: "db", Status: health.StatusPass}, sum)
+
+	title, ok = withoutSince.Attrs["title"].(string)
+	if !ok || strings.Contains(title, "probe reports") {
+		t.Fatalf("tooltip without probe-side Since must not cite it, got %q", title)
 	}
 }
 

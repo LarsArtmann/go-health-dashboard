@@ -186,8 +186,11 @@ const evidenceTooltip = "A pass badge means only that no failure was observed. C
 
 // badgeEvidenceTitle builds the per-row tooltip for a pass badge: unproven
 // greens disclose their lack of evidence; proven greens cite the last
-// observed non-pass, turning a green row into backed claims. Non-pass rows
-// need no tooltip — the badge itself is the deviation.
+// observed non-pass, turning a green row into backed claims. When the
+// probe reports a state-entry time (go-health v0.2.0 Check.Since), the
+// proven tooltip pairs the dashboard-observed fact with the probe-side
+// stamp — two independent witnesses for one green row. Non-pass rows need
+// no tooltip — the badge itself is the deviation.
 func badgeEvidenceTitle(row checkRow, s evidenceSummary) string {
 	if row.Status != health.StatusPass || s.Since.IsZero() {
 		return ""
@@ -200,8 +203,17 @@ func badgeEvidenceTitle(row checkRow, s evidenceSummary) string {
 		)
 	}
 
-	return fmt.Sprintf(
+	title := fmt.Sprintf(
 		"pass — last non-pass observed at %s; this green is backed by a check that has demonstrably deviated",
 		s.lastNonPassOf(row.Name).UTC().Format(updatedStampFormat),
 	)
+
+	if !row.Since.IsZero() {
+		title += fmt.Sprintf(
+			" The probe reports this state since %s.",
+			row.Since.UTC().Format(updatedStampFormat),
+		)
+	}
+
+	return title
 }
