@@ -1,0 +1,127 @@
+# Status — v0.9.0 post-release TODO execution: metadata observability batch
+
+|          |                                                    |
+| -------- | -------------------------------------------------- |
+| **Date** | 2026-09-17 20:44 CEST                              |
+| **Base** | v0.9.0 released (parallel session); master ahead of origin by 13 commits |
+| **Scope of this session only** | Executing TODO_LIST Next-Up rows: the test-gap batch, the two metadata features, the example demo, the benchmark, the screenshots, the goldens. Release/PR/histogram work was already done by the CONCURRENT session (see a.0) |
+
+---
+
+## a) FULLY DONE
+
+| #  | Work                                                                                                                                   | Evidence |
+| -- | -------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| a0 | **Context discovery — a parallel session is working the same list.** Before duplicating, I read `docs/status/2026-09-17_18-30_*` and `git log`: that session cut v0.9.0 end-to-end, resolved all three dependabot PRs (#12/#4 squash-merged, #13 superseded by direct bump `57d1d0e`), landed the histogram bucket regression test (`931e694` + varnamelen fix `b6de6e7`), and upgraded the screenshot fixture (`timedScreenshotRecorder`). All of those were crossed off my plan, not re-done | `git log 51149e6..931e694`, `gh pr list` empty (per their report), their status report §a |
+| 1  | **Fuzz seeds for the two new formatters** — `FuzzFormatCheckDuration` (invariants: non-positive renders empty, positive never empty, never negative) and `FuzzFormatStateAge` (invariants: deterministic, clock skew clamps to `<1m`, never a negative label) with seeds for negative/zero/huge/sub-µs inputs | `fuzz_test.go`, commit `6789a5e`; seed tests PASS |
+| 2  | **SSE patch-content test (TODO b2/f6)** — `TestSSE_PatchCarriesCheckMetadata`: a real SSE stream must carry "since <stamp> (age)" AND "42ms" in the connect-time patch AND a subsequent broadcast patch, proving view content transits patches (not just initial HTML) for every future view change | `sse_integration_test.go`, commit `c26ef9c`; PASS 0.05s |
+| 3  | **Aggregate-path metadata integration test** — `TestDashboard_AggregateCarriesCheckMetadata`: two `NewWithDetailedCheck` sources → `aggregate.New` → rendered HTML shows namespaced keys, since-tooltip title, and both durations (`5ms`, `250ms`) | `integration_test.go`, commit `c26ef9c`; PASS |
+| 4  | **Evidence tooltips cite `Check.Since`** — `badgeEvidenceTitle` proven-green tooltip now pairs the dashboard-observed last non-pass with the probe-side state-entry stamp ("The probe reports this state since …"); `badgeForStatus` signature changed to take the whole `checkRow`; view.templ call site updated + templ regenerated; new table cases + `TestBadgeForStatus_ProvenTooltipCitesProbeSince` | `evidence.go`, `status.go`, `view.templ`, `evidence_test.go`; commits `f208a4b` (daemon) + `a881f21` (intent); suite PASS |
+| 5  | **since/duration in `/health/export` JSON (TODO f14)** — export payload is now `{"samples":[…],"checks":{name:{"since":RFC3339,"duration_ns":n}}}` via `jsonExportPayload`/`buildExportPayload` from the sanitized snapshot; unknown facts omitted (`omitzero`), never zero; CSV/NDJSON deliberately unchanged (per-sample rows have no check-level column); `/health` contract untouched. Design decision written into the handler doc: export is THE one dashboard-owned endpoint that extends the shape | `trend.go`; `TestExportHandler_JSON` updated + `TestExportHandler_JSONCarriesCheckMetadata` added; commits `3ea1d9a` (daemon) + `a881f21` (intent); all export/trend tests PASS |
+| 6  | **Example detailed-check demo (TODO c7/f8)** — `DEMO_DETAILED=1` serves a `NewWithDetailedCheck` probe whose three mock deps report REAL measured durations (sleep + `time.Since`); combined with `DEMO_AGGREGATE` it joins the aggregate as a third `detailed/…` source. Smoke-verified BOTH modes over live HTTP: rows render `since <stamp> (<age>) · 3ms/12ms/40ms` | `example/main.go`; commits `b01d30f` (daemon) + `cacaca0` (intent, incl. goconst fix `exporterUnreachableReason`); live fetch transcripts in session |
+| 7  | **Benchmark before/after + research entry (TODO b4/f7)** — handler benchmarks run at HEAD and in a `v0.8.1` worktree (medians of 3), plus NEW `BenchmarkBuildViewModelAt_Stamping` isolating the loop at 60 checks: **stamping ≈ 0.21µs / 80B / 6 allocs per row** (negligible per tick); full render honestly +25–60%/page from the metadata line's templ scaffolding (+14 allocs on the 2-check fixture). Recorded with re-baseline guidance in the research doc | `status_bench_test.go`, `docs/research/2026-09-10_benchmarks.md` new section; commit `52f140c` |
+| 8  | **README screenshots regenerated (TODO f5)** — light + dark captured through the parallel session's detailed recorder fixture; both eyeballed: metadata line (`since … · 4µs`) and failure-evidence strip visible in both themes | `docs/screenshot.png` (107,251 B), `docs/screenshot-dark.png` (113,256 B); commit `fca3ed3` |
+| 9  | **Golden fixtures (TODO f28-class)** — `TestGoldenRender_ZeroProvenWarning` locks the exact health-washing warning wording + unproven tooltips on both pass rows; `TestGoldenRender_PublicMode` locks the masked render exactly as production builds it (anonymize BEFORE evidence: counts stay, badges keyed by original names render unproven). Existing severity/source goldens byte-unchanged. **Dark golden assessed N/A**: theming is CSS-class-only, HTML is byte-identical — covered by the dark screenshot instead | `testdata/golden/{zeroproven,publicmode}.html` (wording + masking grep-verified), `golden_render_test.go`; commit `d04865d` (daemon; intent message owed — see e1) |
+| 10 | **Gate discipline per batch** — build + focused tests + full suite + `nix run .#lint` green on every landed batch (lint caught one real finding: goconst in the example, fixed before continuing) | lint `0 issues` after each batch; full `go test .` PASS after features batch |
+
+## b) PARTIALLY DONE
+
+| #  | Work            | Done                                                                                                   | Missing |
+| -- | --------------- | ------------------------------------------------------------------------------------------------------ | ------- |
+| 1  | **CHANGELOG for post-release work** | `[Unreleased]` section exists and is structurally green (check-changelog conventions respected) | ZERO entries written for this session's 8 landed work items (fuzz seeds, 2 test-gap proofs, tooltip pairing, export checks object incl. its wire-shape note, DEMO_DETAILED, benchmark re-baseline, screenshots, goldens). Next cut would be an archaeology dig — my own e-list and the parallel session's e6 both flag this |
+| 2  | **FEATURES / test-count recount** | Work items landed with tests; nothing annotated yet                                  | FEATURES.md still says 257/35 (parallel session's count). This session added 7 test functions + 2 fuzz targets; the CI drift guard WILL go red on push until recounted IN THE SAME CHANGE |
+| 3  | **TODO_LIST harvest** | Nine Next-Up rows are now satisfied by this session (screenshots, patch-content test, benchmark, fuzz seeds, example demo, aggregate metadata test, evidence tooltips, export fields, goldens; dependabot row by the parallel session) | Rows still sit in TODO_LIST as 🔴/🟡; per the closed-items-live-in-CHANGELOG rule they must be dropped and the narrative updated. The dark-golden N/A rationale needs writing down there too |
+| 4  | **Commit-message hygiene vs the daemon** | Intent messages exist for most batches and directly follow their daemon carriers (`6789a5e` after `7c1cfe6`; `c26ef9c` = amended fold-forward of `848f746`; `a881f21` after `f208a4b`/`3ea1d9a`; `cacaca0` after `b01d30f`; `52f140c`, `fca3ed3` clean) | The goldens batch (`d04865d`) has NO intent commit yet — its message ("golden-lock the zero-proven warning and public-mode render") is only in this report and my todo list. Needs a follow-up docs commit to carry it |
+| 5  | **Screenshot completeness** | Light + dark regenerated (the TODO row's exact scope) | `docs/screenshot-degraded.png` is the same staleness class (predates the metadata line) but sits outside the TODO row — flagged, not silently expanded |
+
+## c) NOT STARTED
+
+TODO_LIST rows still open after this session (unchanged from arrival, ordered as in TODO_LIST):
+
+- **Dark-mode axe pass** — structural a11y (axe) in dark theme untested; needs `TestBrowser_AccessibilityDark` toggling `[data-theme-toggle]` before the audit (contrast is already WCAG-AA-locked since v0.8.0; this is structural).
+- **Dep-bump verification checklist written down** — `scripts/verify-dep-bump.sh` (build+test+race+lint+vet+vulncheck+coverage+bench+ui-pins; the v0.2.0 session skipped vulncheck/coverage/bench) or an AGENTS.md dependency-notes extension.
+- **Check `deploy/` for a Grafana panel for `dashboard_health_check_last_duration_seconds`** — unaudited; `deploy/` currently holds only docker-compose + prometheus.yml (observed in passing, not audited).
+- **CHANGELOG historical audit** — `[0.1.0-alpha]` bullets to relocate/verify against tags; footer link defs missing `[0.8.0]`/`[0.8.1]`/`[0.9.0]` and `[Unreleased]` still compares `v0.7.0...HEAD`; em-dash vs hyphen heading styles inconsistent (observed while reading, not touched).
+- **README "Upgrading" section** — `WithBasePath` v0.7.0 compatibility note has no README migration entry.
+- **SECURITY.md** — no vulnerability-reporting contact for a now-public module.
+- **ROADMAP v1.0 criteria** — API-freeze / compat policy undefined.
+- **CONTRIBUTING** — check-changelog + verify-release + pre-push-checks (desk gate) undocumented for contributors.
+- **Tag protection rule (v\* immutable)** — repo-admin settings; the parallel session explicitly parked it in the M112–M120 user-decision gates.
+
+## d) TOTALLY FUCKED UP
+
+Nothing broken on master — every batch verified (build+test+lint) before moving on, working tree green except the parallel session's in-flight edit. But five scars, all mine:
+
+1. **The daemon ate my commit messages five times.** I verified-then-committed, but always with a lint (~1min) or fetch between green and commit — the daemon's window. `f208a4b`, `3ea1d9a`, `b01d30f`, `7c1cfe6`, `d04865d` are heuristic. One (`848f746`) I recovered by amending the intent forward (`c26ef9c`); the rest rely on a following intent commit. The rule "fmt + commit back-to-back at the chain's tail" applies to EVERY verification tail, not just templ-generate chains.
+2. **I nearly duplicated the parallel session's work.** My first `write` of `metrics_internal_test.go` collided with their already-committed test (`931e694`) — I hadn't checked `git log`/their status report before writing. The "respect existing changes" rule saved it (I kept their version and extended it), but the check must come BEFORE the first edit, not after a collision.
+3. **A void verification**: my first demo smoke run started a server that failed to bind (port busy) and then fetched the port anyway — whatever answered was not my server. The greps returned empty so no false "verified" claim was made, but the run proves nothing. Second and third runs checked the startup log first. Lesson: a smoke check is only valid if the thing under test demonstrably started.
+4. **Lint-after-commit instead of lint-before**: the example batch landed and `nix run .#lint` flagged goconst afterwards — the exact b6de6e7 scar class the parallel session documented hours earlier. Fixed in the next commit, but the discipline is lint INSIDE the verification chain, before `git add`.
+5. **curl/wget are banned here and I tried both** before switching to the fetch tool — two wasted round trips that a memory of the tool constraints would have saved.
+
+## e) WHAT WE SHOULD IMPROVE
+
+1. **Parallel-session handshake**: before ANY write in this repo, `git log --oneline -10` + `ls docs/status/ | tail` + `git status` — three commands that would have prevented d1's collision and re-planning.
+2. **Commit = the same tool call as verification**: `go test && nix run .#lint && git add -A && git commit` in ONE chain, so no daemon window exists between green and intent.
+3. **Fold daemon commits forward mechanically**: if the tip is a daemon commit containing only my verified changes, `git commit --amend` the intent onto it immediately (proven with `c26ef9c`); never leave heuristic carriers un-annotated overnight.
+4. **CHANGELOG entry per batch, written with the batch** (parallel session e6 + mine, converging): each commit above should have carried its `[Unreleased]` bullet in the SAME change.
+5. **Smoke tests assert startup**: grep the server log for the listen line (and PID liveness) before fetching; treat any fetch against an unstarted server as void.
+6. **FEATURES recount is part of any test-adding batch** — same-change discipline, like the pin guard.
+7. **Keep using the fetch tool for HTTP** (never curl/wget) and `nohup env … &` + log-tail for local servers.
+
+## f) Up to 50 things to get done next
+
+First block closes this session's loose ends; the rest is TODO_LIST order + the parallel session's M-numbers (`docs/planning/2026-09-17_09-04_v090-release-and-full-backlog-pareto.md`).
+
+| #  | Task                                                                 | Source |
+| -- | -------------------------------------------------------------------- | ------ |
+| 1  | **FEATURES.md test-count recount in the same change as the next push** (7 tests + 2 fuzz targets added this session) — CI drift guard depends on it | b2 |
+| 2  | **CHANGELOG `[Unreleased]` entries for all 8 landed items** (incl. the export wire-shape note and the `badgeForStatus` signature change — the latter is internal, unexported, no compat note needed) | b1 |
+| 3  | **Intent commit for the goldens batch** (`d04865d` carries only a heuristic message) | b4 |
+| 4  | **TODO_LIST harvest**: drop the 10 satisfied rows, update the narrative, write the dark-golden N/A rationale + degraded-screenshot staleness note | b3 |
+| 5  | **FEATURES rows**: export `checks` object, `DEMO_DETAILED`, tooltip pairing, stamping benchmark reference | b2 |
+| 6  | **AGENTS.md**: one design-decision bullet — "export is the one dashboard-owned wire shape that may grow; `/health` JSON stays go-health-shaped" (extends the existing LastUpdatedTime decision) | e4 |
+| 7  | **Dark-mode axe pass**: `TestBrowser_AccessibilityDark` — navigate, click `[data-theme-toggle]`, assert `html.dark`, re-run the same serious/critical-violation gate | TODO_LIST |
+| 8  | **`scripts/verify-dep-bump.sh`**: the full gate list (generate, build, test, race, lint, vet, vulncheck, coverage floor, bench smoke, check-ui-pins, check-changelog) — fleet question in g2 | TODO_LIST |
+| 9  | **`deploy/` audit for the new gauge**: decide whether docker-compose gains a Grafana + provisioned dashboard JSON visualizing `dashboard_health_check_last_duration_seconds` (and the histogram), or record why not | TODO_LIST |
+| 10 | **CHANGELOG historical audit**: verify every section against its tag (files/symbols at tag), relocate `[0.1.0-alpha]` strays, add `[0.8.0]`/`[0.8.1]`/`[0.9.0]` link defs, re-point `[Unreleased]` compare to `v0.9.0...HEAD`, normalize heading dashes | TODO_LIST |
+| 11 | **README "Upgrading" section** (v0.7.0 `WithBasePath` note) | TODO_LIST |
+| 12 | **SECURITY.md** + README/CONTRIBUTING pointers | TODO_LIST |
+| 13 | **ROADMAP: v1.0 criteria section** (API freeze, compat policy, consumer signal) | TODO_LIST |
+| 14 | **CONTRIBUTING**: guard-scripts section (check-changelog, verify-release, pre-push-checks desk gate, canonical generate→fmt order) | TODO_LIST |
+| 15 | **Push master** (13+ commits, CI blind since v0.9.0) — after 1–6, with authorization | a-list / g1 |
+| 16 | **Verify CI on the pushed head** (`gh run list --commit <sha>`), including the drift + hygiene guards | parallel e4 |
+| 17 | Regenerate `docs/screenshot-degraded.png` (same staleness class as the light/dark pair) | b5 |
+| 18 | Annotate the pareto plan doc (docs-health ANNOTATE) for M22–M37 items now executed | parallel b2 |
+| 19 | Annotate `docs/research/2026-08-09_templ-components-deep-dive.html` as superseded (point-in-time doc) | 05-55 report f48 |
+| 20 | `doc.go`: one sentence on per-check metadata discoverability (f30 — verify not already landed) | 05-55 f30 |
+| 21 | Webhook payload golden: pin that v0.2.0 fields pass through unchanged (f31) | 05-55 f31 |
+| 22 | Public-mode duration-fingerprinting rationale: write the accepted-risk note (f32) | 05-55 f32 |
+| 23 | Mobile visual check of the metadata line in the stacked-card layout (f33; human-eye on a viewport screenshot) | 05-55 f33 |
+| 24 | Dark-mode contrast spot-check for the dim metadata line (WCAG AA, complements #7's structural pass) | 05-55 f34 |
+| 25 | Document the metric-name reservation (`…_duration_seconds` histogram vs `…_last_duration_seconds` gauge) in metrics.go's doc comment | 05-55 f40 |
+| 26 | README metrics block: add the public-mode masked-label gauge example line | 05-55 f45 |
+| 27 | Re-run `buildflow -s golangci-lint` after the next templ regenerate (paranoia gate) | 05-55 f46 |
+| 28 | Watch item: migrate `duration_ns` if the Go ecosystem standardizes `time.Duration` wire support (go-health upstream note) | 05-55 f39 |
+| 29 | Re-evaluate evidence-strip dual windows (observed vs probe-reported) now that `Since` is cited in tooltips — feeds the blocked posture decision | 05-55 f41 / BLOCKED row |
+| 30 | Blocked-row triage pass: re-verify each 🔵 BLOCKED row's premise against the current tree (point-in-time reports rot) | memory lesson |
+| 31–40 | The parallel session's M52–M111 tail (design notes: timeline-from-Since reset semantics, stable-group "stable for 6h", per-source staleness; CI automation M75–M79; hardening tests M80–M111) — their plan doc owns the ordering | plan doc |
+| 41 | Fleet asks (other repos, not here): templ-generate DAG ordering, go-structure-linter pin bump, branching-flow scoping, `go 1.26` relaxation in templ-components/go-datastar | BLOCKED rows |
+| 42 | Upstream filings per the plan (M69–M71) once verify-before-filing gates pass | plan doc |
+| 43 | Consider `WithTrend` doc line: trend samples are overall-status-only by design (kills the recurring "why no durations in trend" question) | 05-55 f36 |
+| 44 | Export `?meta=` opt-in evaluation IF the array→object shape change is rejected (see g3) | g3 |
+| 45 | Benchmark: re-run the 2026-09-10 aggregate load test on the v0.9.0 render to refresh its CPU numbers with the metadata line | #7 follow-up |
+| 46 | Golden fixture for the aggregate/source mode WITH metadata (source.html predates the tooltip pairing on grouped cards) | #9 follow-up |
+| 47 | `FuzzFormatStateAge`: add a cross-check against `formatAge` boundaries (the two age formatters must agree below the 1h boundary) | #1 follow-up |
+| 48 | Consider pinning `docs/screenshot*.png` freshness via a CI artifact diff (ROADMAP "browser golden-screenshot diff" idea, scoped to README captures) | ROADMAP |
+| 49 | Tag protection ruleset via `gh api` (v* deletion + non-fast-forward) — pending g2 | TODO_LIST |
+| 50 | Session-close desk gate: `bash scripts/pre-push-checks.sh` before any push claim | release discipline |
+
+## g) Questions I can NOT figure out myself
+
+1. **Push authorization now or after the docs block?** Master is 13+ commits ahead; CI has been blind since v0.9.0 and the drift guard WILL fail until the FEATURES recount (#1) lands. Push (a) right after #1–#6 as a docs+tests commit, or (b) only after the whole remaining TODO batch (dark axe, SECURITY.md, CHANGELOG audit) — accepting a longer CI-blind window?
+2. **Tag protection + dep-bump script placement.** (a) Should I create the `v*` ruleset via `gh api` with repo-admin scope, or do you want repo settings done manually? (b) Should `verify-dep-bump.sh` live per-repo (like verify-release.sh here) or as a shared fleet script in BuildFlow — the TODO row explicitly marks this a fleet question.
+3. **Export wire shape**: the JSON export changed from a bare array to `{"samples":…,"checks":…}` (dashboard-owned, v0.x, zero known external consumers, documented in the handler). Ship that as a CHANGELOG-noted change, or do you want the old shape preserved behind `?meta=1` until v1.0?
+
+---
+
+*Session evidence: commits `6789a5e`, `c26ef9c`, `a881f21` (+daemons `7c1cfe6`, `f208a4b`, `3ea1d9a`, `b01d30f`, `fa22bbb`), `cacaca0`, `52f140c`, `fca3ed3`, `d04865d`; benchmark transcripts in `/tmp/bench-head.txt` and `/tmp/bench-v081.txt`; live demo fetches on ports 39187/39443.*
