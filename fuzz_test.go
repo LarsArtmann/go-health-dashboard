@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json/v2"
 	"maps"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -515,6 +516,113 @@ func FuzzShortDisplayName(f *testing.F) {
 
 		if raw == "" && short != "" {
 			t.Errorf("shortDisplayName invented a name for empty input: %q", short)
+		}
+	})
+}
+
+// fuzzAgeBase anchors FuzzFormatStateAge so arbitrary int64 offsets cannot
+// overflow the addition into unrepresentable times (time.Duration and int64
+// share the same width, so the offset itself is the adversarial input).
+var fuzzAgeBase = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+
+// FuzzFormatCheckDuration exercises the per-check duration formatter with
+// arbitrary nanosecond counts. Invariants: never panics, deterministic,
+// non-positive input (unknown — go-health omits it) renders empty, and any
+// positive input renders non-empty — absent, never "0s" and never negative.
+func FuzzFormatCheckDuration(f *testing.F) {
+	for _, seed := range []int64{
+		math.MinInt64,
+		-int64(time.Hour),
+		-1,
+		0,
+		1,
+		int64(999 * time.Nanosecond),
+		int64(time.Microsecond) - 1,
+		int64(time.Microsecond),
+		int64(823 * time.Microsecond),
+		int64(time.Millisecond),
+		int64(42 * time.Millisecond),
+		int64(1234 * time.Millisecond),
+		int64(time.Second),
+		int64(10 * time.Second),
+		1 << 62,
+		math.MaxInt64,
+	} {
+		f.Add(seed)
+	}
+
+	f.Fuzz(func(t *testing.T, nanos int64) {
+		first := formatCheckDuration(nanos)
+		if again := formatCheckDuration(nanos); first != again {
+			t.Fatalf("formatCheckDuration not deterministic for %d: %q then %q", nanos, first, again)
+		}
+
+		if nanos <= 0 && first != "" {
+			t.Errorf("non-positive duration %d must render empty, got %q", nanos, first)
+		}
+
+		if nanos > 0 && first == "" {
+			t.Errorf("positive duration %d must not render empty", nanos)
+		}
+
+		if strings.Contains(first, "-") {
+			t.Errorf("duration %d rendered a negative label: %q", nanos, first)
+		}
+	})
+}
+
+// FuzzFormatStateAge exercises the check-row state-age formatter with
+// arbitrary since/now offsets. Invariants: never panics, deterministic, and
+// a negative age (clock skew, now before since) clamps to "<1m" — it must
+// never render a negative number.
+func FuzzFormatStateAge(f *testing.F) {
+	type ageCase struct{ since, now int64 }
+
+	for _, seed := range []ageCase{
+		{0, 0},
+		{0, int64(time.Second)},
+		{0, int64(59 * time.Second)},
+		{0, int64(time.Minute)},
+		{0, int64(17 * time.Minute)},
+		{0, int64(time.Hour)},
+		{0, int64(23 * time.Hour)},
+		{0, int64(hoursPerDay) * int64(time.Hour)},
+		{0, int64(365 * hoursPerDay) * int64(time.Hour)},
+		{0, 1 << 62},
+		{1 << 62, 0},
+		{0, -int64(5 * time.Second)},
+		{int64(time.Hour), 0},
+		{math.MinInt64 / 2, math.MaxInt64 / 2},
+	} {
+		f.Add(seed.since, seed.now)
+	}
+
+	f.Fuzz(func(t *testing.T, sinceOffset, nowOffset int64) {
+		since := fuzzAgeBase.Add(time.Duration(sinceOffset))
+		now := fuzzAgeBase.Add(time.Duration(nowOffset))
+
+		first := formatStateAge(since, now)
+		if again := formatStateAge(since, now); first != again {
+			t.Fatalf(
+				"formatStateAge not deterministic for since=%d now=%d: %q then %q",
+				sinceOffset,
+				nowOffset,
+				first,
+				again,
+			)
+		}
+
+		if strings.HasPrefix(first, "-") {
+			t.Errorf(
+				"age %d rendered a negative label for since=%d now=%d",
+				now.Sub(since),
+				sinceOffset,
+				nowOffset,
+			)
+		}
+
+		if now.Sub(since) < 0 && first != "<1m" {
+			t.Errorf("future since must clamp to \"<1m\", got %q", first)
 		}
 	})
 }
