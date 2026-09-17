@@ -291,12 +291,15 @@ func TestSSE_PatchCarriesCheckMetadata(t *testing.T) {
 	defer func() { _ = streamResp.Body.Close() }()
 
 	// The metadata must appear in patch payloads, not merely the initial
-	// HTML: "since <stamp> (17m)" from the probe-side state-entry time and
-	// "42ms" from the executor-reported duration. Waiting for a SECOND
-	// matching event proves broadcast patches (not only the connect-time
-	// snapshot) carry the view content.
+	// HTML: "since <stamp> (17m)" from the probe-side state-entry time,
+	// "42ms" from the executor-reported duration, and the evidence strip's
+	// zero-proven health-washing warning. Waiting for a SECOND matching
+	// event proves broadcast patches (not only the connect-time snapshot)
+	// carry the view content.
 	carriesMetadata := func(evt string) bool {
-		return strings.Contains(evt, "since ") && strings.Contains(evt, "42ms")
+		return strings.Contains(evt, "since ") &&
+			strings.Contains(evt, "42ms") &&
+			strings.Contains(evt, "has ever deviated from pass")
 	}
 
 	stream.waitFor(t, carriesMetadata, 2*time.Second)
