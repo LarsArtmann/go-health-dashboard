@@ -59,6 +59,7 @@ func TestSSE_RaceStress_SubscriberCountConsistency(t *testing.T) {
 			}
 
 			mutex.Lock()
+			//nolint:bodyclose // the body closes in the mutex-guarded sweep after wg.Wait
 			bodies = append(bodies, resp)
 			mutex.Unlock()
 		}()
