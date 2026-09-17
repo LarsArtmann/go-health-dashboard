@@ -185,7 +185,9 @@ func buildAggregateProbe(ctx context.Context, withDetailed bool) probeBundle {
 		)
 		sources = append(sources, aggregate.Source{Name: "detailed", Probe: detailedProbe})
 		shuttingDown = append(shuttingDown, detailedProbe.Shutdown)
-		log.Println("detailed source: self-timed checks show since/age and duration (DEMO_DETAILED set)")
+		log.Println(
+			"detailed source: self-timed checks show since/age and duration (DEMO_DETAILED set)",
+		)
 	}
 
 	agg, err := aggregate.New(sources...)
