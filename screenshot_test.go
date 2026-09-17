@@ -19,6 +19,45 @@ import (
 // and diff tools.
 const screenshotFileMode = 0o644
 
+// timedScreenshotRecorder routes the capture probe through the detailed
+// seam so the README screenshots show the full v0.2.0 metadata row:
+// per-check since/age AND real execution durations (plain injector checks
+// carry Since only, so the duration column would read as unknown).
+type timedScreenshotRecorder struct{}
+
+var _ health.DetailedHealthRecorder = timedScreenshotRecorder{}
+var _ health.HealthRecorder = timedScreenshotRecorder{}
+
+func (timedScreenshotRecorder) RecordDetailedHealthCheckWithContext(
+	ctx context.Context,
+	injector do.Injector,
+) map[string]health.CheckDetail {
+	services := injector.ListInvokedServices()
+	details := make(map[string]health.CheckDetail, len(services))
+
+	for _, svc := range services {
+		start := time.Now()
+		err := do.HealthCheckNamedWithContext(ctx, injector, svc.Service)
+		details[svc.Service] = health.CheckDetail{Err: err, Duration: time.Since(start)}
+	}
+
+	return details
+}
+
+func (r timedScreenshotRecorder) RecordHealthCheckWithContext(
+	ctx context.Context,
+	injector do.Injector,
+) map[string]error {
+	details := r.RecordDetailedHealthCheckWithContext(ctx, injector)
+	errs := make(map[string]error, len(details))
+
+	for name, detail := range details {
+		errs[name] = detail.Err
+	}
+
+	return errs
+}
+
 // normalizeScreenshotPerms chmods a capture to the docs convention. The
 // out path comes from an operator-provided env variable, so the file
 // permission change is annotated in one place instead of per call site.
@@ -59,6 +98,7 @@ func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
 		health.WithVersion("1.2.3"),
 		health.WithCriticalServices("postgres"),
 		health.WithRefreshInterval(100*time.Millisecond),
+		health.WithHealthRecorder(timedScreenshotRecorder{}),
 	)
 
 	dash := dashboard.New(probe,
@@ -180,6 +220,7 @@ func TestCaptureREADME_ScreenshotDegraded(t *testing.T) {
 		health.WithVersion("1.2.3"),
 		health.WithCriticalServices("postgres"),
 		health.WithRefreshInterval(100*time.Millisecond),
+		health.WithHealthRecorder(timedScreenshotRecorder{}),
 	)
 
 	dash := dashboard.New(probe,
