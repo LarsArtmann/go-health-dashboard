@@ -148,12 +148,12 @@ Companion docs: `docs/status/archived/2026-09-03_v03x-cycle-execution-complete.m
 
 Release & history
 
-1. Cut the next release (likely v0.4.0 — see question 1): re-head
-   CHANGELOG, bump `Version`, tag, push, proxy-verify.
-2. Add a CI/test guard that `Version` matches the latest git tag (the
-   stale-const bug has bitten twice).
-3. Audit 071c251..HEAD for non-building commits; document broken-bisect
-   range (72783fc) in AGENTS.md since pushed history can't be rewritten.
+1. ~~Cut the next release (likely v0.4.0 — see question 1): re-head~~ done — v0.4.0 shipped 2026-09-04 (`8f63d85`); latest is v0.8.1
+   ~~CHANGELOG, bump `Version`, tag, push, proxy-verify.~~
+2. ~~Add a CI/test guard that `Version` matches the latest git tag (the~~ done — CI version-guard job shipped in v0.6.0 (`db8621f`)
+   ~~stale-const bug has bitten twice).~~
+3. ~~Audit 071c251..HEAD for non-building commits; document broken-bisect~~ done — 91 commits audited 2026-09-04; report archived
+   ~~range (72783fc) in AGENTS.md since pushed history can't be rewritten.~~
 4. ~~Correct FEATURES.md counts to the real numbers (154 funcs / 19 test~~ done (FEATURES counts corrected 2026-09-03)
    ~~files) and add the counting command next to the claim.~~
 5. ~~Add a CHANGELOG compatibility paragraph for the fingerprint encoding~~ done (CHANGELOG compat paragraph added 2026-09-03)
@@ -161,33 +161,33 @@ Release & history
 
 CI & verification
 6. ~~Watch/verify the ci.yml browser job green on a real runner.~~ done (CI browser job verified green on runner (run 33763955031) 2026-09-03)
-7. Trigger fuzz.yml via workflow_dispatch to validate the nightly
+7. ~~Trigger fuzz.yml via workflow_dispatch to validate the nightly~~ done — dispatched end-to-end, run 33896794771 (2026-09-04)
 end-to-end; confirm crasher-print step works.
 8. ~~Run `nix run .#vulncheck` (prometheus/common + chromedp additions).~~ done (nix run .#vulncheck — no vulnerabilities 2026-09-03)
 9. ~~Run `nix run .#coverage`; record baseline; consider a CI coverage floor.~~ done (coverage baseline 76.9% recorded 2026-09-03; CI floor tracked in TODO_LIST)
-10. Pin golangci-lint version in CI (currently `latest`).
-11. Pin templ CLI in CI to the version in go.mod instead of `@latest`.
-12. Add CI concurrency group to cancel superseded runs.
-13. Nightly fuzz: open an issue on failure instead of only printing
+10. ~~Pin golangci-lint version in CI (currently `latest`).~~ done — pinned v2.13.1 in v0.6.0 (`db8621f`)
+11. ~~Pin templ CLI in CI to the version in go.mod instead of `@latest`.~~ done — pinned v0.3.1020 in v0.6.0 (`db8621f`)
+12. ~~Add CI concurrency group to cancel superseded runs.~~ done — shipped in v0.6.0 (`db8621f`)
+13. ~~Nightly fuzz: open an issue on failure instead of only printing~~ done — shipped in v0.6.0 (`db8621f`)
 crashers.
-14. Consider coverage-artifact upload (verify actions/upload-artifact SHA
+14. ~~Consider coverage-artifact upload (verify actions/upload-artifact SHA~~ done — verified-SHA upload + 75% floor shipped in v0.6.0 (`db8621f`)
 before adding — no unpinned actions).
 
 Code quality
-15. Split dashboard.go (~600 lines): config/options vs lifecycle vs
+15. ~~Split dashboard.go (~600 lines): config/options vs lifecycle vs~~ done — options.go/handlers.go/history.go split in v0.6.0 (`db8621f`)
 handlers.
-16. Extract historyBuffer into history.go; pusher.go is growing.
-17. Deduplicate sample→JSON mapping shared by TrendHandler/ExportHandler.
-18. Fix TrendHandler 503 message ("not started" vs "not enabled" case).
-19. Replace the axe rule-level `definition-list` tolerance with a
+16. ~~Extract historyBuffer into history.go; pusher.go is growing.~~ done — v0.6.0 (`db8621f`)
+17. ~~Deduplicate sample→JSON mapping shared by TrendHandler/ExportHandler.~~ done — shared jsonSamples/jsonTransitions in v0.6.0 (`db8621f`)
+18. ~~Fix TrendHandler 503 message ("not started" vs "not enabled" case).~~ done — v0.6.0 (`db8621f`)
+19. ~~Replace the axe rule-level `definition-list` tolerance with a~~ done — scoped to StatCard in v0.6.0; tolerance retired entirely in the v1.16.0 ceremony (2026-09-10)
 node/selector-scoped exclusion.
-20. Name `BenchmarkDashboard_PatchRender` honestly (it renders full HTML).
-21. Simplify `maxRequestsInvalid` helper in example (inline the check).
-22. Fix duplicated WithRetryInterval-style drift guard: grep CHANGELOG for
+20. ~~Name `BenchmarkDashboard_PatchRender` honestly (it renders full HTML).~~ done — renamed `BenchmarkDashboard_FullHTML` in v0.6.0 (`db8621f`)
+21. ~~Simplify `maxRequestsInvalid` helper in example (inline the check).~~ done — inlined in the 2026-09-04 sweep (`db8621f`)
+22. ~~Fix duplicated WithRetryInterval-style drift guard: grep CHANGELOG for~~ done — superseded by `scripts/check-changelog.sh` structural lint in CI (2026-09-10)
 copy-pasted bullets after edits.
 
 Features & polish
-23. Refresh stamp: use last sample timestamp (observation time), not
+23. ~~Refresh stamp: use last sample timestamp (observation time), not~~ done — shipped in v0.6.0 (`db8621f`)
 render time.
 24. ~~Rate limiter: emit X-RateLimit-Limit/Remaining/Reset headers.~~ done (routed to ROADMAP raw ideas 2026-09-03)
 25. ~~Rate limiter: document shared-bucket semantics in README options~~ done (docs part tracked in TODO_LIST; per-route buckets rejected (ROADMAP))
@@ -205,10 +205,10 @@ render time.
 ~~service names programmatically).~~
 36. ~~Public mode: document loudly that /health JSON stays verbatim; consider~~ done (verbatim JSON already documented in AGENTS.md; redact option in ROADMAP)
 ~~a redact-JSON option.~~
-37. Fuzz target for the CSV exporter (quote/newline round-trips).
-38. Fuzz target for `RecommendedCSP` (injection attempts).
-39. Browser a11y: keyboard-navigation smoke (tab order, visible focus).
-40. Browser test: render `/health/metrics` under strict CSP too.
+37. ~~Fuzz target for the CSV exporter (quote/newline round-trips).~~ done (routed to ROADMAP Theme 5 raw ideas at `c7e4f13` 2026-09-04)
+38. ~~Fuzz target for `RecommendedCSP` (injection attempts).~~ done (routed to ROADMAP Theme 5 raw ideas at `c7e4f13` 2026-09-04)
+39. ~~Browser a11y: keyboard-navigation smoke (tab order, visible focus).~~ done (routed to ROADMAP Theme 5 raw ideas at `c7e4f13` 2026-09-04)
+40. ~~Browser test: render `/health/metrics` under strict CSP too.~~ done (routed to ROADMAP Theme 5 raw ideas at `c7e4f13` 2026-09-04)
 41. ~~Embed `docs/screenshot-dark.png` in the README Dark Mode section.~~ done (embedded in README Dark Mode section 2026-09-03)
 42. ~~Add `WithDescription`/`WithPublicMode` rows to the README options~~ done (README options rows added 2026-09-03)
 ~~snippet.~~
@@ -216,10 +216,10 @@ render time.
 ~~snippet matching deploy/prometheus.yml.~~
 44. ~~Update AGENTS.md file inventory (csp.go, ratelimit.go, trend.go,~~ done (AGENTS.md file inventory updated 2026-09-03)
 ~~metrics.go, and the new test files are missing from the list).~~
-45. Example: `DEMO_PUBLIC=1` toggle showcasing `WithPublicMode`.
-46. Example: `DEMO_BASE_PATH=/status` toggle showcasing sub-path mounting.
-47. Upstream PR to templ-components fixing StatCard `<dl>` (+ goldens).
-48. Once upstream fixes StatCard: remove the axe tolerance here.
+45. ~~Example: `DEMO_PUBLIC=1` toggle showcasing `WithPublicMode`.~~ done at `db8621f`
+46. ~~Example: `DEMO_BASE_PATH=/status` toggle showcasing sub-path mounting.~~ done at `db8621f`
+47. ~~Upstream PR to templ-components fixing StatCard `<dl>` (+ goldens).~~ done — fixed upstream, shipped in templ-components v1.16.0 (2026-09-10 ceremony)
+48. ~~Once upstream fixes StatCard: remove the axe tolerance here.~~ done — tolerance retired in the v1.16.0 ceremony (2026-09-10)
 49. ~~AGENTS.md: record this session's two process lessons (escaping trick,~~ done (daemon-race protocol added to AGENTS.md gotchas 2026-09-03; escaping lesson lives in global tooling config)
 ~~daemon-race protocol).~~
 50. ~~New pareto planning pass — TODO_LIST is empty; the next cycle needs a~~ done (TODO_LIST rebuilt via docs-health pass 2026-09-03)

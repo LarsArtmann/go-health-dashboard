@@ -60,15 +60,15 @@ HTML; the user explicitly requested `.md` at a `.md` path, so Markdown was used.
    `lifecycle_test.go`). Blocker: none — see g.3. Effort: S.~~ resolved at `c7e4f13` — all six routed to ROADMAP; the injector.Shutdown check already existed (lifecycle_test.go:119)
 6. **AGENTS.md size** — grew ~1 KB in a pass that should also have pruned toward the
    15 KB budget (now ~21 KB, "acceptable" band). Remaining: prune pass. Effort: M.
-7. **execution-complete annotations** — lightest touch of the six reports (one inline
-   pointer). Its build-tag bullet is the standing open item and got no explicit marker
-   (the retro + sweep carry the full dispositions). Effort: S.
-8. ~~**04-41 residual ideas** — `BenchmarkHealthCheck`, Dashboard self-monitoring test,
-   `do.Package`, shutdown-ordering test verified still open but **not routed** to
-   ROADMAP. Effort: S.~~ resolved at `c7e4f13` — routed to the ROADMAP DI-surface bullet
-9. **Local browser suite** — skipped in my final verification run (no
-   `GO_HEALTH_DASHBOARD_CHROME` in my shell); I relied on CI's green browser job from
-   today instead. Works: CI proof. Missing: local confirmation. Effort: S.
+7. ~~**execution-complete annotations** — lightest touch of the six reports (one inline~~ done — the execution-complete report moved to `archived/` in the 2026-09-04 pass with inline dispositions
+   ~~pointer). Its build-tag bullet is the standing open item and got no explicit marker~~
+   ~~(the retro + sweep carry the full dispositions). Effort: S.~~
+8. ~~**04-41 residual ideas** — `BenchmarkHealthCheck`, Dashboard self-monitoring test,~~ done — routed to the ROADMAP DI-surface bullet at `c7e4f13`; the self-monitoring test since shipped (`selfmonitor_test.go`)
+   ~~`do.Package`, shutdown-ordering test verified still open but **not routed** to~~
+   ~~ROADMAP. Effort: S.~~
+9. ~~**Local browser suite** — skipped in my final verification run (no~~ done — local browser suites ran green in real Chrome repeatedly since (v1.16.0/v1.17.0 ceremonies, 2026-09-16/17 sessions)
+   ~~`GO_HEALTH_DASHBOARD_CHROME` in my shell); I relied on CI's green browser job from~~
+   ~~today instead. Works: CI proof. Missing: local confirmation. Effort: S.~~
 
 ## c) NOT STARTED
 
@@ -92,7 +92,7 @@ ROADMAP, none silently dropped)_
 6. ~~**Example toggles** — `DEMO_PUBLIC=1`, `DEMO_BASE_PATH=/status`.~~ done at `db8621f`
 7. ~~**Bisectability audit** of `071c251..HEAD` (the `72783fc` wall is documented in
    AGENTS.md; the full 58-commit audit is not done).~~ done 2026-09-04 — 91 commits audited, 86 build; audit archived
-8. **Next Pareto planning pass** — the rebuilt TODO_LIST is the input universe.
+8. ~~**Next Pareto planning pass** — the rebuilt TODO_LIST is the input universe.~~ done — Pareto plans executed 2026-09-09 (UI/UX) and 2026-09-10 (CI-green & backlog)
 9. ~~**Unrouted brainstorm items** (b.5) — pending the g.3 decision.~~ resolved at `c7e4f13` — routed
 10. ~~**ARCHIVE moves** — deliberately none: every non-archived `2026-0*` file retains
     genuinely open items (blocked decisions, upstream PR, flaky tests), and the skill
@@ -165,10 +165,14 @@ commitments. Items 1–24 already live in `TODO_LIST.md` (harvested today); 25�
 new observations from this session awaiting the g.3 decision or refined routing._
 
 **Dispositioned 2026-09-04:** items 1–21 and 23–24 shipped (v0.4.0/v0.5.0 cycle +
-2026-09-04 sweep — see CHANGELOG); 22 open (TODO_LIST upstream row); 25–32 done or
+2026-09-04 sweep — see CHANGELOG); 22 open (TODO_LIST upstream row) — since fixed
+upstream (v1.16.0, struck inline below); 25–32 done or
 routed at `c7e4f13`/today (CONTRIBUTING, doc.go, route-or-record, screenshots →
 ROADMAP, 04-41 residuals → ROADMAP DI bullet); 33–50 executed (the lint gate is
-now standard), routed to ROADMAP, or superseded. Canonical backlog:
+now standard), routed to ROADMAP, or superseded — EXCEPT the still-open rows
+30, 31, 33, 36, 46, 49 (screenshot one-liner, network-policy note, per-route
+middleware spike, sub-ms retry validation, AGENTS prune, chromedp filing):
+tracked in ROADMAP/TODO_LIST. Canonical backlog:
 `TODO_LIST.md` + `ROADMAP.md`.
 
 | #  | Task                                                                                                                                                                               | Impact | Effort | Category      |
@@ -194,7 +198,7 @@ now standard), routed to ROADMAP, or superseded. Canonical backlog:
 | 19 | Distinguish not-started vs shut-down in `ErrPusherNotActive` (or add a second sentinel)                                                                                            | Low    | S      | Feature       |
 | 20 | Refresh stamp: use last sample timestamp (observation time), not render time                                                                                                       | Medium | S      | Feature       |
 | 21 | Scope the axe `definition-list` tolerance to StatCard nodes (currently whole-rule filter)                                                                                          | Low    | S      | Quality       |
-| 22 | Upstream PR to templ-components: StatCard `<dl>` fix (+ goldens); then remove the axe tolerance                                                                                    | Low    | M      | Cleanup       |
+| 22 | ~~Upstream PR to templ-components: StatCard `<dl>` fix (+ goldens); then remove the axe tolerance~~ done — fixed upstream, shipped in v1.16.0; tolerance retired 2026-09-10                                                              | Low    | M      | Cleanup       |
 | 23 | Example toggles: `DEMO_PUBLIC=1`, `DEMO_BASE_PATH=/status`                                                                                                                         | Low    | S      | Feature       |
 | 24 | Document rate-limiter shared-bucket semantics in the README options list                                                                                                           | Low    | S      | Documentation |
 | 25 | Update `doc.go`: `Register` + `ErrPusherNotActive` Quick Start examples (b.2)                                                                                                      | Low    | S      | Documentation |
@@ -207,16 +211,16 @@ now standard), routed to ROADMAP, or superseded. Canonical backlog:
 | 32 | Route 04-41 residual ideas to ROADMAP: `BenchmarkHealthCheck`, self-monitoring test, `do.Package` (b.8)                                                                            | Low    | S      | Documentation |
 | 33 | Per-route middleware sets decision spike (sweep f38)                                                                                                                               | Low    | S      | Decision      |
 | 34 | Bisectability audit `071c251..HEAD`; record any non-building commits beyond `72783fc`                                                                                              | Medium | M      | Quality       |
-| 35 | `WithBasePath` resolution-in-`New()` design spike (kills the ordering footgun)                                                                                                     | Low    | M      | Feature       |
-| 36 | Sub-millisecond `WithRetryInterval` validation (500µs silently becomes 0)                                                                                                          | Low    | S      | Feature       |
+| 35 | ~~`WithBasePath` resolution-in-`New()` design spike (kills the ordering footgun)~~ done — v0.7.0 applies the prefix once after all options (`db…` CHANGELOG 0.7.0 Compatibility)                                                             | Low    | M      | Feature       |
+| 36 | Sub-millisecond `WithRetryInterval` validation (500µs silently becomes 0) — routed to ROADMAP boundary tests 2026-09-17                                                                                                          | Low    | S      | Feature       |
 | 37 | `BenchmarkHealthCheck` benchmark                                                                                                                                                   | Low    | S      | Quality       |
-| 38 | Test whether the Dashboard appears in its own health table when registered                                                                                                         | Low    | S      | Quality       |
+| 38 | ~~Test whether the Dashboard appears in its own health table when registered~~ done — `selfmonitor_test.go` shipped (ROADMAP Decisions records the verdict)                                                                        | Low    | S      | Quality       |
 | 39 | Explore `do.Package` for one-call injection                                                                                                                                        | Low    | M      | Feature       |
 | 40 | Test example shutdown ordering (probe → injector → cancel window)                                                                                                                  | Low    | S      | Quality       |
 | 41 | Full DI lifecycle integration test: Register → Start → HTTP request → do.Shutdown                                                                                                  | Low    | M      | Quality       |
 | 42 | `WithBasePath("/", "")`, `"/a/b"` edge-case tests                                                                                                                                  | Low    | S      | Quality       |
 | 43 | Benchmark `renderPatch` retry-field stamping overhead                                                                                                                              | Low    | S      | Quality       |
-| 44 | Remove redundant `TestHealthCheckWithContext_InterfaceSatisfied` (compile-time assertions cover it; verified still present at `lifecycle_test.go:141`)                             | Low    | S      | Cleanup       |
+| 44 | ~~Remove redundant `TestHealthCheckWithContext_InterfaceSatisfied` (compile-time assertions cover it; verified still present at `lifecycle_test.go:141`)~~ done — test removed (verified absent 2026-09-17)                            | Low    | S      | Cleanup       |
 | 45 | Check/report the `*do.ShutdownReport` from `defer injector.Shutdown()` in `lifecycle_test.go`                                                                                      | Low    | S      | Cleanup       |
 | 46 | Prune AGENTS.md toward the 15 KB budget (b.6)                                                                                                                                      | Low    | M      | Documentation |
 | 47 | Fuzz target for the CSV exporter (quote/newline round-trips) — retro f37                                                                                                           | Low    | S      | Quality       |

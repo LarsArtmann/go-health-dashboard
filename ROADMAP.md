@@ -117,7 +117,9 @@ Raw ideas:
 - Unit-test the version-guard grep logic (script drift protection)
 - Boundary/negotiation tests: `WithTrend(1)`, `ExportHandler` with
   `Accept: text/csv;q=0.8`, `WithBasePath` edge cases (`""`, `"/"`,
-  trailing slash, nested `/a/b`), SSE retry large values
+  trailing slash, nested `/a/b`), SSE retry large values,
+  sub-millisecond `WithRetryInterval` validation (500µs silently
+  becomes 0)
 - Race-stress: 50 concurrent SSE clients vs `SubscriberCount` consistency;
   webhook delivery-ordering test under concurrent transitions
 - Verify no heartbeat-goroutine leak on Shutdown/broadcaster close;
