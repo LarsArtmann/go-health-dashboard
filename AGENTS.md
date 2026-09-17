@@ -188,6 +188,8 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   commit's message was lost this way, `ebf52d0`; four batches in the
   2026-09-17 session); and run `git status -sb` before any "CI is green"
   claim, pushing deliberately at milestones (push needs authorization).
+  Release sessions additionally start with `bash scripts/pre-push-checks.sh`
+  (the desk gate) — see `docs/release-checklist.md` §4 gate 0.
   (1) `nix fmt` runs AFTER the last `templ generate`: every build/test app
   regenerates `view_templ.go` in raw form, so fmt-before-generate gets
   undone and the CI hygiene drift check goes red; canonical order is
