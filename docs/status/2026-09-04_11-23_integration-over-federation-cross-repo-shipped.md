@@ -153,6 +153,6 @@ failures were real:
 2. **Pilot service**: which Lars-stack service should be the first wired into Gatus +
    SigNoz via the cookbook? (You know which service hurts most; the 2283-line
    `gatus-config.nix` doesn't say which endpoints you care about most.)
-3. **Multi-service UI priority**: for the aggregate page, is per-service card grouping
-   (`WithGrouping(BySource)`) the feature that would make it a daily driver, or is
-   severity-grouped with `source/check` names already enough for how you'd use it?
+3. ~~**Multi-service UI priority**: for the aggregate page, is per-service card grouping~~ done — answered: `WithGrouping(GroupBySource)` shipped in v0.7.0 (one card per `source/check` prefix, worst-of status)
+   ~~(`WithGrouping(BySource)`) the feature that would make it a daily driver, or is~~
+   ~~severity-grouped with `source/check` names already enough for how you'd use it?~~
