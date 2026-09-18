@@ -54,6 +54,12 @@ forgetting.
 - Dark-mode accessibility re-audit: the axe run now toggles the theme and
   re-audits in the same browser session — zero serious/critical findings
   in either theme.
+- Grafana in the demo stack (`deploy/`): a provisioned Prometheus
+  datasource and an 8-panel dashboard (overall status, passing checks,
+  last-batch wall-clock, the per-check last-duration gauge, histogram
+  p50/p95, executions per second). `docker compose -f
+  deploy/docker-compose.yml up` now ends at http://localhost:3000
+  (anonymous viewer, no login).
 - Fuzz and mutation hardening of the change-detection core: a
   `FuzzEvidenceSummaryText` target locks the evidence strip (one line,
   empty for a zero window, no leaked fmt verbs), 60s campaigns on the

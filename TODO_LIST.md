@@ -18,8 +18,8 @@
 
 Harvested 2026-09-17 (morning docs-health pass + evening post-v0.9.0
 batch executed by two parallel sessions). Ground truth:
-`Version = "0.9.0"`, go-health v0.2.0, 267 top-level test/benchmark/fuzz
-functions across 36 test files
+`Version = "0.9.0"`, go-health v0.2.0, 281 top-level test/benchmark/fuzz
+functions across 39 test files
 (`rg -c '^func (Test\|Benchmark\|Fuzz)' *_test.go`).
 
 | Task                                             | Status    | Why it matters / notes                                                                                                                                                        | Evidence                                                     |
@@ -52,10 +52,12 @@ zero-proven warning and public-mode render (dark mode needs none —
 CSS-class-only theming), the dark-mode axe re-audit (one Chrome launch,
 both themes, zero serious/critical findings), `DEMO_DETAILED=1` example
 toggle, `scripts/verify-dep-bump.sh` (per-repo gate chain; the fleet-level
-placement question stays open), and the docs batch (SECURITY.md, README
-"Upgrading" + security link, CONTRIBUTING guard-scripts section,
-ROADMAP v1.0 criteria, CHANGELOG audit fixes). All rows closed here ship
-in `CHANGELOG.md` `[Unreleased]`.
+placement question stays open), a provisioned Grafana service in
+`deploy/` (Prometheus datasource + 8-panel dashboard including the new
+duration gauge; booted and verified against Grafana 11.5.2), and the
+docs batch (SECURITY.md, README "Upgrading" + security link,
+CONTRIBUTING guard-scripts section, ROADMAP v1.0 criteria, CHANGELOG
+audit fixes). All rows closed here ship in `CHANGELOG.md` `[Unreleased]`.
 
 Everything else from the v0.3.x–0.9.0 cycles either shipped (see
 `CHANGELOG.md`), was closed with a reason in the annotated reports under
