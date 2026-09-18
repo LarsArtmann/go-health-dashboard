@@ -45,6 +45,7 @@ import (
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
 	"github.com/larsartmann/go-health/aggregate"
+	"github.com/larsartmann/go-health-dashboard/pkg/version"
 	"github.com/samber/do/v2"
 )
 
@@ -87,9 +88,9 @@ func main() {
 
 	addr := ":" + envOrDefault("PORT", "8080")
 	log.Printf(
-		"dashboard: http://localhost%s/health (go-health-dashboard v%s)",
+		"dashboard: http://localhost%s/health (build %s)",
 		addr,
-		dashboard.Version,
+		version.Version,
 	)
 	log.Printf("readiness: http://localhost%s/readyz", addr)
 
@@ -137,7 +138,7 @@ func buildSingleProbe(ctx context.Context, injector *do.RootScope) probeBundle {
 	)
 
 	probe := health.New(injector,
-		health.WithVersion("1.2.3"),
+		health.WithVersion(version.Version),
 		health.WithCriticalServices("postgres", "redis"),
 		health.WithRefreshInterval(2*time.Second),
 	)
@@ -167,7 +168,7 @@ func buildAggregateProbe(ctx context.Context, withDetailed bool) probeBundle {
 	)
 
 	apiProbe := health.New(apiInjector,
-		health.WithVersion("1.2.3"),
+		health.WithVersion(version.Version),
 		health.WithCriticalServices("postgres"),
 		health.WithRefreshInterval(2*time.Second),
 	)
@@ -222,7 +223,7 @@ func buildAggregateProbe(ctx context.Context, withDetailed bool) probeBundle {
 func buildDetailedProbe(ctx context.Context) probeBundle {
 	probe := health.NewWithDetailedCheck(
 		detailedDemoChecks,
-		health.WithVersion("1.2.3"),
+		health.WithVersion(version.Version),
 		health.WithRefreshInterval(2*time.Second),
 	)
 
