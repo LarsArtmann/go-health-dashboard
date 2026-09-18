@@ -36,8 +36,19 @@ run "tests with race detector" nix run .#test-race
 run "lint" nix run .#lint
 run "vet" nix run .#vet
 run "vulncheck" nix run .#vulncheck
-run "coverage (CI enforces the 78% floor)" nix run .#coverage
-run "bench smoke" nix develop -c go test -run xxx -bench BenchmarkHandler_HTMLRendering -benchtime 1x .
+run "coverage (CI enforces the 80% floor)" nix run .#coverage
+total=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | tr -d '%')
+echo "   coverage total: ${total}% (floor 80%)"
+if ! awk -v t="$total" 'BEGIN { exit !(t >= 80) }'; then
+	echo "!! FAILED: coverage floor (${total}% < 80%) — a bump that drops coverage needs tests, not a lower bar"
+	fail=1
+fi
+trash-put coverage.out 2>/dev/null || true
+if [ -e coverage.out ]; then
+	echo "WARN: coverage.out left behind (trash-cli unavailable) — run: nix run .#clean"
+fi
+echo
+run "bench smoke (all benchmarks, 1 iteration each)" nix develop -c go test -run xxx -bench . -benchtime 1x .
 run "UI pin guard" bash scripts/check-ui-pins.sh
 run "changelog lint" bash scripts/check-changelog.sh
 

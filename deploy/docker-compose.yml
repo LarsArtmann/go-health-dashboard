@@ -1,11 +1,13 @@
-# Prometheus demo: runs the example dashboard plus Prometheus scraping its
-# metrics endpoint. Start with:
+# Prometheus + Grafana demo: runs the example dashboard, Prometheus
+# scraping its metrics endpoint, and Grafana with a provisioned dashboard
+# (including the per-check last-duration gauge). Start with:
 #
 #   docker compose -f deploy/docker-compose.yml up --build
 #
 # Dashboard:  http://localhost:8080/health
 # Metrics:    http://localhost:8080/health/metrics
 # Prometheus: http://localhost:9090
+# Grafana:    http://localhost:3000 (anonymous viewer, no login)
 services:
   dashboard:
     build:
@@ -23,3 +25,17 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_BASIC_ENABLED: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/provisioning/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
