@@ -69,6 +69,12 @@ Raw ideas:
   `dashboard_build_info{version=...}` / `dashboard_health_checks_total`
 - Optional `client_golang` bridge package for consumers with existing
   registries (current exposition is hand-rolled, zero-dep)
+- Watch: migrate `duration_ns` if the Go ecosystem standardizes
+  `time.Duration` wire support (go-health upstream note)
+- Per-source worst-duration display once go-health ships aggregated
+  per-source durations for aggregate sources
+- Flap detection badge: N state changes within M minutes (enabled by the
+  since-age data)
 - Public mode hardening: leak-scanner test (grep rendered HTML for registered
   service names), optional redaction of the `/health` JSON (which stays
   verbatim today — documented in AGENTS.md)
@@ -101,38 +107,32 @@ Raw ideas:
   cost) — BLOCKED on the `GOEXPERIMENT=jsonv2` decision (Open Questions)
 - Screenshot or PDF export for incident reports — screenshots are covered by
   env-guarded tests; PDF remains out of scope
-- Embedded Datastar SDK serving helper (a `WithCSSPath` analog) so
-  CSP-'self' deployments don't hand-roll static wiring
-- Browser test: CSP-clean runtime check for an aggregate-rendered page
-- Load test: 20-source aggregate under concurrent SSE + scrape
 
 ### 5. Pipeline, Testing and Docs Tooling
 
 Raw ideas:
 
-- CI: `templ generate` drift check (fail when generated files differ)
-- CI: `actionlint` step for both workflow files; add a `nix flake check` job;
-  Go version matrix (latest two 1.26.x patches)
-- CI: auto-draft the GitHub Release from the CHANGELOG `[X.Y.Z]` section on
-  tag push (removes the manual-notes step and the drift risk between them)
+- CI: `docker build` the Dockerfile (catch Dockerfile/Go-version rot
+  cheaply, no container run); booting the compose stack with HTTP probes is
+  gated on the deploy-CI policy Open Question
+- benchstat baseline discipline: check in baseline bench results + require
+  a benchstat diff for perf-sensitive changes (`-benchtime 1x` smoke catches
+  panics, not cliffs)
 - Browser-suite startup latency: re-measure serialized launches (the announce
-  timeout was raised to 45s on loaded machines); `WithRetryInterval` ×
-  max-connection-lifetime browser test; load-test harness env knobs beyond
-  the 20×3 fixture
+  timeout was raised to 45s on loaded machines)
 - `go.mod` retract runbook stub (write it before it's needed)
-- CI: upload browser screenshots as artifacts for visual diffs;
-  Dependabot/renovate for GitHub Action SHA bumps (pins rot)
-- devShell: Chrome/Chromium in the flake so the browser suite runs locally
-- Coverage: push total > 80% (last measured 79.8% library-scoped vs the 78%
-  CI floor), then raise the CI floor
-- Nightly fuzztime budget review (4×60s → target the hottest target);
-  rehearse the fuzz issue-on-failure path with a deliberately failing run
-- Fuzz targets: CSV exporter, `RecommendedCSP` injection attempts, webhook
-  payload marshal, aggregate merge, introspection marshal, view-model
-  `buildData` (follow the `fuzz_test.go` pattern)
+- Dependabot/renovate for GitHub Action SHA bumps (pins rot); digest-pin
+  prometheus/grafana demo images + dependabot for `deploy/docker-compose.yml`
+- Nightly fuzztime budget review (11×60s today — target the hottest target
+  with a longer budget); rehearse the fuzz issue-on-failure path with a
+  deliberately failing run
+- Fuzz targets deliberately NOT fuzzed (M94 verdict, 2026-09-17):
+  introspection marshal and view-model `buildData` have no adversarial input
+  surface; aggregate merge is covered transitively via `FuzzFingerprintChecks`
 - Browser golden-screenshot diff test (catch visual drift)
-- Keyboard-navigation a11y smoke in the browser suite; browser-test the
-  metrics endpoint under strict CSP
+- Grafana niceties: template variable to filter panels by check name
+- FEATURES test-suite counts: derive them at check time instead of
+  hand-maintaining them (the pre-push/CI guards currently diff two sources)
 - Unit-test the version-guard grep logic (script drift protection)
 - Boundary/negotiation tests: `WithTrend(1)`, `ExportHandler` with
   `Accept: text/csv;q=0.8`, `WithBasePath` edge cases (`""`, `"/"`,
@@ -236,6 +236,10 @@ These require user decisions and cannot be resolved by reading code:
   a machine contract (metrics gauges / trend+export JSON fields) and/or
   persistence across restarts, or is per-pusher-lifetime truth the intended
   steady state?
+- **Deploy-compose CI policy:** should CI build the Dockerfile only, boot the
+  full compose stack with HTTP probes, or keep the demo manual-only
+  (documented)? Costs CI minutes and Docker-in-CI surface; gates the
+  deploy-e2e and release-page jobs.
 
 ## Design Spikes (v0.3.x cycle, not implemented)
 
