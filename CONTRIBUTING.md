@@ -90,6 +90,8 @@ Run them locally the same way CI does:
 bash scripts/check-changelog.sh
 bash scripts/check-ui-pins.sh
 bash scripts/pre-push-checks.sh
+bash scripts/verify-release.sh v0.9.0   # after a release, with the version
+bash scripts/verify-dep-bump.sh         # after a dependency bump
 ```
 
 Two conventions the guards assume: generated templ code is regenerated
