@@ -332,6 +332,15 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.2.0 in go.mod). The dashboar
   one `Prober`-compatible surface for multi-service dashboards. Sources must have unique
   non-empty names; checks land namespaced as `source/check`. Sources must eagerly invoke
   their samber/do services or they silently health-check as pass (same gotcha as single probes).
+- `federation` sub-package (unreleased; v0.3.0 vehicle) — `federation.New(remotes,
+  opts...)` pulls N remote go-health instances over HTTP into one `Prober`-compatible
+  surface: merge-on-read (one parallel fetch per remote per read, per-fetch timeout default 5s),
+  checks namespaced `name/check`, unreachable remotes surface as a `name/reachable` FAIL row
+  (never a silent freeze), `Check.Since` survives the wire, startup latches per remote on first
+  successful fetch. A hub (`health.home.lan`) is `dashboard.New(fed, WithGrouping(GroupBySource))`
+  — verified end to end 2026-09-18 (HTML renders per-remote cards; JSON negotiation 503s while a
+  remote is dark). Bump go.mod when v0.3.0 is tagged; a runnable federation example is the
+  natural follow-up.
 
 ### templ-components (`github.com/larsartmann/templ-components`)
 

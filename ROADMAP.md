@@ -40,9 +40,13 @@ Raw ideas:
   `docs/design/2026-09-17_since-fed-timeline-stability-staleness.md`
 - Service grouping by custom tags or labels (not just severity)
 - Aggregate status across multiple instances or clusters
-- Federation: pull health from remote go-health instances via HTTP
-  (spike conclusion: preferred home is a `FederatedProber` option in
-  go-health, not the dashboard — see Design Spikes)
+- Federation: pull health from remote go-health instances via HTTP —
+  **shipped in go-health** (`health/federation`, designed in go-health's
+  `docs/federation-design.md`, unreleased v0.3.0 vehicle): a hub runs
+  `dashboard.New(federation.New(remotes), WithGrouping(GroupBySource))`
+  and gets one card per remote, verified end to end 2026-09-18. This
+  repo's remaining share is consuming the released version (go.mod bump)
+  and a runnable federation example once v0.3.0 is tagged
 - `Register` auto-start: wire `Start(ctx)` into the samber/do container
   lifecycle so `Register` + container start needs no manual `Start` call
 
