@@ -151,6 +151,7 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 ## Gotchas
 
 - **GOEXPERIMENT=jsonv2 is required** — The go-sse dependency uses `encoding/json/v2`. Set `GOEXPERIMENT=jsonv2` for all Go commands. The flake.nix devShell does this automatically.
+- **Version stamps follow the fleet standard** — `pkg/version` (copied kit) feeds the example server startup line and `health.WithVersion` sources; contract + nix wiring: `../file-and-image-renamer/docs/FLEET-STANDARD-VERSION-STAMPS.md`.
 - **Metrics output is not byte-frozen** — the latency histogram `_sum`/counts change per tick; `TestMetrics_ChecksSortedForDeterministicOutput` strips `dashboard_health_check_duration_seconds*` lines before comparing. Sorted check names stay stable.
 - **Browser tests serialize via `browserSerial` mutex** — headless-Chrome startups are heavyweight; parallel launches on loaded machines pushed startup past the announce timeout (now 45s). New browser tests must go through `startHeadlessChrome`, which takes the lock. The axe audit downloads axe-core from cdnjs at test setup and skips when offline.
 - **gopls stdversion warnings dismissed** — gopls flags `json.Unmarshal requires go1.27` identically with AND without `GOEXPERIMENT=jsonv2` (gopls v0.23.0); `json.Unmarshal` is legitimate on go1.26 under the experiment. Dismissed via `analyses.stdversion: false` in `.vscode/settings.json` (which also sets the gopls env). Trust `nix run .#lint` over editor squiggles; re-check on gopls upgrade (ROADMAP).
