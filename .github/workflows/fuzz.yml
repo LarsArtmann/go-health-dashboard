@@ -54,6 +54,18 @@ jobs:
       - name: Fuzz webhook payload marshal
         run: go test -run '^$' -fuzz FuzzWebhookPayload -fuzztime 60s .
 
+      - name: Fuzz short display names
+        run: go test -run '^$' -fuzz FuzzShortDisplayName -fuzztime 60s .
+
+      - name: Fuzz check-duration formatter
+        run: go test -run '^$' -fuzz FuzzFormatCheckDuration -fuzztime 60s .
+
+      - name: Fuzz state-age formatter
+        run: go test -run '^$' -fuzz FuzzFormatStateAge -fuzztime 60s .
+
+      - name: Fuzz evidence summary text
+        run: go test -run '^$' -fuzz FuzzEvidenceSummaryText -fuzztime 60s .
+
       - name: Print crasher inputs
         if: failure()
         run: |

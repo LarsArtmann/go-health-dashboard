@@ -158,7 +158,7 @@
 | Metrics conformance (official parser)    | 🟢 `FULLY_FUNCTIONAL` | `metrics_test.go` — prometheus/common TextParser + promtool when on PATH                                                                        |
 | Dark-mode screenshot capture             | 🟢 `FULLY_FUNCTIONAL` | `screenshot_dark_test.go` — env-guarded (`SCREENSHOT_OUTPUT_DARK`)                                                                              |
 | Benchmarks (HTML, metrics, trend render) | 🟢 `FULLY_FUNCTIONAL` | `dashboard_test.go`, `metrics_bench_test.go`                                                                                                    |
-| Fuzz targets (4) + nightly workflow      | 🟢 `FULLY_FUNCTIONAL` | `fuzz_test.go`, `.github/workflows/fuzz.yml` — 60s per target nightly                                                                           |
+| Fuzz targets (11), 60s each nightly | 🟢 `FULLY_FUNCTIONAL` | `fuzz_test.go`, `.github/workflows/fuzz.yml` — every target fuzzed 60s per nightly run                                                     |
 | CI browser job + coverage                | 🟢 `FULLY_FUNCTIONAL` | `.github/workflows/ci.yml` — Chrome runtime CSP test, coverage totals                                                                           |
 
 ## Build and Tooling
@@ -169,7 +169,7 @@
 | templ generate workflow  | 🟢 `FULLY_FUNCTIONAL` | Pre-build step in all Nix apps                                                                                                                                                                                                        |
 | `.golangci.yml` config   | 🟢 `FULLY_FUNCTIONAL` | 80+ linters, pragmatic test/example exclusions, **0 issues**                                                                                                                                                                          |
 | Test suite               | 🟢 `FULLY_FUNCTIONAL` | 281 top-level test/benchmark/fuzz functions across 39 test files, all passing with `-race` (counted via `rg -c '^func (Test\|Benchmark\|Fuzz)' *_test.go`)                                                                            |
-| CI/CD                    | 🟢 `FULLY_FUNCTIONAL` | `.github/workflows/ci.yml` — build, test-race+coverage (78% floor + artifact), lint, vulncheck, browser job, version-guard, hygiene (changelog lint + templ drift). Green on the v0.9.0 release commit `5f71fa6` (verify-release 9/9) |
+| CI/CD                    | 🟢 `FULLY_FUNCTIONAL` | `.github/workflows/ci.yml` — build, test-race+coverage (80% floor + artifact), lint, vulncheck, browser job, version-guard, hygiene (changelog lint + templ drift). Release-commit discipline machine-verified: `verify-release.sh v0.9.0` 9/9 green on `5f71fa6` |
 | Dependabot               | 🟢 `FULLY_FUNCTIONAL` | `.github/dependabot.yml` — Go modules + GitHub Actions                                                                                                                                                                                |
 | Example app              | 🟢 `FULLY_FUNCTIONAL` | `example/main.go` — DEMO_TREND/DEMO_METRICS/DEMO_AUTH/DEMO_RATELIMIT/DEMO_DRAIN/DEMO_PUBLIC/DEMO_BASE_PATH/DEMO_DETAILED env toggles                                                                                                  |
 | Docker + Prometheus demo | 🟢 `FULLY_FUNCTIONAL` | `Dockerfile`, `deploy/docker-compose.yml`, `deploy/prometheus.yml` — example + scraper                                                                                                                                                |
@@ -182,4 +182,4 @@
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | GOEXPERIMENT=jsonv2 requirement | All Go commands require this env var; go-sse uses `encoding/json/v2`                                                                       |
 | Datastar needs `unsafe-eval`    | The SDK compiles expressions via `Function`; strict CSPs must allow it — documented in README, verified by `browser_test.go`               |
-| UI deps pinned + guard-enforced | templ-components v1.17.0 + go-datastar v0.5.0 (browser-suite-audited); `scripts/check-ui-pins.sh` fails CI on any movement — see CHANGELOG |
+| UI deps pinned + guard-enforced | templ-components v1.18.0 + go-datastar v0.5.0 (browser-suite-audited); `scripts/check-ui-pins.sh` fails CI on any movement — see CHANGELOG |

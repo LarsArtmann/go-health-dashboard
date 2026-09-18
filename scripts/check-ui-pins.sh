@@ -29,6 +29,12 @@
 #     dedicated change after the full browser suite ran green on the
 #     bumped set under strict CSP.
 #
+# Re-audited 2026-09-18 on templ-components v1.18.0 + go-datastar v0.5.0:
+#   - the v1.18.0 bump arrived as an unguarded deps commit (seventh
+#     occurrence, 2026-09-18); the full browser suite (incl. the dark-mode
+#     axe re-audit) ran green on the bumped set under strict CSP before
+#     these pins were updated in the same change.
+#
 # CEREMONY RULE: if you bump any of these dependencies, update the pins
 # in this file IN THE SAME CHANGE and re-run the browser suite. A bump
 # without its guard update leaves CI red for every subsequent commit.
@@ -38,9 +44,9 @@
 # change that updates these pins and re-runs the browser suite.
 set -euo pipefail
 
-expected_templ_components="v1.17.0"
-expected_templ_components_datastar="v1.17.0"
-expected_templ_components_utils="v1.17.0"
+expected_templ_components="v1.18.0"
+expected_templ_components_datastar="v1.18.0"
+expected_templ_components_utils="v1.18.0"
 expected_go_datastar="v0.5.0"
 
 fail=0
