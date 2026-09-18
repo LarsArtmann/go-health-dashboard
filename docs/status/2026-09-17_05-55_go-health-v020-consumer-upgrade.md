@@ -225,8 +225,8 @@ Nothing shipped broken — every gate is green and the tree is clean. Honest lis
     ~~vs `..._last_duration_seconds` (gauge) in metrics.go doc comment so nobody "unifies" them later.~~
 41. ~~🟢 Roadmap: "health-washing thesis" follow-up — with probe-truth Since available, re-evaluate whether~~ done (standing BLOCKED evidence-posture row (TODO_LIST + ROADMAP Open Question))
     ~~the evidence strip's pusher-lifetime window should display BOTH windows (observed vs reported).~~
-42. 🟢 Keep an eye on templ-components releases for the next pin-ceremony (six sweeps so far; the guard
-    script is the mitigations — nothing to do now).
+42. ~~🟢 Keep an eye on templ-components releases for the next pin-ceremony (six sweeps so far; the guard~~ done (seventh sweep (templ-components v1.18.0, 2026-09-18) caught by the pin guard as designed; adopted same day with the guard update and a green browser suite)
+    ~~script is the mitigations — nothing to do now).~~
 43. ~~🟢 Example: `DEMO_*` env toggles pattern — if the example gains a detailed source, validate any new~~ done (DEMO_DETAILED needs no validation (boolean); the safeBasePath pattern stands in AGENTS.md)
     ~~env input via `safeBasePath` pattern (standing gotcha).~~
 44. ~~🟢 jsdelivr/CDN not used — nothing. (Sanity entry: no network deps to review.)~~ done (sanity entry — nothing to do)
