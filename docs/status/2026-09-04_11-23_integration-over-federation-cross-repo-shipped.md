@@ -91,58 +91,58 @@ failures were real:
 
 ## f) Next — up to 50 items (brainstorm, sorted roughly by impact; most are ROADMAP fuel)
 
-| #  | Item                                                                                                                                                                            | Repo      |
-| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| 1  | Wire the first real Lars-stack service into Gatus + SigNoz using the cookbook (pilot validation)                                                                                | infra     |
-| 2  | SystemNix `lib/go-health.nix` generator consuming cookbook semantics                                                                                                            | SystemNix |
-| 3  | ~~Webhook delivery metrics: `dashboard_webhook_deliveries_total{result}` + duration histogram behind `WithMetrics`                                                               ~~ done — shipped in v0.7.0 (`dashboard_webhook_deliveries_total` + duration histogram) | dashboard |
-| 4  | ~~Retroactive GitHub Releases for v0.1.0 and v0.5.0 from CHANGELOG sections~~ done — release pages exist for v0.1.0 and v0.5.0 (created 2026-09-04) | both      |
-| 5  | ~~Verify post-push CI green on both tags; fix red if found~~ done — CI green on release commits verified repeatedly (CHANGELOG Verified sections, v0.7.0/v0.8.1 cuts) | both      |
-| 6  | Trigger + review pkg.go.dev docs for `aggregate` package                                                                                                                        | go-health |
-| 7  | HMAC request signing: `WithWebhookSecret` → `X-Signature` header                                                                                                                | dashboard |
-| 8  | Payload schema version field (`"schema":1`) before external consumers appear                                                                                                    | dashboard |
-| 9  | Fuzz targets: webhook payload marshal, aggregate merge (follow `fuzz_test.go` pattern)                                                                                          | dashboard |
-| 10 | Benchmarks: `aggregate.CachedResponse` at 1/5/20 sources; `buildPayload`                                                                                                        | go-health |
-| 11  | ~~`WithGrouping(BySource)`: per-service cards by splitting namespaced keys~~ done — shipped in v0.7.0 (`WithGrouping(GroupBySource)`) | dashboard |
-| 12 | Switch PapDashboard ingest from Gatus custom-provider template to `WithWebhook`                                                                                                 | infra     |
-| 13  | ~~Update `FEATURES.md` + `TODO_LIST.md` in both repos (aggregate, webhook, Prober)~~ done — dashboard side done in the 2026-09-04 docs-health pass | both      |
-| 14  | ~~Add empty `[Unreleased]` placeholder to dashboard CHANGELOG~~ done — the `[Unreleased]` convention is codified in CHANGELOG + `check-changelog.sh` (2026-09-10) | dashboard |
-| 15  | ~~docs-health HARVEST: route this report's section (f) into TODO_LIST/ROADMAP~~ done — subsequent docs-health HARVEST passes (2026-09-04, 09-10, 09-17) | dashboard |
-| 16  | ~~Example server: aggregate + webhook demo mode (`nix run .#example`)~~ done — shipped in v0.7.0 (`DEMO_AGGREGATE=1`, `DEMO_WEBHOOK=<url>`) | dashboard |
-| 17  | ~~Browser test: CSP-clean runtime for an aggregate-rendered page~~ done — aggregate browser test shipped (2026-09-10 full-execution session) | dashboard |
-| 18 | Kuma section of cookbook validated against a live Kuma instance                                                                                                                 | docs      |
-| 19 | Ship a Grafana dashboard JSON (status panel + per-check) in docs/                                                                                                               | dashboard |
-| 20 | Prometheus alert rules starter pack (rules file, not just PromQL snippets)                                                                                                      | dashboard |
-| 21  | ~~Regenerate README screenshots (new sections exist; `screenshot_test` env-guarded)~~ done — screenshots regenerated in the v0.7.0 (Phase D) and v0.8.0 sessions | dashboard |
-| 22  | ~~`nix flake check` both repos (not run this session)~~ done — green runs recorded in CHANGELOG Verified sections since v0.6.0 | both      |
-| 23  | ~~govulncheck + gosec over new code~~ done — govulncheck green repeatedly (CHANGELOG Verified); gosec still unrun | both      |
-| 24  | ~~CI: assert `GOEXPERIMENT=jsonv2` env explicitly in workflows for both repos~~ done — `GOEXPERIMENT: jsonv2` set in ci.yml + fuzz.yml env blocks | both      |
-| 25 | Webhook: configurable retry (attempts + backoff), demand-driven                                                                                                                 | dashboard |
-| 26 | Aggregate staleness surface: per-source last-refresh age (needs go-health timestamp API)                                                                                        | go-health |
-| 27 | Document wire-shape difference: aggregate liveness omits `uptime`/`version` that Probe liveness includes                                                                        | go-health |
-| 28 | Verify trend/export endpoints with an aggregate source (logic is source-agnostic; test it anyway)                                                                               | dashboard |
-| 29 | e2e: aggregate with an empty-checks source renders sanely                                                                                                                       | dashboard |
-| 30 | statuspage.io / ntfy / Slack adapter examples in cookbook (consumer-land snippets)                                                                                              | docs      |
-| 31 | `promtool check rules` (or lint) for cookbook PromQL if tooling available                                                                                                       | docs      |
-| 32 | AGENTS.md cross-link: "one project split in two" note in both repos                                                                                                             | both      |
-| 33 | go-health ROADMAP: mark federation/rejected items with rationale pointers to the plan doc                                                                                       | go-health |
-| 34 | Decide GET-only guard parity for aggregate handlers (Probe has `WithGETOnly`; aggregate doesn't)                                                                                | go-health |
-| 35 | Consider `go-health` README install snippet bump to v0.1.0 (check pinned versions in README)                                                                                    | go-health |
-| 36 | dashboard README: pin example imports to v0.5.0 in Quick Start                                                                                                                  | dashboard |
-| 37 | Webhook headers: document Go canonicalization (`authorization` → `Authorization`)                                                                                               | dashboard |
-| 38 | Load test: 20-source aggregate under concurrent SSE + scrape                                                                                                                    | dashboard |
-| 39 | Mark executed steps in the plan doc (execution log)                                                                                                                             | dashboard |
-| 40 | Docker example image rebuild check (recent commit added Docker setup)                                                                                                           | dashboard |
-| 41 | Retraction safety: none needed, but record tag→commit mapping in CHANGELOG footers                                                                                              | both      |
-| 42 | Review `WithTrend` sample values against aggregate worst-of (warn=0.5) for multi-service semantics                                                                              | dashboard |
-| 43 | Dashboard version constant → also surface in JSON `/health`? (currently Response.Version comes from probe; aggregate yields empty — decide what multi-service page should show) | both      |
-| 44 | Deprecated-tag risk: none; document tag discipline in CONTRIBUTING                                                                                                              | both      |
-| 45 | Integration test: webhook against HTTP/1.0-style picky receiver (Go client default is fine; skip unless a consumer appears)                                                     | dashboard |
-| 46 | `aggregate`: option to include per-source headers in Readiness body? (probably reject — document why)                                                                           | go-health |
-| 47 | Cookbook: add "Kubernetes probe wiring for aggregate" section                                                                                                                   | docs      |
-| 48 | Split cookbook into per-platform pages if it grows                                                                                                                              | docs      |
-| 49 | Cross-repo e2e in CI: build dashboard against released go-health (catch drift early)                                                                                            | both      |
-| 50 | Postmortem the daemon-commit fragmentation into a session-convention note in AGENTS.md                                                                                          | both      |
+| #  | Item                                                                                                                                                                                                       | Repo      |
+| -- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| 1  | Wire the first real Lars-stack service into Gatus + SigNoz using the cookbook (pilot validation)                                                                                                           | infra     |
+| 2  | SystemNix `lib/go-health.nix` generator consuming cookbook semantics                                                                                                                                       | SystemNix |
+| 3  | ~~Webhook delivery metrics: `dashboard_webhook_deliveries_total{result}` + duration histogram behind `WithMetrics` ~~ done — shipped in v0.7.0 (`dashboard_webhook_deliveries_total` + duration histogram) | dashboard |
+| 4  | ~~Retroactive GitHub Releases for v0.1.0 and v0.5.0 from CHANGELOG sections~~ done — release pages exist for v0.1.0 and v0.5.0 (created 2026-09-04)                                                        | both      |
+| 5  | ~~Verify post-push CI green on both tags; fix red if found~~ done — CI green on release commits verified repeatedly (CHANGELOG Verified sections, v0.7.0/v0.8.1 cuts)                                      | both      |
+| 6  | Trigger + review pkg.go.dev docs for `aggregate` package                                                                                                                                                   | go-health |
+| 7  | HMAC request signing: `WithWebhookSecret` → `X-Signature` header                                                                                                                                           | dashboard |
+| 8  | Payload schema version field (`"schema":1`) before external consumers appear                                                                                                                               | dashboard |
+| 9  | Fuzz targets: webhook payload marshal, aggregate merge (follow `fuzz_test.go` pattern)                                                                                                                     | dashboard |
+| 10 | Benchmarks: `aggregate.CachedResponse` at 1/5/20 sources; `buildPayload`                                                                                                                                   | go-health |
+| 11 | ~~`WithGrouping(BySource)`: per-service cards by splitting namespaced keys~~ done — shipped in v0.7.0 (`WithGrouping(GroupBySource)`)                                                                      | dashboard |
+| 12 | Switch PapDashboard ingest from Gatus custom-provider template to `WithWebhook`                                                                                                                            | infra     |
+| 13 | ~~Update `FEATURES.md` + `TODO_LIST.md` in both repos (aggregate, webhook, Prober)~~ done — dashboard side done in the 2026-09-04 docs-health pass                                                         | both      |
+| 14 | ~~Add empty `[Unreleased]` placeholder to dashboard CHANGELOG~~ done — the `[Unreleased]` convention is codified in CHANGELOG + `check-changelog.sh` (2026-09-10)                                          | dashboard |
+| 15 | ~~docs-health HARVEST: route this report's section (f) into TODO_LIST/ROADMAP~~ done — subsequent docs-health HARVEST passes (2026-09-04, 09-10, 09-17)                                                    | dashboard |
+| 16 | ~~Example server: aggregate + webhook demo mode (`nix run .#example`)~~ done — shipped in v0.7.0 (`DEMO_AGGREGATE=1`, `DEMO_WEBHOOK=<url>`)                                                                | dashboard |
+| 17 | ~~Browser test: CSP-clean runtime for an aggregate-rendered page~~ done — aggregate browser test shipped (2026-09-10 full-execution session)                                                               | dashboard |
+| 18 | Kuma section of cookbook validated against a live Kuma instance                                                                                                                                            | docs      |
+| 19 | Ship a Grafana dashboard JSON (status panel + per-check) in docs/                                                                                                                                          | dashboard |
+| 20 | Prometheus alert rules starter pack (rules file, not just PromQL snippets)                                                                                                                                 | dashboard |
+| 21 | ~~Regenerate README screenshots (new sections exist; `screenshot_test` env-guarded)~~ done — screenshots regenerated in the v0.7.0 (Phase D) and v0.8.0 sessions                                           | dashboard |
+| 22 | ~~`nix flake check` both repos (not run this session)~~ done — green runs recorded in CHANGELOG Verified sections since v0.6.0                                                                             | both      |
+| 23 | ~~govulncheck + gosec over new code~~ done — govulncheck green repeatedly (CHANGELOG Verified); gosec still unrun                                                                                          | both      |
+| 24 | ~~CI: assert `GOEXPERIMENT=jsonv2` env explicitly in workflows for both repos~~ done — `GOEXPERIMENT: jsonv2` set in ci.yml + fuzz.yml env blocks                                                          | both      |
+| 25 | Webhook: configurable retry (attempts + backoff), demand-driven                                                                                                                                            | dashboard |
+| 26 | Aggregate staleness surface: per-source last-refresh age (needs go-health timestamp API)                                                                                                                   | go-health |
+| 27 | Document wire-shape difference: aggregate liveness omits `uptime`/`version` that Probe liveness includes                                                                                                   | go-health |
+| 28 | Verify trend/export endpoints with an aggregate source (logic is source-agnostic; test it anyway)                                                                                                          | dashboard |
+| 29 | e2e: aggregate with an empty-checks source renders sanely                                                                                                                                                  | dashboard |
+| 30 | statuspage.io / ntfy / Slack adapter examples in cookbook (consumer-land snippets)                                                                                                                         | docs      |
+| 31 | `promtool check rules` (or lint) for cookbook PromQL if tooling available                                                                                                                                  | docs      |
+| 32 | AGENTS.md cross-link: "one project split in two" note in both repos                                                                                                                                        | both      |
+| 33 | go-health ROADMAP: mark federation/rejected items with rationale pointers to the plan doc                                                                                                                  | go-health |
+| 34 | Decide GET-only guard parity for aggregate handlers (Probe has `WithGETOnly`; aggregate doesn't)                                                                                                           | go-health |
+| 35 | Consider `go-health` README install snippet bump to v0.1.0 (check pinned versions in README)                                                                                                               | go-health |
+| 36 | dashboard README: pin example imports to v0.5.0 in Quick Start                                                                                                                                             | dashboard |
+| 37 | Webhook headers: document Go canonicalization (`authorization` → `Authorization`)                                                                                                                          | dashboard |
+| 38 | Load test: 20-source aggregate under concurrent SSE + scrape                                                                                                                                               | dashboard |
+| 39 | Mark executed steps in the plan doc (execution log)                                                                                                                                                        | dashboard |
+| 40 | Docker example image rebuild check (recent commit added Docker setup)                                                                                                                                      | dashboard |
+| 41 | Retraction safety: none needed, but record tag→commit mapping in CHANGELOG footers                                                                                                                         | both      |
+| 42 | Review `WithTrend` sample values against aggregate worst-of (warn=0.5) for multi-service semantics                                                                                                         | dashboard |
+| 43 | Dashboard version constant → also surface in JSON `/health`? (currently Response.Version comes from probe; aggregate yields empty — decide what multi-service page should show)                            | both      |
+| 44 | Deprecated-tag risk: none; document tag discipline in CONTRIBUTING                                                                                                                                         | both      |
+| 45 | Integration test: webhook against HTTP/1.0-style picky receiver (Go client default is fine; skip unless a consumer appears)                                                                                | dashboard |
+| 46 | `aggregate`: option to include per-source headers in Readiness body? (probably reject — document why)                                                                                                      | go-health |
+| 47 | Cookbook: add "Kubernetes probe wiring for aggregate" section                                                                                                                                              | docs      |
+| 48 | Split cookbook into per-platform pages if it grows                                                                                                                                                         | docs      |
+| 49 | Cross-repo e2e in CI: build dashboard against released go-health (catch drift early)                                                                                                                       | both      |
+| 50 | Postmortem the daemon-commit fragmentation into a session-convention note in AGENTS.md                                                                                                                     | both      |
 
 ## g) Questions I cannot answer myself
 

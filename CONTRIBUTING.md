@@ -76,12 +76,12 @@ proxy, CI, and the GitHub Release page.
 Five scripts guard contributions; CI runs them and each fails loudly with
 a reason:
 
-| Script                       | What it checks                                                                                        |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `scripts/check-changelog.sh` | CHANGELOG structure: exactly one `[Unreleased]` first, semver-descending version sections             |
-| `scripts/check-ui-pins.sh`   | UI dependency pins (templ-components, go-datastar) match the audited versions documented in AGENTS.md |
-| `scripts/pre-push-checks.sh` | The desk gate: build, tests, lint, formatting — run before claiming work is pushable                  |
-| `scripts/verify-release.sh`  | Post-release external state: tag, proxy resolution, CI, GitHub Release page (`verify-release.sh <version>`) |
+| Script                       | What it checks                                                                                                                                                   |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/check-changelog.sh` | CHANGELOG structure: exactly one `[Unreleased]` first, semver-descending version sections                                                                        |
+| `scripts/check-ui-pins.sh`   | UI dependency pins (templ-components, go-datastar) match the audited versions documented in AGENTS.md                                                            |
+| `scripts/pre-push-checks.sh` | The desk gate: build, tests, lint, formatting — run before claiming work is pushable                                                                             |
+| `scripts/verify-release.sh`  | Post-release external state: tag, proxy resolution, CI, GitHub Release page (`verify-release.sh <version>`)                                                      |
 | `scripts/verify-dep-bump.sh` | The full gate chain for a dependency bump: race, vulncheck, the coverage floor, a bench smoke, and the lint guards — a bump cannot skip gates by forgetting them |
 
 Run them locally the same way CI does:

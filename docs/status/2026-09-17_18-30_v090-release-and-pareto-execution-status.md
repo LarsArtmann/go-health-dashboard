@@ -14,26 +14,26 @@ reports).
 
 ## a) FULLY DONE
 
-| # | Work | Evidence |
-| - | ---- | -------- |
-| 1 | **v0.9.0 cut end-to-end (plan M1–M18)** — desk gate green → CHANGELOG `[Unreleased]` re-headed to `[0.9.0] - 2026-09-17` with theme blurb + fresh empty `[Unreleased]` → `Version` const bump + FEATURES Released row in the same commit (`0a1dc1a`) → full gate tail → signed annotated tag `v0.9.0` on `5f71fa6` → tag-first push → master push | `git tag -v v0.9.0`: "Good signature"; `git show v0.9.0:dashboard.go` = `0.9.0` |
-| 2 | **Gate tail all green before the tag**: `nix run .#vulncheck` (no vulnerabilities — plan M3), coverage **82.0%** vs the 78% CI floor (M4), build, test-race, lint, vet, browser suite **15/15 PASS, 0 SKIP** (verbose count per the no-silent-skip rule), `nix fmt` after the last generate, flake check | `/tmp/g-*.log` chain, `OK` per step, `PASS=15` |
-| 3 | **verify-release.sh v0.9.0 — 9/9 green** (plan M15): tag on origin, proxy `Origin.Hash` == tag commit, sumdb-verified download (`h1:EBHgc0…`), clean-dir consumer get/build/run **printed 0.9.0**, release exists (not prerelease), all CI runs green on the release commit, const==tag | `/tmp/m15-verify2.log`, rc=0 |
-| 4 | **GitHub Release v0.9.0 published and is Latest** (M17/M18), notes extracted verbatim from the CHANGELOG section, no `--prerelease` (0.x full-release convention) | `gh api …/releases/latest` → `v0.9.0 published 2026-09-17T07:41:37Z` |
-| 5 | **CI green on the release commit** `5f71fa6` (M16) — version-guard job saw the tag via tag-first push | run `35195569847` success |
-| 6 | **M19 — all three dependabot PRs resolved**: #12 (cachix/install-nix-action) and #4 (golangci-lint-action) squash-merged (`f28aa00`, `51149e6`); #13 (client_model 0.6.2→0.6.3) was DIRTY/conflicted against the v0.2.0 module graph, so the bump landed directly on master as `57d1d0e` (build+test verified first) and the PR was closed with a supersede comment | `gh pr list` → zero open; comment on #13 |
-| 7 | **M20/M21 — histogram bucket-count regression test**: new internal-package `metrics_internal_test.go` asserts `len(buckets) == len(latencyBucketBounds)` AND that the exposition emits one `_bucket{le=}` line per bound plus `+Inf`; FEATURES/AGENTS test counts recounted in the same change (256/34 → **257/35**) so the drift guard stays green | test PASS locally; pre-push-checks all green at commit |
-| 8 | **Release-loop bookkeeping** (`4650cb9`): TODO_LIST dropped the four completed release rows (closed-items-live-in-CHANGELOG rule) and records the release evidence in the narrative; AGENTS.md Status → v0.9.0 + new daemon-scar lesson added to the release-discipline gotcha; FEATURES CI row re-evidenced to `5f71fa6` (verify-release 9/9) | commit `4650cb9`, pushed |
-| 9 | **M1/M2 (from the previous session, confirmed this one)**: push of the plan + docs audit, CI green on `84934ea` | run `35193005155` success |
+| # | Work                                                                                                                                                                                                                                                                                                                                                                | Evidence                                                                        |
+| - | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| 1 | **v0.9.0 cut end-to-end (plan M1–M18)** — desk gate green → CHANGELOG `[Unreleased]` re-headed to `[0.9.0] - 2026-09-17` with theme blurb + fresh empty `[Unreleased]` → `Version` const bump + FEATURES Released row in the same commit (`0a1dc1a`) → full gate tail → signed annotated tag `v0.9.0` on `5f71fa6` → tag-first push → master push                   | `git tag -v v0.9.0`: "Good signature"; `git show v0.9.0:dashboard.go` = `0.9.0` |
+| 2 | **Gate tail all green before the tag**: `nix run .#vulncheck` (no vulnerabilities — plan M3), coverage **82.0%** vs the 78% CI floor (M4), build, test-race, lint, vet, browser suite **15/15 PASS, 0 SKIP** (verbose count per the no-silent-skip rule), `nix fmt` after the last generate, flake check                                                            | `/tmp/g-*.log` chain, `OK` per step, `PASS=15`                                  |
+| 3 | **verify-release.sh v0.9.0 — 9/9 green** (plan M15): tag on origin, proxy `Origin.Hash` == tag commit, sumdb-verified download (`h1:EBHgc0…`), clean-dir consumer get/build/run **printed 0.9.0**, release exists (not prerelease), all CI runs green on the release commit, const==tag                                                                             | `/tmp/m15-verify2.log`, rc=0                                                    |
+| 4 | **GitHub Release v0.9.0 published and is Latest** (M17/M18), notes extracted verbatim from the CHANGELOG section, no `--prerelease` (0.x full-release convention)                                                                                                                                                                                                   | `gh api …/releases/latest` → `v0.9.0 published 2026-09-17T07:41:37Z`            |
+| 5 | **CI green on the release commit** `5f71fa6` (M16) — version-guard job saw the tag via tag-first push                                                                                                                                                                                                                                                               | run `35195569847` success                                                       |
+| 6 | **M19 — all three dependabot PRs resolved**: #12 (cachix/install-nix-action) and #4 (golangci-lint-action) squash-merged (`f28aa00`, `51149e6`); #13 (client_model 0.6.2→0.6.3) was DIRTY/conflicted against the v0.2.0 module graph, so the bump landed directly on master as `57d1d0e` (build+test verified first) and the PR was closed with a supersede comment | `gh pr list` → zero open; comment on #13                                        |
+| 7 | **M20/M21 — histogram bucket-count regression test**: new internal-package `metrics_internal_test.go` asserts `len(buckets) == len(latencyBucketBounds)` AND that the exposition emits one `_bucket{le=}` line per bound plus `+Inf`; FEATURES/AGENTS test counts recounted in the same change (256/34 → **257/35**) so the drift guard stays green                 | test PASS locally; pre-push-checks all green at commit                          |
+| 8 | **Release-loop bookkeeping** (`4650cb9`): TODO_LIST dropped the four completed release rows (closed-items-live-in-CHANGELOG rule) and records the release evidence in the narrative; AGENTS.md Status → v0.9.0 + new daemon-scar lesson added to the release-discipline gotcha; FEATURES CI row re-evidenced to `5f71fa6` (verify-release 9/9)                      | commit `4650cb9`, pushed                                                        |
+| 9 | **M1/M2 (from the previous session, confirmed this one)**: push of the plan + docs audit, CI green on `84934ea`                                                                                                                                                                                                                                                     | run `35193005155` success                                                       |
 
 ## b) PARTIALLY DONE
 
-| # | Work | Done | Missing |
-| - | ---- | ---- | ------- |
+| # | Work                                                   | Done                                                                                                                                                                                                                                                                                                                | Missing                                                                                                                                                                                                                                                                 |
+| - | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1 | **C6 — README screenshots showing per-check metadata** | Fixture upgraded: `timedScreenshotRecorder` (implements `HealthRecorder` + `DetailedHealthRecorder`, per-check `time.Since` measurement) wired into BOTH capture probes so the screenshots can show since/age **and** duration; vet clean; env var names discovered (`SCREENSHOT_OUTPUT`, `SCREENSHOT_OUTPUT_DARK`) | Captures **not taken** (first light run skipped — env var wasn't set), PNGs not regenerated, not eyeballed. The fixture commit got swept by the daemon (`29c5d69`, heuristic message, now permanent on origin) and briefly went CI-red until `b6de6e7` canonicalized it |
-| 2 | **Pareto-plan bookkeeping** | M1–M21 executed | The plan doc has **zero inline annotations** yet (docs-health ANNOTATE mode for M1–M21 disposition); TODO_LIST still carries rows this session satisfied (dependabot merge row, screenshot row wording) |
-| 3 | **CHANGELOG for post-release commits** | `[Unreleased]` section exists (fresh, empty) | No entries yet for the client_model bump, the histogram test, or the upcoming screenshot refresh — batch-level entries unwritten (interacts with the unblessed append-only carve-out from the morning audit) |
-| 4 | **4% integrity tier** | C3 ✓ C4 ✓ C5 ✓ C7 ✓ | C6 (above) — the tier's last task |
+| 2 | **Pareto-plan bookkeeping**                            | M1–M21 executed                                                                                                                                                                                                                                                                                                     | The plan doc has **zero inline annotations** yet (docs-health ANNOTATE mode for M1–M21 disposition); TODO_LIST still carries rows this session satisfied (dependabot merge row, screenshot row wording)                                                                 |
+| 3 | **CHANGELOG for post-release commits**                 | `[Unreleased]` section exists (fresh, empty)                                                                                                                                                                                                                                                                        | No entries yet for the client_model bump, the histogram test, or the upcoming screenshot refresh — batch-level entries unwritten (interacts with the unblessed append-only carve-out from the morning audit)                                                            |
+| 4 | **4% integrity tier**                                  | C3 ✓ C4 ✓ C5 ✓ C7 ✓                                                                                                                                                                                                                                                                                                 | C6 (above) — the tier's last task                                                                                                                                                                                                                                       |
 
 ## c) NOT STARTED
 
@@ -97,58 +97,58 @@ But four scars were earned this session, three of them preventable:
 Sorted by impact; the first block finishes the interrupted tier, the rest is the plan's own order
 (M-numbers reference `docs/planning/2026-09-17_09-04_v090-release-and-full-backlog-pareto.md`).
 
-| # | Task | Source |
-| - | ---- | ------ |
-| 1 | Finish C6: capture light + dark screenshots (env names now known), EYEBALL both PNGs, commit with intent message | C6 |
-| 2 | Annotate the pareto plan (M1–M21 dispositions, inline) | bookkeeping |
-| 3 | TODO_LIST: close the dependabot row + refresh the screenshot row | bookkeeping |
-| 4 | CHANGELOG `[Unreleased]`: entries for client_model bump + histogram test | bookkeeping |
-| 5 | M22: SSE patch-content test — patch payload carries the metadata line | C8 |
-| 6 | M23: extend to evidence-strip line + since text assertions | C8 |
-| 7 | M24: run `BenchmarkHandler_HTMLRendering` (stamping-loop numbers) | C9 |
-| 8 | M25: record results in `docs/research/2026-09-10_benchmarks.md`; commit | C9 |
-| 9 | M26: aggregate metadata integration test (stub + detailed sources) | C10 |
-| 10 | M27: assert since/duration transit the aggregate path; commit | C10 |
-| 11 | M28: fuzz seeds for `formatCheckDuration`/`formatStateAge` (negative/huge/sub-µs) | C11 |
-| 12 | M29: 60s fuzz runs on the two formatters; record; commit | C11 |
-| 13 | M30: public-mode golden fixture (`-golden-update` flow) | C12 |
-| 14 | M31: dark-mode + zero-proven-warning goldens; review diffs line-by-line | C12 |
-| 15 | M32: CSP asserts on new goldens (`title=""`, no `style=`); commit | C12 |
-| 16 | M33: dark-mode axe pass (extend `TestBrowser_Accessibility`) | C13 |
-| 17 | M34: fix or evidence-document any serious/critical axe finding | C13 |
-| 18 | M35: example server — `DetailedHealthRecorder`-backed service | C14 |
-| 19 | M36: example footer Version + shutdown-path exercise | C14 |
-| 20 | M37: example README rows; commit | C14 |
-| 21 | M38: SECURITY.md (reporting contact, supported versions, disclosure note) | C15 |
-| 22 | M39: link SECURITY.md from README | C15 |
-| 23 | M40: README "Upgrading" section (WithBasePath/fingerprint/metadata notes) | C16 |
-| 24 | M41: review pass + link sweep | C16 |
-| 25 | M42: CONTRIBUTING "Guard scripts" section | C17 |
-| 26 | M43: CONTRIBUTING desk-gate + release-checklist pointer | C17 |
-| 27 | M44: CHANGELOG historical audit — diff sections against their tags | C18 |
-| 28 | M45: relocate misplaced `[0.1.0-alpha]` bullets; changelog lint | C18 |
-| 29 | M46: dep-bump verification checklist draft | C19 |
-| 30 | M47: land it (AGENTS bullet or `scripts/verify-dep-bump.sh`) | C19 |
-| 31 | M48: DOMAIN_LANGUAGE evidence terms (proven/unproven/window) | C20 |
-| 32 | M49: DOMAIN_LANGUAGE bootstrap/stacking/contrast terms | C20 |
-| 33 | M50: ROADMAP v1.0 criteria section | C21 |
-| 34 | M51: README "Stability" cross-link | C21 |
-| 35 | M52: evidence tooltips cite `Check.When`… i.e. `Check.Since` when present | C22 |
-| 36 | M53: update evidence tests + goldens; browser suite; commit | C22 |
-| 37 | M54: timeline-from-`Since` design doc (restart semantics) | C23 |
-| 38 | M55: stable-group collapse design + ROADMAP update | C23 |
-| 39 | M56: per-source staleness design note | tail |
-| 40 | M57: `/health/export` since/duration design note (wire stability) | tail |
-| 41 | M58: `deploy/` audit — Grafana/monitoring inventory, gauge-panel gap | tail |
-| 42 | M59: Grafana panel JSON for the duration gauge (if assets exist) | tail |
-| 43 | M72: `~/go/bin` prune vs repo HEAD + rotate `/tmp/bf-*.log` | tail |
-| 44 | M73: buildflow on-demand `-s gitleaks` + `-s codespell`; record | tail |
-| 45 | M74: `buildflow timings --regressions` baseline | tail |
-| 46 | M75: actionlint both workflow files; fix findings | tail |
-| 47 | M76: CI `nix flake check` job + Go version matrix | tail |
-| 48 | M77: CI auto-draft GitHub Release from the CHANGELOG section on tag push | tail |
-| 49 | M78: CI uploads browser screenshots as artifacts | tail |
-| 50 | M79: Dependabot config grouping the templ-components family | tail |
+| #  | Task                                                                                                             | Source      |
+| -- | ---------------------------------------------------------------------------------------------------------------- | ----------- |
+| 1  | Finish C6: capture light + dark screenshots (env names now known), EYEBALL both PNGs, commit with intent message | C6          |
+| 2  | Annotate the pareto plan (M1–M21 dispositions, inline)                                                           | bookkeeping |
+| 3  | TODO_LIST: close the dependabot row + refresh the screenshot row                                                 | bookkeeping |
+| 4  | CHANGELOG `[Unreleased]`: entries for client_model bump + histogram test                                         | bookkeeping |
+| 5  | M22: SSE patch-content test — patch payload carries the metadata line                                            | C8          |
+| 6  | M23: extend to evidence-strip line + since text assertions                                                       | C8          |
+| 7  | M24: run `BenchmarkHandler_HTMLRendering` (stamping-loop numbers)                                                | C9          |
+| 8  | M25: record results in `docs/research/2026-09-10_benchmarks.md`; commit                                          | C9          |
+| 9  | M26: aggregate metadata integration test (stub + detailed sources)                                               | C10         |
+| 10 | M27: assert since/duration transit the aggregate path; commit                                                    | C10         |
+| 11 | M28: fuzz seeds for `formatCheckDuration`/`formatStateAge` (negative/huge/sub-µs)                                | C11         |
+| 12 | M29: 60s fuzz runs on the two formatters; record; commit                                                         | C11         |
+| 13 | M30: public-mode golden fixture (`-golden-update` flow)                                                          | C12         |
+| 14 | M31: dark-mode + zero-proven-warning goldens; review diffs line-by-line                                          | C12         |
+| 15 | M32: CSP asserts on new goldens (`title=""`, no `style=`); commit                                                | C12         |
+| 16 | M33: dark-mode axe pass (extend `TestBrowser_Accessibility`)                                                     | C13         |
+| 17 | M34: fix or evidence-document any serious/critical axe finding                                                   | C13         |
+| 18 | M35: example server — `DetailedHealthRecorder`-backed service                                                    | C14         |
+| 19 | M36: example footer Version + shutdown-path exercise                                                             | C14         |
+| 20 | M37: example README rows; commit                                                                                 | C14         |
+| 21 | M38: SECURITY.md (reporting contact, supported versions, disclosure note)                                        | C15         |
+| 22 | M39: link SECURITY.md from README                                                                                | C15         |
+| 23 | M40: README "Upgrading" section (WithBasePath/fingerprint/metadata notes)                                        | C16         |
+| 24 | M41: review pass + link sweep                                                                                    | C16         |
+| 25 | M42: CONTRIBUTING "Guard scripts" section                                                                        | C17         |
+| 26 | M43: CONTRIBUTING desk-gate + release-checklist pointer                                                          | C17         |
+| 27 | M44: CHANGELOG historical audit — diff sections against their tags                                               | C18         |
+| 28 | M45: relocate misplaced `[0.1.0-alpha]` bullets; changelog lint                                                  | C18         |
+| 29 | M46: dep-bump verification checklist draft                                                                       | C19         |
+| 30 | M47: land it (AGENTS bullet or `scripts/verify-dep-bump.sh`)                                                     | C19         |
+| 31 | M48: DOMAIN_LANGUAGE evidence terms (proven/unproven/window)                                                     | C20         |
+| 32 | M49: DOMAIN_LANGUAGE bootstrap/stacking/contrast terms                                                           | C20         |
+| 33 | M50: ROADMAP v1.0 criteria section                                                                               | C21         |
+| 34 | M51: README "Stability" cross-link                                                                               | C21         |
+| 35 | M52: evidence tooltips cite `Check.When`… i.e. `Check.Since` when present                                        | C22         |
+| 36 | M53: update evidence tests + goldens; browser suite; commit                                                      | C22         |
+| 37 | M54: timeline-from-`Since` design doc (restart semantics)                                                        | C23         |
+| 38 | M55: stable-group collapse design + ROADMAP update                                                               | C23         |
+| 39 | M56: per-source staleness design note                                                                            | tail        |
+| 40 | M57: `/health/export` since/duration design note (wire stability)                                                | tail        |
+| 41 | M58: `deploy/` audit — Grafana/monitoring inventory, gauge-panel gap                                             | tail        |
+| 42 | M59: Grafana panel JSON for the duration gauge (if assets exist)                                                 | tail        |
+| 43 | M72: `~/go/bin` prune vs repo HEAD + rotate `/tmp/bf-*.log`                                                      | tail        |
+| 44 | M73: buildflow on-demand `-s gitleaks` + `-s codespell`; record                                                  | tail        |
+| 45 | M74: `buildflow timings --regressions` baseline                                                                  | tail        |
+| 46 | M75: actionlint both workflow files; fix findings                                                                | tail        |
+| 47 | M76: CI `nix flake check` job + Go version matrix                                                                | tail        |
+| 48 | M77: CI auto-draft GitHub Release from the CHANGELOG section on tag push                                         | tail        |
+| 49 | M78: CI uploads browser screenshots as artifacts                                                                 | tail        |
+| 50 | M79: Dependabot config grouping the templ-components family                                                      | tail        |
 
 (HARVEST input: items 1–4 + the section-b partials belong in TODO_LIST first; the M-numbered items
 already live in the plan and TODO_LIST.)
@@ -175,5 +175,5 @@ prune) stay parked until you answer them — they gate M113–M119 and the evide
 
 ---
 
-*Prepared per the status-report skill (a–g); `.md` override per explicit user instruction. Point-in-time
-snapshot — for bringing current later, use docs-health ANNOTATE, never rewrite.*
+_Prepared per the status-report skill (a–g); `.md` override per explicit user instruction. Point-in-time
+snapshot — for bringing current later, use docs-health ANNOTATE, never rewrite._

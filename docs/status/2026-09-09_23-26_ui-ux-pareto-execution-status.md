@@ -1,12 +1,12 @@
 # Status Report — UI/UX Pareto Plan Execution (Phases A–D) and Release Prep
 
-|                         |                                                                                                                                                                       |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Date**                | 2026-09-09 23:26 (CEST)                                                                                                                                               |
+|                         |                                                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Date**                | 2026-09-09 23:26 (CEST)                                                                                                                                                        |
 | **Session scope**       | Execution of `docs/planning/archived/2026-09-09_19-21_dashboard-ui-ux-pareto.md`: all four phases (A–D, 39 micro-tasks), preceded by an unplanned UI-pin-ceremony intervention |
-| **Repo state**          | `master` @ `db2775b`, pushed. 24 commits since the plan landed (4 authored feat/fix commits, ~20 auto-daemon snapshots)                                               |
-| **Gates at write time** | Unit suite ✅ · race ✅ · lint 0 ✅ · vet ✅ · vulncheck ✅ · `nix flake check` ✅ · UI pins ✅ · browser suite ✅ locally. **CI on master: partially red** — see (d) |
-| **Version**             | `0.7.0` const bumped, **not tagged** → version-guard job red (pending decision)                                                                                       |
+| **Repo state**          | `master` @ `db2775b`, pushed. 24 commits since the plan landed (4 authored feat/fix commits, ~20 auto-daemon snapshots)                                                        |
+| **Gates at write time** | Unit suite ✅ · race ✅ · lint 0 ✅ · vet ✅ · vulncheck ✅ · `nix flake check` ✅ · UI pins ✅ · browser suite ✅ locally. **CI on master: partially red** — see (d)          |
+| **Version**             | `0.7.0` const bumped, **not tagged** → version-guard job red (pending decision)                                                                                                |
 
 ---
 

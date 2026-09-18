@@ -1,9 +1,9 @@
 # Design — Since-Fed Timeline, Stability Collapse, Per-Source Staleness
 
-|            |                                                                                     |
-| ---------- | ------------------------------------------------------------------------------------ |
-| **Date**   | 2026-09-17                                                                           |
-| **Status** | Design note — not implemented; graduates ROADMAP raw ideas (M54–M56 of the pareto plan) |
+|            |                                                                                                       |
+| ---------- | ----------------------------------------------------------------------------------------------------- |
+| **Date**   | 2026-09-17                                                                                            |
+| **Status** | Design note — not implemented; graduates ROADMAP raw ideas (M54–M56 of the pareto plan)               |
 | **Inputs** | go-health v0.2.0 `Check.Since`/`DurationNanos`; the v0.3.x history ring; the 2026-09-17 metadata work |
 
 The v0.9.0 metadata work made the probe's state-entry time (`Check.Since`)

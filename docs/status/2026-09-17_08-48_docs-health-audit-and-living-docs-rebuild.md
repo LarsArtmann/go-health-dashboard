@@ -146,7 +146,7 @@ requested `.md` at a `.md` path, so Markdown was used (house convention for `doc
    instances of the same self-inflicted class, and I added the fifth while typing the countermeasure.
    Mitigation: none taken in-session. The content survived; the history did not.
 2. **Three batch-annotation misfires from unscoped regexes** — the same bug class three times before I
-   learned it: my `^\d+\. ` batch scripts matched numbered items in EVERY section (a/b/c/d/e/g), not just
+   learned it: my `^\d+\.` batch scripts matched numbered items in EVERY section (a/b/c/d/e/g), not just
    the f-list, striking work-records with f-list verdicts and slapping the wrong labels on narrative
    items (`2026-09-10_02-56` a-section; `2026-09-16_07-01` lines 40/48/104/110/197; `2026-09-16_14-55`
    a-section). Each was caught by post-write inspection and repaired — but only after the 02-56 incident
@@ -284,6 +284,6 @@ TODO_LIST rows are canonical); this list adds process/fleet items and ordering. 
 
 ---
 
-*Point-in-time snapshot, 2026-09-17 08:48 CEST. Health scores at close: Accuracy 10/10, Fitness 9.25/10
+_Point-in-time snapshot, 2026-09-17 08:48 CEST. Health scores at close: Accuracy 10/10, Fitness 9.25/10
 (sole open finding: the AGENTS.md prune). The 2026-09-17 05:55 report remains the open continuation point:
-push (f1) and the v0.9.0 decision (f2) are still with you.*
+push (f1) and the v0.9.0 decision (f2) are still with you._

@@ -28,28 +28,28 @@
 
 ## Re-baseline — per-check metadata stamping (v0.9.0)
 
-|             |                                                                                                                                                                                             |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Date**    | 2026-09-17                                                                                                                                                                                  |
+|             |                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Date**    | 2026-09-17                                                                                                                                                                                                                                                                                                                                                                    |
 | **Command** | `GOEXPERIMENT=jsonv2 GOWORK=off go test -run xxx -bench 'BenchmarkHandler_HTMLRendering\|BenchmarkDashboard_FullHTML' -benchtime 2s -count 3 .` at HEAD, then identically in a `v0.8.1` worktree (the last tree before `buildViewModelAt` stamped per-check metadata), plus a stamping-loop micro-benchmark (`BenchmarkBuildViewModelAt_Stamping`, `-benchtime 1s -count 3`). |
-| **Context** | The go-health v0.2.0 consumer upgrade added a per-tick stamping loop (SinceText/DurationText derived once per build) and a metadata line per table row. Plan f7 asked for a before/after run before calling the cost negligible. |
+| **Context** | The go-health v0.2.0 consumer upgrade added a per-tick stamping loop (SinceText/DurationText derived once per build) and a metadata line per table row. Plan f7 asked for a before/after run before calling the cost negligible.                                                                                                                                              |
 
 ### Handler-level: v0.8.1 → HEAD (medians of 3, same machine)
 
-| Benchmark                       | v0.8.1           | HEAD             | Δ                          |
-| ------------------------------- | ---------------- | ---------------- | -------------------------- |
-| Handler_HTMLRendering ns/op     | 40,355           | 52,198           | +~12µs (bimodal on both)   |
-| Dashboard_FullHTML ns/op        | 69,721           | 113,539          | +~44µs                     |
-| Dashboard_FullHTML B/op         | 105,196          | 106,291          | +~1.1KB                    |
-| Dashboard_FullHTML allocs/op    | 571              | 585              | +14                        |
-| FullHTMLWithTrend ns/op         | 59,610           | 113,539          | +~54µs                     |
+| Benchmark                    | v0.8.1  | HEAD    | Δ                        |
+| ---------------------------- | ------- | ------- | ------------------------ |
+| Handler_HTMLRendering ns/op  | 40,355  | 52,198  | +~12µs (bimodal on both) |
+| Dashboard_FullHTML ns/op     | 69,721  | 113,539 | +~44µs                   |
+| Dashboard_FullHTML B/op      | 105,196 | 106,291 | +~1.1KB                  |
+| Dashboard_FullHTML allocs/op | 571     | 585     | +14                      |
+| FullHTMLWithTrend ns/op      | 59,610  | 113,539 | +~54µs                   |
 
 ### Stamping loop in isolation (60-check build, 3 runs each)
 
-| Variant        | ns/op         | B/op    | allocs/op |
-| -------------- | ------------- | ------- | --------- |
-| no metadata    | 9,298–9,420   | 20,664  | 72        |
-| with metadata  | 21,388–22,199 | 25,508  | 432       |
+| Variant       | ns/op         | B/op   | allocs/op |
+| ------------- | ------------- | ------ | --------- |
+| no metadata   | 9,298–9,420   | 20,664 | 72        |
+| with metadata | 21,388–22,199 | 25,508 | 432       |
 
 ### Reading
 
@@ -71,10 +71,10 @@
 
 ## Fuzz runs on the v0.9.0 metadata formatters (2026-09-17)
 
-|             |                                                                                                                                                             |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Date**    | 2026-09-17                                                                                                                                                  |
-| **Command** | `GOEXPERIMENT=jsonv2 GOWORK=off go test -run '^<Target>$' -fuzz '^<Target>$' -fuzztime 60s .` per target, on the tree with the v0.9.0 metadata feature. |
+|             |                                                                                                                                                                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Date**    | 2026-09-17                                                                                                                                                                                                                           |
+| **Command** | `GOEXPERIMENT=jsonv2 GOWORK=off go test -run '^<Target>$' -fuzz '^<Target>$' -fuzztime 60s .` per target, on the tree with the v0.9.0 metadata feature.                                                                              |
 | **Context** | Plan M29: the two new duration formatters (`formatCheckDuration`, `formatStateAge`) gained fuzz targets with hostile seeds; the plan asked for real 60s campaigns, and the two pre-existing high-risk targets were re-run alongside. |
 
 | Target                  | Execs (60s) | New interesting | Result     |

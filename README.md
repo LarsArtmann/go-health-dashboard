@@ -87,19 +87,19 @@ builds a probe from a plain function — use it with `dashboard.New` +
 
 ## Routes
 
-| Path              | Method | Content-Type                  | What It Does                                                                                                              |
-| ----------------- | ------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `/health`         | GET    | text/html or application/json | HTML dashboard (default) or JSON health response (Accept: application/json). JSON returns 503 when critical services fail |
-| `/health/sse`     | GET    | text/event-stream             | SSE endpoint (Datastar patch protocol)                                                                                    |
-| `/favicon.svg`    | GET    | image/svg+xml                 | SVG favicon (embedded green-heart icon)                                                                                   |
-| `/health/metrics` | GET    | text/plain                    | Prometheus exposition with latency histogram (only when `WithMetrics(true)`)                                              |
-| `/health/trend`   | GET    | application/json              | Status history + transitions (only when `WithTrend`)                                                                      |
-| `/health/export`  | GET    | application/json or text/csv  | History export, `?format=csv` or `Accept: text/csv` (only when `WithTrend`)                                               |
-| `/health/introspect` | GET | application/json              | Resolved configuration as JSON (only when `WithIntrospection()`)                                                          |
-| `/health/datastar.js` | GET | application/javascript        | Embedded Datastar SDK bundle (only when `WithEmbeddedDatastarSDK()`)                                                      |
-| `/healthz`        | GET    | application/json              | Liveness probe (always 200, no dependency checks)                                                                         |
-| `/readyz`         | GET    | application/json              | Readiness probe (503 when critical services fail)                                                                         |
-| `/startupz`       | GET    | application/json              | Startup probe (latched once all critical services pass)                                                                   |
+| Path                  | Method | Content-Type                  | What It Does                                                                                                              |
+| --------------------- | ------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `/health`             | GET    | text/html or application/json | HTML dashboard (default) or JSON health response (Accept: application/json). JSON returns 503 when critical services fail |
+| `/health/sse`         | GET    | text/event-stream             | SSE endpoint (Datastar patch protocol)                                                                                    |
+| `/favicon.svg`        | GET    | image/svg+xml                 | SVG favicon (embedded green-heart icon)                                                                                   |
+| `/health/metrics`     | GET    | text/plain                    | Prometheus exposition with latency histogram (only when `WithMetrics(true)`)                                              |
+| `/health/trend`       | GET    | application/json              | Status history + transitions (only when `WithTrend`)                                                                      |
+| `/health/export`      | GET    | application/json or text/csv  | History export, `?format=csv` or `Accept: text/csv` (only when `WithTrend`)                                               |
+| `/health/introspect`  | GET    | application/json              | Resolved configuration as JSON (only when `WithIntrospection()`)                                                          |
+| `/health/datastar.js` | GET    | application/javascript        | Embedded Datastar SDK bundle (only when `WithEmbeddedDatastarSDK()`)                                                      |
+| `/healthz`            | GET    | application/json              | Liveness probe (always 200, no dependency checks)                                                                         |
+| `/readyz`             | GET    | application/json              | Readiness probe (503 when critical services fail)                                                                         |
+| `/startupz`           | GET    | application/json              | Startup probe (latched once all critical services pass)                                                                   |
 
 ## Options
 
@@ -346,23 +346,23 @@ GOEXPERIMENT=jsonv2 DEMO_TREND=1 DEMO_METRICS=1 DEMO_AUTH=my-token DEMO_RATELIMI
 
 All toggles are optional — plain `go run ./example` works too.
 
-| Variable                 | Effect                                                         |
-| ------------------------ | -------------------------------------------------------------- |
-| `DEMO_TREND=1`           | Health trend sparkline (`WithTrend`)                           |
-| `DEMO_METRICS=1`         | Prometheus endpoint at `/health/metrics` (`WithMetrics`)       |
-| `DEMO_AUTH=<token>`      | Bearer-token middleware on dashboard routes (`WithMiddleware`) |
-| `DEMO_RATELIMIT=n/w`     | Token-bucket rate limit, e.g. `30/1m` (`WithRateLimit`)        |
-| `DEMO_DRAIN=5s`          | Graceful SSE drain window on shutdown (`WithShutdownDrain`)    |
-| `DEMO_PUBLIC=1`          | Public mode — anonymized check names (`WithPublicMode`)        |
-| `DEMO_BASE_PATH=/status` | Mount the dashboard under `/status` (`WithBasePath`)           |
-| `DEMO_COLLAPSE=<n>`      | Collapse healthy group at n rows (`WithHealthyGroupCollapse`)  |
-| `DEMO_PERSIST=1`         | Persist collapse state (`WithPersistCollapse`)                 |
+| Variable                 | Effect                                                               |
+| ------------------------ | -------------------------------------------------------------------- |
+| `DEMO_TREND=1`           | Health trend sparkline (`WithTrend`)                                 |
+| `DEMO_METRICS=1`         | Prometheus endpoint at `/health/metrics` (`WithMetrics`)             |
+| `DEMO_AUTH=<token>`      | Bearer-token middleware on dashboard routes (`WithMiddleware`)       |
+| `DEMO_RATELIMIT=n/w`     | Token-bucket rate limit, e.g. `30/1m` (`WithRateLimit`)              |
+| `DEMO_DRAIN=5s`          | Graceful SSE drain window on shutdown (`WithShutdownDrain`)          |
+| `DEMO_PUBLIC=1`          | Public mode — anonymized check names (`WithPublicMode`)              |
+| `DEMO_BASE_PATH=/status` | Mount the dashboard under `/status` (`WithBasePath`)                 |
+| `DEMO_COLLAPSE=<n>`      | Collapse healthy group at n rows (`WithHealthyGroupCollapse`)        |
+| `DEMO_PERSIST=1`         | Persist collapse state (`WithPersistCollapse`)                       |
 | `DEMO_EMBEDDED_SDK=1`    | Serve the SDK from `/health/datastar.js` (`WithEmbeddedDatastarSDK`) |
-| `DEMO_GROUPING=source`   | Source-grouped cards for aggregates (`WithGrouping`)           |
-| `DEMO_AGGREGATE=1`       | Two-probe go-health aggregate demo (`aggregate.New`)           |
-| `DEMO_DETAILED=1`       | `NewWithDetailedCheck` source with self-timed mock deps        |
-| `DEMO_WEBHOOK=<url>`     | POST transitions to a validated receiver (`WithWebhook`)       |
-| `PORT`                   | Listen port (default 8080)                                     |
+| `DEMO_GROUPING=source`   | Source-grouped cards for aggregates (`WithGrouping`)                 |
+| `DEMO_AGGREGATE=1`       | Two-probe go-health aggregate demo (`aggregate.New`)                 |
+| `DEMO_DETAILED=1`        | `NewWithDetailedCheck` source with self-timed mock deps              |
+| `DEMO_WEBHOOK=<url>`     | POST transitions to a validated receiver (`WithWebhook`)             |
+| `PORT`                   | Listen port (default 8080)                                           |
 
 The example includes mock services: one always healthy, one flapping (alternates
 pass/fail every 15s), and one always failing. Watch the dashboard update live.
@@ -386,12 +386,12 @@ pass/fail every 15s), and one always failing. Watch the dashboard update live.
 
 Tested version matrix (`go.mod` is the live source of truth):
 
-| Dependency       | Version | Note                                                |
-| ---------------- | ------- | --------------------------------------------------- |
+| Dependency       | Version | Note                                                                       |
+| ---------------- | ------- | -------------------------------------------------------------------------- |
 | go-health        | v0.2.0  | `aggregate` needs v0.1.0+; per-check since/duration metadata needs v0.2.0+ |
-| templ-components | v1.17.0 | pinned — CI guard + browser-suite re-audit on bumps |
-| go-datastar      | v0.5.0  | audited SDK bundle; needs CSP `unsafe-eval`         |
-| go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                      |
+| templ-components | v1.17.0 | pinned — CI guard + browser-suite re-audit on bumps                        |
+| go-datastar      | v0.5.0  | audited SDK bundle; needs CSP `unsafe-eval`                                |
+| go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                                             |
 
 ## Upgrading
 

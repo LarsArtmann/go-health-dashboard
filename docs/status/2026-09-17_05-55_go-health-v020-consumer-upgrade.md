@@ -74,7 +74,7 @@ heuristic commits before I could intercept (self-inflicted — details in d/e).
    HEAD green); history readability partially lost to "heuristic" messages. Root cause is mine — see e1.
 2. **Verification depth on the SSE patch path** — the initial HTML render is golden-verified and the
    browser suite proves the live page CSP-clean with the metadata line, but there is no content-level
-   assertion that a *patch payload* carries the metadata line (it must — patches share
+   assertion that a _patch payload_ carries the metadata line (it must — patches share
    `buildViewModelAt` — yet it's unproven by a test).
 3. **Draft adoption path** — 2 of 4 recorded items shipped (row metadata, per-check duration). The other
    two (status-change timeline fed by service-reported `Since`; stable-group collapse with an honest
@@ -256,9 +256,9 @@ Nothing shipped broken — every gate is green and the tree is clean. Honest lis
 
 ---
 
-*Report is a point-in-time snapshot. The f-list above is brainstorm input for `docs-health` HARVEST, not
+_Report is a point-in-time snapshot. The f-list above is brainstorm input for `docs-health` HARVEST, not
 a commitment list. Nothing was pushed; nothing was released; no user-visible surface changed beyond the
-documented feature work.*
+documented feature work._
 
 **Continuation (2026-09-17 docs-health session):** f16 HARVEST executed (f1–f15, f17–f20 routed into
 `TODO_LIST.md`/`ROADMAP.md`/`docs/release-checklist.md`/AGENTS.md — the dep-bump checklist is a
