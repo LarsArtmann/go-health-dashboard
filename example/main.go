@@ -44,8 +44,8 @@ import (
 
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
-	"github.com/larsartmann/go-health/aggregate"
 	"github.com/larsartmann/go-health-dashboard/pkg/version"
+	"github.com/larsartmann/go-health/aggregate"
 	"github.com/samber/do/v2"
 )
 

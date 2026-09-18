@@ -37,31 +37,35 @@ var Version = resolve(injected, readBuildInfo())
 // resolve picks the version. Precedence: ldflags injection (nix shortRev
 // or an explicit release string), then the toolchain's VCS stamp, then
 // "dev".
-func resolve(injected string, bi *debug.BuildInfo) string {
+func resolve(injected string, buildInfo *debug.BuildInfo) string {
 	if injected != "" {
 		return injected
 	}
-	if stamp := vcsStamp(bi); stamp != "" {
+
+	if stamp := vcsStamp(buildInfo); stamp != "" {
 		return stamp
 	}
+
 	return "dev"
 }
 
 func readBuildInfo() *debug.BuildInfo {
 	bi, _ := debug.ReadBuildInfo()
+
 	return bi
 }
 
 // vcsStamp derives "<shortrev>" or "<shortrev>-dirty" from the build's
 // embedded VCS settings. It returns the empty string when the binary
 // carries no VCS metadata (nix builds, go install).
-func vcsStamp(bi *debug.BuildInfo) string {
-	if bi == nil {
+func vcsStamp(buildInfo *debug.BuildInfo) string {
+	if buildInfo == nil {
 		return ""
 	}
 
 	var revision, modified string
-	for _, setting := range bi.Settings {
+
+	for _, setting := range buildInfo.Settings {
 		switch setting.Key {
 		case "vcs.revision":
 			revision = setting.Value
@@ -82,6 +86,7 @@ func vcsStamp(bi *debug.BuildInfo) string {
 	if modified == "true" {
 		return short + dirtySuffix
 	}
+
 	return short
 }
 
