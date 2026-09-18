@@ -46,11 +46,11 @@ forgetting.
   composable with `DEMO_AGGREGATE`. The example's startup line now
   identifies the serving build (`go-health-dashboard v<version>`).
 - `scripts/verify-dep-bump.sh`: the fixed gate chain for a dependency
-  bump (build, tests, race, lint, vet, vulncheck, coverage, bench smoke,
-  UI pins, changelog lint, canonical formatting) so a bump cannot skip
-  gates by forgetting them — a per-repo answer mirroring
-  `scripts/verify-release.sh`; the fleet-level placement question stays
-  open.
+  bump (build, tests, race, lint, vet, vulncheck, an ENFORCED coverage
+  floor of 80% — not report-only, bench smoke, UI pins, changelog lint,
+  canonical formatting) so a bump cannot skip gates by forgetting them —
+  a per-repo answer mirroring `scripts/verify-release.sh`; the
+  fleet-level placement question stays open.
 - Dark-mode accessibility re-audit: the axe run now toggles the theme and
   re-audits in the same browser session — zero serious/critical findings
   in either theme.
@@ -70,9 +70,20 @@ forgetting.
   60-check tick, retry stamping within noise) and
   `BenchmarkDashboard_HealthCheck` (~3ns, 0 allocs) record the
   lifecycle costs.
+- `FuzzShortDisplayName`, `FuzzFormatCheckDuration`,
+  `FuzzFormatStateAge`, and `FuzzEvidenceSummaryText` joined the
+  nightly fuzz workflow, which now runs one 60s campaign for every
+  target in `fuzz_test.go` (registry-in-same-change rule).
 
 ### Changed
 
+- templ-components v1.17.0 → v1.18.0. The bump landed as an unguarded
+  deps commit (seventh sweep — the pin guard went red in CI as
+  designed); adoption was completed as a dedicated change: the full
+  browser suite (runtime CSP, live SSE patch, a11y including the
+  dark-mode re-audit) ran green on the bumped set under strict CSP,
+  and the guard pins, README matrix, and FEATURES row moved in the
+  same change.
 - `prometheus/client_model` bumped 0.6.2 → 0.6.3.
 - README light/dark/degraded screenshots regenerated through the
   detailed-check recorder fixture: the metadata line and the
