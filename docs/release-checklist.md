@@ -8,10 +8,17 @@ Version history source of truth: `CHANGELOG.md` (Keep a Changelog).
 
 - [ ] `git fetch && git status` — clean tree, synced with `origin/master`.
 - [ ] Dependency pins intact: `scripts/check-ui-pins.sh` exits 0
-      (currently templ-components v1.17.0 + v1.17.0/datastar +
-      v1.17.0/utils + go-datastar v0.5.0).
+      (currently templ-components v1.18.0 + v1.18.0/datastar +
+      v1.18.0/utils + go-datastar v0.5.0).
       Any movement must be a dedicated, audited change with a green
       browser suite — never a silent sweep.
+- [ ] Fuzz registry in sync: every `func Fuzz…` in `fuzz_test.go` has a
+      60s step in `.github/workflows/fuzz.yml` (registry-in-same-change
+      rule — a new target without its nightly step never truly fuzzes).
+- [ ] Tag ruleset intact: the `protect-release-tags` ruleset
+      (id 23637848: `refs/tags/v*` deletion + non-fast-forward blocked,
+      bypass never) is active. Break-glass = disable the rule in the web
+      UI; re-create via the rulesets API if ever removed.
 - [ ] `TODO_LIST.md` rows intended for this release are done or deferred.
 
 ## 2. CHANGELOG

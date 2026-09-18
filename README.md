@@ -247,7 +247,9 @@ scrape_configs:
 `WithTrend(n)` retains the last n status samples (one per push interval,
 pass=1 / warn=0.5 / fail=0) and renders a sparkline card above the service
 tables. The card appears once two samples exist and updates live via the
-same SSE stream.
+same SSE stream. Samples record the overall status only — per-check
+since/duration facts ride the service tables and `/health/export`, not the
+trend series.
 
 ## Monitoring Integrations
 
