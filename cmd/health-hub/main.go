@@ -29,9 +29,9 @@ import (
 	"syscall"
 	"time"
 
-	healthfederation "github.com/larsartmann/go-health/federation"
 	dashboard "github.com/larsartmann/go-health-dashboard"
 	"github.com/larsartmann/go-health-dashboard/pkg/version"
+	healthfederation "github.com/larsartmann/go-health/federation"
 )
 
 const (
@@ -69,11 +69,11 @@ func main() {
 		log.Fatalf("federation.New: %v", err)
 	}
 
-	dash := dashboard.New(
-		fed,
-		dashboard.WithGrouping(dashboard.GroupBySource),
+	opts := append(
+		[]dashboard.Option{dashboard.WithGrouping(dashboard.GroupBySource)},
 		optionsFromEnv()...,
 	)
+	dash := dashboard.New(fed, opts...)
 
 	if err := dash.Start(ctx); err != nil {
 		log.Fatalf("dash.Start: %v", err)
@@ -93,13 +93,13 @@ func main() {
 	)
 	for _, remote := range remotes {
 		parsed, parseErr := url.Parse(remote.URL)
-				if parseErr != nil {
-					log.Printf("remote: %s -> (unloggable URL)", remote.Name)
+		if parseErr != nil {
+			log.Printf("remote: %s -> (unloggable URL)", remote.Name)
 
-					continue
-				}
-				log.Printf("remote: %s -> %s", remote.Name, parsed.Redacted())
-			}
+			continue
+		}
+		log.Printf("remote: %s -> %s", remote.Name, parsed.Redacted())
+	}
 
 	server := &http.Server{
 		Addr:              addr,
