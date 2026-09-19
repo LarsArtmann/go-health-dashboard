@@ -145,7 +145,7 @@
               GOEXPERIMENT=jsonv2 go vet ./...
             '';
 
-            lint = mkApp "lint" [ pkgs.golangci-lint ] ''
+            lint = mkApp "lint" [ goPkg pkgs.golangci-lint ] ''
               GOEXPERIMENT=jsonv2 golangci-lint run ./...
             '';
 
@@ -156,11 +156,11 @@
               go tool cover -func=coverage.out
             '';
 
-            vulncheck = mkApp "vulncheck" [ pkgs.govulncheck ] ''
+            vulncheck = mkApp "vulncheck" [ goPkg pkgs.govulncheck ] ''
               GOEXPERIMENT=jsonv2 govulncheck ./...
             '';
 
-            security = mkApp "security" [ pkgs.gosec ] ''
+            security = mkApp "security" [ goPkg pkgs.gosec ] ''
               GOEXPERIMENT=jsonv2 gosec ./...
             '';
 
