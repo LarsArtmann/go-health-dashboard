@@ -163,7 +163,17 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **gopls stdversion warnings dismissed** — gopls flags `json.Unmarshal requires go1.27` identically with AND without `GOEXPERIMENT=jsonv2` (gopls v0.23.0); `json.Unmarshal` is legitimate on go1.26 under the experiment. Dismissed via `analyses.stdversion: false` in `.vscode/settings.json` (which also sets the gopls env). Trust `nix run .#lint` over editor squiggles; re-check on gopls upgrade (ROADMAP).
 - **GOWORK=off in devShell** — The parent `~/projects/go.work` includes all sibling repos. The flake.nix sets `GOWORK=off` to prevent workspace interference.
 - **Gates race the auto-daemon** — a `nix fmt` dirty-tree check (or any diff-based gate) can false-fail when the daemon commits the fmt output between the diff and the status call. Gates must retry once before trusting a failure; and never run Go tooling (erraudit, go list, tests) while a buildflow run is active — its steps mutate go.mod and `*_templ.go` mid-flight.
-- **templ generate before build** — `*_templ.go` files must be regenerated when `.templ` sources change. The flake.nix runs `templ generate` as a pre-build step.
+- **The templ generator is pinned by go.mod's `tool` directive** — `go tool
+  templ generate` is the ONLY sanctioned invocation, everywhere (flake apps,
+  the health-hub FOD preBuild, CI, local shells; `pkgs.templ` was removed).
+  The old split-brain: the FOD regenerated with nixpkgs' `templ`, an
+  UNPINNED version that happened to equal go.mod's `v0.3.1020` on
+  2026-09-19 by coincidence — any nixpkgs bump would silently change the
+  generated output the golden tests pin. With the tool directive the
+  generator version structurally cannot diverge from the module's own
+  requirement. Upgrading templ = bump go.mod, run `go tool templ generate`,
+  commit the (possibly re-formatted) output in the same change. The raw
+  output is still unformatted Go: canonical order stays generate → fmt.
 - **Probe and Dashboard must be Started** — Call `probe.Start(ctx)` and `dash.Start(ctx)` before serving traffic. Without Start, `CachedResponse()` returns a zero-value Response and the pusher goroutine isn't running.
 - **No replace directives in the released module** — As of v0.1.0 all dependencies resolve from published versions. Local `replace` directives to sibling repos (`../go-health`, `../templ-components`, `../go-datastar`, `../go-sse`) are only needed for local development against unpublished sibling changes; never commit them.
 - **templ compiler doesn't support embedded fields** — Must use `utils.BaseProps{ID: "..."}` explicitly in templ struct literals, not `ID: "..."` at the top level.

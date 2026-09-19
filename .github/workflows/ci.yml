@@ -40,11 +40,10 @@ jobs:
       - name: UI dependency pin guard
         run: bash scripts/check-ui-pins.sh
 
-      - name: Install templ CLI
-        run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
-
       - name: Generate templ files
-        run: templ generate ./...
+        # The generator is pinned by go.mod's tool directive — its version
+        # cannot drift from the one the committed output was generated with.
+        run: go tool templ generate ./...
 
       - name: Build
         run: go build ./...
@@ -55,10 +54,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The pinned floor plus the latest 1.26.x patch (verified against
-        # the official golang/go tags 2026-09-17): catches patch-level
+        # The go.mod floor and the latest 1.27.x patch (verified against
+        # the official golang/go tags 2026-09-19): catches patch-level
         # toolchain regressions without widening to new minors.
-        go: ["1.26.7", "1.26.8"]
+        go: ["1.27.1"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -69,11 +68,10 @@ jobs:
       - name: UI dependency pin guard
         run: bash scripts/check-ui-pins.sh
 
-      - name: Install templ CLI
-        run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
-
       - name: Generate templ files
-        run: templ generate ./...
+        # The generator is pinned by go.mod's tool directive — its version
+        # cannot drift from the one the committed output was generated with.
+        run: go tool templ generate ./...
 
       - name: Test with race detector and coverage
         # Coverage is scoped to the library package: the example carries
@@ -121,11 +119,10 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Install templ CLI
-        run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
-
       - name: Generate templ files
-        run: templ generate ./...
+        # The generator is pinned by go.mod's tool directive — its version
+        # cannot drift from the one the committed output was generated with.
+        run: go tool templ generate ./...
 
       - name: Install Chrome
         run: |
@@ -169,11 +166,10 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Install templ CLI
-        run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
-
       - name: Generate templ files
-        run: templ generate ./...
+        # The generator is pinned by go.mod's tool directive — its version
+        # cannot drift from the one the committed output was generated with.
+        run: go tool templ generate ./...
 
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9
         with:
@@ -190,11 +186,10 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Install templ CLI
-        run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
-
       - name: Generate templ files
-        run: templ generate ./...
+        # The generator is pinned by go.mod's tool directive — its version
+        # cannot drift from the one the committed output was generated with.
+        run: go tool templ generate ./...
 
       - name: Run govulncheck
         run: |
@@ -239,16 +234,16 @@ jobs:
       - name: Install templ CLI
         run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
 
-      # Canonical generated-file form is `templ generate` output AFTER
-      # treefmt (gofumpt regroups the templ-generated imports). So the
+      # Canonical generated-file form is `go tool templ generate` output
+      # AFTER treefmt (gofumpt regroups the templ-generated imports). So the
       # drift check regenerates, formats, and fails on ANY resulting diff:
       # this catches stale generated files and unformatted files at once.
       - name: templ generate + fmt drift check
         run: |
-          templ generate ./...
+          go tool templ generate ./...
           nix fmt
           if ! git diff --exit-code; then
-            echo "::error::templ generate + nix fmt produced diffs — commit the result of 'templ generate' followed by 'nix fmt'"
+            echo "::error::go tool templ generate + nix fmt produced diffs — commit the result of 'go tool templ generate' followed by 'nix fmt'"
             exit 1
           fi
 

@@ -72,10 +72,11 @@
               env.GOEXPERIMENT = "jsonv2";
 
               # view_templ.go is generated from view.templ; fresh checkouts
-              # (and the flake source) may not carry it.
-              nativeBuildInputs = [ pkgs.templ ];
+              # (and the flake source) may not carry it. The generator comes
+              # from go.mod's tool directive, so its version can never
+              # diverge from the one the committed output was generated with.
               preBuild = ''
-                templ generate
+                go tool templ generate
               '';
 
               ldflags = [
@@ -102,7 +103,6 @@
               pkgs.gotools
               pkgs.govulncheck
               pkgs.gosec
-              pkgs.templ
               pkgs.trash-cli
               pkgs.chromium
             ];
@@ -120,23 +120,23 @@
           };
 
           apps = {
-            generate = mkApp "generate" [ goPkg pkgs.templ ] ''
-              templ generate
+            generate = mkApp "generate" [ goPkg ] ''
+              go tool templ generate
               go mod tidy
             '';
 
             test = mkApp "test" [ goPkg ] ''
-              templ generate
+              go tool templ generate
               GOEXPERIMENT=jsonv2 go test ./... -count=1 "$@"
             '';
 
             test-race = mkApp "test-race" [ goPkg ] ''
-              templ generate
+              go tool templ generate
               GOEXPERIMENT=jsonv2 go test ./... -race -count=1 "$@"
             '';
 
-            build = mkApp "build" [ goPkg pkgs.templ ] ''
-              templ generate
+            build = mkApp "build" [ goPkg ] ''
+              go tool templ generate
               GOEXPERIMENT=jsonv2 go build ./...
             '';
 
@@ -163,8 +163,8 @@
               GOEXPERIMENT=jsonv2 gosec ./...
             '';
 
-            example = mkApp "example" [ goPkg pkgs.templ ] ''
-              templ generate
+            example = mkApp "example" [ goPkg ] ''
+              go tool templ generate
               GOEXPERIMENT=jsonv2 go run ./example "$@"
             '';
 
