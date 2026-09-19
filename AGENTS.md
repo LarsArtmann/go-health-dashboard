@@ -142,7 +142,12 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - SSE tested with short-timeout context (handler blocks for streaming). Verifies `text/event-stream` content-type and `datastar-patch-elements` event type. Never request `/health/sse` through a plain `httptest.ResponseRecorder` without a timeout — the streaming handler blocks forever and the package hits the 10-minute `go test` timeout.
 - Change detection tested via `TestFingerprintChecks_Deterministic` and `TestFingerprintChecks_DetectsChanges`.
 - Trend rendering tests poll with `waitForBody` (25ms interval, 3s deadline) instead of fixed sleeps; SSE disconnect tests poll `SubscriberCount()` the same way. Patches are asserted CSP-clean (no `style=`) via `TestSSE_PatchContentHasNoInlineStyles` (PushAlways for a multi-patch stream).
-- Fuzz: every target in `fuzz_test.go` (see `.github/workflows/fuzz.yml` — one 60s campaign per target nightly) also runs as seed tests in plain `go test`; fuzz properly with `GOEXPERIMENT=jsonv2 go test -fuzz <Target> -fuzztime 60s .`. New fuzz target ⇒ `fuzz.yml` + this file updated in the SAME change (the registry rule the UI pin guard already teaches).
+- Fuzz: every target in `fuzz_test.go` and `cmd/health-hub/fuzz_test.go` (see
+  `.github/workflows/fuzz.yml` — one 60s campaign per target nightly) also runs as
+  seed tests in plain `go test`; fuzz properly with `GOEXPERIMENT=jsonv2 go test
+  -fuzz <Target> -fuzztime 60s <pkg-dir>` (cmd targets take their package
+  directory, e.g. `./cmd/health-hub`). New fuzz target ⇒ `fuzz.yml` + this file
+  updated in the SAME change (the registry rule the UI pin guard already teaches).
 - Browser tests need Chrome: the devShell provides it (`GO_HEALTH_DASHBOARD_CHROME` is set to nix chromium), so `nix develop -c go test -run TestBrowser` just works; CI installs Chrome in the browser job. Screenshot capture additionally needs `SCREENSHOT_OUTPUT=docs/screenshot.png`.
 - Lifecycle tests in `lifecycle_test.go`: `HealthCheck` before/after Start/Shutdown, `Register` participation in `do.HealthCheck`/`do.Shutdown` cascades, idempotent `Shutdown`.
 - Benchmarks: `BenchmarkHandler_HTMLRendering`.

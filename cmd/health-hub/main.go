@@ -162,6 +162,12 @@ func optionsFromEnv() []dashboard.Option {
 // failure names the offending entry and the expected shape, so a typo in
 // a long list is fixable from the log line alone.
 func parseRemotes(spec string) ([]healthfederation.Remote, error) {
+	if strings.TrimSpace(spec) == "" {
+		return nil, errors.New(
+			"at least one name=url entry is required (comma-separated, e.g. cv=http://127.0.0.1:8080/health)",
+		)
+	}
+
 	entries := strings.Split(spec, ",")
 	remotes := make([]healthfederation.Remote, 0, len(entries))
 
@@ -210,12 +216,6 @@ func parseRemotes(spec string) ([]healthfederation.Remote, error) {
 		seen[name] = true
 
 		remotes = append(remotes, healthfederation.Remote{Name: name, URL: rawURL})
-	}
-
-	if len(remotes) == 0 {
-		return nil, errors.New(
-			"at least one name=url entry is required (comma-separated, e.g. cv=http://127.0.0.1:8080/health)",
-		)
 	}
 
 	return remotes, nil

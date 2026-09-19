@@ -6,8 +6,6 @@ import (
 	"strings"
 	"testing"
 	"unicode"
-
-	healthfederation "github.com/larsartmann/go-health/federation"
 )
 
 // FuzzParseRemotes exercises the remote-spec parser with arbitrary input.

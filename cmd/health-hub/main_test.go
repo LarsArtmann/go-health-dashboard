@@ -60,9 +60,9 @@ func TestParseRemotes(t *testing.T) {
 			wantErr: "at least one name=url entry is required",
 		},
 		{
-			name:    "whitespace-only spec",
+			name:    "whitespace-only spec is an empty spec",
 			spec:    "   ",
-			wantErr: `entry 0 ("   ")`,
+			wantErr: "at least one name=url entry is required",
 		},
 		{
 			name:    "entry without equals sign names the offender",

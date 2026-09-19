@@ -66,6 +66,9 @@ jobs:
       - name: Fuzz evidence summary text
         run: go test -run '^$' -fuzz FuzzEvidenceSummaryText -fuzztime 60s .
 
+      - name: Fuzz remote-spec parser
+        run: go test -run '^$' -fuzz FuzzParseRemotes -fuzztime 60s ./cmd/health-hub
+
       - name: Print crasher inputs
         if: failure()
         run: |
