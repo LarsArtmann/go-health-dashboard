@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"unicode"
+
+	healthfederation "github.com/larsartmann/go-health/federation"
 )
 
 // FuzzParseRemotes exercises the remote-spec parser with arbitrary input.
@@ -20,7 +22,7 @@ func FuzzParseRemotes(f *testing.F) {
 		"cv=http://127.0.0.1:8098/health,forgejo=http://forgejo.home.lan:3000/health",
 		" cv = http://127.0.0.1:8098/health ",
 		"cv=http://127.0.0.1:8098/health?token=a=b",
-		"cv=http://monitor:secret@127.0.0.1:8098/health",
+		"cv=http://monitor@127.0.0.1:8098/health",
 		"cv=HTTP://127.0.0.1:8098/health",
 		"héllo=http://127.0.0.1:8098/health",
 		"",
@@ -46,6 +48,7 @@ func FuzzParseRemotes(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, spec string) {
 		got, err := parseRemotes(spec)
+
 		if err != nil {
 			if got != nil {
 				t.Fatalf("parseRemotes(%q) returned remotes alongside error %v", spec, err)
@@ -58,28 +61,10 @@ func FuzzParseRemotes(f *testing.F) {
 			t.Fatalf("parseRemotes(%q) accepted an empty remote list", spec)
 		}
 
-		seen := make(map[string]bool, len(got))
-		for _, remote := range got {
-			if remote.Name == "" ||
-				strings.Contains(remote.Name, "/") ||
-				strings.ContainsFunc(remote.Name, unicode.IsSpace) {
-				t.Fatalf("parseRemotes(%q) accepted invalid remote name %q", spec, remote.Name)
-			}
-
-			if seen[remote.Name] {
-				t.Fatalf("parseRemotes(%q) accepted duplicate remote name %q", spec, remote.Name)
-			}
-			seen[remote.Name] = true
-
-			parsed, parseErr := url.Parse(remote.URL)
-			if parseErr != nil ||
-				(parsed.Scheme != "http" && parsed.Scheme != "https") ||
-				parsed.Host == "" {
-				t.Fatalf("parseRemotes(%q) accepted invalid remote URL %q", spec, remote.URL)
-			}
-		}
+		assertRemoteInvariants(t, spec, got)
 
 		again, againErr := parseRemotes(spec)
+
 		if againErr != nil || !reflect.DeepEqual(got, again) {
 			t.Fatalf(
 				"parseRemotes(%q) is not deterministic: first %+v/%v, then %+v/%v",
@@ -87,4 +72,34 @@ func FuzzParseRemotes(f *testing.F) {
 			)
 		}
 	})
+}
+
+// assertRemoteInvariants fails the test if any accepted remote violates
+// the parse-level name and URL contract.
+func assertRemoteInvariants(t *testing.T, spec string, got []healthfederation.Remote) {
+	t.Helper()
+
+	seen := make(map[string]bool, len(got))
+
+	for _, remote := range got {
+		if remote.Name == "" ||
+			strings.Contains(remote.Name, "/") ||
+			strings.ContainsFunc(remote.Name, unicode.IsSpace) {
+			t.Fatalf("parseRemotes(%q) accepted invalid remote name %q", spec, remote.Name)
+		}
+
+		if seen[remote.Name] {
+			t.Fatalf("parseRemotes(%q) accepted duplicate remote name %q", spec, remote.Name)
+		}
+
+		seen[remote.Name] = true
+
+		parsed, parseErr := url.Parse(remote.URL)
+
+		if parseErr != nil ||
+			(parsed.Scheme != "http" && parsed.Scheme != "https") ||
+			parsed.Host == "" {
+			t.Fatalf("parseRemotes(%q) accepted invalid remote URL %q", spec, remote.URL)
+		}
+	}
 }
