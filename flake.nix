@@ -85,6 +85,8 @@
               ];
 
               vendorHash = "sha256-lUulaQxdz89HIv6ZC0IsSeDh1rO6/IaHzKHUsREh0QI=";
+
+              meta.mainProgram = "health-hub";
             };
 
             default = health-hub;
