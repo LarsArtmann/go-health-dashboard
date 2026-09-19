@@ -8,7 +8,8 @@
 //	HEALTH_HUB_TIMEOUT=5s        optional per-fetch deadline (default 5s)
 //	HEALTH_HUB_TREND=1           enable the trend sparkline + timeline card
 //	HEALTH_HUB_METRICS=1         serve Prometheus text at /health/metrics
-//	PORT=8080                    listen address
+//	PORT=8080                    port to listen on
+//	HEALTH_HUB_ADDR=127.0.0.1:8080  full listen address (overrides PORT)
 //
 // Checks land namespaced as "name/check" (worst-of across remotes); a
 // dark remote surfaces as a "name/reachable" fail row instead of a silent
@@ -42,6 +43,7 @@ const (
 	trendEnvVar        = "HEALTH_HUB_TREND"
 	metricsEnvVar      = "HEALTH_HUB_METRICS"
 	portEnvVar         = "PORT"
+	addrEnvVar         = "HEALTH_HUB_ADDR"
 	shutdownGrace      = 10 * time.Second
 	readHeaderTimeout  = 5 * time.Second
 	defaultFetchExpiry = 5 * time.Second
@@ -83,7 +85,7 @@ func main() {
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux)
 
-	addr := ":" + envOrDefault(portEnvVar, defaultPort)
+	addr := envOrDefault(addrEnvVar, ":"+envOrDefault(portEnvVar, defaultPort))
 	log.Printf(
 		"health-hub: http://localhost%s/health (build %s, %d remotes, fetch timeout %s)",
 		addr,
