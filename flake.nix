@@ -33,7 +33,8 @@
         { config, pkgs, ... }:
         let
           inherit (pkgs) lib;
-          goPkg = pkgs.go_1_26;
+          # Must satisfy go.mod's floor — bump both in the same change.
+          goPkg = pkgs.go_1_27;
 
           mkApp =
             name: runtimeInputs: text:
