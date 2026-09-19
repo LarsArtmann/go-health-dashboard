@@ -288,6 +288,33 @@ agg, _ := aggregate.New(
 dash := dashboard.New(agg) // Prober interface accepts *health.Probe or *aggregate.Aggregate
 ```
 
+## Federation Hub Binary
+
+Services on different hosts already publish go-health documents? The
+`health-hub` binary merges them into one dashboard — no code, just
+configuration. Each remote becomes its own card; a dark remote shows up as
+a failing `name/reachable` check instead of silently freezing the view.
+
+```bash
+# Using Nix (recommended)
+nix run .#health-hub
+
+# Manual
+go build -o health-hub ./cmd/health-hub
+```
+
+| Variable                 | Effect                                                        |
+| ------------------------ | ------------------------------------------------------------- |
+| `HEALTH_HUB_REMOTES`     | Required. `name=url` pairs, e.g. `cv=http://cv:8098/health`   |
+| `HEALTH_HUB_TIMEOUT=5s`  | Per-fetch deadline for each remote                            |
+| `HEALTH_HUB_TREND=1`     | Trend sparkline + timeline card                               |
+| `HEALTH_HUB_METRICS=1`   | Prometheus text at `/health/metrics`                          |
+| `PORT=8080`              | Listen port (default 8080)                                    |
+| `HEALTH_HUB_ADDR=...`    | Full listen address, overrides `PORT` (e.g. `127.0.0.1:8103`) |
+
+Remote URLs are never logged verbatim (userinfo is redacted), and every
+misconfiguration fails fast with the offending entry named.
+
 ## How Real-Time Works
 
 The dashboard uses [Datastar](https://data-star.dev) for real-time DOM updates:
