@@ -206,7 +206,8 @@ func parseRemotes(spec string) ([]healthfederation.Remote, error) {
 		if strings.ContainsFunc(name, unicode.IsSpace) {
 			return nil, fmt.Errorf(
 				"entry %d: name %q must not contain whitespace (it prefixes every check key, and systemd environment values cannot carry it)",
-				i, name,
+				i,
+				name,
 			)
 		}
 

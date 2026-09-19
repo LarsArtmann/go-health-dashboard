@@ -42,12 +42,16 @@ func TestParseRemotes(t *testing.T) {
 		{
 			name: "equals signs inside the URL survive the first cut",
 			spec: "cv=http://127.0.0.1:8098/health?token=a=b",
-			want: []healthfederation.Remote{{Name: "cv", URL: "http://127.0.0.1:8098/health?token=a=b"}},
+			want: []healthfederation.Remote{
+				{Name: "cv", URL: "http://127.0.0.1:8098/health?token=a=b"},
+			},
 		},
 		{
 			name: "userinfo in the URL is accepted",
 			spec: "cv=http://monitor:secret@127.0.0.1:8098/health",
-			want: []healthfederation.Remote{{Name: "cv", URL: "http://monitor:secret@127.0.0.1:8098/health"}},
+			want: []healthfederation.Remote{
+				{Name: "cv", URL: "http://monitor:secret@127.0.0.1:8098/health"},
+			},
 		},
 		{
 			name: "uppercase scheme is accepted (url.Parse normalizes)",
@@ -129,11 +133,20 @@ func TestParseRemotes(t *testing.T) {
 
 			if tt.wantErr != "" {
 				if err == nil {
-					t.Fatalf("parseRemotes(%q) error = nil, want containing %q", tt.spec, tt.wantErr)
+					t.Fatalf(
+						"parseRemotes(%q) error = nil, want containing %q",
+						tt.spec,
+						tt.wantErr,
+					)
 				}
 
 				if !strings.Contains(err.Error(), tt.wantErr) {
-					t.Fatalf("parseRemotes(%q) error = %q, want containing %q", tt.spec, err, tt.wantErr)
+					t.Fatalf(
+						"parseRemotes(%q) error = %q, want containing %q",
+						tt.spec,
+						err,
+						tt.wantErr,
+					)
 				}
 
 				if got != nil {
@@ -185,7 +198,11 @@ func TestParseTimeout(t *testing.T) {
 				}
 
 				if !strings.Contains(err.Error(), tt.raw) {
-					t.Fatalf("parseTimeout(%q) error = %q, want it to name the offending value", tt.raw, err)
+					t.Fatalf(
+						"parseTimeout(%q) error = %q, want it to name the offending value",
+						tt.raw,
+						err,
+					)
 				}
 
 				return
