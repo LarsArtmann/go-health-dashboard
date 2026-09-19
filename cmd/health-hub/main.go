@@ -29,6 +29,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"unicode"
 
 	dashboard "github.com/larsartmann/go-health-dashboard"
 	"github.com/larsartmann/go-health-dashboard/pkg/version"
@@ -60,9 +61,9 @@ func main() {
 
 	fetchExpiry := defaultFetchExpiry
 	if raw := os.Getenv(timeoutEnvVar); raw != "" {
-		fetchExpiry, err = time.ParseDuration(raw)
-		if err != nil || fetchExpiry <= 0 {
-			log.Fatalf("%s: want a positive duration (e.g. 3s, 500ms), got %q", timeoutEnvVar, raw)
+		fetchExpiry, err = parseTimeout(raw)
+		if err != nil {
+			log.Fatalf("%s: %v", timeoutEnvVar, err)
 		}
 	}
 
@@ -126,6 +127,18 @@ func main() {
 	}
 }
 
+// parseTimeout validates a raw duration from the environment. Every
+// failure names the offending value so a bad unit in a unit file is
+// fixable from the log line alone.
+func parseTimeout(raw string) (time.Duration, error) {
+	expiry, err := time.ParseDuration(raw)
+	if err != nil || expiry <= 0 {
+		return 0, fmt.Errorf("want a positive duration (e.g. 3s, 500ms), got %q", raw)
+	}
+
+	return expiry, nil
+}
+
 // optionsFromEnv assembles the optional dashboard features from the
 // environment so a hub deployment turns capabilities on without code
 // changes. Values are validated before any reaches a log line.
@@ -181,6 +194,13 @@ func parseRemotes(spec string) ([]healthfederation.Remote, error) {
 		if strings.Contains(name, "/") {
 			return nil, fmt.Errorf(
 				"entry %d: name must not contain %q (it prefixes every check key)", i, "/",
+			)
+		}
+
+		if strings.ContainsFunc(name, unicode.IsSpace) {
+			return nil, fmt.Errorf(
+				"entry %d: name %q must not contain whitespace (it prefixes every check key, and systemd environment values cannot carry it)",
+				i, name,
 			)
 		}
 
