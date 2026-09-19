@@ -60,6 +60,36 @@
 
           checks.format = config.treefmt.build.check self;
 
+          packages = rec {
+            health-hub = (pkgs.buildGoModule.override { go = pkgs.go_1_27; }) {
+              pname = "health-hub";
+              version = self.shortRev or self.dirtyShortRev or "dev";
+              src = self;
+              subPackages = [ "cmd/health-hub" ];
+
+              # go-sse uses encoding/json/v2, which only the jsonv2
+              # experiment exposes.
+              env.GOEXPERIMENT = "jsonv2";
+
+              # view_templ.go is generated from view.templ; fresh checkouts
+              # (and the flake source) may not carry it.
+              nativeBuildInputs = [ pkgs.templ ];
+              preBuild = ''
+                templ generate
+              '';
+
+              ldflags = [
+                "-s"
+                "-w"
+                "-X github.com/larsartmann/go-health-dashboard/pkg/version.injected=${self.shortRev or "dev"}"
+              ];
+
+              vendorHash = "sha256-lUulaQxdz89HIv6ZC0IsSeDh1rO6/IaHzKHUsREh0QI=";
+            };
+
+            default = health-hub;
+          };
+
           devShells.default = pkgs.mkShell {
             packages = [
               goPkg

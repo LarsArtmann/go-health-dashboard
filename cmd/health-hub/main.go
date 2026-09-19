@@ -87,7 +87,7 @@ func main() {
 
 	addr := envOrDefault(addrEnvVar, ":"+envOrDefault(portEnvVar, defaultPort))
 	log.Printf(
-		"health-hub: http://localhost%s/health (build %s, %d remotes, fetch timeout %s)",
+		"health-hub: serving /health on %s (build %s, %d remotes, fetch timeout %s)",
 		addr,
 		version.Version,
 		len(remotes),
