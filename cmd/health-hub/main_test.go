@@ -48,9 +48,9 @@ func TestParseRemotes(t *testing.T) {
 		},
 		{
 			name: "userinfo in the URL is accepted",
-			spec: "cv=http://monitor:secret@127.0.0.1:8098/health",
+			spec: "cv=http://metrics@127.0.0.1:8098/health",
 			want: []healthfederation.Remote{
-				{Name: "cv", URL: "http://monitor:secret@127.0.0.1:8098/health"},
+				{Name: "cv", URL: "http://metrics@127.0.0.1:8098/health"},
 			},
 		},
 		{

@@ -48,7 +48,6 @@ func FuzzParseRemotes(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, spec string) {
 		got, err := parseRemotes(spec)
-
 		if err != nil {
 			if got != nil {
 				t.Fatalf("parseRemotes(%q) returned remotes alongside error %v", spec, err)

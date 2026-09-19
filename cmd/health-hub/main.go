@@ -51,14 +51,48 @@ const (
 )
 
 var (
-	errNoRemotesSpecified = errors.New("at least one name=url entry is required (comma-separated, e.g. cv=http://127.0.0.1:8080/health)")
-	errMalformedEntry     = errors.New("want name=url with a non-empty name and an absolute http(s) URL")
-	errNonAbsoluteURL     = errors.New("URL must be absolute http(s)")
-	errSlashInName        = errors.New(`name must not contain "/" (it prefixes every check key)`)
-	errWhitespaceInName   = errors.New("name must not contain whitespace (it prefixes every check key, and systemd environment values cannot carry it)")
+	errNoRemotesSpecified = errors.New(
+		"at least one name=url entry is required (comma-separated, e.g. cv=http://127.0.0.1:8080/health)",
+	)
+	errMalformedEntry = errors.New(
+		"want name=url with a non-empty name and an absolute http(s) URL",
+	)
+	errNonAbsoluteURL   = errors.New("URL must be absolute http(s)")
+	errSlashInName      = errors.New(`name must not contain "/" (it prefixes every check key)`)
+	errWhitespaceInName = errors.New(
+		"name must not contain whitespace (it prefixes every check key, and systemd environment values cannot carry it)",
+	)
 	errDuplicateName      = errors.New("duplicate remote name")
 	errNonPositiveTimeout = errors.New("want a positive duration (e.g. 3s, 500ms)")
 )
+
+// hubConfig is everything the environment contributes before the process
+// starts doing anything irreversible.
+type hubConfig struct {
+	remotes     []healthfederation.Remote
+	fetchExpiry time.Duration
+}
+
+// configFromEnv reads and validates all environment configuration up
+// front, so a bad value fails before any goroutine, defer, or network
+// exists.
+func configFromEnv() (hubConfig, error) {
+	remotes, err := parseRemotes(os.Getenv(remoteEnvVar))
+	if err != nil {
+		return hubConfig{}, fmt.Errorf("%s: %w", remoteEnvVar, err)
+	}
+
+	fetchExpiry := defaultFetchExpiry
+
+	if raw := os.Getenv(timeoutEnvVar); raw != "" {
+		fetchExpiry, err = parseTimeout(raw)
+		if err != nil {
+			return hubConfig{}, fmt.Errorf("%s: %w", timeoutEnvVar, err)
+		}
+	}
+
+	return hubConfig{remotes: remotes, fetchExpiry: fetchExpiry}, nil
+}
 
 func main() {
 	if err := run(); err != nil {
@@ -67,22 +101,12 @@ func main() {
 }
 
 func run() error {
-	remotes, err := parseRemotes(os.Getenv(remoteEnvVar))
+	cfg, err := configFromEnv()
 	if err != nil {
-		return fmt.Errorf("%s: %w", remoteEnvVar, err)
+		return err
 	}
 
-	fetchExpiry := defaultFetchExpiry
-
-	if raw := os.Getenv(timeoutEnvVar); raw != "" {
-		fetchExpiry, err = parseTimeout(raw)
-
-		if err != nil {
-			return fmt.Errorf("%s: %w", timeoutEnvVar, err)
-		}
-	}
-
-	fed, err := healthfederation.New(remotes, healthfederation.WithTimeout(fetchExpiry))
+	fed, err := healthfederation.New(cfg.remotes, healthfederation.WithTimeout(cfg.fetchExpiry))
 	if err != nil {
 		return fmt.Errorf("federation.New: %w", err)
 	}
@@ -114,21 +138,11 @@ func run() error {
 		"health-hub: serving /health on %s (build %s, %d remotes, fetch timeout %s)",
 		logSafe(addr),
 		version.Version,
-		len(remotes),
-		fetchExpiry,
+		len(cfg.remotes),
+		cfg.fetchExpiry,
 	)
 
-	for _, remote := range remotes {
-		parsed, parseErr := url.Parse(remote.URL)
-
-		if parseErr != nil {
-			log.Printf("remote: %s -> (unloggable URL)", logSafe(remote.Name))
-
-			continue
-		}
-
-		log.Printf("remote: %s -> %s", logSafe(remote.Name), logSafe(parsed.Redacted()))
-	}
+	logRemotes(cfg.remotes)
 
 	server := &http.Server{
 		Addr:              addr,
@@ -146,20 +160,41 @@ func run() error {
 
 	select {
 	case <-ctx.Done():
-		log.Println("shutting down...")
-
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), shutdownGrace)
-
-		defer shutdownCancel()
-
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			log.Printf("server.Shutdown: %v", err)
-		}
-
-		return nil
+		return shutdown(server)
 	case err := <-listenErr:
 		return fmt.Errorf("server: %w", err)
 	}
+}
+
+// logRemotes announces each remote with its credentials redacted, so an
+// operator can verify the configuration from the log alone.
+func logRemotes(remotes []healthfederation.Remote) {
+	for _, remote := range remotes {
+		parsed, parseErr := url.Parse(remote.URL)
+		if parseErr != nil {
+			log.Printf("remote: %s -> (unloggable URL)", logSafe(remote.Name))
+
+			continue
+		}
+
+		log.Printf("remote: %s -> %s", logSafe(remote.Name), logSafe(parsed.Redacted()))
+	}
+}
+
+// shutdown drains the server within the grace window after the context
+// is cancelled.
+func shutdown(server *http.Server) error {
+	log.Println("shutting down...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownGrace)
+
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("server.Shutdown: %v", err)
+	}
+
+	return nil
 }
 
 // logSafe strips control characters so a hostile environment value cannot
@@ -179,7 +214,6 @@ func logSafe(s string) string {
 // fixable from the log line alone.
 func parseTimeout(raw string) (time.Duration, error) {
 	expiry, err := time.ParseDuration(raw)
-
 	if err != nil || expiry <= 0 {
 		return 0, fmt.Errorf("%w, got %q", errNonPositiveTimeout, raw)
 	}
@@ -223,7 +257,6 @@ func parseRemotes(spec string) ([]healthfederation.Remote, error) {
 
 	for i, entry := range entries {
 		remote, err := parseRemoteEntry(i, entry, seen)
-
 		if err != nil {
 			return nil, err
 		}
@@ -247,17 +280,27 @@ func parseRemoteEntry(i int, entry string, seen map[string]bool) (healthfederati
 	rawURL = strings.TrimSpace(rawURL)
 
 	if !found || name == "" || rawURL == "" {
-		return healthfederation.Remote{}, fmt.Errorf("entry %d (%q): %w", i, entry, errMalformedEntry)
+		return healthfederation.Remote{}, fmt.Errorf(
+			"entry %d (%q): %w",
+			i,
+			entry,
+			errMalformedEntry,
+		)
 	}
 
 	parsed, err := url.Parse(rawURL)
-
 	if err != nil {
 		return healthfederation.Remote{}, fmt.Errorf("entry %d (%s): invalid URL: %w", i, name, err)
 	}
 
 	if (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
-		return healthfederation.Remote{}, fmt.Errorf("entry %d (%s): %w, got %q", i, name, errNonAbsoluteURL, parsed.Redacted())
+		return healthfederation.Remote{}, fmt.Errorf(
+			"entry %d (%s): %w, got %q",
+			i,
+			name,
+			errNonAbsoluteURL,
+			parsed.Redacted(),
+		)
 	}
 
 	if strings.Contains(name, "/") {
