@@ -74,6 +74,12 @@ forgetting.
   `FuzzFormatStateAge`, and `FuzzEvidenceSummaryText` joined the
   nightly fuzz workflow, which now runs one 60s campaign for every
   target in `fuzz_test.go` (registry-in-same-change rule).
+- `scripts/check-go-directive.sh` and its CI wiring (Build + Test
+  jobs): the fleet BuildFlow go-mod-normalize step downgraded the
+  `go 1.27.1` directive to `go 1.27` twice on 2026-09-22, breaking
+  every module load against go-health's floor with a bare `updates to
+  go.mod needed`; the guard fails loudly before any Go tool runs and
+  carries the atomic restore pattern in its header.
 
 ### Changed
 
@@ -94,10 +100,23 @@ forgetting.
   the full render is honestly ~25-60% pricier per page from the metadata
   line's templ scaffolding (`docs/research/2026-09-10_benchmarks.md`
   re-baselined).
+- go-health pinned release `v0.2.1-0.20260918115637-aafc76e229a5`
+  (federation on master) → `v0.4.0`. The tag landed upstream mid-session
+  and arrived here via a fleet go-mod-update sweep; ratified deliberately
+  (additive changelog; the deep-dive audit's `Deterministic` findings are
+  independently endorsed by go-health ADR-006 and its sorted Prometheus
+  example). The `go` directive floor is `1.27.1` (dep-driven; enforced
+  by the guard above).
 
 ### Fixed
 
-- Nothing yet.
+- `/health` JSON (content-negotiated) and `/health/export` JSON marshal
+  with `json.Deterministic(true)`: two scrapes of the same response are
+  now byte-identical, so diff-based scrapers see only real change instead
+  of random map iteration. The trend endpoint keeps its current
+  slice-only shape (already stable). Regression tests:
+  `TestContentNegotiation_HealthJSONIsByteStable`,
+  `TestExportHandler_JSONIsByteStable`.
 
 ## [0.9.0] - 2026-09-17
 
