@@ -94,6 +94,14 @@ forgetting.
 
 ### Changed
 
+- The three known-status encoders now derive from go-health's
+  `Status.Rank()` severity ladder instead of restating it: the metrics
+  gauge returns `Rank()` for known statuses (unknown stays its own −1),
+  and the trend scale computes `Rank()/2` (unknown still plots as fail).
+  Zero behavior change — pinned by the pre-existing status, metrics, and
+  history suites; the local divergence policies (grouping unknown→warn,
+  gauge unknown→−1, trend unknown→0) are now documented at each site as
+  deliberate, with the upstream default cited.
 - templ-components v1.17.0 → v1.18.0. The bump landed as an unguarded
   deps commit (seventh sweep — the pin guard went red in CI as
   designed); adoption was completed as a dedicated change: the full

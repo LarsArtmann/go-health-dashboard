@@ -227,16 +227,16 @@ const (
 )
 
 // statusValue maps a status to the 0..1 trend scale used by the sparkline:
-// pass=1, warn=0.5, fail=0. Unknown statuses plot as fail — the trend line
-// dips on anything that is not provably healthy.
+// pass=1, warn=0.5, fail=0. This is a plot scale, not a re-encoding of
+// [health.Status.Rank]: for known statuses it is exactly Rank/2 (the
+// severity ladder inverted and rescaled so worse plots lower, warn at the
+// midpoint), derived rather than restated so the two cannot drift. Unknown
+// statuses plot as fail — the trend line dips on anything that is not
+// provably healthy, stricter than Rank's unknown→pass merge default.
 func statusValue(s health.Status) float64 {
 	switch s {
-	case health.StatusPass:
-		return trendPassValue
-	case health.StatusWarn:
-		return trendWarnValue
-	case health.StatusFail:
-		return trendFailValue
+	case health.StatusPass, health.StatusWarn, health.StatusFail:
+		return float64(s.Rank()) / 2
 	default:
 		return trendFailValue
 	}
@@ -368,8 +368,12 @@ func groupChecksBySource(checks map[string]health.Check) []checkGroup {
 }
 
 // worstGroupStatus rolls a group's rows up to one status: fail if any row
-// fails, warn if any row warns, pass otherwise. Unknown statuses count as
-// warn — a group containing something unreadable must not read as healthy.
+// fails, warn if any row warns, pass otherwise. The ladder mirrors
+// [health.Status.Rank]'s severity order (fail 0 < warn 1 < pass 2), spelled
+// as an early-returning switch because fail short-circuits. Unknown
+// statuses count as warn — deliberately stricter than Rank's unknown→pass
+// default, which is a merge policy for boundary-validated input; a rendered
+// group containing something unreadable must not read as healthy.
 func worstGroupStatus(rows []checkRow) health.Status {
 	status := health.StatusPass
 
