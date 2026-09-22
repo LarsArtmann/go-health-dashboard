@@ -413,6 +413,48 @@ func TestContentNegotiation_JSONAcceptReturnsJSONBody(t *testing.T) {
 	}
 }
 
+// TestContentNegotiation_HealthJSONIsByteStable pins the /health JSON wire
+// contract: successive responses must be byte-identical (scrapers diff
+// payloads), which requires deterministic map-key ordering — the same
+// json.Deterministic option go-health's own handlers apply.
+func TestContentNegotiation_HealthJSONIsByteStable(t *testing.T) {
+	t.Parallel()
+
+	resp := health.Response{
+		Status: health.StatusWarn,
+		Checks: map[string]health.Check{
+			"zulu/queue":     {Status: health.StatusWarn, Error: "slow"},
+			"alpha/database": {Status: health.StatusPass},
+			"mid/cache":      {Status: health.StatusFail, Error: "down"},
+		},
+	}
+
+	dash := dashboard.New(newStubProber(resp))
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	first := doRequestWithAccept(t, mux, "/health", "application/json")
+	second := doRequestWithAccept(t, mux, "/health", "application/json")
+
+	if first.Body.String() != second.Body.String() {
+		t.Fatalf(
+			"/health JSON not byte-stable across responses:\nfirst:  %s\nsecond: %s",
+			first.Body.String(),
+			second.Body.String(),
+		)
+	}
+
+	want := `"checks":{"alpha/database"`
+	if !strings.Contains(first.Body.String(), want) {
+		t.Errorf(
+			"checks keys not in deterministic (sorted) order, want %s in: %s",
+			want,
+			first.Body.String(),
+		)
+	}
+}
+
 func TestContentNegotiation_NoAcceptReturnsHTML(t *testing.T) {
 	t.Parallel()
 

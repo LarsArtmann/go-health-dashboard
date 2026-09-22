@@ -282,6 +282,65 @@ func TestExportHandler_JSONCarriesCheckMetadata(t *testing.T) {
 	}
 }
 
+// TestExportHandler_JSONIsByteStable pins the export wire contract: the
+// checks object is a Go map, so successive scrapes must marshal with
+// deterministic (sorted) key ordering or consumers diffing exports see
+// phantom key reshuffles. The push interval is set far beyond the test so no
+// tick can land between the two scrapes and change the samples array.
+func TestExportHandler_JSONIsByteStable(t *testing.T) {
+	t.Parallel()
+
+	resp := health.Response{
+		Status: health.StatusPass,
+		Checks: map[string]health.Check{
+			"zulu/queue":     {Status: health.StatusPass},
+			"alpha/database": {Status: health.StatusPass, DurationNanos: int64(time.Millisecond)},
+			"mid/cache":      {Status: health.StatusPass},
+		},
+	}
+
+	dash := dashboard.New(
+		newStubProber(resp),
+		dashboard.WithTrend(8),
+		dashboard.WithPushInterval(time.Hour),
+	)
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	if err := dash.Start(ctx); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+	defer dash.Shutdown()
+
+	first := doRequest(t, mux, "/health/export")
+	if first.Code != http.StatusOK {
+		t.Fatalf("status: want 200, got %d", first.Code)
+	}
+
+	second := doRequest(t, mux, "/health/export")
+
+	if first.Body.String() != second.Body.String() {
+		t.Fatalf(
+			"/health/export JSON not byte-stable across scrapes:\nfirst:  %s\nsecond: %s",
+			first.Body.String(),
+			second.Body.String(),
+		)
+	}
+
+	want := `"checks":{"alpha/database"`
+	if !strings.Contains(first.Body.String(), want) {
+		t.Errorf(
+			"checks keys not in deterministic (sorted) order, want %s in: %s",
+			want,
+			first.Body.String(),
+		)
+	}
+}
+
 func TestExportHandler_CSV(t *testing.T) {
 	t.Parallel()
 

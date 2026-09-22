@@ -9,33 +9,33 @@ Self-review questions (forgot / better / improve) are answered inline across (b)
 
 ## a) FULLY DONE (verifiable, with evidence)
 
-| # | What | Evidence |
-|---|------|----------|
-| A1 | Root `/` 404 root-caused and fixed: the hub never registered `/`; Caddy proxies every path, Go's mux 404s the rest. Fix: `newServeMux` (`cmd/health-hub/main.go:171`) registers exact-root `"/{$}"` → 307 → `DefaultRoutes().Dashboard`; unknown paths still 404, registered routes still win | commits `2579772` (feature — message lost to daemon, see D2) + `a61685f` (go-fix reformat) |
-| A2 | Unit coverage for the mux wiring: `TestNewServeMux` — 4 subtests: `/`→307+`Location: /health`; `/healthz`→200; `/favicon.svg`→200; `/nope`→404 | PASS at HEAD, re-verified 17:40 (`go test ./cmd/health-hub/ -run TestNewServeMux -v`) |
-| A3 | Live end-to-end verification: patched binary on `127.0.0.1:18999` against the REAL cv remote (`:8098`): `/`→307 `/health` ✓, `/health`→200 ✓, `/healthz`→200 ✓, `/nope`→404 ✓ — 4/4 OK | probe output in session log |
-| A4 | Fleet federation inventory (the definitive "why only CV"): live-probed 14 endpoints across the fleet — **CV `:8098` is the only go-health speaker**; inboxclean/overview/browser-history/papdashboard/manifest/geometrikks = custom JSON, renamer/discordsync/tq = HTML, llama-rag = llama.cpp shape, monitor365/crush-daily/pma = down/404. Recorded in SystemNix `docs/services/health-dashboard.md` ("Why only CV federates today") and the `[decision]` item in `docs/todo/services.md` | SystemNix commit `3123cbfb` |
-| A5 | Dependency-pin sweep incident fully repaired: swept pins reverted (`d97232b`), `go 1.27.1` floor restored (`3f15936`), both traps documented in AGENTS.md (`51157da`) | full root suite + cmd tests green post-repair; golangci-lint + test-race green in buildflow dev gate |
-| A6 | SystemNix deployability verified after the foreign `flake.lock` sweep: `services.health-dashboard.enable` evals `true`, `remotes` evals to exactly `["cv=http://127.0.0.1:8098/health"]` | `nix eval` output in session log |
+| #  | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Evidence                                                                                             |
+| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| A1 | Root `/` 404 root-caused and fixed: the hub never registered `/`; Caddy proxies every path, Go's mux 404s the rest. Fix: `newServeMux` (`cmd/health-hub/main.go:171`) registers exact-root `"/{$}"` → 307 → `DefaultRoutes().Dashboard`; unknown paths still 404, registered routes still win                                                                                                                                                                                               | commits `2579772` (feature — message lost to daemon, see D2) + `a61685f` (go-fix reformat)           |
+| A2 | Unit coverage for the mux wiring: `TestNewServeMux` — 4 subtests: `/`→307+`Location: /health`; `/healthz`→200; `/favicon.svg`→200; `/nope`→404                                                                                                                                                                                                                                                                                                                                              | PASS at HEAD, re-verified 17:40 (`go test ./cmd/health-hub/ -run TestNewServeMux -v`)                |
+| A3 | Live end-to-end verification: patched binary on `127.0.0.1:18999` against the REAL cv remote (`:8098`): `/`→307 `/health` ✓, `/health`→200 ✓, `/healthz`→200 ✓, `/nope`→404 ✓ — 4/4 OK                                                                                                                                                                                                                                                                                                      | probe output in session log                                                                          |
+| A4 | Fleet federation inventory (the definitive "why only CV"): live-probed 14 endpoints across the fleet — **CV `:8098` is the only go-health speaker**; inboxclean/overview/browser-history/papdashboard/manifest/geometrikks = custom JSON, renamer/discordsync/tq = HTML, llama-rag = llama.cpp shape, monitor365/crush-daily/pma = down/404. Recorded in SystemNix `docs/services/health-dashboard.md` ("Why only CV federates today") and the `[decision]` item in `docs/todo/services.md` | SystemNix commit `3123cbfb`                                                                          |
+| A5 | Dependency-pin sweep incident fully repaired: swept pins reverted (`d97232b`), `go 1.27.1` floor restored (`3f15936`), both traps documented in AGENTS.md (`51157da`)                                                                                                                                                                                                                                                                                                                       | full root suite + cmd tests green post-repair; golangci-lint + test-race green in buildflow dev gate |
+| A6 | SystemNix deployability verified after the foreign `flake.lock` sweep: `services.health-dashboard.enable` evals `true`, `remotes` evals to exactly `["cv=http://127.0.0.1:8098/health"]`                                                                                                                                                                                                                                                                                                    | `nix eval` output in session log                                                                     |
 
 ## b) PARTIALLY DONE
 
 1. **The fix is not live for users.** go-health-dashboard master is **6 commits ahead, unpushed** (push needs
    authorization); SystemNix input not bumped; evo-x2 still serves 404 on `/`.
-   *Blocker:* authorization + sudo deploy. *Effort:* S.
+   _Blocker:_ authorization + sudo deploy. _Effort:_ S.
 2. **Pin protection is reactive, not preventive.** The trap is documented (AGENTS.md gotcha), but
    `go-mod-update` is still active in `.buildflow.yml` — the next unguarded local buildflow run can sweep again.
-   *Remaining:* one `skip_steps` entry + local pre-push pin guard. *Effort:* S.
+   _Remaining:_ one `skip_steps` entry + local pre-push pin guard. _Effort:_ S.
 3. **Redirect verification depth.** Unit + loopback e2e done; NOT verified through the real Caddy vhost /
    TLS / oauth2 chain (needs deploy). Query-string behavior on `/` (dropped by `http.RedirectHandler`) is
-   neither tested nor documented. *Effort:* S.
+   neither tested nor documented. _Effort:_ S.
 4. **Hub documentation.** Package doc comment updated; **CHANGELOG.md entry NOT added** (forgot — the file
    exists); FEATURES.md untouched (the daemon's `a61685f` diff there was pure whitespace reflow — verified).
-   *Effort:* S.
+   _Effort:_ S.
 5. **Inventory boundary (honesty caveat).** I probed all services whose modules reference go-health-style
    checks plus health-named ports (14 targets). Did **not** probe forgejo/miniflux/twenty/bank-sync/
    openseo/taskchampion/mr-sync/searxng (no go-health signal in their modules). "Every candidate port"
-   means every *credible* candidate — not every port in `ports.nix`. *Effort to close:* M.
+   means every _credible_ candidate — not every port in `ports.nix`. _Effort to close:_ M.
 
 ## c) NOT STARTED
 
@@ -55,14 +55,14 @@ Self-review questions (forgot / better / improve) are answered inline across (b)
 1. **I caused the dependency-pin sweep.** My buildflow invocation ran `go-mod-update`, which bumped
    templ-components 1.18.0→1.19.1, go-datastar 0.5.0→0.6.0, go-health→v0.3.0, go-sse→0.6.1; the auto-daemon
    committed it (`68ac162`) minutes later. Golden tests caught the drift only after the fact; a revert was
-   required; the broken commit is permanent history. *Severity:* an unguarded UI bump nearly landed — the
-   exact failure class AGENTS.md devotes a full gotcha to. *Root cause:* no `--exclude go-mod-update`, no
-   post-run `git diff go.mod go.sum` check. *Mitigation now:* gotcha documented + f-items 7/8/44. The daemon
+   required; the broken commit is permanent history. _Severity:_ an unguarded UI bump nearly landed — the
+   exact failure class AGENTS.md devotes a full gotcha to. _Root cause:_ no `--exclude go-mod-update`, no
+   post-run `git diff go.mod go.sum` check. _Mitigation now:_ gotcha documented + f-items 7/8/44. The daemon
    is not an excuse — it was my run.
 2. **I violated the repo's #1 rule (commit beats the daemon).** The feature sat uncommitted through
    verification; the daemon committed it as `2579772` "chore: auto-commit 2 changed file(s)" — the feature's
    intent message is permanently lost. AGENTS.md documents this exact loss class from the v0.7.0 release,
-   and I re-committed it anyway. *Mitigation:* none available (history policy); rule re-internalized.
+   and I re-committed it anyway. _Mitigation:_ none available (history policy); rule re-internalized.
 3. **First buildflow run executed outside the devshell** — 7 failures, 9 unavailable tools (system go 1.26.7
    vs the 1.27.1 floor that AGENTS.md states explicitly). A wasted full run.
 4. **`"{$}"` ServeMux pattern panic** — wrong exact-root syntax (`"/{$}"`). Test panicked on first run;
@@ -90,16 +90,17 @@ Self-review questions (forgot / better / improve) are answered inline across (b)
 6. **Fleet health-surface fragmentation:** 9+ services expose bespoke `/health` JSON. The hub is fine — the
    fleet is. Consolidating on go-health is what makes "federation" actually mean something (f13-16).
 7. **Did I lie anywhere?** One imprecision self-caught and now disclosed: "live-probed every candidate port"
-   = every *credible* candidate (14 targets), not every port in `ports.nix` (see B5).
+   = every _credible_ candidate (14 targets), not every port in `ports.nix` (see B5).
 8. **Ghost-system candidates flagged, not invented:** pma-health port with no health endpoint; monitor365 down.
    No ghost code created; nothing useful removed (the revert removed only the sweep — correctly).
 
 ## f) NEXT TASKS (45 concrete items, ranked; Impact / Effort / Category — HARVEST input)
 
 **Ship the fix (Critical path):**
-1. Push go-health-dashboard master (6 commits) — High / S / Chore *(blocked:push)*
+
+1. Push go-health-dashboard master (6 commits) — High / S / Chore _(blocked:push)_
 2. Bump SystemNix flake input `go-health-dashboard` after push — High / S / Chore
-3. Deploy evo-x2 — High / S / Deploy *(blocked:user — sudo)*
+3. Deploy evo-x2 — High / S / Deploy _(blocked:user — sudo)_
 4. Post-deploy smoke: `https://health.home.lan/` → 307 → dashboard; `/healthz` 200 — High / S / Verification
 5. Update SystemNix AGENTS.md smoke-probe rationale (404s → redirects) — Medium / S / Docs
 6. Add redirect assertion to `scripts/post-deploy-check.sh` hub smoke section — Medium / S / Quality
@@ -169,5 +170,5 @@ inventory is done; the priority is an owner call.
 
 ---
 
-*Format note: skill default is a styled HTML dashboard; user explicitly requested `.md` — override honored.
-Section (f) is HARVEST input for `docs-health` (TODO_LIST/ROADMAP), not entombed here.*
+_Format note: skill default is a styled HTML dashboard; user explicitly requested `.md` — override honored.
+Section (f) is HARVEST input for `docs-health` (TODO_LIST/ROADMAP), not entombed here._
