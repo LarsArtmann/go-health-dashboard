@@ -27,11 +27,16 @@ jobs:
       # The version-guard discipline guarantees the tag's commit carries
       # the re-headed CHANGELOG section (Version const + section + tag in
       # the same change), so the section always exists at the tag.
+      # NOTE: the header is matched with index(), not a regex — awk -v
+      # collapses unrecognized escapes, so "\\[" in a -v value became a
+      # plain "[" and turned the version into a regex character class
+      # that never matched (v0.10.0/v0.10.1 drafts failed on exactly
+      # that before this fix).
       - name: Extract the tag's CHANGELOG section
         run: |
           version="${GITHUB_REF_NAME#v}"
-          awk -v pat="^## \\[$version\\]" '
-            $0 ~ pat { found = 1; next }
+          awk -v want="## [$version]" '
+            index($0, want) == 1 { found = 1; next }
             found && /^## \[/ { exit }
             found { print }
           ' CHANGELOG.md > release-notes.md
