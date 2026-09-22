@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Report Title</title>
+    <title>go-health — Adoption &amp; Utilization Audit (go-health-dashboard)</title>
     <style>
       /* =========================================================================
          BAUHAUS LIGHT — Editorial template
@@ -848,24 +848,25 @@
     </style>
   </head>
   <body>
-    <!-- Full-bleed top bar (optional — remove for quieter reports) -->
+    <!-- Full-bleed top bar -->
     <div class="top-bar">
-      <span>REPORT TYPE</span>
-      <span>YYYY-MM-DD</span>
-      <span>AUTHOR / TEAM</span>
+      <span>LIBRARY DEEP DIVE</span>
+      <span>2026-09-22</span>
+      <span>go-health-dashboard &rarr; go-health</span>
     </div>
 
     <div class="layout">
-      <!-- Sidebar TOC (hidden below 1024px; use inline .toc if you prefer) -->
+      <!-- Sidebar TOC -->
       <aside class="sidebar" data-nav>
         <nav>
           <div class="label">Contents</div>
           <a href="#summary">Summary</a>
-          <a href="#scorecard">Scorecard</a>
-          <a href="#strengths">Strengths</a>
+          <a href="#strengths">What's already excellent</a>
           <a href="#findings">Findings</a>
-          <a href="#proposal">Proposal</a>
-          <a href="#appendix">Appendix</a>
+          <a href="#nonadoption">Deliberate non-adoption</a>
+          <a href="#versions">Version currency</a>
+          <a href="#proposal">Prioritized plan</a>
+          <a href="#appendix">Method</a>
         </nav>
       </aside>
 
@@ -873,43 +874,48 @@
       <main class="main">
         <!-- Hero -->
         <header class="hero">
-          <!-- Optional Bauhaus signature: geometric shape cluster. Remove for quieter hero. -->
           <div class="hero-shapes">
             <div class="bar"></div>
             <div class="circle"></div>
             <div class="square"></div>
             <div class="tri"></div>
           </div>
-          <div class="eyebrow">REPORT TYPE &middot; YYYY-MM-DD</div>
-          <h1>Report Title</h1>
+          <div class="eyebrow">LIBRARY DEEP DIVE &middot; 2026-09-22</div>
+          <h1>go-health &mdash; Adoption &amp; Utilization Audit</h1>
           <p class="subtitle">
-            One or two sentences that set the frame: who this is for, what was
-            reviewed, and what the reader will take away.
+            How well does go-health-dashboard consume its own health-checking
+            SDK? Verdict: an exemplary, textbook composition &mdash; with one
+            real wire-format drift to fix today and a handful of cheap
+            alignments with go-health v0.3.0's newer surface.
           </p>
           <div class="meta">
-            <span class="tag amber">Scope: example</span>
-            <span class="tag">Version: 1.0.0</span>
-            <span class="tag teal">Status: draft</span>
+            <span class="tag amber">Pinned: v0.2.1-0.20260918 (master snapshot)</span>
+            <span class="tag">Latest: v0.3.0 (+16 commits)</span>
+            <span class="tag teal">Adoption Score: 86/100</span>
           </div>
         </header>
 
         <!-- Scorecard -->
         <section id="scorecard" class="scorecard">
           <div class="score-card score-good">
-            <div class="score">8</div>
-            <div class="label">Items passing</div>
+            <div class="score">86</div>
+            <div class="label">Adoption score / 100</div>
           </div>
-          <div class="score-card score-warn">
-            <div class="score">3</div>
-            <div class="label">Warnings</div>
+          <div class="score-card score-good">
+            <div class="score">9</div>
+            <div class="label">Capabilities fully leveraged</div>
           </div>
           <div class="score-card score-bad">
-            <div class="score">1</div>
-            <div class="label">Blockers</div>
+            <div class="score">2</div>
+            <div class="label">Wire-format drifts (fix now)</div>
           </div>
-          <div class="score-card">
-            <div class="score">12</div>
-            <div class="label">Total reviewed</div>
+          <div class="score-card score-warn">
+            <div class="score">4</div>
+            <div class="label">Status encodings re-derived by hand</div>
+          </div>
+          <div class="score-card score-warn">
+            <div class="score">1</div>
+            <div class="label">Minor versions behind (tag exists)</div>
           </div>
         </section>
 
@@ -917,14 +923,28 @@
         <section id="summary">
           <h2><span class="num">00</span>Summary</h2>
           <p>
-            Replace this with the bottom-line verdict. A good summary tells the
-            reader whether the subject is ready, what the biggest risk is, and
-            what one action would unlock the most value.
+            go-health-dashboard consumes go-health the way the Go community
+            tells people to: a narrow consumer-side <code>Prober</code>
+            interface, lock-free cached reads as the single data source for
+            every write seam, go-health's own three kubelet handlers passed
+            through untouched, and the aggregate/federation surfaces composed
+            in without the dashboard knowing they exist. Nothing is re-implemented
+            that go-health already exports &mdash; except two things, and one
+            of them matters.
           </p>
           <div class="callout callout-amber">
             <strong>The bottom line</strong>
-            State the verdict plainly. If the report is blocking, say so. If
-            it's mostly positive, lead with that.
+            The dashboard re-implements go-health's readiness-JSON path and
+            dropped <code>json.Deterministic(true)</code> while doing it: both
+            the <code>/health</code> JSON response and the
+            <code>/health/export</code> JSON serialize their check maps in
+            <em>random order per response</em> (verified: 115/200 marshals
+            identical). go-health's own handlers pin deterministic sorted keys,
+            and the dashboard's stated contract is to stay byte-stable with
+            them. Two one-line fixes restore it. Everything else is polish:
+            adopt <code>Status.Rank()</code> where severity is compared,
+            re-pin to the v0.3.0 tag that already exists, and consider
+            surfacing <code>Response.InstanceID</code> in the federation hub.
           </div>
         </section>
 
@@ -932,25 +952,118 @@
         <section id="strengths">
           <h2><span class="num">&#9670;</span>What's already excellent</h2>
           <p>
-            Before the criticism: acknowledge what works. This builds trust and
-            keeps the report from reading like a pure complaint list.
+            Nine of eleven applicable capability areas are fully leveraged.
+            These are the patterns a reviewer would hold up as the reference
+            for "how to consume an SDK".
           </p>
 
           <div class="strengths">
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
-                <strong>Specific strength one</strong>
-                <span>Explain why it matters and what it enables.</span>
+                <strong>Consumer-side <code>Prober</code> interface</strong>
+                <span>dashboard.go:28-41 defines exactly the five methods it
+                needs (CachedResponse, RefreshInterval, three handler getters).
+                <code>*health.Probe</code>, <code>aggregate.Aggregate</code>,
+                and <code>federation.Federation</code> all satisfy it
+                structurally &mdash; one dashboard renders single probes,
+                merged in-process probes, and N remote instances with zero
+                knowledge of the concrete types. integration_test.go and
+                cmd/health-hub prove all three compositions.</span>
               </div>
             </div>
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
-                <strong>Specific strength two</strong>
-                <span
-                  >Reference files, metrics, or patterns where possible.</span
-                >
+                <strong><code>CachedResponse()</code> as the one data source</strong>
+                <span>currentResponse() (dashboard.go:158-160) is the single
+                read seam; the view model, metrics, fingerprints, trend ring,
+                and evidence log all share one snapshot per tick. Lock-free,
+                ~0.03 ns/op per go-health's benchmarks. The shutdown overlay in
+                CachedResponse means the dashboard gets fail-closed 503s for
+                free.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong><code>SanitizeResponse</code> at the choke point</strong>
+                <span>Applied once in currentResponse() (dashboard.go:159), so
+                every write seam &mdash; JSON, webhook, SSE patches, metrics
+                labels, CSV &mdash; inherits valid UTF-8. Exactly the fuzz-found
+                hardening go-health built for jsonv2 consumers.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>go-health's own handlers served untouched</strong>
+                <span>The kubelet endpoints wire
+                <code>LivenessHandler/ReadinessHandler/StartupHandler</code>
+                verbatim (no re-marshaling), deliberately outside
+                <code>WithMiddleware</code> so authenticated dashboards can't
+                break kubelet probes. <code>RefreshInterval()</code> drives the
+                default push cadence (resolvePushInterval, dashboard.go:141-151)
+                instead of a second tunable drifting from probe reality.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>v0.2.0 check metadata fully surfaced</strong>
+                <span><code>Check.Since</code> powers row age stamps, evidence
+                tooltips, and survives the federation wire;
+                <code>Check.DurationNanos</code> powers the rendered duration
+                line and the <code>dashboard_health_check_last_duration_seconds</code>
+                series with go-health's omitzero discipline mirrored
+                (metrics.go:104-106, trend.go:29-35).</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Status constants mapped directly</strong>
+                <span>status.go:22-55 maps
+                <code>StatusPass/StatusWarn/StatusFail</code> straight to
+                <code>display.Badge*</code> and <code>feedback.Feedback*</code>
+                constants &mdash; no stringly-typed bridge, no deprecated
+                <code>AlertType</code> alias.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Federation + aggregate composed, not re-built</strong>
+                <span>health-hub is 30 lines around
+                <code>federation.New</code> (main.go:113-123); the example uses
+                <code>aggregate.New</code>. The dashboard's
+                <code>GroupBySource</code> mode exists precisely because
+                go-health namespaces keys <code>source/check</code> &mdash; the
+                two modules co-evolved instead of one duplicating the
+                other.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Content negotiation is the sanctioned layer</strong>
+                <span>The 45-line Accept parser (handlers.go:46-91) looks like
+                duplication but isn't: go-health's
+                docs/content-negotiation-design.md &sect;Decision explicitly
+                <em>rejected</em> adding negotiation to go-health and assigns
+                HTML/JSON splitting to this composition layer.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Zero-dependency discipline shared</strong>
+                <span>Hand-rolled rate limiter and Prometheus exposition
+                duplicate <em>x/time and client_golang</em> &mdash; not
+                go-health, which offers neither. go-health's own Prometheus
+                story is "composition + ~40-line writer"; the dashboard's is
+                richer (histogram, webhook stats, public-mode label masking).
+                Consistent policy on both sides of the boundary.</span>
               </div>
             </div>
           </div>
@@ -959,111 +1072,571 @@
         <!-- Findings -->
         <section id="findings">
           <h2><span class="num">01</span>Findings</h2>
-          <p>These are the issues that need attention, ordered by impact.</p>
+          <p>
+            Ordered by impact. The first two are real correctness drifts; the
+            rest are alignments with API go-health added for exactly this
+            consumer.
+          </p>
 
           <!-- Issue 1 -->
-          <div class="issue issue-critical" id="issue-1">
+          <div class="issue issue-critical" id="issue-health-json">
             <span class="severity severity-critical"
-              >Blocking &middot; High impact</span
+              >Wire-format drift &middot; High impact &middot; one-line fix</span
             >
-            <h3>Critical issue title</h3>
+            <h3>/health JSON serializes checks in random order &mdash; the
+            byte-stability contract is silently broken</h3>
             <div class="where">
-              path/to/file.go:42-58 &middot; short context
+              handlers.go:106 (serveJSON) &middot; go-health
+              handlers.go:196-198 (marshalResponse)
             </div>
             <p>
-              Describe the problem, cite the code or behavior, and explain why
-              it matters to the reader's goals.
+              go-health's handlers marshal with
+              <code>json.Marshal(resp, json.Deterministic(true))</code> &mdash;
+              without that option, encoding/json/v2 emits Go maps in
+              unreliable order (verified empirically: 200 marshals of one
+              4-key map produced 115 identical / 85 shuffled outputs). The
+              dashboard's <code>serveJSON</code> marshals the same
+              <code>health.Response</code> &mdash; whose
+              <code>Checks</code> field is a map &mdash; with plain
+              <code>json.Marshal(resp)</code>. AGENTS.md's contract for this
+              exact endpoint says it "stays byte-stable with go-health's own
+              probe handlers (kubelets and scrapers diff payloads)". Any
+              scraper diffing consecutive scrapes sees phantom check reshuffles
+              that look like flaps. Every other dashboard marshal site
+              (webhook.go:149, introspect.go:112, ratelimit.go:89) already
+              passes the option &mdash; this one was missed.
             </p>
-            <pre><code>// Example of the problematic pattern
-func BadExample() {}</code></pre>
+            <pre><code><span class="tok-comment">// Before (handlers.go:106) &mdash; Checks map order is random per response</span>
+payload, err := json.Marshal(resp)
+
+<span class="tok-comment">// After &mdash; matches go-health's writeResponse byte-for-byte</span>
+payload, err := json.Marshal(resp, json.Deterministic(<span class="tok-number">true</span>))</code></pre>
             <div class="callout callout-teal">
-              <strong>Fix: recommended action</strong>
-              State the concrete fix, including file names, function names, or
-              configuration changes.
+              <strong>Fix</strong>
+              Add <code>json.Deterministic(true)</code> at handlers.go:106 and
+              pin the ordering in a test (marshal a multi-check response
+              twice through <code>serveJSON</code> and require identical
+              bytes, the same discipline webhook_payload_test.go:89 already
+              applies to webhooks).
             </div>
           </div>
 
           <!-- Issue 2 -->
-          <div class="issue issue-important" id="issue-2">
-            <span class="severity severity-important"
-              >Important &middot; Medium impact</span
+          <div class="issue issue-critical" id="issue-export-json">
+            <span class="severity severity-critical"
+              >Wire-format drift &middot; Medium impact &middot; one-line fix</span
             >
-            <h3>Important issue title</h3>
-            <div class="where">path/to/another.go:12-19</div>
+            <h3>/health/export JSON has the same nondeterminism in its
+            checks object</h3>
+            <div class="where">
+              trend.go:217 (ExportHandler JSON branch) &middot; payload struct
+              trend.go:42-47
+            </div>
             <p>
-              Explain the risk. Important issues are not blockers but would make
-              a careful reviewer hesitate before shipping.
+              The export payload carries
+              <code>Checks map[string]jsonCheckMeta</code> and is written with
+              plain <code>json.MarshalWrite(w, out)</code>. Export is
+              dashboard-owned and explicitly the endpoint consumers are told
+              to diff and extend ("freshness and timing data for JSON
+              consumers"), so shuffled key order between exports defeats the
+              purpose. The trend endpoint (trend.go:153) is unaffected &mdash;
+              its payload holds only slices &mdash; as is the NDJSON branch
+              (trend.go:227, plain struct rows).
             </p>
+            <pre><code><span class="tok-comment">// Before (trend.go:217)</span>
+<span class="tok-keyword">if</span> err := json.MarshalWrite(w, out); err != <span class="tok-builtin">nil</span> {
+
+<span class="tok-comment">// After</span>
+<span class="tok-keyword">if</span> err := json.MarshalWrite(w, out, json.Deterministic(<span class="tok-number">true</span>)); err != <span class="tok-builtin">nil</span> {</code></pre>
+            <div class="callout callout-teal">
+              <strong>Fix</strong>
+              Same one-line option at trend.go:217; extend the existing
+              trend_endpoints_test.go with a two-scrape byte-equality
+              assertion.
+            </div>
           </div>
 
           <!-- Issue 3 -->
-          <div class="issue issue-nice" id="issue-3">
+          <div class="issue issue-important" id="issue-servejson-dup">
+            <span class="severity severity-important"
+              >Partial duplication &middot; justified, but document the
+              seam</span
+            >
+            <h3>serveJSON re-implements ReadinessHandler's cached path &mdash;
+            correctly, but nothing says so</h3>
+            <div class="where">
+              handlers.go:95-115 &middot; go-health handlers.go:59-77
+            </div>
+            <p>
+              The JSON branch of <code>/health</code> duplicates go-health's
+              readiness handler line for line: same cache read (CachedResponse
+              overlays shutdown into Status=fail exactly like readiness does,
+              probe.go:657-677), same 503-on-fail mapping, same Content-Type
+              and Cache-Control headers, same sanitize step. Delegating to
+              <code>d.probe.ReadinessHandler()</code> would be wrong &mdash;
+              on live-mode probes (<code>RefreshInterval(0)</code>) it
+              evaluates dependencies per scrape, breaking the dashboard's
+              zero-cost-reads contract. So the duplication is deliberate and
+              correct; the only bug it bred is Finding 1 (the dropped option).
+              What's missing is the sentence that keeps the next editor from
+              "simplifying" it in either direction.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              One comment on serveJSON: "Wire-compatible copy of go-health's
+              readiness handler, cache-read-only so live probes stay free;
+              keep the marshal options identical to health.marshalResponse."
+              Then Finding 1's fix makes "identical" true and testable.
+            </div>
+          </div>
+
+          <!-- Issue 4 -->
+          <div class="issue issue-important" id="issue-rank">
+            <span class="severity severity-important"
+              >Partially used &middot; Medium impact</span
+            >
+            <h3>Severity ordering re-derived four times; go-health v0.3.0
+            published Status.Rank() for exactly this</h3>
+            <div class="where">
+              status.go:373-390 (worstGroupStatus) &middot; metrics.go:193-201
+              (numericHealthStatus) &middot; status.go:232-243 (statusValue)
+              &middot; history.go (trend thresholds)
+            </div>
+            <p>
+              v0.3.0's changelog: "<code>Status.Rank()</code> is public: the
+              severity ordering (fail 0 &lt; warn 1 &lt; pass 2) behind the
+              merge sites, so consumers merging statuses share one ordering."
+              The pinned snapshot already contains it (verified in
+              aafc76e:types.go) &mdash; the dashboard uses none of it and
+              instead maintains four private status&rarr;number mappings. The
+              orderings agree; the unknown-status defaults deliberately
+              diverge per site (grouping&rarr;warn "must not read as healthy",
+              metrics&rarr;-1 "never confuse with fail", trend&rarr;0).
+              <code>numericHealthStatus</code> is literally
+              <code>Rank()</code> plus the -1 default;
+              <code>worstGroupStatus</code>'s fail-first loop is the exact
+              merge idiom Rank was extracted from. Four places to keep in
+              sync with zero tests tying them to go-health's canonical
+              ordering is drift bait.
+            </p>
+            <pre><code><span class="tok-comment">// worstGroupStatus (status.go:376-387), using the canonical ordering</span>
+<span class="tok-keyword">for</span> _, row := <span class="tok-keyword">range</span> rows {
+    <span class="tok-keyword">switch</span> row.Status {
+    <span class="tok-keyword">case</span> health.StatusFail:
+        <span class="tok-keyword">return</span> health.StatusFail
+    <span class="tok-keyword">case</span> health.StatusWarn, health.StatusPass:
+        <span class="tok-comment">// keep walking</span>
+    <span class="tok-keyword">default</span>:
+        <span class="tok-comment">// dashboard-specific: unknown must not read healthy &mdash;</span>
+        <span class="tok-comment">// deliberately stricter than Rank()'s unknown&rarr;pass</span>
+        <span class="tok-keyword">return</span> health.StatusWarn
+    }
+}</code></pre>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Where sites compare or encode ordering, derive from
+              <code>Rank()</code> and keep only the local unknown-default
+              explicit; cite Rank() in each comment so a future
+              status-value change upstream surfaces here. Do not collapse
+              the four sites into one helper &mdash; their unknown handling
+              is intentionally different.
+            </div>
+          </div>
+
+          <!-- Issue 5 -->
+          <div class="issue issue-important" id="issue-instanceid">
+            <span class="severity severity-important"
+              >Missed opportunity &middot; Medium impact for the hub</span
+            >
+            <h3>Response.InstanceID is never surfaced &mdash; the federation
+            hub is where it earns its keep</h3>
+            <div class="where">
+              not used anywhere (grep: zero non-test references) &middot;
+              go-health types.go:90
+            </div>
+            <p>
+              go-health added <code>WithInstanceID</code> "to identify this
+              replica when multiple instances serve behind one load balancer".
+              The dashboard consumes every other response scalar &mdash;
+              Version (status.go:212), Uptime (status.go:213),
+              TotalLatencyMs (status.go:214, metrics.go:123), ShuttingDown
+              (status.go:200) &mdash; but drops InstanceID. The health-hub
+              merges N remotes where several may be replicas of the same
+              service; showing the instance ID in a group's detail line is
+              the difference between "api is degraded" and "api replica
+              7f3a is degraded". Treat it as semi-identifying: mask it in
+              public mode the way check names are masked (metrics.go:80-83
+              pattern).
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Thread <code>resp.InstanceID</code> into
+              <code>checkGroup</code>/viewModel, render in the group card
+              detail cell when non-empty, mask under
+              <code>WithPublicMode</code>.
+            </div>
+          </div>
+
+          <!-- Issue 6 -->
+          <div class="issue issue-nice" id="issue-healthz">
             <span class="severity severity-nice"
               >Nice to have &middot; Low impact</span
             >
-            <h3>Nice-to-have improvement</h3>
-            <div class="where">docs/ or config</div>
+            <h3>go-health's combined Healthz() endpoint has no dashboard
+            passthrough</h3>
+            <div class="where">
+              routes.go:4-16 &middot; go-health accessors.go:154
+            </div>
             <p>
-              Minor polish, documentation gaps, or future-proofing suggestions
-              go here.
+              go-health ships <code>Probe.Healthz()</code> &mdash; the
+              single-endpoint "should traffic route here?" handler (503 while
+              booting/failing/draining). The dashboard registers the three
+              kubelet probes but not this one, and <code>Prober</code> doesn't
+              expose it, so a consumer can't reach it through the dashboard's
+              route table. Fair to skip for now: the aggregate twin
+              (<code>Aggregate.Healthz()</code>) is still unreleased upstream
+              (go-health CHANGELOG Unreleased), and consumers can wire the
+              probe's handler themselves today. Revisit when the aggregate
+              version ships so the hub can expose one coherent route.
+            </p>
+          </div>
+
+          <!-- Issue 7 -->
+          <div class="issue issue-nice" id="issue-newchecks">
+            <span class="severity severity-nice"
+              >Nice to have &middot; Low impact &middot; example ergonomics</span
+            >
+            <h3>v0.3.0's NewChecks() would shrink the example's probe
+            scaffolding</h3>
+            <div class="where">
+              example/main.go (injector + do.ProvideNamed scaffolding)
+            </div>
+            <p>
+              <code>NewChecks(map[string]CheckFunc)</code> is the
+              injector-free named-checks constructor: concurrent batches,
+              per-check timing (surfaces as duration_ns &mdash; which the
+              dashboard renders), panic recovery, wedged-check abandonment.
+              The example currently builds a samber/do injector to simulate
+              services. Switching the example to NewChecks would demonstrate
+              the lighter integration path, feed DurationNanos through the
+              rendered duration line, and cut scaffolding. Demo-only value;
+              the injector path remains the right one for real samber/do
+              apps.
             </p>
           </div>
         </section>
 
-        <!-- Proposal -->
-        <section id="proposal">
-          <h2><span class="num">02</span>What the solution could look like</h2>
+        <!-- Deliberate non-adoption -->
+        <section id="nonadoption">
+          <h2><span class="num">02</span>Deliberate non-adoption (not gaps)</h2>
           <p>
-            If the findings were fixed, what would the new state be? Show the
-            target API, structure, or workflow.
-          </p>
-          <pre><code>// Target state after the recommended changes
-type BetterAPI struct {
-    Field string
-}</code></pre>
-          <div class="callout callout-teal">
-            <strong>This is the target</strong>
-            Summarize why this state is better and what it unlocks.
-          </div>
-        </section>
-
-        <!-- Appendix -->
-        <section id="appendix">
-          <h2><span class="num">03</span>Appendix</h2>
-          <p>
-            Methodology, links to related files, or a priority matrix can live
-            here.
+            These surfaced during the audit and are <em>correct</em> as-is.
+            Listed so a future session doesn't "fix" them.
           </p>
           <table class="compare">
             <thead>
               <tr>
-                <th>Issue</th>
-                <th>Severity</th>
-                <th>Effort</th>
-                <th>Status</th>
+                <th>Capability</th>
+                <th>Why not</th>
+                <th>Verdict</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Issue one</td>
-                <td class="no">Critical</td>
-                <td>Low</td>
-                <td class="no">Open</td>
+                <td><code>Accept</code> negotiation in go-health</td>
+                <td>
+                  Rejected upstream by design
+                  (docs/content-negotiation-design.md &sect;Decision: "Breaks
+                  single-dependency principle"); the composition layer owns it
+                </td>
+                <td class="yes">Correct layering &mdash; keep</td>
               </tr>
               <tr>
-                <td>Issue two</td>
-                <td class="no">Important</td>
-                <td>Medium</td>
-                <td class="yes">In progress</td>
+                <td><code>Evaluate()</code> (live evaluation)</td>
+                <td>
+                  Dashboard's contract is zero-cost cached reads; live probes
+                  push at their own cadence instead
+                </td>
+                <td class="yes">Correct &mdash; keep</td>
+              </tr>
+              <tr>
+                <td><code>Status()/Alive()/Ready()/AwaitReady()</code></td>
+                <td>
+                  Dashboard.HealthCheck monitors the <em>pusher</em> (its own
+                  failure mode), not the probe (which has its own do.HealthCheck
+                  registration); cached reads need none of them
+                </td>
+                <td class="yes">Correct &mdash; keep</td>
+              </tr>
+              <tr>
+                <td>HealthRecorder / NewWithDetailedCheck</td>
+                <td>
+                  Probe-construction concerns; the dashboard is a pure
+                  consumer of whatever Prober it is handed
+                </td>
+                <td class="yes">Out of scope &mdash; keep</td>
+              </tr>
+              <tr>
+                <td>x/time/rate, client_golang</td>
+                <td>
+                  Duplicates <em>other</em> libraries, not go-health; zero
+                  runtime deps is a stated module policy
+                </td>
+                <td class="yes">Policy &mdash; keep</td>
               </tr>
             </tbody>
           </table>
         </section>
 
+        <!-- Version currency -->
+        <section id="versions">
+          <h2><span class="num">03</span>Version currency</h2>
+          <p>
+            go.mod pins the master pseudo-version
+            <code>v0.2.1-0.20260918115637-aafc76e229a5</code> (2026-09-18).
+            go-health tagged <code>v0.3.0</code> on 2026-09-19 and is now 16
+            commits past it (docs + benchmarks; the aggregate
+            <code>Healthz()</code> is still unreleased). Verified: the pin
+            already contains v0.3.0's consumer-relevant feature set
+            (<code>Status.Rank()</code>, federation, NewChecks) &mdash; the
+            gap is contractual, not functional, and AGENTS.md already
+            schedules the re-pin.
+          </p>
+          <table class="compare">
+            <thead>
+              <tr>
+                <th>Version</th>
+                <th>Change</th>
+                <th>Relevance to the dashboard</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>v0.3.0 (2026-09-19)</td>
+                <td><code>Status.Rank()</code> published</td>
+                <td class="no">Adopt &mdash; Finding 4 (already in pin)</td>
+              </tr>
+              <tr>
+                <td>v0.3.0</td>
+                <td><code>federation</code> package tagged</td>
+                <td class="yes">
+                  Already consumed via pin; re-pin makes the dependency a
+                  real release
+                </td>
+              </tr>
+              <tr>
+                <td>v0.3.0</td>
+                <td><code>NewChecks</code> constructor</td>
+                <td class="no">Example ergonomics &mdash; Finding 7</td>
+              </tr>
+              <tr>
+                <td>v0.3.0 + 16</td>
+                <td>Aggregate <code>Healthz()</code> (unreleased)</td>
+                <td class="yes">Watch &mdash; Finding 6 unlocks then</td>
+              </tr>
+              <tr>
+                <td>pin &rarr; v0.3.0</td>
+                <td>No API change affecting the dashboard</td>
+                <td class="yes">
+                  Safe re-pin: go.mod line + gates; go 1.27.1 floor already
+                  satisfied by the flake
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- Proposal / prioritized plan -->
+        <section id="proposal">
+          <h2><span class="num">04</span>Prioritized plan</h2>
+          <p>
+            Impact &times; ease, Pareto-ordered. Items 1-3 are one small
+            change each; items 1+2 belong in a single commit with their
+            byte-equality tests.
+          </p>
+          <table class="compare">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Opportunity</th>
+                <th>Impact</th>
+                <th>Ease</th>
+                <th>Priority</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>
+                  <code>json.Deterministic(true)</code> on /health JSON +
+                  byte-equality test (Finding 1)
+                </td>
+                <td class="yes">5</td>
+                <td class="yes">5</td>
+                <td><span class="highlight">25</span></td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>
+                  Same option on /health/export JSON + test (Finding 2)
+                </td>
+                <td class="yes">4</td>
+                <td class="yes">5</td>
+                <td><span class="highlight">20</span></td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>
+                  Re-pin go-health to the v0.3.0 tag (AGENTS.md already
+                  schedules this)
+                </td>
+                <td class="yes">3</td>
+                <td class="yes">5</td>
+                <td><span class="highlight">15</span></td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>
+                  serveJSON provenance comment (Finding 3)
+                </td>
+                <td>2</td>
+                <td class="yes">5</td>
+                <td><span class="highlight">10</span></td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>
+                  Derive orderings from Status.Rank(), keep local
+                  unknown-defaults (Finding 4)
+                </td>
+                <td>2</td>
+                <td>4</td>
+                <td><span class="highlight">8</span></td>
+              </tr>
+              <tr>
+                <td>6</td>
+                <td>
+                  Surface Response.InstanceID in group cards, mask in public
+                  mode (Finding 5)
+                </td>
+                <td>3</td>
+                <td>2</td>
+                <td><span class="highlight">6</span></td>
+              </tr>
+              <tr>
+                <td>7</td>
+                <td>
+                  Healthz() passthrough once Aggregate.Healthz() releases
+                  (Finding 6)
+                </td>
+                <td>1</td>
+                <td>3</td>
+                <td><span class="highlight">3</span></td>
+              </tr>
+              <tr>
+                <td>8</td>
+                <td>
+                  Example &rarr; NewChecks scaffold (Finding 7)
+                </td>
+                <td>1</td>
+                <td>2</td>
+                <td><span class="highlight">2</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout callout-teal">
+            <strong>What "superb" looks like after this</strong>
+            The dashboard would consume 100% of go-health's exported surface
+            it can use, with every wire seam either delegated to go-health
+            code or provably byte-identical to it, one canonical severity
+            ordering shared across both modules, and the dependency pinned to
+            a real release instead of a master snapshot.
+          </div>
+        </section>
+
+        <!-- Appendix -->
+        <section id="appendix">
+          <h2><span class="num">05</span>Method &amp; evidence</h2>
+          <p>
+            Every claim above was verified against source on 2026-09-22, not
+            from docs alone:
+          </p>
+          <table class="compare">
+            <thead>
+              <tr>
+                <th>Claim</th>
+                <th>How it was verified</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>API usage census</td>
+                <td>
+                  <code>rg -o 'health\.[A-Z][A-Za-z]*'</code> over all
+                  non-test dashboard sources; 18 distinct symbols, counts
+                  per symbol
+                </td>
+              </tr>
+              <tr>
+                <td>Nondeterministic map marshal</td>
+                <td>
+                  Standalone <code>GOEXPERIMENT=jsonv2</code> program:
+                  200 marshals of one 4-key map &rarr; 115/200 identical
+                  under default options; <code>Deterministic(true)</code>
+                  emits sorted keys on every run
+                </td>
+              </tr>
+              <tr>
+                <td>serveJSON &harr; readiness equivalence</td>
+                <td>
+                  Side-by-side read of dashboard handlers.go:95-115 vs
+                  go-health handlers.go:59-77 + probe.go:657-677 (shutdown
+                  overlay in CachedResponse)
+                </td>
+              </tr>
+              <tr>
+                <td>Rank() availability at the pin</td>
+                <td>
+                  <code>git show aafc76e:types.go</code> contains
+                  <code>func (s Status) Rank()</code>
+                </td>
+              </tr>
+              <tr>
+                <td>Version currency</td>
+                <td>
+                  <code>git describe --tags</code> in ~/projects/go-health:
+                  v0.3.0-16-ge822081; CHANGELOG v0.3.0 section read in full
+                </td>
+              </tr>
+              <tr>
+                <td>Content negotiation layering</td>
+                <td>
+                  go-health docs/content-negotiation-design.md &sect;Decision
+                  matrix: negotiation and HTML rendering both Rejected for
+                  go-health, assigned to this composition layer
+                </td>
+              </tr>
+              <tr>
+                <td>Response field consumption</td>
+                <td>
+                  Per-field grep: Version/Uptime/TotalLatencyMs/ShuttingDown
+                  consumed; InstanceID/Timestamp not (Timestamp's absence is
+                  a recorded design decision in AGENTS.md)
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            Scope note: this audit covers the go-health dependency only.
+            templ-components, go-datastar, and go-sse usage was out of scope.
+          </p>
+        </section>
+
         <!-- Footer -->
         <footer class="footer">
           <p>
-            Generated YYYY-MM-DD &middot; Reviewed against version X.Y.Z
+            Generated 2026-09-22 &middot; Reviewed against go-health
+            v0.2.1-0.20260918 (pin) and v0.3.0-16-ge822081 (upstream HEAD)
             &middot; All claims verified against source code where noted
           </p>
         </footer>
