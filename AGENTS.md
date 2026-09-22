@@ -312,6 +312,21 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   (3) Never run Go tooling (erraudit, go list, tests) while a buildflow
   run is active: its go-mod/templ steps mutate go.mod and `*_templ.go`
   mid-flight and the concurrent loader reads torn state.
+  (4) **BuildFlow's `go-mod-update` step sweeps the UI pins** — on
+  2026-09-22 it bumped templ-components 1.18.0→1.19.1, go-datastar
+  0.5.0→0.6.0, go-health →v0.3.0, go-sse →0.6.1 in one run and the
+  auto-daemon committed it (`68ac162`); the golden render tests caught
+  the drift only after the fact and the commit had to be reverted, and
+  the same run's go-mod-normalize downgraded the `go` directive
+  1.27.1→1.27 (breaking module loading against go-health's floor). Run
+  local gates as `buildflow --build-mode dev --exclude go-mod-update`
+  and check `git diff go.mod go.sum` after ANY buildflow run — the
+  check-ui-pins.sh guard only fires in CI, after the sweep already
+  landed locally. (5) The flake's nix-build steps fail on this machine
+  with `lookup proxy.golang.org ... connection refused` (FOD sandbox
+  DNS vs the local DNS blocker) — chronic 100% failure, environmental,
+  not a code signal; `--exclude nix-hash-fix --exclude
+  nix-build-verify` for local dev gates and trust CI for flake builds.
 
 ---
 
