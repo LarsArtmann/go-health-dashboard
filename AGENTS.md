@@ -373,9 +373,13 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.2.0 in go.mod). The dashboar
   (never a silent freeze), `Check.Since` survives the wire, startup latches per remote on first
   successful fetch. A hub (`health.home.lan`) is `dashboard.New(fed, WithGrouping(GroupBySource))`
   — verified end to end 2026-09-18 (HTML renders per-remote cards; JSON negotiation 503s while a
-  remote is dark). The go.mod pins the master pseudo-version
-  `v0.2.1-0.20260918115637-aafc76e229a5` since 2026-09-19: federation is on master but
-  v0.3.0 is untagged; re-pin to the tag when cut. `cmd/health-hub` is the hub made
+  remote is dark). go.mod pins the **v0.4.0 tag** (2026-09-22): federation, `Status.Rank()`,
+  `NewChecks`, and `Aggregate.Healthz()` — additive for this module, ratified with a green gate
+  chain the same day. History: the 2026-09-18 master pseudo-version pin
+  (`v0.2.1-0.20260918115637-aafc76e229a5`) was swept to v0.4.0 by a buildflow go-mod-update run
+  (daemon commit `b1128ae`) and verified deliberately afterwards instead of reverted. v0.4.0's
+  module graph requires `go 1.27.1` — the fleet normalize step's `go 1.27` downgrade breaks
+  every module load (see Gotchas). `cmd/health-hub` is the hub made
   runnable: `HEALTH_HUB_REMOTES` (validated `name=url` pairs, redacted in logs),
   `HEALTH_HUB_TIMEOUT`, `HEALTH_HUB_TREND`, `HEALTH_HUB_METRICS`, and
   `HEALTH_HUB_ADDR` (full listen address — loopback binds for reverse-proxy
