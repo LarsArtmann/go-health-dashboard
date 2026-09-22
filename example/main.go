@@ -130,9 +130,8 @@ type probeBundle struct {
 // demo services. The checks run through go-health v0.3.0's NewChecks
 // constructor — plain functions, no injector services — so the probe times
 // every execution and the rendered rows show real measured durations (the
-// raw injector path reports zero). The injector still hosts the dashboard
-// itself for the samber/do lifecycle integration.
-func buildSingleProbe(ctx context.Context, injector *do.RootScope) probeBundle {
+// raw injector path reports zero).
+func buildSingleProbe(ctx context.Context) probeBundle {
 	redis := &flappingService{failEvery: 15 * time.Second}
 	exporter := &alwaysFailing{reason: exporterUnreachableReason}
 

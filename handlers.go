@@ -236,14 +236,21 @@ func (d *Dashboard) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc(routes.Readiness, d.probe.ReadinessHandler())
 	mux.HandleFunc(routes.Startup, d.probe.StartupHandler())
 
-	// Optional capability: probers that expose go-health's combined-traffic
-	// handler get it registered when a route is configured. Like the kubelet
-	// probes above, it stays unwrapped (no middleware) — it serves LB and
-	// composition traffic, not browser sessions.
-	if routes.Healthz != "" {
-		if hz, ok := d.probe.(Healthzer); ok {
-			mux.HandleFunc(routes.Healthz, hz.Healthz())
-		}
+	d.registerHealthz(mux, routes)
+}
+
+// registerHealthz wires the optional combined-traffic handler: probers that
+// implement [Healthzer] get go-health's Healthz registered when
+// Routes.Healthz is configured. Like the kubelet probes above, it stays
+// unwrapped (no middleware) — it serves LB and composition traffic, not
+// browser sessions.
+func (d *Dashboard) registerHealthz(mux *http.ServeMux, routes Routes) {
+	if routes.Healthz == "" {
+		return
+	}
+
+	if hz, ok := d.probe.(Healthzer); ok {
+		mux.HandleFunc(routes.Healthz, hz.Healthz())
 	}
 }
 
