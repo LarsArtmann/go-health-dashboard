@@ -214,7 +214,9 @@ func (d *Dashboard) ExportHandler() http.HandlerFunc {
 
 			out := buildExportPayload(samples, d.currentResponse())
 
-			if err := json.MarshalWrite(w, out); err != nil {
+			// Checks is a Go map: without the deterministic option the key
+			// order changes per scrape, and export consumers diff payloads.
+			if err := json.MarshalWrite(w, out, json.Deterministic(true)); err != nil {
 				http.Error(w, "dashboard: failed to encode export", http.StatusInternalServerError)
 			}
 		case "ndjson":

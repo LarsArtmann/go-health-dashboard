@@ -92,6 +92,11 @@ func wantsJSON(r *http.Request) bool {
 
 // serveJSON writes the probe's cached health response as JSON. The HTTP
 // status code is 503 when the overall status is fail, 200 otherwise.
+//
+// Wire-compatible copy of go-health's readiness handler, kept cache-read-only
+// so live-mode probes never evaluate per scrape. The marshal options must
+// stay identical to go-health's writeResponse (deterministic map keys), so
+// the body stays byte-stable with the probe handlers that scrapers diff.
 func (d *Dashboard) serveJSON(w http.ResponseWriter) {
 	resp := d.currentResponse()
 
@@ -103,7 +108,7 @@ func (d *Dashboard) serveJSON(w http.ResponseWriter) {
 		code = http.StatusServiceUnavailable
 	}
 
-	payload, err := json.Marshal(resp)
+	payload, err := json.Marshal(resp, json.Deterministic(true))
 	if err != nil {
 		http.Error(w, "dashboard: failed to encode health response", http.StatusInternalServerError)
 
