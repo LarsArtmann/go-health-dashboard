@@ -85,6 +85,12 @@ templ View(data viewModel) {
 							Value: fmt.Sprintf("%dms", data.LatencyMs),
 							Label: "Check Latency",
 						})
+						if data.InstanceID != "" {
+							@display.StatCard(display.StatCardProps{
+								Value: data.InstanceID,
+								Label: "Instance",
+							})
+						}
 					}
 				}
 				<div class="mt-6">

@@ -108,6 +108,12 @@ type viewModel struct {
 	FeedbackType  feedback.FeedbackType
 	StatusText    string
 	Version       string
+	// InstanceID is the serving replica's identity (go-health's
+	// WithInstanceID), rendered as its own stat card when non-empty so
+	// replicas behind one load balancer are distinguishable. Cleared in
+	// public mode: instance IDs are semi-identifying (they often encode
+	// host or zone names).
+	InstanceID    string
 	Uptime        string
 	LatencyMs     int64
 	Groups        []checkGroup
@@ -210,6 +216,7 @@ func buildViewModelAt(
 		FeedbackType:    feedbackType,
 		StatusText:      statusText,
 		Version:         resp.Version,
+		InstanceID:      resp.InstanceID,
 		Uptime:          resp.Uptime,
 		LatencyMs:       resp.TotalLatencyMs,
 		Groups:          groups,
@@ -656,8 +663,11 @@ type TimelineEntry struct {
 // the rendered page can be shared with untrusted audiences. Group titles,
 // check names, and error messages are masked; statuses remain visible. In
 // GroupBySource mode the titles are the source names themselves, so they
-// are masked too — topology is as identifying as names.
+// are masked too — topology is as identifying as names. The instance ID is
+// cleared outright: it often encodes a host or zone name.
 func anonymizeViewModel(vm *viewModel) {
+	vm.InstanceID = ""
+
 	for groupIdx := range vm.Groups {
 		group := &vm.Groups[groupIdx]
 
