@@ -20,7 +20,15 @@ skip_steps:
   # there is no way to scope it short of skipping. The analyzers that catch
   # real bugs (panic, split-brain, ro-leak) are missed until the fleet fix
   # lands (tracked in TODO_LIST.md, Blocked table).
-  - branching-flow
+  # UNSKIPPED 2026-09-22 (retest under the branching-flow v0.6.2+ SDK
+  # severity cap): the historical gate-bombs are gone - every finding now
+  # lands at warning/info, so the default error-severity gate stays green
+  # (verified live: exit 0, ~45 advisory findings - PHANTOM_TYPE on the
+  # public option API, bool-pack suggestions, struct-size opinions). The
+  # design disagreement remains (phantom-typing WithTitle/WithWebhook
+  # signatures is a breaking API redesign needing a versioning decision),
+  # but warnings-as-observations beat losing the panic/split-brain/ro-leak
+  # analyzers. Revisit if a warnings_budget ceiling is wanted.
   # templ-generate re-raws view_templ.go / page_scripts_templ.go
   # mid-run (templ emits unformatted Go; the canonical order here is
   # generate → fmt, enforced by the CI hygiene job and the flake apps).
