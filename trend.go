@@ -150,7 +150,11 @@ func (d *Dashboard) TrendHandler() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-cache")
 
-		if err := json.MarshalWrite(w, out); err != nil {
+		// Deterministic encoding: the payload is slices-only today, so map
+		// order cannot bite yet — the option future-proofs the endpoint
+		// against a future map-bearing field silently regressing
+		// byte-stability for diff-based scrapers.
+		if err := json.MarshalWrite(w, out, json.Deterministic(true)); err != nil {
 			http.Error(w, "dashboard: failed to encode trend", http.StatusInternalServerError)
 		}
 	}

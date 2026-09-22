@@ -347,6 +347,74 @@ func TestExportHandler_JSONIsByteStable(t *testing.T) {
 			second.Body.String(),
 		)
 	}
+}
+
+// TestTrendHandler_JSONIsByteStable future-proofs the trend wire contract:
+// the payload is slices-only today (already stable), but one future
+// map-bearing field would silently regress byte-stability for diff-based
+// scrapers. The endpoint marshals with Deterministic(true); this test makes
+// that regression loud. Push interval is set far beyond the test so no tick
+// can land between the two scrapes and change the samples array.
+func TestTrendHandler_JSONIsByteStable(t *testing.T) {
+	t.Parallel()
+
+	resp := health.Response{
+		Status: health.StatusPass,
+		Checks: map[string]health.Check{
+			"zulu/queue":     {Status: health.StatusPass},
+			"alpha/database": {Status: health.StatusPass, DurationNanos: int64(time.Millisecond)},
+			"mid/cache":      {Status: health.StatusPass},
+		},
+	}
+
+	dash := dashboard.New(
+		newStubProber(resp),
+		dashboard.WithTrend(8),
+		dashboard.WithPushInterval(time.Hour),
+	)
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	if err := dash.Start(ctx); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+	defer dash.Shutdown()
+
+	// The pusher records its first sample immediately on start; wait for
+	// it so the sample array is quiescent before the two scrapes.
+	deadline := time.Now().Add(5 * time.Second)
+
+	for {
+		probe := doRequest(t, mux, "/health/trend")
+		if strings.Contains(probe.Body.String(), `"samples":[{`) {
+			break
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatalf("trend never recorded a sample: %s", probe.Body.String())
+		}
+
+		time.Sleep(5 * time.Millisecond)
+	}
+
+	first := doRequest(t, mux, "/health/trend")
+	if first.Code != http.StatusOK {
+		t.Fatalf("status: want 200, got %d", first.Code)
+	}
+
+	second := doRequest(t, mux, "/health/trend")
+
+	if first.Body.String() != second.Body.String() {
+		t.Fatalf(
+			"/health/trend JSON not byte-stable across scrapes:\nfirst:  %s\nsecond: %s",
+			first.Body.String(),
+			second.Body.String(),
+		)
+	}
 
 	want := `"checks":{"alpha/database"`
 	if !strings.Contains(first.Body.String(), want) {
