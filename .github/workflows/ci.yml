@@ -40,6 +40,13 @@ jobs:
       - name: UI dependency pin guard
         run: bash scripts/check-ui-pins.sh
 
+      # Go-directive floor guard: the fleet BuildFlow go-mod-normalize step
+      # keeps downgrading `go 1.27.1` to `go 1.27`, which breaks every module
+      # load against go-health's floor. Pure bash — fails before any Go tool
+      # runs. See scripts/check-go-directive.sh for the restore pattern.
+      - name: Go directive floor guard
+        run: bash scripts/check-go-directive.sh
+
       - name: Generate templ files
         # The generator is pinned by go.mod's tool directive — its version
         # cannot drift from the one the committed output was generated with.
@@ -67,6 +74,9 @@ jobs:
 
       - name: UI dependency pin guard
         run: bash scripts/check-ui-pins.sh
+
+      - name: Go directive floor guard
+        run: bash scripts/check-go-directive.sh
 
       - name: Generate templ files
         # The generator is pinned by go.mod's tool directive — its version
