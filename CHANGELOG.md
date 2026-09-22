@@ -17,6 +17,26 @@ forgetting.
 
 ### Added
 
+- Nothing yet.
+
+### Fixed
+
+- Nothing yet.
+
+## [0.10.0] - 2026-09-22
+
+The go-health v0.4.0 consumption release: the dashboard renders the serving
+replica's instance ID (public mode drops the card), can serve go-health's
+combined-traffic Healthz handler behind `Routes.Healthz` (opt-in), and now
+derives its status encoders from upstream's `Status.Rank()` ladder. The
+`/health` and `/health/export` JSON surfaces marshal deterministically
+(byte-stable scrapes), the example builds on `NewChecks` detailed checks with
+a Grafana demo stack, and the flake's health-hub package is buildable again.
+Display-only and opt-in additions — the JSON health contract and webhook wire
+stay untouched. Toolchain floor: go 1.27.1 (go-health v0.4.0's module graph).
+
+### Added
+
 - `Response.InstanceID` rendering: when go-health's `WithInstanceID` is
   configured, the dashboard shows an "Instance" stat card so replicas
   behind one load balancer are distinguishable (federation hubs
@@ -160,6 +180,12 @@ forgetting.
   `TestTrendHandler_JSONIsByteStable`). Regression tests:
   `TestContentNegotiation_HealthJSONIsByteStable`,
   `TestExportHandler_JSONIsByteStable`.
+- `packages.health-hub` (nix) builds again: the vendorHash had last been
+  computed against the 2026-09-18 go-health pseudo-version and went stale
+  when the v0.4.0 pin changed the module set; the fleet normalize step's
+  `go 1.27` downgrades additionally broke every module graph load (restored
+  on sight — the `check-go-directive.sh` guard above now catches that class
+  in CI before any Go tool runs).
 
 ## [0.9.0] - 2026-09-17
 

@@ -417,13 +417,19 @@ Tested version matrix (`go.mod` is the live source of truth):
 
 | Dependency       | Version | Note                                                                       |
 | ---------------- | ------- | -------------------------------------------------------------------------- |
-| go-health        | v0.2.0  | `aggregate` needs v0.1.0+; per-check since/duration metadata needs v0.2.0+ |
+| go-health        | v0.4.0  | aggregate needs v0.1.0+; per-check since/duration metadata v0.2.0+; federation + `Status.Rank` v0.4.0+ |
 | templ-components | v1.18.0 | pinned — CI guard + browser-suite re-audit on bumps                        |
 | go-datastar      | v0.5.0  | audited SDK bundle; needs CSP `unsafe-eval`                                |
 | go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                                             |
 
 ## Upgrading
 
+- **To v0.10.0:** display-only and opt-in. The dashboard renders the serving
+  replica's instance ID when go-health's `WithInstanceID` is set (public
+  mode drops the card); `Routes.Healthz` can opt into go-health's
+  combined-traffic handler; `/health` and `/health/export` JSON now marshal
+  deterministically (byte-stable scrapes). Requires go >= 1.27.1 (go-health
+  v0.4.0's module-graph floor).
 - **To v0.9.0:** display-only. Check rows gained per-check state metadata
   ("since <time> (<age>) · <duration>") when check sources report it
   (needs go-health v0.2.0); the JSON and webhook wire contracts are
