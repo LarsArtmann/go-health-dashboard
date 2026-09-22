@@ -347,6 +347,15 @@ func TestExportHandler_JSONIsByteStable(t *testing.T) {
 			second.Body.String(),
 		)
 	}
+
+	want := `"checks":{"alpha/database"`
+	if !strings.Contains(first.Body.String(), want) {
+		t.Errorf(
+			"checks keys not in deterministic (sorted) order, want %s in: %s",
+			want,
+			first.Body.String(),
+		)
+	}
 }
 
 // TestTrendHandler_JSONIsByteStable future-proofs the trend wire contract:
@@ -413,15 +422,6 @@ func TestTrendHandler_JSONIsByteStable(t *testing.T) {
 			"/health/trend JSON not byte-stable across scrapes:\nfirst:  %s\nsecond: %s",
 			first.Body.String(),
 			second.Body.String(),
-		)
-	}
-
-	want := `"checks":{"alpha/database"`
-	if !strings.Contains(first.Body.String(), want) {
-		t.Errorf(
-			"checks keys not in deterministic (sorted) order, want %s in: %s",
-			want,
-			first.Body.String(),
 		)
 	}
 }

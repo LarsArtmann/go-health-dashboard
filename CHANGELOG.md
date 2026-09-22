@@ -132,8 +132,9 @@ forgetting.
 - `/health` JSON (content-negotiated) and `/health/export` JSON marshal
   with `json.Deterministic(true)`: two scrapes of the same response are
   now byte-identical, so diff-based scrapers see only real change instead
-  of random map iteration. The trend endpoint keeps its current
-  slice-only shape (already stable). Regression tests:
+  of random map iteration. `/health/trend` gets the same option as
+  future-proofing (its payload is slices-only today, pinned by
+  `TestTrendHandler_JSONIsByteStable`). Regression tests:
   `TestContentNegotiation_HealthJSONIsByteStable`,
   `TestExportHandler_JSONIsByteStable`.
 
