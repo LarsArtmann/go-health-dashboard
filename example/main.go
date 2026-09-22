@@ -126,18 +126,21 @@ type probeBundle struct {
 	shutdown func()
 }
 
-// buildSingleProbe builds the classic one-injector probe over the default
-// demo services.
+// buildSingleProbe builds the classic single-process probe over the default
+// demo services. The checks run through go-health v0.3.0's NewChecks
+// constructor — plain functions, no injector services — so the probe times
+// every execution and the rendered rows show real measured durations (the
+// raw injector path reports zero). The injector still hosts the dashboard
+// itself for the samber/do lifecycle integration.
 func buildSingleProbe(ctx context.Context, injector *do.RootScope) probeBundle {
-	registerService(injector, "postgres", &alwaysHealthy{})
-	registerService(injector, "redis", &flappingService{failEvery: 15 * time.Second})
-	registerService(
-		injector,
-		"metrics-exporter",
-		&alwaysFailing{reason: exporterUnreachableReason},
-	)
+	redis := &flappingService{failEvery: 15 * time.Second}
+	exporter := &alwaysFailing{reason: exporterUnreachableReason}
 
-	probe := health.New(injector,
+	probe := health.NewChecks(map[string]health.CheckFunc{
+		"postgres":         new(alwaysHealthy).HealthCheck,
+		"redis":            redis.HealthCheck,
+		"metrics-exporter": exporter.HealthCheck,
+	},
 		health.WithVersion(version.Version),
 		health.WithCriticalServices("postgres", "redis"),
 		health.WithRefreshInterval(2*time.Second),
