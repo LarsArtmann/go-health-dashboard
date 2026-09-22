@@ -949,6 +949,16 @@
             dependency sweep landed it the same day, and it was verified
             deliberately (green gate chain) rather than reverted.
           </div>
+          <div class="callout callout-teal">
+            <strong>Resolution (same day, 2026-09-22)</strong>
+            Both Deterministic findings are fixed and pinned by byte-stability
+            tests: Finding 1 (/health) and Finding 2 (/health/export) landed
+            that morning (<code>604b742</code>, <code>bfaa5c5</code>,
+            <code>621e601</code>); the trend endpoint followed post-plan in
+            <code>5e32c5a</code>. The remaining backlog executed the same
+            evening as Pareto plan T1&ndash;T9 &mdash; execution log:
+            <code>docs/status/2026-09-22_22-35_pareto-plan-execution-status.md</code>.
+          </div>
         </section>
 
         <!-- Strengths -->
@@ -1122,6 +1132,12 @@ payload, err := json.Marshal(resp, json.Deterministic(<span class="tok-number">t
               bytes, the same discipline webhook_payload_test.go:89 already
               applies to webhooks).
             </div>
+            <div class="callout callout-teal">
+              <strong>Resolved 2026-09-22</strong>
+              The option is on the <code>serveJSON</code> marshal; pinned by
+              <code>TestContentNegotiation_HealthJSONIsByteStable</code>
+              (<code>604b742</code>).
+            </div>
           </div>
 
           <!-- Issue 2 -->
@@ -1156,6 +1172,11 @@ payload, err := json.Marshal(resp, json.Deterministic(<span class="tok-number">t
               Same one-line option at trend.go:217; extend the existing
               trend_endpoints_test.go with a two-scrape byte-equality
               assertion.
+            </div>
+            <div class="callout callout-teal">
+              <strong>Resolved 2026-09-22</strong>
+              Pinned by <code>TestExportHandler_JSONIsByteStable</code>
+              (<code>bfaa5c5</code>, <code>621e601</code>).
             </div>
           </div>
 

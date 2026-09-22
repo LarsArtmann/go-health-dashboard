@@ -9,6 +9,15 @@ intersect: the `Re-pin go-health v0.3.0` BLOCKED row (superseded — done today,
 must be closed) and the federation-consumer batch it contained (partially
 unblocked by v0.4.0, see T3).
 
+**EXECUTED 2026-09-22 (same evening)** — all nine tasks landed, verified, and
+pushed (`cdea97b..837f12e`): T1 `f476f76` · T2 `5c169e7` · T3 `a9b9bf8` ·
+T4 `267e176` · T5 `7b35790` · T6 `5e32c5a` · T7 `4e1329e` · T8 `0cc786e` ·
+T9 gates+push `837f12e`. Post-report follow-ups closed in the same sweep:
+the aggregate-path Healthz test (T7.3 remainder), the missing FEATURES.md
+feature rows, this annotation, and resolution notes on the deep-dive report.
+Execution status: `docs/status/2026-09-22_22-35_pareto-plan-execution-status.md`.
+The document below is preserved as written (it reads as future work).
+
 ---
 
 ## 1. Where we stand (banked today, 2026-09-22)
