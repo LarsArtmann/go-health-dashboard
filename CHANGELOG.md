@@ -24,6 +24,15 @@ forgetting.
   semi-identifying (they often encode host or zone names). The golden
   fixtures pick up one whitespace byte from the new conditional; the
   rendered HTML is otherwise unchanged when no instance ID is set.
+- `Healthz()` passthrough via an optional capability: probers that
+  implement the new `Healthzer` interface (go-health's `Probe` does)
+  get go-health's combined-traffic handler registered when
+  `Routes.Healthz` is configured — one endpoint answering "should
+  traffic be routed here?" for single-endpoint deployments behind load
+  balancers. The route is disabled by default (kubelet liveness owns
+  `/healthz`, and the combined handler's 503-on-boot semantics must be
+  a deliberate choice); `WithBasePath` prefixes it like every other
+  route; the exported `Prober` interface is unchanged.
 - Regression tests locking the v0.9.0 metadata surfaces: real SSE patch
   payloads (both the connect-time snapshot and subsequent broadcasts) must
   carry the "since (age) · duration" metadata line and the zero-proven

@@ -40,6 +40,19 @@ type Prober interface {
 	StartupHandler() http.HandlerFunc
 }
 
+// Healthzer is the OPTIONAL probe capability of serving go-health's
+// combined-traffic handler — one endpoint answering "should traffic be
+// routed here?" (503 while booting, unready, or shutting down; 200 with the
+// full response otherwise). It is deliberately NOT part of [Prober]: adding
+// a method to an exported interface breaks every external implementor.
+// Probes that have it (go-health's own Probe does) get the route registered
+// when Routes.Healthz is configured; probers without it silently leave the
+// route unregistered.
+type Healthzer interface {
+	// Healthz serves the combined-traffic health endpoint.
+	Healthz() http.HandlerFunc
+}
+
 // Dashboard renders a browser-friendly health dashboard from a go-health
 // Probe using Datastar SSE for real-time updates.
 //

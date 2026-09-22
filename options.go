@@ -453,6 +453,10 @@ func (c *Config) resolveRoutes() {
 		out.DatastarJS = prefix + r.DatastarJS
 	}
 
+	if r.Healthz != "" {
+		out.Healthz = prefix + r.Healthz
+	}
+
 	c.Routes = out
 }
 

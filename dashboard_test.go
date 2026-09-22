@@ -1051,3 +1051,79 @@ func TestPublicMode_InstanceIDMasked(t *testing.T) {
 		t.Error("public mode must not render the instance card at all")
 	}
 }
+
+// healthzerProber decorates the stub prober with go-health's optional
+// combined-traffic capability, standing in for health.Probe.
+type healthzerProber struct {
+	*stubProber
+}
+
+func (h *healthzerProber) Healthz() http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = w.Write([]byte(`{"status":"fail"}`))
+	}
+}
+
+// TestHealthzPassthrough_RegisteredWhenProberImplementsIt pins the optional
+// capability seam: the combined-traffic handler is registered exactly when
+// the prober has it AND a route is configured.
+func TestHealthzPassthrough_RegisteredWhenProberImplementsIt(t *testing.T) {
+	t.Parallel()
+
+	routes := dashboard.DefaultRoutes()
+	routes.Healthz = "/livez"
+
+	dash := dashboard.New(
+		&healthzerProber{stubProber: newStubProber(passResponse())},
+		dashboard.WithRoutes(routes),
+	)
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	w := doRequest(t, mux, "/livez")
+
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("combined-traffic handler should answer /livez with 503, got %d", w.Code)
+	}
+}
+
+// TestHealthzPassthrough_SkippedWhenProberLacksIt: a prober without the
+// capability must leave the route unregistered (404), not panic or 500.
+func TestHealthzPassthrough_SkippedWhenProberLacksIt(t *testing.T) {
+	t.Parallel()
+
+	routes := dashboard.DefaultRoutes()
+	routes.Healthz = "/livez"
+
+	dash := dashboard.New(newStubProber(passResponse()), dashboard.WithRoutes(routes))
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	if code := doRequest(t, mux, "/livez").Code; code != http.StatusNotFound {
+		t.Errorf("route must stay unregistered without the capability, got %d", code)
+	}
+}
+
+// TestHealthzPassthrough_DisabledByDefault pins the route-default decision:
+// kubelet liveness owns /healthz, so the combined handler registers nowhere
+// unless the consumer configures Routes.Healthz explicitly.
+func TestHealthzPassthrough_DisabledByDefault(t *testing.T) {
+	t.Parallel()
+
+	dash := dashboard.New(&healthzerProber{stubProber: newStubProber(passResponse())})
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	if code := doRequest(t, mux, "/livez").Code; code != http.StatusNotFound {
+		t.Errorf("no combined-traffic route may register by default, got %d", code)
+	}
+
+	if code := doRequest(t, mux, "/healthz").Code; code != http.StatusOK {
+		t.Errorf("kubelet liveness must keep /healthz, got %d", code)
+	}
+}

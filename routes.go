@@ -2,12 +2,18 @@ package dashboard
 
 // Routes configures the URL paths for Dashboard.RegisterRoutes.
 type Routes struct {
-	Dashboard  string // HTML dashboard page (default: /health)
-	SSE        string // SSE push endpoint for real-time updates (default: /health/sse)
-	Favicon    string // SVG favicon endpoint (default: /favicon.svg)
-	Liveness   string // Kubernetes liveness probe — JSON (default: /healthz)
-	Readiness  string // Kubernetes readiness probe — JSON (default: /readyz)
-	Startup    string // Kubernetes startup probe — JSON (default: /startupz)
+	Dashboard string // HTML dashboard page (default: /health)
+	SSE       string // SSE push endpoint for real-time updates (default: /health/sse)
+	Favicon   string // SVG favicon endpoint (default: /favicon.svg)
+	Liveness  string // Kubernetes liveness probe — JSON (default: /healthz)
+	Readiness string // Kubernetes readiness probe — JSON (default: /readyz)
+	Startup   string // Kubernetes startup probe — JSON (default: /startupz)
+	// Healthz serves the prober's combined-traffic handler when the prober
+	// implements Healthzer (default: "" — disabled). It must differ from the
+	// kubelet probe routes: kubelet liveness owns /healthz by convention, and
+	// pointing the combined handler there would restart pods during the
+	// startup latch (http.ServeMux also panics on duplicate patterns).
+	Healthz    string
 	Metrics    string // Prometheus exposition endpoint (default: /health/metrics; leave empty to disable)
 	Trend      string // Status history JSON endpoint (default: /health/trend; only registered with WithTrend)
 	Export     string // Status history export endpoint, JSON/CSV (default: /health/export; only registered with WithTrend)
@@ -17,7 +23,10 @@ type Routes struct {
 
 // DefaultRoutes returns conventional paths for the dashboard and Kubernetes
 // health probes. The HTML dashboard lives at /health; kubelet endpoints use
-// the standard /healthz, /readyz, /startupz paths.
+// the standard /healthz, /readyz, /startupz paths. The combined-traffic
+// Healthz route is disabled by default: kubelet liveness owns /healthz, and
+// the combined handler's 503-on-boot semantics must be opted into
+// deliberately (single-endpoint deployments behind load balancers).
 func DefaultRoutes() Routes {
 	return Routes{
 		Dashboard:  "/health",
@@ -26,6 +35,7 @@ func DefaultRoutes() Routes {
 		Liveness:   "/healthz",
 		Readiness:  "/readyz",
 		Startup:    "/startupz",
+		Healthz:    "",
 		Metrics:    "/health/metrics",
 		Trend:      "/health/trend",
 		Export:     "/health/export",
