@@ -23,6 +23,23 @@ forgetting.
 
 - Nothing yet.
 
+## [0.10.1] - 2026-09-22
+
+Re-cut of v0.10.0 with a green tag commit: the v0.10.0 tag carried two
+repo-hygiene CI failures (no code defects — the Go module content is
+identical apart from the version string). Consumers on v0.10.0 do not
+need to move.
+
+### Fixed
+
+- CHANGELOG footer link definition for `[0.10.0]` was missing when the
+  v0.10.0 section was cut, failing the structural lint on that tag's CI.
+- `checks.format` (treefmt): nixpkgs' goimports wrapper pins go 1.26.x on
+  PATH — older than go.mod's `1.27.1` floor — so the formatter's
+  `go list` attempted a toolchain download inside the network-less
+  sandbox and failed deterministically (CI and locally). goimports now
+  runs with the flake's `go_1_27` prefixed ahead of the built-in 1.26.x.
+
 ## [0.10.0] - 2026-09-22
 
 The go-health v0.4.0 consumption release: the dashboard renders the serving
@@ -953,6 +970,7 @@ did not exist at `01277d3`.*
   (`status.go:215`)
 
 [Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.9.0...HEAD
+[0.10.1]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.8.0...v0.8.1
