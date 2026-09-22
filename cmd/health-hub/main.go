@@ -15,6 +15,10 @@
 // dark remote surfaces as a "name/reachable" fail row instead of a silent
 // freeze. The dashboard groups cards per remote, so the hub reads as one
 // card per service.
+//
+// The server root (/) redirects to the dashboard page — the vhost in
+// front of the hub proxies every path, and a bare 404 on "/" reads as
+// an outage to anyone typing the bare hostname. Unknown paths keep 404ing.
 package main
 
 import (
@@ -128,9 +132,7 @@ func run() error {
 
 	defer dash.Shutdown()
 
-	mux := http.NewServeMux()
-
-	dash.RegisterRoutes(mux)
+	mux := newServeMux(dash)
 
 	addr := envOrDefault(addrEnvVar, ":"+envOrDefault(portEnvVar, defaultPort))
 
@@ -164,6 +166,22 @@ func run() error {
 	case err := <-listenErr:
 		return fmt.Errorf("server: %w", err)
 	}
+}
+
+// newServeMux wires the dashboard routes plus an exact-root redirect onto
+// one handler. The hub never overrides Routes, so the library default IS
+// the served dashboard path; if a route option ever lands here, read the
+// resolved route from the dashboard instead of DefaultRoutes.
+func newServeMux(dash *dashboard.Dashboard) *http.ServeMux {
+	mux := http.NewServeMux()
+
+	dash.RegisterRoutes(mux)
+	mux.Handle(
+		"{$}",
+		http.RedirectHandler(dashboard.DefaultRoutes().Dashboard, http.StatusTemporaryRedirect),
+	)
+
+	return mux
 }
 
 // logRemotes announces each remote with its credentials redacted, so an

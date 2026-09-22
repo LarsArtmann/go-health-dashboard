@@ -1,11 +1,15 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	health "github.com/larsartmann/go-health"
+	dashboard "github.com/larsartmann/go-health-dashboard"
 	healthfederation "github.com/larsartmann/go-health/federation"
 )
 
@@ -258,5 +262,86 @@ func TestEnvOrDefault(t *testing.T) {
 
 	if got := envOrDefault(addrEnvVar, ":8080"); got != ":8080" {
 		t.Fatalf("envOrDefault with an unset variable = %q, want the fallback %q", got, ":8080")
+	}
+}
+
+// stubProber satisfies dashboard.Prober with canned handlers, so the mux
+// wiring can be exercised without a running probe.
+type stubProber struct{}
+
+func (stubProber) CachedResponse() health.Response { return health.Response{} }
+func (stubProber) RefreshInterval() time.Duration  { return time.Minute }
+
+func (stubProber) LivenessHandler() http.HandlerFunc  { return serveOK }
+func (stubProber) ReadinessHandler() http.HandlerFunc { return serveOK }
+func (stubProber) StartupHandler() http.HandlerFunc   { return serveOK }
+
+func serveOK(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func TestNewServeMux(t *testing.T) {
+	t.Parallel()
+
+	mux := newServeMux(dashboard.New(stubProber{}))
+
+	server := httptest.NewServer(mux)
+
+	defer server.Close()
+
+	client := &http.Client{
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	tests := []struct {
+		name         string
+		path         string
+		wantStatus   int
+		wantLocation string
+	}{
+		{
+			name:         "root redirects to the dashboard",
+			path:         "/",
+			wantStatus:   http.StatusTemporaryRedirect,
+			wantLocation: "/health",
+		},
+		{
+			name:       "registered liveness route wins over the root pattern",
+			path:       "/healthz",
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "registered favicon route wins over the root pattern",
+			path:       "/favicon.svg",
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "unknown path keeps 404ing",
+			path:       "/definitely-not-a-route",
+			wantStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			resp, err := client.Get(server.URL + tt.path)
+			if err != nil {
+				t.Fatalf("GET %s: %v", tt.path, err)
+			}
+
+			defer resp.Body.Close()
+
+			if resp.StatusCode != tt.wantStatus {
+				t.Errorf("GET %s status = %d, want %d", tt.path, resp.StatusCode, tt.wantStatus)
+			}
+
+			if tt.wantLocation != "" && resp.Header.Get("Location") != tt.wantLocation {
+				t.Errorf("GET %s Location = %q, want %q", tt.path, resp.Header.Get("Location"), tt.wantLocation)
+			}
+		})
 	}
 }
