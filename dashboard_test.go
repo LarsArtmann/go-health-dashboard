@@ -981,3 +981,73 @@ func setupDashboardWithProber(
 		cleanup: func() { dash.Shutdown() },
 	}
 }
+
+// TestRender_InstanceIDCardWhenSet pins the replica-disambiguation card:
+// a non-empty go-health InstanceID renders as its own stat card, and the
+// default fixture (no instance ID) renders no such card.
+func TestRender_InstanceIDCardWhenSet(t *testing.T) {
+	t.Parallel()
+
+	resp := health.Response{
+		Status:     health.StatusPass,
+		InstanceID: "hub-east-7",
+		Checks:     map[string]health.Check{"api": {Status: health.StatusPass}},
+	}
+
+	dash := dashboard.New(newStubProber(resp))
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	body := doRequest(t, mux, "/health").Body.String()
+
+	if !strings.Contains(body, ">Instance</dt>") {
+		t.Error("instance card missing from HTML although InstanceID is set")
+	}
+
+	if !strings.Contains(body, "hub-east-7") {
+		t.Error("instance ID value missing from the HTML")
+	}
+
+	plain := dashboard.New(newStubProber(health.Response{
+		Status: health.StatusPass,
+		Checks: map[string]health.Check{"api": {Status: health.StatusPass}},
+	}))
+
+	plainMux := http.NewServeMux()
+	plain.RegisterRoutes(plainMux)
+
+	defaultBody := doRequest(t, plainMux, "/health").Body.String()
+
+	if strings.Contains(defaultBody, ">Instance</dt>") {
+		t.Error("instance card must not render without an InstanceID")
+	}
+}
+
+// TestPublicMode_InstanceIDMasked pins the public-mode seam: instance IDs
+// are semi-identifying (they often encode host or zone names), so public
+// mode must drop the card entirely rather than mask its value in place.
+func TestPublicMode_InstanceIDMasked(t *testing.T) {
+	t.Parallel()
+
+	resp := health.Response{
+		Status:     health.StatusPass,
+		InstanceID: "host-7.internal",
+		Checks:     map[string]health.Check{"api": {Status: health.StatusPass}},
+	}
+
+	dash := dashboard.New(newStubProber(resp), dashboard.WithPublicMode())
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	body := doRequest(t, mux, "/health").Body.String()
+
+	if strings.Contains(body, "host-7.internal") {
+		t.Error("public mode leaked the instance ID into the HTML")
+	}
+
+	if strings.Contains(body, ">Instance</dt>") {
+		t.Error("public mode must not render the instance card at all")
+	}
+}
