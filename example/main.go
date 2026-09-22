@@ -69,7 +69,7 @@ func main() {
 	} else if os.Getenv("DEMO_DETAILED") != "" {
 		probeBundle = buildDetailedProbe(ctx)
 	} else {
-		probeBundle = buildSingleProbe(ctx, injector)
+		probeBundle = buildSingleProbe(ctx)
 	}
 	defer probeBundle.shutdown()
 
