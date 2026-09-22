@@ -177,7 +177,7 @@
 | Example app              | 🟢 `FULLY_FUNCTIONAL` | `example/main.go` — default probe built via go-health `NewChecks` (timed plain funcs, `duration_ns` on the wire); DEMO_TREND/DEMO_METRICS/DEMO_AUTH/DEMO_RATELIMIT/DEMO_DRAIN/DEMO_PUBLIC/DEMO_BASE_PATH/DEMO_DETAILED env toggles                                |
 | Docker + Prometheus demo | 🟢 `FULLY_FUNCTIONAL` | `Dockerfile`, `deploy/docker-compose.yml`, `deploy/prometheus.yml` — example + scraper                                                                                                                                                                            |
 | Domain language docs     | 🟢 `FULLY_FUNCTIONAL` | `docs/DOMAIN_LANGUAGE.md` — ubiquitous language glossary                                                                                                                                                                                                          |
-| Released (pkg.go.dev)    | 🟢 `FULLY_FUNCTIONAL` | Tagged v0.10.1 (2026-09-22); v0.5.0+ proxy-resolved; zero replace directives                                                                                                                                                  |
+| Released (pkg.go.dev)    | 🟢 `FULLY_FUNCTIONAL` | Tagged v0.10.1 (2026-09-22, green-CI re-cut of v0.10.0; verify-release checks 1-4 green, check 5 = the release-draft awk run's known exception); v0.5.0+ proxy-resolved; zero replace directives                                                                                                                                                  |
 
 ## Known Gaps
 
