@@ -303,14 +303,14 @@ nix run .#health-hub
 go build -o health-hub ./cmd/health-hub
 ```
 
-| Variable                 | Effect                                                        |
-| ------------------------ | ------------------------------------------------------------- |
-| `HEALTH_HUB_REMOTES`     | Required. `name=url` pairs, e.g. `cv=http://cv:8098/health`   |
-| `HEALTH_HUB_TIMEOUT=5s`  | Per-fetch deadline for each remote                            |
-| `HEALTH_HUB_TREND=1`     | Trend sparkline + timeline card                               |
-| `HEALTH_HUB_METRICS=1`   | Prometheus text at `/health/metrics`                          |
-| `PORT=8080`              | Listen port (default 8080)                                    |
-| `HEALTH_HUB_ADDR=...`    | Full listen address, overrides `PORT` (e.g. `127.0.0.1:8103`) |
+| Variable                | Effect                                                        |
+| ----------------------- | ------------------------------------------------------------- |
+| `HEALTH_HUB_REMOTES`    | Required. `name=url` pairs, e.g. `cv=http://cv:8098/health`   |
+| `HEALTH_HUB_TIMEOUT=5s` | Per-fetch deadline for each remote                            |
+| `HEALTH_HUB_TREND=1`    | Trend sparkline + timeline card                               |
+| `HEALTH_HUB_METRICS=1`  | Prometheus text at `/health/metrics`                          |
+| `PORT=8080`             | Listen port (default 8080)                                    |
+| `HEALTH_HUB_ADDR=...`   | Full listen address, overrides `PORT` (e.g. `127.0.0.1:8103`) |
 
 Remote URLs are never logged verbatim (userinfo is redacted), and every
 misconfiguration fails fast with the offending entry named.

@@ -1,10 +1,10 @@
 # Status — Federation Session (go-health `health/federation` + dashboard verification)
 
-|            |                                                                                        |
-| ---------- | -------------------------------------------------------------------------------------- |
-| **Date**   | 2026-09-18 09:47 CEST                                                                  |
-| **Scope**  | This session only: the "health.home.lan" federation request, end to end                |
-| **Repos**  | `go-health` (implementation, ahead 12) · `go-health-dashboard` (verification + docs, ahead 5) |
+|            |                                                                                                          |
+| ---------- | -------------------------------------------------------------------------------------------------------- |
+| **Date**   | 2026-09-18 09:47 CEST                                                                                    |
+| **Scope**  | This session only: the "health.home.lan" federation request, end to end                                  |
+| **Repos**  | `go-health` (implementation, ahead 12) · `go-health-dashboard` (verification + docs, ahead 5)            |
 | **Format** | Markdown per explicit user instruction — status-report skill's canonical HTML overridden for this report |
 
 **One-line summary:** the federation spike is now real, tested code in go-health — a hub can
@@ -128,8 +128,8 @@ broke or got wrong **during** the session and what state they left behind:
    verified absent (`git status` clean, `go build` green). Known LSP-cache lie; I never ran
    `lsp_restart` to clear it. Harmless, noisy, and it contradicts the "trust the CLI" rule
    every single tool output.
-6. **Oversell risk on "kinda fully automatically"**: federation is zero-config *for the
-   remotes*; the hub is still a hand-maintained URL list — no discovery (mDNS, Docker labels,
+6. **Oversell risk on "kinda fully automatically"**: federation is zero-config _for the
+   remotes_; the hub is still a hand-maintained URL list — no discovery (mDNS, Docker labels,
    Tailscale API) and no push registration. The design docs are honest about this; spoken
    summaries should be too.
 7. **The session's central proof is not reproducible by others yet** (see b1): "verified end to
@@ -153,7 +153,7 @@ broke or got wrong **during** the session and what state they left behind:
    background-refresh + `Start` is the realistic remote shape. Reading beats guessing (two
    wasted iterations).
 5. **Split-brain watch on the Prober shape**: `federation_test.go` asserts conformance via a
-   *copy* of the dashboard's five-method interface (import would be a cycle). If
+   _copy_ of the dashboard's five-method interface (import would be a cycle). If
    `dashboard.Prober` ever grows, the copy silently diverges. Fix is one line in the dashboard
    once v0.3.0 lands — a real `dashboard.Prober` assertion (follow-up #5).
 6. **Shared release vehicles need explicit coordination**: v0.3.0 is now claimed by my
@@ -168,7 +168,7 @@ broke or got wrong **during** the session and what state they left behind:
 9. **Composition gap worth a design decision**: `aggregate.Source` takes `*health.Probe`
    concretely, so a hub that wants M local probes + N remote instances today has no clean merge
    (federation only fetches URLs; aggregate only takes probes). Either document the
-   boundary honestly or add a response-source seam later. Also: hub-of-hubs chaining *should*
+   boundary honestly or add a response-source seam later. Also: hub-of-hubs chaining _should_
    work naturally (a hub's readiness serves a merged document) — prove it with one test.
 10. **Federation error text flows into consumer surfaces** (metrics labels, webhook payloads,
     HTML). Local errors were already escaped/masked; remote-derived error strings are untrusted
@@ -177,58 +177,58 @@ broke or got wrong **during** the session and what state they left behind:
 
 ## f) TOP 50 NEXT TASKS (impact-ranked; HARVEST food — route into TODO_LIST/ROADMAP, don't entomb)
 
-| #  | Task                                                                                                        | Impact   | Effort | Category      |
-| -- | ----------------------------------------------------------------------------------------------------------- | -------- | ------ | ------------- |
-| 1  | Decide v0.3.0 scope with the parallel session (federation vs Healthz/etag/ADR-005 in-flight)                | Critical | S      | Process       |
-| 2  | Release go-health v0.3.0 (tag → push tag → push master → `scripts`-style proxy/sumdb verification)          | Critical | S      | Release       |
-| 3  | Dashboard: bump go.mod to go-health v0.3.0                                                                  | Critical | S      | Feature       |
-| 4  | Dashboard: permanent federation→dashboard integration test (replaces deleted throwaway)                     | High     | S      | Testing       |
-| 5  | Dashboard: compile-time `dashboard.Prober` assertion for `*federation.Prober` (kills the interface-copy split brain) | High | S      | Quality       |
-| 6  | Dashboard: runnable federation example (2 mock upstreams + hub) + `.#example-federation` nix app            | High     | M      | Feature       |
-| 7  | Push both repos at the release milestone (go-health ahead 12, dashboard ahead 5 — CI is blind until then)   | Critical | S      | Release       |
-| 8  | Run FULL dashboard suite (incl. browser/CSP) against v0.3.0 after the bump                                  | High     | M      | Testing       |
-| 9  | Federation-fed test of the metrics seam: untrusted remote error strings inside metric label escaping       | High     | S      | Testing       |
-| 10 | go-health: add federation handlers to `docs/openapi.yaml` (reachable rows, zeroed scalars)                  | Medium   | S      | Documentation |
-| 11 | go-health: README row/paragraph for federation ("Which probe should I hit?" table + quick start)            | Medium   | S      | Documentation |
-| 12 | go-health: federation benchmark + FEATURES baseline row                                                     | Medium   | M      | Quality       |
-| 13 | go-health: verify CI fuzz enumeration includes the new fuzz target                                          | Medium   | S      | Testing       |
-| 14 | go-health: TODO_LIST rows for federation follow-ups                                                         | Medium   | S      | Documentation |
-| 15 | go-health: DOMAIN_LANGUAGE.md terms (hub, remote, reachable check, merge-on-read)                           | Medium   | S      | Documentation |
-| 16 | go-health: hub-of-hubs chaining test (hub's readiness as another hub's remote)                              | Medium   | S      | Testing       |
-| 17 | Design decision: merging local probes + remotes in ONE hub (aggregate/federation composition seam)          | Medium   | M      | Feature       |
-| 18 | Measure default interplay: 5s fetch timeout vs 2s default push cadence (slow remote delays ticks)           | Medium   | S      | Quality       |
-| 19 | Dashboard: verify evidence strip counts `name/reachable` rows as non-pass observations (rendered run)       | Medium   | S      | Testing       |
-| 20 | Dashboard: verify webhook + PushOnChange fingerprint over federation transitions (reachable flip)           | Medium   | M      | Testing       |
-| 21 | Dashboard: verify public mode masks namespaced remote names/errors as expected                              | Medium   | S      | Testing       |
-| 22 | Dashboard: SSE patch stream test over a federation-fed dashboard                                            | Medium   | S      | Testing       |
-| 23 | Dashboard: trend/export (CSV/NDJSON) sanity with federation values                                          | Low      | S      | Testing       |
-| 24 | Implement M56 per-source staleness ("stale?" marker + `dashboard_health_source_stale` gauge)                | High     | L      | Feature       |
-| 25 | Implement M54 since-fed timeline seeding                                                                    | Medium   | M      | Feature       |
-| 26 | Implement M55 stable-group collapse ("stable for 6h")                                                       | Medium   | M      | Feature       |
-| 27 | Deploy health.home.lan hub (host, TLS, supervision)                                                         | Critical | L      | Feature       |
-| 28 | NixOS module for the hub (remotes list → systemd unit)                                                      | High     | M      | Feature       |
-| 29 | Compose service for the hub next to the existing Grafana wiring in the dashboard repo                       | Medium   | S      | Feature       |
-| 30 | Grafana: scrape the hub's `/health/metrics`                                                                 | Medium   | S      | Feature       |
-| 31 | Webhook receiver consuming hub-side transitions (alerting path)                                             | Medium   | M      | Feature       |
-| 32 | Decide hub exposure policy (health data disclosure on LAN; auth/proxy posture)                              | Medium   | S      | Decision      |
-| 33 | `Remote.Headers` (bearer/basic) when a real service needs auth                                              | Medium   | S      | Feature       |
-| 34 | `WithCacheTTL` only on a concrete demand signal (revisit documented non-goal)                               | Low      | M      | Feature       |
-| 35 | Per-remote last-error accessor (observability without synthesized rows)                                     | Low      | S      | Feature       |
-| 36 | Public `CachedResponseContext(ctx)` variant (handlers already ctx-plumbed internally)                       | Low      | S      | Feature       |
-| 37 | Naming poll: is `name/reachable` the right synthesized check name? (alternative: `upstream`)                | Low      | S      | Decision      |
-| 38 | go-health ROADMAP: record push-based registration as an explicitly rejected non-goal                        | Low      | S      | Documentation |
-| 39 | Commit a few discovered fuzz corpus entries as seeds                                                        | Low      | S      | Testing       |
-| 40 | Root `doc.go`: link the federation package so pkg.go.dev surfaces it                                        | Medium   | S      | Documentation |
-| 41 | `lsp_restart` in the dashboard repo to clear the stale `federation_tmp_test.go` diagnostic                  | Low      | S      | Cleanup       |
-| 42 | Status report for the go-health repo's own `docs/status/` (its convention; this one is dashboard-scoped)    | Medium   | S      | Documentation |
-| 43 | HARVEST this section into TODO_LIST.md/ROADMAP.md (docs-health) so it doesn't die in this file              | High     | S      | Documentation |
-| 44 | GroupBySource card headers could surface remote freshness metadata (needs design)                           | Low      | M      | Feature       |
-| 45 | Many-remote aesthetics: healthy-group collapse threshold under 20+ remotes                                  | Low      | S      | Quality       |
-| 46 | Startup-latch thread-safety test with parallel handler storms under `-race`                                 | Low      | S      | Testing       |
-| 47 | Document observed flap behavior (no-retry policy) in the design note's operational notes                    | Low      | S      | Documentation |
-| 48 | Record the "two-writers shared release vehicle" trap in go-health AGENTS release section if absent          | Low      | S      | Documentation |
-| 49 | Hosted-hub screenshot for README/website once health.home.lan is live                                       | Low      | M      | Documentation |
-| 50 | Retire this session's follow-ups from AGENTS once v0.3.0 ships (docs-health VERIFY/ANNOTATE)                | Low      | S      | Documentation |
+| #  | Task                                                                                                                 | Impact   | Effort | Category      |
+| -- | -------------------------------------------------------------------------------------------------------------------- | -------- | ------ | ------------- |
+| 1  | Decide v0.3.0 scope with the parallel session (federation vs Healthz/etag/ADR-005 in-flight)                         | Critical | S      | Process       |
+| 2  | Release go-health v0.3.0 (tag → push tag → push master → `scripts`-style proxy/sumdb verification)                   | Critical | S      | Release       |
+| 3  | Dashboard: bump go.mod to go-health v0.3.0                                                                           | Critical | S      | Feature       |
+| 4  | Dashboard: permanent federation→dashboard integration test (replaces deleted throwaway)                              | High     | S      | Testing       |
+| 5  | Dashboard: compile-time `dashboard.Prober` assertion for `*federation.Prober` (kills the interface-copy split brain) | High     | S      | Quality       |
+| 6  | Dashboard: runnable federation example (2 mock upstreams + hub) + `.#example-federation` nix app                     | High     | M      | Feature       |
+| 7  | Push both repos at the release milestone (go-health ahead 12, dashboard ahead 5 — CI is blind until then)            | Critical | S      | Release       |
+| 8  | Run FULL dashboard suite (incl. browser/CSP) against v0.3.0 after the bump                                           | High     | M      | Testing       |
+| 9  | Federation-fed test of the metrics seam: untrusted remote error strings inside metric label escaping                 | High     | S      | Testing       |
+| 10 | go-health: add federation handlers to `docs/openapi.yaml` (reachable rows, zeroed scalars)                           | Medium   | S      | Documentation |
+| 11 | go-health: README row/paragraph for federation ("Which probe should I hit?" table + quick start)                     | Medium   | S      | Documentation |
+| 12 | go-health: federation benchmark + FEATURES baseline row                                                              | Medium   | M      | Quality       |
+| 13 | go-health: verify CI fuzz enumeration includes the new fuzz target                                                   | Medium   | S      | Testing       |
+| 14 | go-health: TODO_LIST rows for federation follow-ups                                                                  | Medium   | S      | Documentation |
+| 15 | go-health: DOMAIN_LANGUAGE.md terms (hub, remote, reachable check, merge-on-read)                                    | Medium   | S      | Documentation |
+| 16 | go-health: hub-of-hubs chaining test (hub's readiness as another hub's remote)                                       | Medium   | S      | Testing       |
+| 17 | Design decision: merging local probes + remotes in ONE hub (aggregate/federation composition seam)                   | Medium   | M      | Feature       |
+| 18 | Measure default interplay: 5s fetch timeout vs 2s default push cadence (slow remote delays ticks)                    | Medium   | S      | Quality       |
+| 19 | Dashboard: verify evidence strip counts `name/reachable` rows as non-pass observations (rendered run)                | Medium   | S      | Testing       |
+| 20 | Dashboard: verify webhook + PushOnChange fingerprint over federation transitions (reachable flip)                    | Medium   | M      | Testing       |
+| 21 | Dashboard: verify public mode masks namespaced remote names/errors as expected                                       | Medium   | S      | Testing       |
+| 22 | Dashboard: SSE patch stream test over a federation-fed dashboard                                                     | Medium   | S      | Testing       |
+| 23 | Dashboard: trend/export (CSV/NDJSON) sanity with federation values                                                   | Low      | S      | Testing       |
+| 24 | Implement M56 per-source staleness ("stale?" marker + `dashboard_health_source_stale` gauge)                         | High     | L      | Feature       |
+| 25 | Implement M54 since-fed timeline seeding                                                                             | Medium   | M      | Feature       |
+| 26 | Implement M55 stable-group collapse ("stable for 6h")                                                                | Medium   | M      | Feature       |
+| 27 | Deploy health.home.lan hub (host, TLS, supervision)                                                                  | Critical | L      | Feature       |
+| 28 | NixOS module for the hub (remotes list → systemd unit)                                                               | High     | M      | Feature       |
+| 29 | Compose service for the hub next to the existing Grafana wiring in the dashboard repo                                | Medium   | S      | Feature       |
+| 30 | Grafana: scrape the hub's `/health/metrics`                                                                          | Medium   | S      | Feature       |
+| 31 | Webhook receiver consuming hub-side transitions (alerting path)                                                      | Medium   | M      | Feature       |
+| 32 | Decide hub exposure policy (health data disclosure on LAN; auth/proxy posture)                                       | Medium   | S      | Decision      |
+| 33 | `Remote.Headers` (bearer/basic) when a real service needs auth                                                       | Medium   | S      | Feature       |
+| 34 | `WithCacheTTL` only on a concrete demand signal (revisit documented non-goal)                                        | Low      | M      | Feature       |
+| 35 | Per-remote last-error accessor (observability without synthesized rows)                                              | Low      | S      | Feature       |
+| 36 | Public `CachedResponseContext(ctx)` variant (handlers already ctx-plumbed internally)                                | Low      | S      | Feature       |
+| 37 | Naming poll: is `name/reachable` the right synthesized check name? (alternative: `upstream`)                         | Low      | S      | Decision      |
+| 38 | go-health ROADMAP: record push-based registration as an explicitly rejected non-goal                                 | Low      | S      | Documentation |
+| 39 | Commit a few discovered fuzz corpus entries as seeds                                                                 | Low      | S      | Testing       |
+| 40 | Root `doc.go`: link the federation package so pkg.go.dev surfaces it                                                 | Medium   | S      | Documentation |
+| 41 | `lsp_restart` in the dashboard repo to clear the stale `federation_tmp_test.go` diagnostic                           | Low      | S      | Cleanup       |
+| 42 | Status report for the go-health repo's own `docs/status/` (its convention; this one is dashboard-scoped)             | Medium   | S      | Documentation |
+| 43 | HARVEST this section into TODO_LIST.md/ROADMAP.md (docs-health) so it doesn't die in this file                       | High     | S      | Documentation |
+| 44 | GroupBySource card headers could surface remote freshness metadata (needs design)                                    | Low      | M      | Feature       |
+| 45 | Many-remote aesthetics: healthy-group collapse threshold under 20+ remotes                                           | Low      | S      | Quality       |
+| 46 | Startup-latch thread-safety test with parallel handler storms under `-race`                                          | Low      | S      | Testing       |
+| 47 | Document observed flap behavior (no-retry policy) in the design note's operational notes                             | Low      | S      | Documentation |
+| 48 | Record the "two-writers shared release vehicle" trap in go-health AGENTS release section if absent                   | Low      | S      | Documentation |
+| 49 | Hosted-hub screenshot for README/website once health.home.lan is live                                                | Low      | M      | Documentation |
+| 50 | Retire this session's follow-ups from AGENTS once v0.3.0 ships (docs-health VERIFY/ANNOTATE)                         | Low      | S      | Documentation |
 
 ## g) QUESTIONS I CANNOT FIGURE OUT MYSELF
 
@@ -245,5 +245,5 @@ broke or got wrong **during** the session and what state they left behind:
 
 ---
 
-*Point-in-time snapshot; goes stale. Section (f) is HARVEST input (docs-health), not a
-commitment list. Nothing is pushed; both repos are ahead of origin pending the release decision.*
+_Point-in-time snapshot; goes stale. Section (f) is HARVEST input (docs-health), not a
+commitment list. Nothing is pushed; both repos are ahead of origin pending the release decision._

@@ -286,8 +286,9 @@ func TestNewServeMux(t *testing.T) {
 	mux := newServeMux(dashboard.New(stubProber{}))
 
 	server := httptest.NewServer(mux)
-
-	defer server.Close()
+	// Not defer: parallel subtests resume only after this function returns,
+	// and t.Cleanup waits for them, unlike a deferred close.
+	t.Cleanup(server.Close)
 
 	client := &http.Client{
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
@@ -340,7 +341,12 @@ func TestNewServeMux(t *testing.T) {
 			}
 
 			if tt.wantLocation != "" && resp.Header.Get("Location") != tt.wantLocation {
-				t.Errorf("GET %s Location = %q, want %q", tt.path, resp.Header.Get("Location"), tt.wantLocation)
+				t.Errorf(
+					"GET %s Location = %q, want %q",
+					tt.path,
+					resp.Header.Get("Location"),
+					tt.wantLocation,
+				)
 			}
 		})
 	}

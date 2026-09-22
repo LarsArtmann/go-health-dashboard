@@ -36,17 +36,17 @@
 
 ## b) PARTIALLY DONE
 
-| # | Work                                      | Done                                                                                                                                                       | Missing                                                                                                           |
-| - | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| ~~1~~ | ~~**`scripts/verify-dep-bump.sh` (M46-47)**~~ done — extended and hardened (0546cee); two consecutive ALL GREEN runs (2026-09-18) | ~~Written (10-step gate chain + canonical-fmt check); first real run executed and CAUGHT two genuine issues (cyclop in my axe test, raw templ from generate)~~ | ~~Never had a fully-green end-to-end run after those fixes — its own verification loop is open (f-item #5)~~ |
-| ~~2~~ | ~~**M104 example build smoke**~~ done — half — the CI Build job compiles the example; the flag-parse smoke stays open | ~~Covered: the CI Build job's `go build ./...` compiles the example module~~ | ~~The flag-parse smoke half of the plan row~~ |
-| ~~3~~ | ~~**M111 ROADMAP mirror-check + HARVEST**~~ done — docs-health passes 2026-09-17/18 (HARVEST routed; TODO_LIST rebuilt) | ~~ROADMAP bullets updated; the plan was harvested via inline annotations~~ | ~~The explicit TODO_LIST ↔ Themes mirror pass was not run as a separate step~~ |
-| ~~4~~ | ~~**CHANGELOG `[Unreleased]` granularity**~~ done — unilaterally decided — rich batch-prose entries are the working norm; ratification still open (g1) | ~~Followed the existing rich-prose pattern (batch-level bullets with rationale)~~ | ~~Unilaterally decided — the handoff flagged granularity as a pending user question (g1)~~ |
-| ~~5~~ | ~~**CHANGELOG historical audit**~~ done — partly — [0.1.0]/[0.2.0] tag-verified (d7e0e33); the v0.3.0–v0.8.0 per-bullet diff stays a TODO_LIST row | ~~Verified `[0.1.0]`/`[0.2.0]` claims against their tags (all TRUE — the old "strays" premise was wrong), fixed the alpha scope, footer defs, dashes~~ | ~~The per-bullet diff of v0.3.0–v0.8.0 sections against their tags remains the narrowed TODO row~~ |
-| ~~6~~ | ~~**M78 screenshot artifacts**~~ done — partly — the step runs in CI pushes since; a by-eye artifact inspection stays open | ~~Workflow step written and actionlint-clean~~ | ~~Unexercised: no CI browser run with the step has been inspected yet (next push with the browser job will show it)~~ |
-| ~~7~~ | ~~**`release-draft.yml`**~~ done — unexercised — first live run is the next tag push (checklist §6) | ~~Written, lint/parse-checked, publish-ordering documented in the checklist~~ | ~~Never exercised against a real tag — next tag push is its first live run~~ |
-| ~~8~~ | ~~**f24 dark-mode contrast**~~ done — covered implicitly — WCAG-AA locked since v0.8.0 + dark axe pass; a dedicated measurement stays open | ~~Covered implicitly (WCAG-AA locked since v0.8.0 + axe structural pass + dark screenshot eyeball)~~ | ~~No dedicated contrast measurement exists~~ |
-| ~~9~~ | ~~**Daemon-carrier intent**~~ done — partly — intent follow-ups landed where HEAD allowed; the rest is documented-and-declined (d8) | ~~The worst carriers got intent follow-ups; the plan annotations carry the dispositions~~ | ~~~15 heuristic commits remain in history (rewording was declined — see d8/e9)~~ |
+| #     | Work                                                                                                                                                   | Done                                                                                                                                                           | Missing                                                                                                               |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| ~~1~~ | ~~**`scripts/verify-dep-bump.sh` (M46-47)**~~ done — extended and hardened (0546cee); two consecutive ALL GREEN runs (2026-09-18)                      | ~~Written (10-step gate chain + canonical-fmt check); first real run executed and CAUGHT two genuine issues (cyclop in my axe test, raw templ from generate)~~ | ~~Never had a fully-green end-to-end run after those fixes — its own verification loop is open (f-item #5)~~          |
+| ~~2~~ | ~~**M104 example build smoke**~~ done — half — the CI Build job compiles the example; the flag-parse smoke stays open                                  | ~~Covered: the CI Build job's `go build ./...` compiles the example module~~                                                                                   | ~~The flag-parse smoke half of the plan row~~                                                                         |
+| ~~3~~ | ~~**M111 ROADMAP mirror-check + HARVEST**~~ done — docs-health passes 2026-09-17/18 (HARVEST routed; TODO_LIST rebuilt)                                | ~~ROADMAP bullets updated; the plan was harvested via inline annotations~~                                                                                     | ~~The explicit TODO_LIST ↔ Themes mirror pass was not run as a separate step~~                                        |
+| ~~4~~ | ~~**CHANGELOG `[Unreleased]` granularity**~~ done — unilaterally decided — rich batch-prose entries are the working norm; ratification still open (g1) | ~~Followed the existing rich-prose pattern (batch-level bullets with rationale)~~                                                                              | ~~Unilaterally decided — the handoff flagged granularity as a pending user question (g1)~~                            |
+| ~~5~~ | ~~**CHANGELOG historical audit**~~ done — partly — [0.1.0]/[0.2.0] tag-verified (d7e0e33); the v0.3.0–v0.8.0 per-bullet diff stays a TODO_LIST row     | ~~Verified `[0.1.0]`/`[0.2.0]` claims against their tags (all TRUE — the old "strays" premise was wrong), fixed the alpha scope, footer defs, dashes~~         | ~~The per-bullet diff of v0.3.0–v0.8.0 sections against their tags remains the narrowed TODO row~~                    |
+| ~~6~~ | ~~**M78 screenshot artifacts**~~ done — partly — the step runs in CI pushes since; a by-eye artifact inspection stays open                             | ~~Workflow step written and actionlint-clean~~                                                                                                                 | ~~Unexercised: no CI browser run with the step has been inspected yet (next push with the browser job will show it)~~ |
+| ~~7~~ | ~~**`release-draft.yml`**~~ done — unexercised — first live run is the next tag push (checklist §6)                                                    | ~~Written, lint/parse-checked, publish-ordering documented in the checklist~~                                                                                  | ~~Never exercised against a real tag — next tag push is its first live run~~                                          |
+| ~~8~~ | ~~**f24 dark-mode contrast**~~ done — covered implicitly — WCAG-AA locked since v0.8.0 + dark axe pass; a dedicated measurement stays open             | ~~Covered implicitly (WCAG-AA locked since v0.8.0 + axe structural pass + dark screenshot eyeball)~~                                                           | ~~No dedicated contrast measurement exists~~                                                                          |
+| ~~9~~ | ~~**Daemon-carrier intent**~~ done — partly — intent follow-ups landed where HEAD allowed; the rest is documented-and-declined (d8)                    | ~~The worst carriers got intent follow-ups; the plan annotations carry the dispositions~~                                                                      | ~~~15 heuristic commits remain in history (rewording was declined — see d8/e9)~~                                      |
 
 ## c) NOT STARTED
 
@@ -90,58 +90,58 @@
 
 First block closes this session's own loops; then the remaining tail in plan order.
 
-| #  | Task                                                                                                                                                            | Source  |
-| -- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| ~~1~~  | ~~Re-run `scripts/verify-dep-bump.sh` end-to-end to GREEN (close b1)~~ done — extended (0546cee) and re-run to ALL GREEN twice (2026-09-18) | ~~b1~~ |
-| ~~2~~  | ~~Add the FEATURES count check + link-def guard to `scripts/pre-push-checks.sh` (mechanize e1)~~ done — pre-push-checks.sh check #1 is the FEATURES count guard | ~~e1~~ |
-| ~~3~~  | ~~Inspect the next CI browser run for the screenshot artifacts (exercise M78)~~ done — routed — TODO_LIST (artifact inspection on next browser-job push) | ~~b6~~ |
-| ~~4~~  | ~~Exercise `release-draft.yml` on the next tag push; publish the draft per the updated checklist~~ done — open — first live run is the next tag push | ~~b7~~ |
-| ~~5~~  | ~~M88 keyboard-navigation a11y smoke (tab order, visible focus on new controls)~~ done — routed — TODO_LIST (M88) | ~~c~~ |
-| ~~6~~  | ~~M89 metrics endpoint under strict CSP — browser test~~ done — routed — TODO_LIST (M89) | ~~c~~ |
-| ~~7~~  | ~~M91 browser-suite startup latency measurement → research doc~~ done — routed — TODO_LIST (M91) | ~~c~~ |
-| ~~8~~  | ~~M92 load-test knobs beyond the 20×3 fixture + evidence-enabled re-run~~ done — routed — TODO_LIST (M92) | ~~c~~ |
-| ~~9~~  | ~~Pin a `shutting_down:true` webhook payload case (the true branch is unpinned at wire level)~~ done — routed — TODO_LIST | ~~new~~ |
-| ~~10~~ | ~~Assess whether `source.html` needs a regeneration pass now that tooltips carry `Since` (sourceproven.html covers the pairing; check the base golden's tooltips)~~ done — routed — TODO_LIST | ~~new~~ |
-| ~~11~~ | ~~M107 nightly job: verify a GitHub Release page exists for every tag~~ done — routed — TODO_LIST (M107) | ~~c~~ |
-| ~~12~~ | ~~M103 unit-test the version-guard grep logic~~ done — routed — TODO_LIST (M103) | ~~c~~ |
-| ~~13~~ | ~~M105 doc.go: webhook+public-mode combo and WithBasePath examples~~ done — routed — TODO_LIST (M105) | ~~c~~ |
-| ~~14~~ | ~~M106 amend the bisect-wall audit with the 2026-09-17 scars (three sessions, two trees)~~ done — routed — TODO_LIST (M106) | ~~c~~ |
-| ~~15~~ | ~~M111 formal ROADMAP mirror-check (TODO_LIST ↔ Themes) + a docs-health HARVEST pass over the two 09-17 reports~~ done — docs-health passes 2026-09-17/18; TODO_LIST ↔ Themes kept consistent | ~~b3~~ |
-| ~~16~~ | ~~f23 mobile visual check of the metadata line in the stacked layout~~ done — routed — TODO_LIST (human-eye pass) | ~~f23~~ |
-| ~~17~~ | ~~f24 dedicated dark-mode contrast measurement~~ done — routed — TODO_LIST (dedicated measurement) | ~~b8~~ |
-| ~~18~~ | ~~f45 re-run the 2026-09-10 aggregate load test on the v0.9.0 render~~ done — routed — TODO_LIST | ~~f45~~ |
-| ~~19~~ | ~~f30 blocked-row triage: re-verify every 🔵 BLOCKED premise against the current tree~~ done — routed — TODO_LIST (blocked-premise triage) | ~~f30~~ |
-| ~~20~~ | ~~M95 watchdog gauge `dashboard_pusher_last_tick_seconds` (report-only stays)~~ done — routed — ROADMAP Theme 1 (watchdog gauge) | ~~c~~ |
-| ~~21~~ | ~~M96 rate-limit `X-RateLimit-*` response headers~~ done — routed — ROADMAP Theme 1 (rate-limit headers) | ~~c~~ |
-| ~~22~~ | ~~M97 connection-limit 503 Retry-After + SSE opened/closed counters~~ done — routed — ROADMAP Theme 1 (connection counters + Retry-After) | ~~c~~ |
-| ~~23~~ | ~~M98 optional slog request-logging middleware (`WithRequestLogger`)~~ done — routed — ROADMAP Theme 1 (request logging) | ~~c~~ |
-| ~~24~~ | ~~M99 per-route stricter CSP option for `/health`~~ done — routed — ROADMAP Theme 1 (per-route CSP) | ~~c~~ |
-| ~~25~~ | ~~M100 client_golang bridge spike (expected outcome: stay zero-deps)~~ done — routed — ROADMAP Theme 3 (client_golang bridge) | ~~c~~ |
-| ~~26~~ | ~~M101 `Register` auto-start via do container — design + spike~~ done — routed — ROADMAP Theme 2 (Register auto-start) | ~~c~~ |
-| ~~27~~ | ~~M102 custom tags/labels grouping design note~~ done — routed — ROADMAP Theme 2 (tag grouping) | ~~c~~ |
-| ~~28~~ | ~~M110 `WithNonce` deprecation policy draft~~ done — routed — ROADMAP Theme 5 (WithNonce deprecation) | ~~c~~ |
-| ~~29~~ | ~~M69 templ upstream formatting filing (verify-before-filing first)~~ done — routed — TODO_LIST (upstream filings, verify-before-filing first) | ~~c~~ |
-| ~~30~~ | ~~M70 erraudit `strings.Cut` FP filing (with the suppression-workaround note)~~ done — routed — TODO_LIST (upstream filings) | ~~c~~ |
-| ~~31~~ | ~~M71 erraudit `nolint-audit ./...` silent no-op filing~~ done — routed — TODO_LIST (upstream filings) | ~~c~~ |
-| ~~32~~ | ~~Tag protection ruleset `v*` (deletion + non-fast-forward) — pending g2~~ done at `eb81ec8` | ~~g2~~ |
-| ~~33~~ | ~~Enable private vulnerability reporting (SECURITY.md references it as disabled) — pending g2~~ done — routed — blocked on the PVR/repo-admin decision | ~~g2~~ |
-| ~~34~~ | ~~CV-side adoption bump + live-page verification — pending g2/deploy decision~~ done — routed — blocked rows (CV adoption) | ~~g2~~ |
-| ~~35~~ | ~~Evidence posture: machine contract + persistence decision → implementation~~ done — routed — BLOCKED evidence-posture row | ~~BLOCKED~~ |
-| ~~36~~ | ~~Copy affordance decision → implement chosen design~~ done — routed — blocked rows (copy affordance) | ~~BLOCKED~~ |
-| ~~37~~ | ~~Build-tag gating decision (accept / fork go-sse / gate)~~ done — routed — blocked rows (build-tag gating) | ~~BLOCKED~~ |
-| ~~38~~ | ~~Fingerprint format stability decision~~ done — routed — blocked rows (fingerprint stability) | ~~BLOCKED~~ |
-| ~~39~~ | ~~M113 AGENTS.md prune pass (decision narratives → docs/decisions/)~~ done — routed — TODO_LIST (standing row) | ~~M112+~~ |
-| ~~40~~ | ~~M120 incident annotations (only with product thought)~~ done — routed — TODO_LIST (toolchain bump via verify-dep-bump) | ~~M112+~~ |
-| ~~41~~ | ~~Fleet M60-64: BuildFlow generator-before-nix ordering + regression test; then unskip templ-generate here~~ done — CONTRIBUTING table row (6513a0c); the run-locally block stays open | ~~BLOCKED~~ |
-| ~~42~~ | ~~Fleet M65-66: go-structure-linter release with LoadProjectConfig; bump pin; remove the repo skip~~ done — routed — ROADMAP Theme 5 (derive counts at check time) | ~~BLOCKED~~ |
-| ~~43~~ | ~~Fleet M67-68: branching-flow nolint support + rule exclusions; re-triage the 43 findings~~ done — routed — ROADMAP Theme 5 (browser golden-screenshot diff) | ~~BLOCKED~~ |
-| ~~44~~ | ~~CHANGELOG deep tag audit v0.3.0–v0.8.0 (the narrowed TODO row)~~ done — options.go:162 makes it contractual; the README wording landed 2026-09-18 | ~~b5~~ |
-| ~~45~~ | ~~Bump the toolchain go1.26.7 → 1.26.8 via `verify-dep-bump.sh` (the matrix already tests it)~~ done — routed — open user question (.md vs HTML reports) | ~~new~~ |
-| 46 | CONTRIBUTING: document `verify-dep-bump.sh` next to the other guards                                                                                            | new     |
-| 47 | FEATURES: consider deriving the suite counts at check time instead of hand-maintaining them                                                                     | e1      |
-| 48 | Screenshot freshness: scope the CI artifact-diff idea (ROADMAP browser-golden item)                                                                             | ROADMAP |
-| 49 | README: document that trend samples are overall-status-only (the options.go line made it contractual)                                                           | new     |
-| 50 | Bless (or revert) the `.md` override of the skills' HTML report outputs — it is now the working norm                                                            | g1      |
+| #      | Task                                                                                                                                                                                          | Source      |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| ~~1~~  | ~~Re-run `scripts/verify-dep-bump.sh` end-to-end to GREEN (close b1)~~ done — extended (0546cee) and re-run to ALL GREEN twice (2026-09-18)                                                   | ~~b1~~      |
+| ~~2~~  | ~~Add the FEATURES count check + link-def guard to `scripts/pre-push-checks.sh` (mechanize e1)~~ done — pre-push-checks.sh check #1 is the FEATURES count guard                               | ~~e1~~      |
+| ~~3~~  | ~~Inspect the next CI browser run for the screenshot artifacts (exercise M78)~~ done — routed — TODO_LIST (artifact inspection on next browser-job push)                                      | ~~b6~~      |
+| ~~4~~  | ~~Exercise `release-draft.yml` on the next tag push; publish the draft per the updated checklist~~ done — open — first live run is the next tag push                                          | ~~b7~~      |
+| ~~5~~  | ~~M88 keyboard-navigation a11y smoke (tab order, visible focus on new controls)~~ done — routed — TODO_LIST (M88)                                                                             | ~~c~~       |
+| ~~6~~  | ~~M89 metrics endpoint under strict CSP — browser test~~ done — routed — TODO_LIST (M89)                                                                                                      | ~~c~~       |
+| ~~7~~  | ~~M91 browser-suite startup latency measurement → research doc~~ done — routed — TODO_LIST (M91)                                                                                              | ~~c~~       |
+| ~~8~~  | ~~M92 load-test knobs beyond the 20×3 fixture + evidence-enabled re-run~~ done — routed — TODO_LIST (M92)                                                                                     | ~~c~~       |
+| ~~9~~  | ~~Pin a `shutting_down:true` webhook payload case (the true branch is unpinned at wire level)~~ done — routed — TODO_LIST                                                                     | ~~new~~     |
+| ~~10~~ | ~~Assess whether `source.html` needs a regeneration pass now that tooltips carry `Since` (sourceproven.html covers the pairing; check the base golden's tooltips)~~ done — routed — TODO_LIST | ~~new~~     |
+| ~~11~~ | ~~M107 nightly job: verify a GitHub Release page exists for every tag~~ done — routed — TODO_LIST (M107)                                                                                      | ~~c~~       |
+| ~~12~~ | ~~M103 unit-test the version-guard grep logic~~ done — routed — TODO_LIST (M103)                                                                                                              | ~~c~~       |
+| ~~13~~ | ~~M105 doc.go: webhook+public-mode combo and WithBasePath examples~~ done — routed — TODO_LIST (M105)                                                                                         | ~~c~~       |
+| ~~14~~ | ~~M106 amend the bisect-wall audit with the 2026-09-17 scars (three sessions, two trees)~~ done — routed — TODO_LIST (M106)                                                                   | ~~c~~       |
+| ~~15~~ | ~~M111 formal ROADMAP mirror-check (TODO_LIST ↔ Themes) + a docs-health HARVEST pass over the two 09-17 reports~~ done — docs-health passes 2026-09-17/18; TODO_LIST ↔ Themes kept consistent | ~~b3~~      |
+| ~~16~~ | ~~f23 mobile visual check of the metadata line in the stacked layout~~ done — routed — TODO_LIST (human-eye pass)                                                                             | ~~f23~~     |
+| ~~17~~ | ~~f24 dedicated dark-mode contrast measurement~~ done — routed — TODO_LIST (dedicated measurement)                                                                                            | ~~b8~~      |
+| ~~18~~ | ~~f45 re-run the 2026-09-10 aggregate load test on the v0.9.0 render~~ done — routed — TODO_LIST                                                                                              | ~~f45~~     |
+| ~~19~~ | ~~f30 blocked-row triage: re-verify every 🔵 BLOCKED premise against the current tree~~ done — routed — TODO_LIST (blocked-premise triage)                                                    | ~~f30~~     |
+| ~~20~~ | ~~M95 watchdog gauge `dashboard_pusher_last_tick_seconds` (report-only stays)~~ done — routed — ROADMAP Theme 1 (watchdog gauge)                                                              | ~~c~~       |
+| ~~21~~ | ~~M96 rate-limit `X-RateLimit-*` response headers~~ done — routed — ROADMAP Theme 1 (rate-limit headers)                                                                                      | ~~c~~       |
+| ~~22~~ | ~~M97 connection-limit 503 Retry-After + SSE opened/closed counters~~ done — routed — ROADMAP Theme 1 (connection counters + Retry-After)                                                     | ~~c~~       |
+| ~~23~~ | ~~M98 optional slog request-logging middleware (`WithRequestLogger`)~~ done — routed — ROADMAP Theme 1 (request logging)                                                                      | ~~c~~       |
+| ~~24~~ | ~~M99 per-route stricter CSP option for `/health`~~ done — routed — ROADMAP Theme 1 (per-route CSP)                                                                                           | ~~c~~       |
+| ~~25~~ | ~~M100 client_golang bridge spike (expected outcome: stay zero-deps)~~ done — routed — ROADMAP Theme 3 (client_golang bridge)                                                                 | ~~c~~       |
+| ~~26~~ | ~~M101 `Register` auto-start via do container — design + spike~~ done — routed — ROADMAP Theme 2 (Register auto-start)                                                                        | ~~c~~       |
+| ~~27~~ | ~~M102 custom tags/labels grouping design note~~ done — routed — ROADMAP Theme 2 (tag grouping)                                                                                               | ~~c~~       |
+| ~~28~~ | ~~M110 `WithNonce` deprecation policy draft~~ done — routed — ROADMAP Theme 5 (WithNonce deprecation)                                                                                         | ~~c~~       |
+| ~~29~~ | ~~M69 templ upstream formatting filing (verify-before-filing first)~~ done — routed — TODO_LIST (upstream filings, verify-before-filing first)                                                | ~~c~~       |
+| ~~30~~ | ~~M70 erraudit `strings.Cut` FP filing (with the suppression-workaround note)~~ done — routed — TODO_LIST (upstream filings)                                                                  | ~~c~~       |
+| ~~31~~ | ~~M71 erraudit `nolint-audit ./...` silent no-op filing~~ done — routed — TODO_LIST (upstream filings)                                                                                        | ~~c~~       |
+| ~~32~~ | ~~Tag protection ruleset `v*` (deletion + non-fast-forward) — pending g2~~ done at `eb81ec8`                                                                                                  | ~~g2~~      |
+| ~~33~~ | ~~Enable private vulnerability reporting (SECURITY.md references it as disabled) — pending g2~~ done — routed — blocked on the PVR/repo-admin decision                                        | ~~g2~~      |
+| ~~34~~ | ~~CV-side adoption bump + live-page verification — pending g2/deploy decision~~ done — routed — blocked rows (CV adoption)                                                                    | ~~g2~~      |
+| ~~35~~ | ~~Evidence posture: machine contract + persistence decision → implementation~~ done — routed — BLOCKED evidence-posture row                                                                   | ~~BLOCKED~~ |
+| ~~36~~ | ~~Copy affordance decision → implement chosen design~~ done — routed — blocked rows (copy affordance)                                                                                         | ~~BLOCKED~~ |
+| ~~37~~ | ~~Build-tag gating decision (accept / fork go-sse / gate)~~ done — routed — blocked rows (build-tag gating)                                                                                   | ~~BLOCKED~~ |
+| ~~38~~ | ~~Fingerprint format stability decision~~ done — routed — blocked rows (fingerprint stability)                                                                                                | ~~BLOCKED~~ |
+| ~~39~~ | ~~M113 AGENTS.md prune pass (decision narratives → docs/decisions/)~~ done — routed — TODO_LIST (standing row)                                                                                | ~~M112+~~   |
+| ~~40~~ | ~~M120 incident annotations (only with product thought)~~ done — routed — TODO_LIST (toolchain bump via verify-dep-bump)                                                                      | ~~M112+~~   |
+| ~~41~~ | ~~Fleet M60-64: BuildFlow generator-before-nix ordering + regression test; then unskip templ-generate here~~ done — CONTRIBUTING table row (6513a0c); the run-locally block stays open        | ~~BLOCKED~~ |
+| ~~42~~ | ~~Fleet M65-66: go-structure-linter release with LoadProjectConfig; bump pin; remove the repo skip~~ done — routed — ROADMAP Theme 5 (derive counts at check time)                            | ~~BLOCKED~~ |
+| ~~43~~ | ~~Fleet M67-68: branching-flow nolint support + rule exclusions; re-triage the 43 findings~~ done — routed — ROADMAP Theme 5 (browser golden-screenshot diff)                                 | ~~BLOCKED~~ |
+| ~~44~~ | ~~CHANGELOG deep tag audit v0.3.0–v0.8.0 (the narrowed TODO row)~~ done — options.go:162 makes it contractual; the README wording landed 2026-09-18                                           | ~~b5~~      |
+| ~~45~~ | ~~Bump the toolchain go1.26.7 → 1.26.8 via `verify-dep-bump.sh` (the matrix already tests it)~~ done — routed — open user question (.md vs HTML reports)                                      | ~~new~~     |
+| 46     | CONTRIBUTING: document `verify-dep-bump.sh` next to the other guards                                                                                                                          | new         |
+| 47     | FEATURES: consider deriving the suite counts at check time instead of hand-maintaining them                                                                                                   | e1          |
+| 48     | Screenshot freshness: scope the CI artifact-diff idea (ROADMAP browser-golden item)                                                                                                           | ROADMAP     |
+| 49     | README: document that trend samples are overall-status-only (the options.go line made it contractual)                                                                                         | new         |
+| 50     | Bless (or revert) the `.md` override of the skills' HTML report outputs — it is now the working norm                                                                                          | g1          |
 
 ## g) Questions I can NOT figure out myself
 

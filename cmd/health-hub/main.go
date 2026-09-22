@@ -177,7 +177,7 @@ func newServeMux(dash *dashboard.Dashboard) *http.ServeMux {
 
 	dash.RegisterRoutes(mux)
 	mux.Handle(
-		"{$}",
+		"/{$}",
 		http.RedirectHandler(dashboard.DefaultRoutes().Dashboard, http.StatusTemporaryRedirect),
 	)
 

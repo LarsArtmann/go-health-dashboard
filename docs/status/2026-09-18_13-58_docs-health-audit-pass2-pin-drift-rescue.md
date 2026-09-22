@@ -3,7 +3,7 @@
 |            |                                                                                                                                                        |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Date**   | 2026-09-18 13:58 CEST (session ran ~08:56 → 13:58)                                                                                                     |
-| **Repo**   | go-health-dashboard @ master `6e8761c` (local; **origin is RED** — see a10/d1)                                                                          |
+| **Repo**   | go-health-dashboard @ master `6e8761c` (local; **origin is RED** — see a10/d1)                                                                         |
 | **Scope**  | This session only: full docs-health AUDIT (VIEW ALL `**/2026-0*` → BUILD + HARVEST + VERIFY + ANNOTATE + ARCHIVE), triggered by the standing directive |
 | **Format** | Markdown per explicit user instruction (house `.md` convention for `docs/status/`)                                                                     |
 
