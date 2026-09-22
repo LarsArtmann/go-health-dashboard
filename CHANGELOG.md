@@ -953,6 +953,7 @@ did not exist at `01277d3`.*
   (`status.go:215`)
 
 [Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.9.0...HEAD
+[0.10.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.7.0...v0.8.0

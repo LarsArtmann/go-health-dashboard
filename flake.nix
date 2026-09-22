@@ -53,7 +53,25 @@
             projectRootFile = "go.mod";
             programs = {
               gofumpt.enable = true;
-              goimports.enable = true;
+              goimports = {
+                enable = true;
+                # goimports execs `go list`, and nixpkgs' gotools wrapper
+                # appends ITS build go (1.26.x) to PATH — older than
+                # go.mod's 1.27.1 floor, so GOTOOLCHAIN=auto attempts a
+                # toolchain download that can never succeed inside the
+                # network-less treefmt sandbox (checks.format failed
+                # deterministically on CI and locally). Prefix the same
+                # go_1_27 the rest of the flake builds with, ahead of the
+                # built-in 1.26.x, so no toolchain switch is ever needed.
+                package = pkgs.symlinkJoin {
+                  name = "goimports-with-go-1_27";
+                  paths = [ pkgs.gotools ];
+                  nativeBuildInputs = [ pkgs.makeWrapper ];
+                  postBuild = ''
+                    wrapProgram "$out/bin/goimports" --prefix PATH : ${lib.makeBinPath [ goPkg ]}
+                  '';
+                };
+              };
               golines.enable = true;
               nixfmt.enable = true;
             };
