@@ -11,8 +11,8 @@ import (
 	"time"
 
 	health "github.com/larsartmann/go-health"
-	healthfederation "github.com/larsartmann/go-health/federation"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	healthfederation "github.com/larsartmann/go-health/federation"
 )
 
 // Compile-time guarantee that the federation prober (go-health v0.4.0)
@@ -98,7 +98,10 @@ func TestFederation_UnreachableRemoteCountsAsEvidence(t *testing.T) {
 	}
 
 	if !strings.Contains(body, "unproven") {
-		t.Errorf("the live remote's green must stay unproven: %s", extractLine(body, "Failure evidence"))
+		t.Errorf(
+			"the live remote's green must stay unproven: %s",
+			extractLine(body, "Failure evidence"),
+		)
 	}
 }
 

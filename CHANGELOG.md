@@ -17,6 +17,13 @@ forgetting.
 
 ### Added
 
+- `Response.InstanceID` rendering: when go-health's `WithInstanceID` is
+  configured, the dashboard shows an "Instance" stat card so replicas
+  behind one load balancer are distinguishable (federation hubs
+  included). Public mode drops the card entirely — instance IDs are
+  semi-identifying (they often encode host or zone names). The golden
+  fixtures pick up one whitespace byte from the new conditional; the
+  rendered HTML is otherwise unchanged when no instance ID is set.
 - Regression tests locking the v0.9.0 metadata surfaces: real SSE patch
   payloads (both the connect-time snapshot and subsequent broadcasts) must
   carry the "since (age) · duration" metadata line and the zero-proven

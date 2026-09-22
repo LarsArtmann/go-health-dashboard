@@ -103,11 +103,11 @@ type checkGroup struct {
 
 // viewModel is the template-ready representation of a health.Response.
 type viewModel struct {
-	Title         string
-	Status        health.Status
-	FeedbackType  feedback.FeedbackType
-	StatusText    string
-	Version       string
+	Title        string
+	Status       health.Status
+	FeedbackType feedback.FeedbackType
+	StatusText   string
+	Version      string
 	// InstanceID is the serving replica's identity (go-health's
 	// WithInstanceID), rendered as its own stat card when non-empty so
 	// replicas behind one load balancer are distinguishable. Cleared in
