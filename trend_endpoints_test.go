@@ -316,6 +316,23 @@ func TestExportHandler_JSONIsByteStable(t *testing.T) {
 	}
 	defer dash.Shutdown()
 
+	// The pusher records its first sample immediately on start; wait for
+	// it so the sample array is quiescent before the two scrapes.
+	deadline := time.Now().Add(5 * time.Second)
+
+	for {
+		probe := doRequest(t, mux, "/health/export")
+		if strings.Contains(probe.Body.String(), `"samples":[{`) {
+			break
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatalf("export never recorded a sample: %s", probe.Body.String())
+		}
+
+		time.Sleep(5 * time.Millisecond)
+	}
+
 	first := doRequest(t, mux, "/health/export")
 	if first.Code != http.StatusOK {
 		t.Fatalf("status: want 200, got %d", first.Code)

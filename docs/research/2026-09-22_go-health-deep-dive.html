@@ -890,7 +890,7 @@
           </p>
           <div class="meta">
             <span class="tag amber">Pinned: v0.2.1-0.20260918 (master snapshot)</span>
-            <span class="tag">Latest: v0.3.0 (+16 commits)</span>
+            <span class="tag">Latest: v0.4.0 (tagged during this audit)</span>
             <span class="tag teal">Adoption Score: 86/100</span>
           </div>
         </header>
@@ -913,9 +913,9 @@
             <div class="score">4</div>
             <div class="label">Status encodings re-derived by hand</div>
           </div>
-          <div class="score-card score-warn">
-            <div class="score">1</div>
-            <div class="label">Minor versions behind (tag exists)</div>
+          <div class="score-card score-good">
+            <div class="score">0</div>
+            <div class="label">Versions behind (v0.4.0 re-pinned)</div>
           </div>
         </section>
 
@@ -943,8 +943,11 @@
             and the dashboard's stated contract is to stay byte-stable with
             them. Two one-line fixes restore it. Everything else is polish:
             adopt <code>Status.Rank()</code> where severity is compared,
-            re-pin to the v0.3.0 tag that already exists, and consider
-            surfacing <code>Response.InstanceID</code> in the federation hub.
+            and surface <code>Response.InstanceID</code> in the federation
+            hub. The version question resolved itself mid-audit: go-health
+            <strong>v0.4.0</strong> was tagged 2026-09-22, a fleet
+            dependency sweep landed it the same day, and it was verified
+            deliberately (green gate chain) rather than reverted.
           </div>
         </section>
 
@@ -1392,15 +1395,23 @@ payload, err := json.Marshal(resp, json.Deterministic(<span class="tok-number">t
         <section id="versions">
           <h2><span class="num">03</span>Version currency</h2>
           <p>
-            go.mod pins the master pseudo-version
-            <code>v0.2.1-0.20260918115637-aafc76e229a5</code> (2026-09-18).
-            go-health tagged <code>v0.3.0</code> on 2026-09-19 and is now 16
-            commits past it (docs + benchmarks; the aggregate
-            <code>Healthz()</code> is still unreleased). Verified: the pin
-            already contains v0.3.0's consumer-relevant feature set
-            (<code>Status.Rank()</code>, federation, NewChecks) &mdash; the
-            gap is contractual, not functional, and AGENTS.md already
-            schedules the re-pin.
+            The audit opened with go.mod pinning the master pseudo-version
+            <code>v0.2.1-0.20260918115637-aafc76e229a5</code> (2026-09-18)
+            while <code>v0.3.0</code> (2026-09-19) was already tagged and
+            HEAD sat 16 commits past it. Before the report was finished,
+            go-health tagged <strong>v0.4.0</strong> (2026-09-22) and a
+            fleet dependency sweep landed it in go.mod; it was ratified
+            with a green gate chain instead of reverted, since the re-pin
+            to a real tag was already scheduled work. Verified: v0.4.0 is
+            additive for this module &mdash; <code>Status.Rank()</code>,
+            federation, <code>NewChecks</code>,
+            <code>Aggregate.Healthz()</code> (which unblocks Finding 6),
+            and upstream determinism work (ADR-006, a sorted-order
+            Prometheus reference) that independently endorses Findings
+            1&ndash;2. One hard edge: v0.4.0's module graph requires
+            <code>go 1.27.1</code>, so the fleet normalize step's
+            <code>go 1.27</code> downgrade breaks every module load and
+            the directive had to be restored.
           </p>
           <table class="compare">
             <thead>
@@ -1412,16 +1423,31 @@ payload, err := json.Marshal(resp, json.Deterministic(<span class="tok-number">t
             </thead>
             <tbody>
               <tr>
+                <td>v0.4.0 (2026-09-22)</td>
+                <td><code>Aggregate.Healthz()</code> released</td>
+                <td class="no">Unblocks Finding 6 &mdash; now actionable</td>
+              </tr>
+              <tr>
+                <td>v0.4.0</td>
+                <td>
+                  Upstream determinism: sorted-order Prometheus reference,
+                  ADR-006 duration-unit policy
+                </td>
+                <td class="yes">
+                  Endorses Findings 1&ndash;2 from the maintainers' side
+                </td>
+              </tr>
+              <tr>
                 <td>v0.3.0 (2026-09-19)</td>
                 <td><code>Status.Rank()</code> published</td>
-                <td class="no">Adopt &mdash; Finding 4 (already in pin)</td>
+                <td class="no">Adopt &mdash; Finding 4 (was already in pin)</td>
               </tr>
               <tr>
                 <td>v0.3.0</td>
                 <td><code>federation</code> package tagged</td>
                 <td class="yes">
-                  Already consumed via pin; re-pin makes the dependency a
-                  real release
+                  Consumed since the 2026-09-18 pin; v0.4.0 makes the
+                  dependency a real release
                 </td>
               </tr>
               <tr>
@@ -1430,16 +1456,19 @@ payload, err := json.Marshal(resp, json.Deterministic(<span class="tok-number">t
                 <td class="no">Example ergonomics &mdash; Finding 7</td>
               </tr>
               <tr>
-                <td>v0.3.0 + 16</td>
-                <td>Aggregate <code>Healthz()</code> (unreleased)</td>
-                <td class="yes">Watch &mdash; Finding 6 unlocks then</td>
+                <td>v0.3.0 + 16 &rarr; v0.4.0</td>
+                <td>Aggregate <code>Healthz()</code> shipped in v0.4.0</td>
+                <td class="yes">Finding 6 unlocked</td>
               </tr>
               <tr>
-                <td>pin &rarr; v0.3.0</td>
-                <td>No API change affecting the dashboard</td>
+                <td>pin &rarr; v0.4.0</td>
+                <td>
+                  No API change affecting the dashboard; requires
+                  <code>go 1.27.1</code>
+                </td>
                 <td class="yes">
-                  Safe re-pin: go.mod line + gates; go 1.27.1 floor already
-                  satisfied by the flake
+                  Re-pinned + gates green 2026-09-22; keep the go directive
+                  at 1.27.1 against the fleet normalize downgrade
                 </td>
               </tr>
             </tbody>
@@ -1487,8 +1516,8 @@ payload, err := json.Marshal(resp, json.Deterministic(<span class="tok-number">t
               <tr>
                 <td>3</td>
                 <td>
-                  Re-pin go-health to the v0.3.0 tag (AGENTS.md already
-                  schedules this)
+                  Keep go-health pinned to the v0.4.0 tag (done 2026-09-22;
+                  watch the go-directive downgrade)
                 </td>
                 <td class="yes">3</td>
                 <td class="yes">5</td>
@@ -1526,8 +1555,8 @@ payload, err := json.Marshal(resp, json.Deterministic(<span class="tok-number">t
               <tr>
                 <td>7</td>
                 <td>
-                  Healthz() passthrough once Aggregate.Healthz() releases
-                  (Finding 6)
+                  Healthz() passthrough &mdash; unlocked by v0.4.0's
+                  Aggregate.Healthz() (Finding 6)
                 </td>
                 <td>1</td>
                 <td>3</td>
@@ -1605,7 +1634,8 @@ payload, err := json.Marshal(resp, json.Deterministic(<span class="tok-number">t
                 <td>Version currency</td>
                 <td>
                   <code>git describe --tags</code> in ~/projects/go-health:
-                  v0.3.0-16-ge822081; CHANGELOG v0.3.0 section read in full
+                  v0.3.0-16-ge822081 at audit open; v0.4.0 fetched and its
+                  CHANGELOG read in full when it landed mid-audit
                 </td>
               </tr>
               <tr>
@@ -1636,8 +1666,9 @@ payload, err := json.Marshal(resp, json.Deterministic(<span class="tok-number">t
         <footer class="footer">
           <p>
             Generated 2026-09-22 &middot; Reviewed against go-health
-            v0.2.1-0.20260918 (pin) and v0.3.0-16-ge822081 (upstream HEAD)
-            &middot; All claims verified against source code where noted
+            v0.2.1-0.20260918 (opening pin); v0.4.0 tagged and re-pinned
+            the same day &middot; All claims verified against source code
+            where noted
           </p>
         </footer>
       </main>
