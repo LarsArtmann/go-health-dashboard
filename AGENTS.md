@@ -211,7 +211,12 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **Release discipline (all four bit or paid off during the v0.7.0 cut)** —
   (0) **Commit beats the daemon — verify batch → commit immediately.** The
   auto-daemon commits continuously and NEVER pushes: master can sit
-  arbitrarily ahead of origin with CI blind to it. So: the moment a batch
+  arbitrarily ahead of origin with CI blind to it — caveat (2026-09-22
+  evening): the directive-restore commit reached origin BEFORE the explicit
+  push ran (push printed "Everything up-to-date"), while later daemon
+  commits sat unpushed, so SOMETHING auto-pushes under unknown conditions;
+  never claim unpushed state without `git fetch` + comparing
+  `master...origin/master`. So: the moment a batch
   is verified (build+tests green), `git add` + commit in the same
   tool-call chain, before starting the NEXT batch (the v0.7.0 release
   commit's message was lost this way, `ebf52d0`; four batches in the
