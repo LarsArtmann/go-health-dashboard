@@ -189,15 +189,16 @@ func boolGauge(b bool) int {
 }
 
 // numericHealthStatus encodes health statuses for Prometheus consumption.
-// Unknown statuses map to -1 so they can never be confused with fail (0).
+// Known statuses mirror go-health's [health.Status.Rank] severity ladder
+// (fail 0 < warn 1 < pass 2) and derive from it, so the gauge and the
+// upstream ordering cannot drift. Unknown statuses map to -1 — deliberately
+// stricter than Rank's unknown→pass default, which is a merge policy for
+// boundary-validated input; a gauge value must never claim an unreadable
+// status is healthy, and must never collide with fail's 0.
 func numericHealthStatus(s health.Status) int {
 	switch s {
-	case health.StatusPass:
-		return 2
-	case health.StatusWarn:
-		return 1
-	case health.StatusFail:
-		return 0
+	case health.StatusPass, health.StatusWarn, health.StatusFail:
+		return s.Rank()
 	default:
 		return -1
 	}
