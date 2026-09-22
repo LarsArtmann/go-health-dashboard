@@ -11,6 +11,7 @@ import (
 
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	aggregate "github.com/larsartmann/go-health/aggregate"
 	"github.com/samber/do/v2"
 )
 
@@ -1125,5 +1126,43 @@ func TestHealthzPassthrough_DisabledByDefault(t *testing.T) {
 
 	if code := doRequest(t, mux, "/healthz").Code; code != http.StatusOK {
 		t.Errorf("kubelet liveness must keep /healthz, got %d", code)
+	}
+}
+
+// TestHealthzPassthrough_AggregateForwardsIt pins the capability matrix on
+// the real multi-source types: go-health v0.4.0's aggregate implements
+// Healthz, so the combined handler registers through it too — and the route
+// must serve the aggregate's own combined verdict, not a stand-in.
+func TestHealthzPassthrough_AggregateForwardsIt(t *testing.T) {
+	t.Parallel()
+
+	source := health.NewWithHealthCheck(func(_ context.Context) map[string]error {
+		return map[string]error{"db": nil}
+	})
+
+	agg, err := aggregate.New(aggregate.Source{Name: "api", Probe: source})
+	if err != nil {
+		t.Fatalf("aggregate.New: %v", err)
+	}
+
+	if _, ok := any(agg).(dashboard.Healthzer); !ok {
+		t.Fatal("aggregate must forward the Healthzer capability (go-health v0.4.0)")
+	}
+
+	routes := dashboard.DefaultRoutes()
+	routes.Healthz = "/livez"
+
+	dash := dashboard.New(agg, dashboard.WithRoutes(routes))
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	rec := doRequest(t, mux, "/livez")
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("unstarted aggregate must answer /livez with 503, got %d", rec.Code)
+	}
+
+	if !strings.Contains(rec.Body.String(), "startup latch not set") {
+		t.Error("expected the aggregate's own combined-traffic body, got a different handler")
 	}
 }

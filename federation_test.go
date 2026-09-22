@@ -187,3 +187,36 @@ func TestFederation_UnreachableRemoteFlowsThroughWebhook(t *testing.T) {
 		t.Errorf("webhook payload must carry the reachable row as fail; got: %s", got)
 	}
 }
+
+// TestFederation_HealthzCapabilityNotForwarded completes the capability
+// matrix: the federation prober does NOT implement go-health v0.4.0's
+// Healthz (only Probe and aggregate do), so hub deployments get no
+// combined-traffic route even when Routes.Healthz is configured.
+func TestFederation_HealthzCapabilityNotForwarded(t *testing.T) {
+	t.Parallel()
+
+	remote := serveHealthyRemote(t)
+
+	fed, err := healthfederation.New([]healthfederation.Remote{
+		{Name: "edge", URL: remote.URL},
+	})
+	if err != nil {
+		t.Fatalf("federation.New: %v", err)
+	}
+
+	if _, ok := any(fed).(dashboard.Healthzer); ok {
+		t.Fatal("federation prober must not expose a Healthz capability")
+	}
+
+	routes := dashboard.DefaultRoutes()
+	routes.Healthz = "/livez"
+
+	dash := dashboard.New(fed, dashboard.WithRoutes(routes))
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	if code := doRequest(t, mux, "/livez").Code; code != http.StatusNotFound {
+		t.Errorf("combined-traffic route must stay unregistered through federation, got %d", code)
+	}
+}
