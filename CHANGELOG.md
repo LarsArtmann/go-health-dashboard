@@ -80,6 +80,17 @@ forgetting.
   every module load against go-health's floor with a bare `updates to
   go.mod needed`; the guard fails loudly before any Go tool runs and
   carries the atomic restore pattern in its header.
+- Federation consumer insurance batch (`federation_test.go`, unblocked
+  by the v0.4.0 pin): a compile-time assertion that go-health's
+  `federation.Prober` satisfies the dashboard's consumer-side `Prober`
+  interface; an end-to-end evidence test proving an unreachable remote's
+  synthetic `name/reachable` fail row counts as a non-pass observation
+  (a dark remote makes the strip less proven, never silently green); and
+  seam spot-checks driving a remote name hostile to both wire formats
+  (a double quote) through the hand-rolled Prometheus label escaping and
+  a webhook announce payload. The health-hub binary remains the
+  federation example (a dedicated example app adds nothing the hub
+  doesn't already demo).
 
 ### Changed
 
