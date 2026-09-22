@@ -321,8 +321,9 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   1.27.1→1.27 (breaking module loading against go-health's floor). Run
   local gates as `buildflow --build-mode dev --exclude go-mod-update`
   and check `git diff go.mod go.sum` after ANY buildflow run — the
-  check-ui-pins.sh guard only fires in CI, after the sweep already
-  landed locally. (5) The flake's nix-build steps fail on this machine
+  check-ui-pins.sh and check-go-directive.sh guards only fire in CI
+  (Build+Test jobs), after the sweep already landed locally; the
+  directive guard's header carries the atomic restore pattern. (5) The flake's nix-build steps fail on this machine
   with `lookup proxy.golang.org ... connection refused` (FOD sandbox
   DNS vs the local DNS blocker) — chronic 100% failure, environmental,
   not a code signal; `--exclude nix-hash-fix --exclude
