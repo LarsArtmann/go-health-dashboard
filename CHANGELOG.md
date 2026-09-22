@@ -33,6 +33,13 @@ forgetting.
   `/healthz`, and the combined handler's 503-on-boot semantics must be
   a deliberate choice); `WithBasePath` prefixes it like every other
   route; the exported `Prober` interface is unchanged.
+- The example's default probe builds its demo services with go-health
+  v0.3.0's `NewChecks` constructor: checks are plain functions, the
+  probe times every execution, and the rendered rows show real measured
+  durations (the raw injector path reports zero). The samber/do
+  lifecycle integration stays demonstrated — the injector still hosts
+  the dashboard via `Register`, and the aggregate mode keeps its
+  injector-based sources.
 - Regression tests locking the v0.9.0 metadata surfaces: real SSE patch
   payloads (both the connect-time snapshot and subsequent broadcasts) must
   carry the "since (age) · duration" metadata line and the zero-proven
