@@ -112,7 +112,10 @@ func TestWebhookPayload_ShuttingDownTrue(t *testing.T) {
 		t.Fatalf("shutting_down missing or not a JSON bool in payload %s", body)
 	}
 	if !flag {
-		t.Errorf("shutting_down = false, want true when the response carries the shutdown overlay (%s)", body)
+		t.Errorf(
+			"shutting_down = false, want true when the response carries the shutdown overlay (%s)",
+			body,
+		)
 	}
 }
 

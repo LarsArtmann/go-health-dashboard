@@ -42,6 +42,26 @@
 //	_ = dash.Start(ctx)
 //	defer do.Shutdown(injector) // cascades to the dashboard
 //
+// # Common Option Combinations
+//
+// Public deployments that push status transitions to an operations
+// webhook typically also anonymize the page: WithWebhook announces every
+// status/fingerprint transition (independent of the SSE push mode), and
+// WithPublicMode masks check names and error details in the HTML and
+// metrics labels — the two compose without extra wiring:
+//
+//	dash := dashboard.New(probe,
+//	    dashboard.WithWebhook("https://ops.example.invalid/hook"),
+//	    dashboard.WithPublicMode(),
+//	)
+//
+// Mounting under a sub-path (behind a reverse proxy or an admin mux) is
+// one option: WithBasePath prefixes every route in Config.Routes, and the
+// HTML-referenced SSE URL follows the registered handler automatically:
+//
+//	dash := dashboard.New(probe, dashboard.WithBasePath("/admin"))
+//	dash.RegisterRoutes(mux) // serves /admin/health, /admin/health/sse, ...
+//
 // # Health Errors
 //
 // HealthCheck reports two sentinel-wrapped errors, both detectable via

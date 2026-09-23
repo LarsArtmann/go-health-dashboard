@@ -12,6 +12,10 @@ const (
 	// defaultPushInterval is used when neither the probe's RefreshInterval
 	// nor WithPushInterval is set (e.g. live mode with zero interval).
 	defaultPushInterval = 2 * time.Second
+	// DefaultPushInterval mirrors defaultPushInterval for consumers that
+	// need to display the effective cadence (e.g. the health-hub startup
+	// log line) without duplicating the constant.
+	DefaultPushInterval = defaultPushInterval
 	// defaultHeartbeatInterval is the SSE keepalive interval when
 	// WithHeartbeatInterval is not set.
 	defaultHeartbeatInterval = 15 * time.Second

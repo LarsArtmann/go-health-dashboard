@@ -351,3 +351,70 @@ func TestNewServeMux(t *testing.T) {
 		})
 	}
 }
+
+func TestParsePushInterval(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		raw     string
+		want    time.Duration
+		wantErr bool
+	}{
+		{name: "empty means library default", raw: "", want: 0},
+		{name: "seconds", raw: "10s", want: 10 * time.Second},
+		{name: "minutes", raw: "1m", want: time.Minute},
+		{name: "zero is rejected", raw: "0", wantErr: true},
+		{name: "negative is rejected", raw: "-5s", wantErr: true},
+		{name: "bare number is rejected", raw: "10", wantErr: true},
+		{name: "unitless words are rejected", raw: "slow", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := parsePushInterval(tt.raw)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("parsePushInterval(%q) error = nil, want failure", tt.raw)
+				}
+
+				if !strings.Contains(err.Error(), tt.raw) {
+					t.Fatalf(
+						"parsePushInterval(%q) error %q does not name the offending value",
+						tt.raw,
+						err,
+					)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("parsePushInterval(%q) error = %v, want nil", tt.raw, err)
+			}
+
+			if got != tt.want {
+				t.Fatalf("parsePushInterval(%q) = %s, want %s", tt.raw, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestResolvedPushInterval(t *testing.T) {
+	t.Parallel()
+
+	if got := resolvedPushInterval(0); got != dashboard.DefaultPushInterval {
+		t.Fatalf(
+			"resolvedPushInterval(0) = %s, want the library default %s",
+			got,
+			dashboard.DefaultPushInterval,
+		)
+	}
+
+	if got := resolvedPushInterval(15 * time.Second); got != 15*time.Second {
+		t.Fatalf("resolvedPushInterval(15s) = %s, want 15s", got)
+	}
+}
