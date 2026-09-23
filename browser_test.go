@@ -200,6 +200,76 @@ func strictCSPMiddleware(nonce string, next http.Handler) http.Handler {
 	})
 }
 
+// browserSession bundles the shared browser-test rig: the serving HTTP
+// server, the Chrome allocator context (for tests that open extra tabs),
+// the first tab's execution context and cancel (for tests that release the
+// tab mid-test), and that tab's console-error log.
+type browserSession struct {
+	server   *httptest.Server
+	allocCtx context.Context
+	ctx      context.Context
+	cancel   context.CancelFunc
+	errLog   *browserErrorLog
+}
+
+// browserRunTimeout bounds every chromedp operation; individual waits in
+// the tests poll with their own shorter deadlines.
+const browserRunTimeout = 150 * time.Second
+
+// startBrowserSession wires the rig shared by every browser test: static
+// asset handlers, an HTTP server for the dashboard mux (behind the
+// strict-CSP middleware when cspNonce is non-empty), headless Chrome, and a
+// first tab navigated to /health. The caller then waits for the SSE
+// subscriber (waitForSubscriber) or runs its own readiness loop.
+func startBrowserSession(t *testing.T, s *probeSetup, cspNonce string) *browserSession {
+	t.Helper()
+
+	browserStaticHandlers(t, s)
+
+	return startBrowserSessionOn(t, s.dash, s.mux, cspNonce)
+}
+
+// startBrowserSessionOn is startBrowserSession for tests that serve a
+// wrapped handler (proxied SSE, a custom mux) instead of the raw dashboard
+// mux.
+func startBrowserSessionOn(t *testing.T, dash *dashboard.Dashboard, next http.Handler, cspNonce string) *browserSession {
+	t.Helper()
+
+	var handler http.Handler = next
+	if cspNonce != "" {
+		handler = strictCSPMiddleware(cspNonce, next)
+	}
+
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+
+	wsURL, stopChrome := startHeadlessChrome(t, findChrome(t))
+	t.Cleanup(stopChrome)
+
+	runCtx, runCancel := context.WithTimeout(context.Background(), browserRunTimeout)
+	t.Cleanup(runCancel)
+
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	t.Cleanup(allocCancel)
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	t.Cleanup(cancel)
+
+	errLog := watchBrowserErrors(ctx)
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+		t.Fatalf("browser navigate: %v", err)
+	}
+
+	return &browserSession{
+		server:   server,
+		allocCtx: allocCtx,
+		ctx:      ctx,
+		cancel:   cancel,
+		errLog:   errLog,
+	}
+}
+
 // TestBrowser_CSPCleanRuntime closes the runtime-CSP verification loop the
 // CLI tests cannot: it loads the real page in a headless browser under a
 // strict CSP and verifies that

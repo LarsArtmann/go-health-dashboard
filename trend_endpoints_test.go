@@ -282,13 +282,13 @@ func TestExportHandler_JSONCarriesCheckMetadata(t *testing.T) {
 	}
 }
 
-// TestExportHandler_JSONIsByteStable pins the export wire contract: the
-// checks object is a Go map, so successive scrapes must marshal with
-// deterministic (sorted) key ordering or consumers diffing exports see
-// phantom key reshuffles. The push interval is set far beyond the test so no
-// tick can land between the two scrapes and change the samples array.
-func TestExportHandler_JSONIsByteStable(t *testing.T) {
-	t.Parallel()
+// startByteStableScrapeTarget builds a trend-enabled dashboard from the
+// shared mixed-checks response, starts it, and waits until the first sample
+// is recorded so successive scrapes see a quiescent sample array. The push
+// interval is set far beyond the test so no tick can land between the two
+// scrapes and change the samples array.
+func startByteStableScrapeTarget(t *testing.T, path, label string) *http.ServeMux {
+	t.Helper()
 
 	resp := health.Response{
 		Status: health.StatusPass,
@@ -309,44 +309,68 @@ func TestExportHandler_JSONIsByteStable(t *testing.T) {
 	dash.RegisterRoutes(mux)
 
 	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
+	t.Cleanup(cancel)
 
 	if err := dash.Start(ctx); err != nil {
 		t.Fatalf("dash.Start: %v", err)
 	}
-	defer dash.Shutdown()
+	t.Cleanup(dash.Shutdown)
 
 	// The pusher records its first sample immediately on start; wait for
 	// it so the sample array is quiescent before the two scrapes.
 	deadline := time.Now().Add(5 * time.Second)
 
 	for {
-		probe := doRequest(t, mux, "/health/export")
+		probe := doRequest(t, mux, path)
 		if strings.Contains(probe.Body.String(), `"samples":[{`) {
 			break
 		}
 
 		if time.Now().After(deadline) {
-			t.Fatalf("export never recorded a sample: %s", probe.Body.String())
+			t.Fatalf("%s never recorded a sample: %s", label, probe.Body.String())
 		}
 
 		time.Sleep(5 * time.Millisecond)
 	}
 
-	first := doRequest(t, mux, "/health/export")
+	return mux
+}
+
+// assertScrapeIsByteStable fetches path twice and fails unless both
+// payloads are byte-identical. Returns the first scrape for further
+// assertions.
+func assertScrapeIsByteStable(t *testing.T, mux *http.ServeMux, path string) *httptest.ResponseRecorder {
+	t.Helper()
+
+	first := doRequest(t, mux, path)
 	if first.Code != http.StatusOK {
 		t.Fatalf("status: want 200, got %d", first.Code)
 	}
 
-	second := doRequest(t, mux, "/health/export")
+	second := doRequest(t, mux, path)
 
 	if first.Body.String() != second.Body.String() {
 		t.Fatalf(
-			"/health/export JSON not byte-stable across scrapes:\nfirst:  %s\nsecond: %s",
+			"%s JSON not byte-stable across scrapes:\nfirst:  %s\nsecond: %s",
+			path,
 			first.Body.String(),
 			second.Body.String(),
 		)
 	}
+
+	return first
+}
+
+// TestExportHandler_JSONIsByteStable pins the export wire contract: the
+// checks object is a Go map, so successive scrapes must marshal with
+// deterministic (sorted) key ordering or consumers diffing exports see
+// phantom key reshuffles.
+func TestExportHandler_JSONIsByteStable(t *testing.T) {
+	t.Parallel()
+
+	mux := startByteStableScrapeTarget(t, "/health/export", "export")
+
+	first := assertScrapeIsByteStable(t, mux, "/health/export")
 
 	want := `"checks":{"alpha/database"`
 	if !strings.Contains(first.Body.String(), want) {
@@ -362,68 +386,13 @@ func TestExportHandler_JSONIsByteStable(t *testing.T) {
 // the payload is slices-only today (already stable), but one future
 // map-bearing field would silently regress byte-stability for diff-based
 // scrapers. The endpoint marshals with Deterministic(true); this test makes
-// that regression loud. Push interval is set far beyond the test so no tick
-// can land between the two scrapes and change the samples array.
+// that regression loud.
 func TestTrendHandler_JSONIsByteStable(t *testing.T) {
 	t.Parallel()
 
-	resp := health.Response{
-		Status: health.StatusPass,
-		Checks: map[string]health.Check{
-			"zulu/queue":     {Status: health.StatusPass},
-			"alpha/database": {Status: health.StatusPass, DurationNanos: int64(time.Millisecond)},
-			"mid/cache":      {Status: health.StatusPass},
-		},
-	}
+	mux := startByteStableScrapeTarget(t, "/health/trend", "trend")
 
-	dash := dashboard.New(
-		newStubProber(resp),
-		dashboard.WithTrend(8),
-		dashboard.WithPushInterval(time.Hour),
-	)
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
-	if err := dash.Start(ctx); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-	defer dash.Shutdown()
-
-	// The pusher records its first sample immediately on start; wait for
-	// it so the sample array is quiescent before the two scrapes.
-	deadline := time.Now().Add(5 * time.Second)
-
-	for {
-		probe := doRequest(t, mux, "/health/trend")
-		if strings.Contains(probe.Body.String(), `"samples":[{`) {
-			break
-		}
-
-		if time.Now().After(deadline) {
-			t.Fatalf("trend never recorded a sample: %s", probe.Body.String())
-		}
-
-		time.Sleep(5 * time.Millisecond)
-	}
-
-	first := doRequest(t, mux, "/health/trend")
-	if first.Code != http.StatusOK {
-		t.Fatalf("status: want 200, got %d", first.Code)
-	}
-
-	second := doRequest(t, mux, "/health/trend")
-
-	if first.Body.String() != second.Body.String() {
-		t.Fatalf(
-			"/health/trend JSON not byte-stable across scrapes:\nfirst:  %s\nsecond: %s",
-			first.Body.String(),
-			second.Body.String(),
-		)
-	}
+	assertScrapeIsByteStable(t, mux, "/health/trend")
 }
 
 func TestExportHandler_CSV(t *testing.T) {
