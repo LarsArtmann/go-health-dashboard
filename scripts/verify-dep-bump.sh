@@ -7,8 +7,10 @@
 # shared version in BuildFlow is an open question — this is the per-repo
 # answer, mirroring scripts/verify-release.sh (see TODO_LIST/ROADMAP).
 #
-# Usage: run from the repo root, OUTSIDE the devShell (the nix apps set
-# up their own environment):
+# Usage: run from the repo root, inside OR outside the devShell — every
+# direct `go` invocation goes through `nix develop -c`, so the script
+# self-provisions the correct toolchain (the ambient PATH go is the wrong
+# version and dies on go.mod's floor):
 #
 #   bash scripts/verify-dep-bump.sh
 #
@@ -36,11 +38,19 @@ run "tests with race detector" nix run .#test-race
 run "lint" nix run .#lint
 run "vet" nix run .#vet
 run "vulncheck" nix run .#vulncheck
-run "coverage (CI enforces the 80% floor)" nix run .#coverage
-total=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | tr -d '%')
-echo "   coverage total: ${total}% (floor 80%)"
-if ! awk -v t="$total" 'BEGIN { exit !(t >= 80) }'; then
-	echo "!! FAILED: coverage floor (${total}% < 80%) — a bump that drops coverage needs tests, not a lower bar"
+# CI is the single source for the coverage floor: parse it out of the
+# ci.yml coverage step instead of hardcoding a second, drift-ready copy.
+floor=$(grep -oE 't >= [0-9]+' .github/workflows/ci.yml | head -1 | grep -oE '[0-9]+')
+if [ -z "$floor" ]; then
+	echo "!! FAILED: could not parse the coverage floor from .github/workflows/ci.yml (expected: awk -v t=... 'BEGIN { exit !(t >= <N>) }')"
+	fail=1
+	floor=80
+fi
+run "coverage (CI enforces the ${floor}% floor)" nix run .#coverage
+total=$(nix develop -c go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | tr -d '%')
+echo "   coverage total: ${total}% (floor ${floor}%)"
+if ! awk -v t="$total" -v f="$floor" 'BEGIN { exit !(t >= f) }'; then
+	echo "!! FAILED: coverage floor (${total}% < ${floor}%) — a bump that drops coverage needs tests, not a lower bar"
 	fail=1
 fi
 trash-put coverage.out 2>/dev/null || true
@@ -54,7 +64,19 @@ run "changelog lint" bash scripts/check-changelog.sh
 
 echo "=== formatting (canonical order: generate already ran via build) ==="
 nix fmt
-if ! git diff --exit-code --quiet; then
+# The auto-daemon can commit the fmt output between nix fmt and this
+# check, making a clean tree look dirty (AGENTS.md "Gates race the
+# auto-daemon"). Retry once before trusting a failure.
+fmt_dirty=0
+git diff --exit-code --quiet || fmt_dirty=1
+if [ "$fmt_dirty" -ne 0 ]; then
+	sleep 3
+	if git diff --exit-code --quiet; then
+		echo "   dirty-tree check was a daemon race; clean on retry"
+		fmt_dirty=0
+	fi
+fi
+if [ "$fmt_dirty" -ne 0 ]; then
 	echo "!! nix fmt left changes — commit the formatted tree"
 	fail=1
 fi
