@@ -81,6 +81,13 @@ func freePort(t *testing.T) int {
 // one at a time trades a little wall time for reliability.
 var browserSerial sync.Mutex
 
+// lastChromeLaunch records the wall time of the most recent Chrome launch
+// (process start → DevTools websocket announce) for
+// TestMeasureChromeLaunchLatency. Written under browserSerial; the
+// measurement test is the only reader and must run in isolation so no
+// other test launches Chrome concurrently.
+var lastChromeLaunch atomic.Int64
+
 // startHeadlessChrome launches Chrome manually with a concrete DevTools port
 // and returns the websocket debugger URL parsed from stderr. chromedp's own
 // launcher queries the debugger over 127.0.0.1, which hangs when Chrome
@@ -88,6 +95,8 @@ var browserSerial sync.Mutex
 // avoids that failure mode entirely.
 func startHeadlessChrome(t *testing.T, chromePath string) (string, func()) {
 	t.Helper()
+
+	launchedAt := time.Now()
 
 	browserSerial.Lock()
 
@@ -174,6 +183,8 @@ func startHeadlessChrome(t *testing.T, chromePath string) (string, func()) {
 			}
 
 			if url, found := strings.CutPrefix(line, "DevTools listening on "); found {
+				lastChromeLaunch.Store(int64(time.Since(launchedAt)))
+
 				return url, stopChrome
 			}
 		}
