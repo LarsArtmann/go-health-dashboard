@@ -1,6 +1,7 @@
 package dashboard_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -744,20 +745,33 @@ func TestSSE_HeartbeatInterval_SendsKeepalive(t *testing.T) {
 	)
 	defer cleanup()
 
-	resp, stream := connectSSE(t, server)
+	resp, err := http.Get(server.URL + "/health/sse")
+	if err != nil {
+		t.Fatalf("SSE connect: %v", err)
+	}
 	defer func() { _ = resp.Body.Close() }()
-
-	stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 
 	// Heartbeats are SSE comment frames (": heartbeat"): per the WHATWG spec
 	// they dispatch no events, so ssetest's browser-conformant reader never
-	// surfaces them. The keepalive contract is therefore asserted the way a
-	// browser experiences it: across several heartbeat intervals the stream
-	// delivers no spurious events AND stays open (kept alive, not idled out).
-	stream.assertNoEvent(t, 400*time.Millisecond)
+	// surfaces them. The keepalive bytes are therefore probed directly on the
+	// raw wire: within 3s (30 heartbeat intervals) the connection must carry
+	// the comment frame even though no state change triggers a patch.
+	buf := make([]byte, 4096)
+	var seen []byte
 
-	if stream.closed() {
-		t.Error("SSE stream closed despite active heartbeats keeping it alive")
+	deadline := time.Now().Add(3 * time.Second)
+
+	for !bytes.Contains(seen, []byte(": heartbeat")) {
+		if time.Now().After(deadline) {
+			t.Fatalf("no keepalive bytes within 3s; got:\n%.500s", seen)
+		}
+
+		n, readErr := resp.Body.Read(buf)
+		seen = append(seen, buf[:n]...)
+
+		if readErr != nil {
+			t.Fatalf("SSE stream closed while waiting for keepalive: %v", readErr)
+		}
 	}
 }
 
