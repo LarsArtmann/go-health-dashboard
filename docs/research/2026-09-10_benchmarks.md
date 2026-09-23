@@ -99,3 +99,37 @@ test now iterates a 12-key map 200 times, and the re-run mutation fails
 loudly. `BenchmarkRenderPatch` sizes the per-tick render at ~0.35ms for a
 60-check metadata-bearing response with the retry stamping inside noise,
 and `BenchmarkDashboard_HealthCheck` at ~3ns / 0 allocs.
+
+## Browser-suite startup latency (M91, 2026-09-23)
+
+|             |                                                                                                                                                                                              |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Date**    | 2026-09-23                                                                                                                                                                                   |
+| **Command** | `GO_HEALTH_DASHBOARD_MEASURE_CHROME=1 nix develop -c go test -run TestMeasureChromeLaunchLatency -v -count=1 .` then `nix develop -c go test -run TestBrowser -count=1 .`                      |
+| **Context** | The rig serializes all browser tests (`browserSerial`) because parallel headless-Chrome launches historically pushed startup past the announce timeout. M91 asked whether the serialization can shrink again. |
+
+### Chrome launch latency (5 isolated launches, idle machine)
+
+| Metric                        | Value           |
+| ----------------------------- | --------------- |
+| start → DevTools announce avg | 155 ms          |
+| start → DevTools announce max | 254 ms          |
+| announce timeout              | 45 s            |
+| timeout utilization (max)     | ~0.6%           |
+
+Full browser suite (15 tests, serialized, incl. navigation + SSE waits): **~15s wall**.
+
+### Reading
+
+- A single launch costs ~130–250ms against a 45s timeout — ~180× headroom
+  when idle. The timeout is not protecting against launch cost; it protects
+  against CONTENTION (parallel launches thrashing CPU on loaded machines,
+  the original failure).
+- Serializing 15 tests therefore costs only ~2–4s of pure launch wall time.
+  Parallelizing would recover that few seconds at the exact risk the
+  serialization exists to remove. Verdict: **keep the serialization**; the
+  measured numbers make the trade obvious. Revisit only if the suite grows
+  past ~100 tests.
+- The measurement lives on as the env-guarded
+  `TestMeasureChromeLaunchLatency` (skip by default; run it in isolation
+  with `GO_HEALTH_DASHBOARD_MEASURE_CHROME=1`).
