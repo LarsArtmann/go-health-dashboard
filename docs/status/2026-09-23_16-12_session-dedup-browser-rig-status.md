@@ -72,39 +72,39 @@ Eliminated all 6 clone groups art-dupl showed. Two extractions:
 
 ## f) NEXT — up to 50 things to get done (sorted by impact, session-derived)
 
-| # | Task | Impact |
-|---|------|--------|
-| 1 | Run `nix run .#test-race` — teardown order + `browserSerial` unlock timing changed this session | High |
-| 2 | HARVEST this list into `TODO_LIST.md` / `ROADMAP.md` (docs-health) so it isn't entombed in a timestamped file | High |
-| 3 | Kill the new split-brain: make `startByteStableScrapeTarget` reuse `waitForTrendSamples`' loop (or extract a shared poll) | High |
-| 4 | Extract shared inline-JS consts (`detailsState`, `visibleRows`) in browser_test.go | Med |
-| 5 | Unify the five bespoke poll loops behind one deadline-parameterized primitive | Med |
-| 6 | Replace 250ms settle sleeps with a deterministic initial-patch wait | Med |
-| 7 | Annotate one-line rationales for the 47 remaining clone groups (or extract); re-run art-dupl at `-t 3` | Med |
-| 8 | Split browser_test.go (session helpers → own file; ~1.9k lines, ADR-0001 pattern) | Med |
-| 9 | Guard the duplicate-route class: `browserStaticHandlers` idempotency or a `mustHandle` helper that fatals on re-registration | Med |
-| 10 | Audit screenshot_test.go / collapse_test.go / hardening_test.go for the same rig duplication | Med |
-| 11 | Audit rig duplication in cmd/health-hub fuzz/integration scaffolding | Low |
-| 12 | Make browserSession fields safer: `URL()` method instead of raw `server`, `ReleaseTab()` instead of exposed `cancel` | Low |
-| 13 | Replace the `cspNonce string` ""-sentinel with a typed option (`WithCSP(nonce)` / plain) — stringly sentinel smell | Low |
-| 14 | Named constants for test deadlines (15s/20s/30s/45s/150s) | Low |
-| 15 | Helper should attach `errLog` dump to navigate-failure output (better failure UX) | Low |
-| 16 | Document teardown order (t.Cleanup LIFO vs old defer order) on `browserSession` | Low |
-| 17 | `startBrowserSessionOn`: reconsider 4-positional-params signature (options struct) | Low |
-| 18 | Naming review of new identifiers (`startByteStableScrapeTarget`, `assertScrapeIsByteStable`, `startBrowserSessionOn`) | Low |
-| 19 | Aggregate tests: unify inline probe construction (context.Background vs t.Context drift seen at browser_test.go:~1876/2010 area) | Low |
-| 20 | LiveSSEPatch registers statics manually — route it through `startBrowserSessionOn` for one path | Low |
-| 21 | Decide containedctx policy for _test.go files (fleet linter scoping vs per-site nolints) | Low |
-| 22 | Run `erraudit nolint-audit .` to validate the two new containedctx directives | Low |
-| 23 | Add a lesson to crush-config `references/lessons.md` (by commit): "grep-enumerate, then verify count before finishing" | Low |
-| 24 | Record browser-suite wall-time baseline post-refactor (regression guard for the 150s unification) | Low |
-| 25 | Confirm go.mod/go.sum untouched after this session's nix runs (UI-pin guard hygiene) | Low |
-| 26 | MobileViewport double-navigation wart: pre-navigate action hook or navigate-once variant | Low |
-| 27 | CSPCleanRuntime/AggregateCSPClean: comment why they keep custom readiness loops instead of waitForSubscriber | Low |
-| 28 | Metrics bench file: check whether `testing.TB`-compatible session helper would serve benchmarks | Low |
-| 29 | Proofread new helper doc comments for accuracy drift after the session rename | Low |
-| 30 | Consider `-count=1` default in flake test app docs (stale-cache confusion prevention) | Low |
-| 31-50 | Reserved: triage bucket — the remaining "filtered suppressed" clone categories (jscpd test scaffolding, branching-flow advisories) are documented non-fixes in AGENTS.md; revisit only when fleet tooling changes | Low |
+| #     | Task                                                                                                                                                                                                              | Impact |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 1     | Run `nix run .#test-race` — teardown order + `browserSerial` unlock timing changed this session                                                                                                                   | High   |
+| 2     | HARVEST this list into `TODO_LIST.md` / `ROADMAP.md` (docs-health) so it isn't entombed in a timestamped file                                                                                                     | High   |
+| 3     | Kill the new split-brain: make `startByteStableScrapeTarget` reuse `waitForTrendSamples`' loop (or extract a shared poll)                                                                                         | High   |
+| 4     | Extract shared inline-JS consts (`detailsState`, `visibleRows`) in browser_test.go                                                                                                                                | Med    |
+| 5     | Unify the five bespoke poll loops behind one deadline-parameterized primitive                                                                                                                                     | Med    |
+| 6     | Replace 250ms settle sleeps with a deterministic initial-patch wait                                                                                                                                               | Med    |
+| 7     | Annotate one-line rationales for the 47 remaining clone groups (or extract); re-run art-dupl at `-t 3`                                                                                                            | Med    |
+| 8     | Split browser_test.go (session helpers → own file; ~1.9k lines, ADR-0001 pattern)                                                                                                                                 | Med    |
+| 9     | Guard the duplicate-route class: `browserStaticHandlers` idempotency or a `mustHandle` helper that fatals on re-registration                                                                                      | Med    |
+| 10    | Audit screenshot_test.go / collapse_test.go / hardening_test.go for the same rig duplication                                                                                                                      | Med    |
+| 11    | Audit rig duplication in cmd/health-hub fuzz/integration scaffolding                                                                                                                                              | Low    |
+| 12    | Make browserSession fields safer: `URL()` method instead of raw `server`, `ReleaseTab()` instead of exposed `cancel`                                                                                              | Low    |
+| 13    | Replace the `cspNonce string` ""-sentinel with a typed option (`WithCSP(nonce)` / plain) — stringly sentinel smell                                                                                                | Low    |
+| 14    | Named constants for test deadlines (15s/20s/30s/45s/150s)                                                                                                                                                         | Low    |
+| 15    | Helper should attach `errLog` dump to navigate-failure output (better failure UX)                                                                                                                                 | Low    |
+| 16    | Document teardown order (t.Cleanup LIFO vs old defer order) on `browserSession`                                                                                                                                   | Low    |
+| 17    | `startBrowserSessionOn`: reconsider 4-positional-params signature (options struct)                                                                                                                                | Low    |
+| 18    | Naming review of new identifiers (`startByteStableScrapeTarget`, `assertScrapeIsByteStable`, `startBrowserSessionOn`)                                                                                             | Low    |
+| 19    | Aggregate tests: unify inline probe construction (context.Background vs t.Context drift seen at browser_test.go:~1876/2010 area)                                                                                  | Low    |
+| 20    | LiveSSEPatch registers statics manually — route it through `startBrowserSessionOn` for one path                                                                                                                   | Low    |
+| 21    | Decide containedctx policy for _test.go files (fleet linter scoping vs per-site nolints)                                                                                                                          | Low    |
+| 22    | Run `erraudit nolint-audit .` to validate the two new containedctx directives                                                                                                                                     | Low    |
+| 23    | Add a lesson to crush-config `references/lessons.md` (by commit): "grep-enumerate, then verify count before finishing"                                                                                            | Low    |
+| 24    | Record browser-suite wall-time baseline post-refactor (regression guard for the 150s unification)                                                                                                                 | Low    |
+| 25    | Confirm go.mod/go.sum untouched after this session's nix runs (UI-pin guard hygiene)                                                                                                                              | Low    |
+| 26    | MobileViewport double-navigation wart: pre-navigate action hook or navigate-once variant                                                                                                                          | Low    |
+| 27    | CSPCleanRuntime/AggregateCSPClean: comment why they keep custom readiness loops instead of waitForSubscriber                                                                                                      | Low    |
+| 28    | Metrics bench file: check whether `testing.TB`-compatible session helper would serve benchmarks                                                                                                                   | Low    |
+| 29    | Proofread new helper doc comments for accuracy drift after the session rename                                                                                                                                     | Low    |
+| 30    | Consider `-count=1` default in flake test app docs (stale-cache confusion prevention)                                                                                                                             | Low    |
+| 31-50 | Reserved: triage bucket — the remaining "filtered suppressed" clone categories (jscpd test scaffolding, branching-flow advisories) are documented non-fixes in AGENTS.md; revisit only when fleet tooling changes | Low    |
 
 ## g) Questions I can NOT figure out myself
 

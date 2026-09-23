@@ -415,12 +415,12 @@ pass/fail every 15s), and one always failing. Watch the dashboard update live.
 
 Tested version matrix (`go.mod` is the live source of truth):
 
-| Dependency       | Version | Note                                                                       |
-| ---------------- | ------- | -------------------------------------------------------------------------- |
+| Dependency       | Version | Note                                                                                                   |
+| ---------------- | ------- | ------------------------------------------------------------------------------------------------------ |
 | go-health        | v0.4.0  | aggregate needs v0.1.0+; per-check since/duration metadata v0.2.0+; federation + `Status.Rank` v0.4.0+ |
-| templ-components | v1.18.0 | pinned — CI guard + browser-suite re-audit on bumps                        |
-| go-datastar      | v0.5.0  | audited SDK bundle; needs CSP `unsafe-eval`                                |
-| go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                                             |
+| templ-components | v1.18.0 | pinned — CI guard + browser-suite re-audit on bumps                                                    |
+| go-datastar      | v0.5.0  | audited SDK bundle; needs CSP `unsafe-eval`                                                            |
+| go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                                                                         |
 
 ## Upgrading
 
