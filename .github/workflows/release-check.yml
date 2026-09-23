@@ -1,0 +1,38 @@
+name: Release integrity
+
+# Nightly mechanical check that every git tag has a GitHub Release page.
+# The release discipline says `gh release create` runs in the same change
+# as the tag; until now a missed create was caught by memory during
+# release audits. This job turns it into a red run with per-tag output.
+
+on:
+  schedule:
+    - cron: "30 4 * * *" # offset from the 03:00 nightly fuzz run
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-pages:
+    name: Every tag has a Release page
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify a Release exists for every tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          missing=0
+          for tag in $(git tag --sort=v:refname); do
+            if gh release view "$tag" --json name,isDraft >/dev/null 2>&1; then
+              echo "OK   $tag"
+            else
+              echo "::error::tag ${tag} has no GitHub Release page — draft one from the tag's CHANGELOG section: gh release create ${tag} --draft --title ${tag} --notes \"<section>\""
+              missing=1
+            fi
+          done
+          exit "$missing"
