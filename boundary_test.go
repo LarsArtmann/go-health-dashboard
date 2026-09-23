@@ -2,9 +2,12 @@ package dashboard_test
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/larsartmann/go-sse/ssetest"
 
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
@@ -157,26 +160,22 @@ func TestWithRetryInterval_EdgeValues(t *testing.T) {
 		)
 
 		resp, stream := connectSSE(t, server)
-		evt := stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+		evt := stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 		_ = resp.Body.Close()
 		server.Close()
 		cleanup()
 
 		if testCase.wantRetry == "" {
-			if strings.Contains(evt, "retry:") {
-				t.Errorf("%s: event must not carry a retry field, got:\n%s", testCase.name, evt)
-			}
+			ssetest.RequireRetry(t, evt, 0)
 
 			continue
 		}
 
-		if !strings.Contains(evt, "retry: "+testCase.wantRetry) {
-			t.Errorf(
-				"%s: event must carry retry: %s, got:\n%s",
-				testCase.name,
-				testCase.wantRetry,
-				evt,
-			)
+		want, parseErr := strconv.ParseUint(testCase.wantRetry, 10, 64)
+		if parseErr != nil {
+			t.Fatalf("parse wantRetry %q: %v", testCase.wantRetry, parseErr)
 		}
+
+		ssetest.RequireRetry(t, evt, uint(want))
 	}
 }

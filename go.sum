@@ -42,6 +42,8 @@ github.com/larsartmann/go-health v0.4.0 h1:67IYgxFIAAOqbrj5szeIcq4Z8eaMqEZclTtc9
 github.com/larsartmann/go-health v0.4.0/go.mod h1:Mud5voytlhllNYPsKeXUFA833dqlyy9liW3jApR/X18=
 github.com/larsartmann/go-sse v0.6.0 h1:ITsMQi4Cfg+cXE5YYChk3p6wYsn33AxKJPVwd5hsiBY=
 github.com/larsartmann/go-sse v0.6.0/go.mod h1:ndYQ/lEnJVzTWqvF/h4+XMG/hJK/bEn6zSkfpkBAuUg=
+github.com/larsartmann/go-sse/ssetest v0.3.0 h1:HEP3nFUsaWAz6fz8WmbeR2nUj6jv/cAHf+7HVeMeRRY=
+github.com/larsartmann/go-sse/ssetest v0.3.0/go.mod h1:VNpjSMfzdCeIT5YKAmJPB6jGN4PBjJF0/aXc/YM/OVQ=
 github.com/larsartmann/templ-components v1.18.0 h1:An0JV1EkWbm4sulf4SOSbI6SZZoJQVKmxe1QbQNhkmw=
 github.com/larsartmann/templ-components v1.18.0/go.mod h1:hrLBd/Usd9nRea3Jg2Qw+zeTpuPdQIbqjmNF0f9D0Ns=
 github.com/larsartmann/templ-components/datastar v1.18.0 h1:w+g3Ywr/qYQl1AaFSZWUwinpa+R9Lp3lN2ox2ZLAGeg=

@@ -46,14 +46,20 @@ func provideToggleService(i do.Injector, name string, svc *toggleService) {
 // A single goroutine parses the wire format with ssetest's WHATWG-conformant
 // reader, eliminating reader-level races.
 type sseStream struct {
-	events chan ssetest.Event
+	events   chan ssetest.Event
+	closedCh chan struct{}
 }
 
 func newSSEStream(body io.Reader) *sseStream {
-	s := &sseStream{events: make(chan ssetest.Event, 32)}
+	s := &sseStream{
+		events:   make(chan ssetest.Event, 32),
+		closedCh: make(chan struct{}),
+	}
 
 	go func() {
 		defer close(s.events)
+		defer close(s.closedCh)
+
 		reader := ssetest.NewStreamReader(body)
 
 		for {
@@ -67,6 +73,17 @@ func newSSEStream(body io.Reader) *sseStream {
 	}()
 
 	return s
+}
+
+// closed reports whether the stream reader has finished (connection closed
+// or unreadable). Safe to call from the test goroutine.
+func (s *sseStream) closed() bool {
+	select {
+	case <-s.closedCh:
+		return true
+	default:
+		return false
+	}
 }
 
 // waitFor reads SSE events until one matches the predicate or the timeout
@@ -732,9 +749,16 @@ func TestSSE_HeartbeatInterval_SendsKeepalive(t *testing.T) {
 
 	stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 
-	stream.waitFor(t, func(s string) bool {
-		return strings.Contains(s, ": heartbeat")
-	}, 3*time.Second)
+	// Heartbeats are SSE comment frames (": heartbeat"): per the WHATWG spec
+	// they dispatch no events, so ssetest's browser-conformant reader never
+	// surfaces them. The keepalive contract is therefore asserted the way a
+	// browser experiences it: across several heartbeat intervals the stream
+	// delivers no spurious events AND stays open (kept alive, not idled out).
+	stream.assertNoEvent(t, 400*time.Millisecond)
+
+	if stream.closed() {
+		t.Error("SSE stream closed despite active heartbeats keeping it alive")
+	}
 }
 
 // --- Retry interval tests ---.
@@ -872,10 +896,10 @@ func TestSSE_PatchesContainNoInlineScripts(t *testing.T) {
 
 	for range 3 {
 		evt := stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
-		if strings.Contains(strings.ToLower(evt), "<script") {
+		if strings.Contains(strings.ToLower(evt.Data()), "<script") {
 			t.Errorf(
 				"SSE patch must not contain <script> tags (CSP-safe inner-HTML), got:\n%s",
-				evt,
+				evt.Data(),
 			)
 		}
 	}
