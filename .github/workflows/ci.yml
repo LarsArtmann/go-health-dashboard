@@ -20,6 +20,14 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # Static shell analysis for the gate scripts (pure bash, no Go).
+      # shellcheck is preinstalled on ubuntu-latest; if the runner image
+      # ever drops it, this step fails loudly instead of silently skipping.
+      - name: shellcheck gate scripts
+        run: |
+          shellcheck --version
+          shellcheck -S warning scripts/*.sh
+
       # CHANGELOG structural lint (pure bash, no Go): exactly one
       # [Unreleased], first section only, monotonic version order. The
       # sandwiched-[Unreleased] bug survived days of doc audits; this
