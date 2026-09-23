@@ -131,10 +131,11 @@
             GO_HEALTH_DASHBOARD_CHROME = "${pkgs.chromium}/bin/chromium";
 
             shellHook = ''
-              echo "go-health-dashboard dev shell — $(go version)"
-              echo "GOEXPERIMENT=$GOEXPERIMENT (required for go-sse dependency)"
-              echo "GOWORK=off (ignore parent workspace)"
-              echo "GO_HEALTH_DASHBOARD_CHROME=$GO_HEALTH_DASHBOARD_CHROME (browser suite)"
+              # Banner on stderr: scripts parse `nix develop -c <tool>` stdout.
+              echo "go-health-dashboard dev shell — $(go version)" >&2
+              echo "GOEXPERIMENT=$GOEXPERIMENT (required for go-sse dependency)" >&2
+              echo "GOWORK=off (ignore parent workspace)" >&2
+              echo "GO_HEALTH_DASHBOARD_CHROME=$GO_HEALTH_DASHBOARD_CHROME (browser suite)" >&2
             '';
           };
 

@@ -49,10 +49,24 @@ expected_templ_components_datastar="v1.18.0"
 expected_templ_components_utils="v1.18.0"
 expected_go_datastar="v0.5.0"
 
+cd "$(dirname "$0")/.."
+
+# Self-select the right go: the ambient PATH go may predate go.mod's
+# floor, and with GOTOOLCHAIN=local it dies on a misleading "go: updates
+# to go.mod needed" (AGENTS.md "Repo scripts that exec go need the
+# devShell"). Probe with a cheap module load; fall back to the devShell.
+go_list() {
+	if go list -m github.com/larsartmann/go-health >/dev/null 2>&1; then
+		go list -m "$1"
+	else
+		nix develop -c go list -m "$1" | grep -E "^${1} "
+	fi
+}
+
 fail=0
 check_pin() {
 	local module="$1" expected="$2"
-	actual=$(go list -m "$module" | awk '{print $2}')
+	actual=$(go_list "$module" | awk '{print $2}')
 	if [[ "$actual" == "$expected" ]]; then
 		echo "OK  $module $actual"
 	else

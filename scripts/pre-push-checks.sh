@@ -101,14 +101,14 @@ templ_violations=$(
 		grep -v 'go tool templ generate' |
 		grep -vE ':[0-9]+:[[:space:]]*(#|- )' || true
 )
-pkgs_templ=$(grep -rnE 'pkgs\.templ([^[:alnum:]_-]|$)' flake.nix .github/workflows scripts 2>/dev/null || true)
+pkgs_templ=$(grep -rnE 'pkgs\.templ([^[:alnum:]_-]|$)' flake.nix .github/workflows scripts 2>/dev/null | grep -vE ':[0-9]+:[[:space:]]*#' || true)
 if [ -n "$templ_violations" ]; then
 	echo "::error::bare 'templ generate' invocation outside the go.mod tool pin — use 'go tool templ generate':"
 	echo "$templ_violations"
 	fail=1
 fi
 if [ -n "$pkgs_templ" ]; then
-	echo "::error::pkgs.templ reference found — the generator must come from go.mod's tool directive ('go tool templ generate'):"
+	echo "::error::unpinned nixpkgs templ attr found — the generator must come from go.mod's tool directive (go tool templ generate):"
 	echo "$pkgs_templ"
 	fail=1
 fi
