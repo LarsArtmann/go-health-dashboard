@@ -8,6 +8,8 @@
 //	HEALTH_HUB_TIMEOUT=5s        optional per-fetch deadline (default 5s)
 //	HEALTH_HUB_TREND=1           enable the trend sparkline + timeline card
 //	HEALTH_HUB_METRICS=1         serve Prometheus text at /health/metrics
+//	HEALTH_HUB_PUSH_INTERVAL=10s  SSE push cadence (default 2s; every tick
+//	                             fetches EVERY remote — raise this for LAN hubs)
 //	PORT=8080                    port to listen on
 //	HEALTH_HUB_ADDR=127.0.0.1:8080  full listen address (overrides PORT)
 //
@@ -47,6 +49,7 @@ const (
 	timeoutEnvVar      = "HEALTH_HUB_TIMEOUT"
 	trendEnvVar        = "HEALTH_HUB_TREND"
 	metricsEnvVar      = "HEALTH_HUB_METRICS"
+	pushIntervalEnvVar = "HEALTH_HUB_PUSH_INTERVAL"
 	portEnvVar         = "PORT"
 	addrEnvVar         = "HEALTH_HUB_ADDR"
 	shutdownGrace      = 10 * time.Second
@@ -73,8 +76,9 @@ var (
 // hubConfig is everything the environment contributes before the process
 // starts doing anything irreversible.
 type hubConfig struct {
-	remotes     []healthfederation.Remote
-	fetchExpiry time.Duration
+	remotes      []healthfederation.Remote
+	fetchExpiry  time.Duration
+	pushInterval time.Duration // zero = library default
 }
 
 // configFromEnv reads and validates all environment configuration up
@@ -95,7 +99,41 @@ func configFromEnv() (hubConfig, error) {
 		}
 	}
 
-	return hubConfig{remotes: remotes, fetchExpiry: fetchExpiry}, nil
+	pushInterval, err := parsePushInterval(os.Getenv(pushIntervalEnvVar))
+	if err != nil {
+		return hubConfig{}, fmt.Errorf("%s: %w", pushIntervalEnvVar, err)
+	}
+
+	return hubConfig{remotes: remotes, fetchExpiry: fetchExpiry, pushInterval: pushInterval}, nil
+}
+
+// parsePushInterval validates the SSE push cadence from the environment.
+// Empty means "library default" (2s today). Every tick fetches every
+// remote once (merge-on-read), so a short cadence on a LAN hub multiplies
+// into tens of thousands of fetches per remote per day — the value is
+// surfaced in the startup log so the cost is visible, not buried.
+func parsePushInterval(raw string) (time.Duration, error) {
+	if raw == "" {
+		return 0, nil
+	}
+
+	interval, err := time.ParseDuration(raw)
+	if err != nil || interval <= 0 {
+		return 0, fmt.Errorf("%w, got %q", errNonPositiveTimeout, raw)
+	}
+
+	return interval, nil
+}
+
+// resolvedPushInterval renders the effective push cadence for the startup
+// log: the library default when the environment left it unset, otherwise
+// the configured value.
+func resolvedPushInterval(configured time.Duration) time.Duration {
+	if configured != 0 {
+		return configured
+	}
+
+	return dashboard.DefaultPushInterval
 }
 
 func main() {
@@ -120,6 +158,10 @@ func run() error {
 		optionsFromEnv()...,
 	)
 
+	if cfg.pushInterval != 0 {
+		opts = append(opts, dashboard.WithPushInterval(cfg.pushInterval))
+	}
+
 	dash := dashboard.New(fed, opts...)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -137,11 +179,12 @@ func run() error {
 	addr := envOrDefault(addrEnvVar, ":"+envOrDefault(portEnvVar, defaultPort))
 
 	log.Printf(
-		"health-hub: serving /health on %s (build %s, %d remotes, fetch timeout %s)",
+		"health-hub: serving /health on %s (build %s, %d remotes, fetch timeout %s, push interval %s)",
 		logSafe(addr),
 		version.Version,
 		len(cfg.remotes),
 		cfg.fetchExpiry,
+		resolvedPushInterval(cfg.pushInterval),
 	)
 
 	logRemotes(cfg.remotes)
