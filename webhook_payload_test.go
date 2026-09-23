@@ -79,6 +79,43 @@ func TestWebhookPayload_PublicModeMasksNames(t *testing.T) {
 	})
 }
 
+// TestWebhookPayload_ShuttingDownTrue pins the true branch of the
+// shutting-down flag at wire level: the payload carries
+// `"shutting_down":true` as a real JSON bool (the false branch rides the
+// wire too — jsonv2 omitempty keeps false bools — and is pinned via
+// assertWebhookTopLevelKeys above).
+func TestWebhookPayload_ShuttingDownTrue(t *testing.T) {
+	t.Parallel()
+
+	notifier := newWebhookNotifier(Config{WebhookURL: webhookPinHookURL})
+
+	resp := health.Response{
+		Status:       health.StatusFail,
+		ShuttingDown: true,
+		Checks: map[string]health.Check{
+			"db": {Status: health.StatusFail, Error: "connection refused"},
+		},
+	}
+
+	body, err := json.Marshal(notifier.buildPayload(resp), json.Deterministic(true))
+	if err != nil {
+		t.Fatalf("marshal webhook payload: %v", err)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		t.Fatalf("unmarshal webhook payload %s: %v", body, err)
+	}
+
+	flag, ok := decoded["shutting_down"].(bool)
+	if !ok {
+		t.Fatalf("shutting_down missing or not a JSON bool in payload %s", body)
+	}
+	if !flag {
+		t.Errorf("shutting_down = false, want true when the response carries the shutdown overlay (%s)", body)
+	}
+}
+
 func assertWebhookWireShape(
 	t *testing.T,
 	payload webhookPayload,
