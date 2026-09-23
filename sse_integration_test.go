@@ -1,7 +1,6 @@
 package dashboard_test
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -13,9 +12,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/larsartmann/go-sse/ssetest"
+	"github.com/samber/do/v2"
+
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
-	"github.com/samber/do/v2"
 )
 
 // toggleService is a test service whose health can be toggled at runtime.
@@ -41,35 +42,27 @@ func provideToggleService(i do.Injector, name string, svc *toggleService) {
 	}
 }
 
-// sseStream wraps a response body reader into a channel of SSE events.
-// A single goroutine reads from the body, eliminating reader-level races.
+// sseStream wraps a response body into a channel of decoded SSE events.
+// A single goroutine parses the wire format with ssetest's WHATWG-conformant
+// reader, eliminating reader-level races.
 type sseStream struct {
-	events chan string
+	events chan ssetest.Event
 }
 
 func newSSEStream(body io.Reader) *sseStream {
-	s := &sseStream{events: make(chan string, 32)}
+	s := &sseStream{events: make(chan ssetest.Event, 32)}
 
 	go func() {
 		defer close(s.events)
-		reader := bufio.NewReader(body)
-		var lines []string
+		reader := ssetest.NewStreamReader(body)
 
 		for {
-			line, err := reader.ReadString('\n')
+			evt, err := reader.Next()
 			if err != nil {
 				return
 			}
 
-			line = strings.TrimRight(line, "\r\n")
-			if line == "" {
-				s.events <- strings.Join(lines, "\n")
-				lines = nil
-
-				continue
-			}
-
-			lines = append(lines, line)
+			s.events <- evt
 		}
 	}()
 
@@ -80,9 +73,9 @@ func newSSEStream(body io.Reader) *sseStream {
 // expires. Calls t.Fatal on timeout.
 func (s *sseStream) waitFor(
 	t *testing.T,
-	predicate func(string) bool,
+	predicate func(ssetest.Event) bool,
 	timeout time.Duration,
-) string {
+) ssetest.Event {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
 
@@ -172,12 +165,16 @@ func connectSSE(t *testing.T, server *httptest.Server) (*http.Response, *sseStre
 	return resp, newSSEStream(resp.Body)
 }
 
-func isHealthyEvent(s string) bool {
-	return strings.Contains(s, "All Systems Operational") || strings.Contains(s, `"pass"`)
+func isHealthyEvent(evt ssetest.Event) bool {
+	data := evt.Data()
+
+	return strings.Contains(data, "All Systems Operational") || strings.Contains(data, `"pass"`)
 }
 
-func isUnhealthyEvent(s string) bool {
-	return strings.Contains(s, "Unhealthy") || strings.Contains(s, `"fail"`)
+func isUnhealthyEvent(evt ssetest.Event) bool {
+	data := evt.Data()
+
+	return strings.Contains(data, "Unhealthy") || strings.Contains(data, `"fail"`)
 }
 
 // --- T4: SSE change-detection integration tests ---.
@@ -223,9 +220,9 @@ func TestSSE_PushAlways_BroadcastsEveryTick(t *testing.T) {
 	defer func() { _ = resp.Body.Close() }()
 
 	// PushAlways: initial + at least 2 more ticks.
-	stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
-	stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
-	stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+	stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
+	stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
+	stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 }
 
 func TestSSE_PushOnChange_DetectsRecovery(t *testing.T) {
@@ -296,10 +293,12 @@ func TestSSE_PatchCarriesCheckMetadata(t *testing.T) {
 	// zero-proven health-washing warning. Waiting for a SECOND matching
 	// event proves broadcast patches (not only the connect-time snapshot)
 	// carry the view content.
-	carriesMetadata := func(evt string) bool {
-		return strings.Contains(evt, "since ") &&
-			strings.Contains(evt, "42ms") &&
-			strings.Contains(evt, "has ever deviated from pass")
+	carriesMetadata := func(evt ssetest.Event) bool {
+		data := evt.Data()
+
+		return strings.Contains(data, "since ") &&
+			strings.Contains(data, "42ms") &&
+			strings.Contains(data, "has ever deviated from pass")
 	}
 
 	stream.waitFor(t, carriesMetadata, 2*time.Second)
@@ -350,7 +349,7 @@ func TestWithMaxSSEConnections_ZeroAllowsUnlimited(t *testing.T) {
 			t.Fatalf("client %d: want 200, got %d", len(open), resp.StatusCode)
 		}
 
-		stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+		stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 		open = append(open, sseClient{resp: resp, stream: stream})
 	}
 
@@ -420,7 +419,7 @@ func TestSSE_ProbeNotStarted_ServesDegradedRender(t *testing.T) {
 	resp, stream := connectSSE(t, server)
 	defer func() { _ = resp.Body.Close() }()
 
-	stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+	stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 }
 
 // SSE patches replace the health region via inner HTML — they must never
@@ -445,9 +444,9 @@ func TestSSE_PatchContentHasNoInlineStyles(t *testing.T) {
 	defer func() { _ = resp.Body.Close() }()
 
 	for range 3 {
-		evt := stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
-		if strings.Contains(evt, "style=") {
-			t.Errorf("SSE patch contains an inline style attribute:\n%.500s", evt)
+		evt := stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
+		if strings.Contains(evt.Data(), "style=") {
+			t.Errorf("SSE patch contains an inline style attribute:\n%.500s", evt.Data())
 		}
 	}
 }
@@ -519,7 +518,7 @@ func TestSSE_ShutdownClosesConnections(t *testing.T) {
 	server := httptest.NewServer(mux)
 
 	resp, stream := connectSSE(t, server)
-	stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+	stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 
 	dash.Shutdown()
 
@@ -624,11 +623,11 @@ func TestSSE_MultipleClientsReceiveBroadcasts(t *testing.T) {
 
 	resp1, stream1 := connectSSE(t, server)
 	defer func() { _ = resp1.Body.Close() }()
-	stream1.waitFor(t, func(string) bool { return true }, 2*time.Second)
+	stream1.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 
 	resp2, stream2 := connectSSE(t, server)
 	defer func() { _ = resp2.Body.Close() }()
-	stream2.waitFor(t, func(string) bool { return true }, 2*time.Second)
+	stream2.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 
 	// Toggle to unhealthy — both clients should receive the change.
 	svc.healthy.Store(false)
@@ -654,7 +653,7 @@ func TestSSE_ConnectionLimitRejectsExcessClients(t *testing.T) {
 	// First client connects successfully.
 	resp1, stream1 := connectSSE(t, server)
 	defer func() { _ = resp1.Body.Close() }()
-	stream1.waitFor(t, func(string) bool { return true }, 2*time.Second)
+	stream1.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 
 	// Second client should be rejected with 503.
 	resp2, err := http.Get(server.URL + "/health/sse")
@@ -686,7 +685,7 @@ func TestSSE_SubscriberCount_TracksConnections(t *testing.T) {
 
 	resp1, stream1 := connectSSE(t, server)
 	defer func() { _ = resp1.Body.Close() }()
-	stream1.waitFor(t, func(string) bool { return true }, 2*time.Second)
+	stream1.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 
 	if count := dash.SubscriberCount(); count != 1 {
 		t.Fatalf("after 1 client: want 1, got %d", count)
@@ -694,7 +693,7 @@ func TestSSE_SubscriberCount_TracksConnections(t *testing.T) {
 
 	resp2, stream2 := connectSSE(t, server)
 	defer func() { _ = resp2.Body.Close() }()
-	stream2.waitFor(t, func(string) bool { return true }, 2*time.Second)
+	stream2.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 
 	if count := dash.SubscriberCount(); count != 2 {
 		t.Fatalf("after 2 clients: want 2, got %d", count)
@@ -731,7 +730,7 @@ func TestSSE_HeartbeatInterval_SendsKeepalive(t *testing.T) {
 	resp, stream := connectSSE(t, server)
 	defer func() { _ = resp.Body.Close() }()
 
-	stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+	stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 
 	stream.waitFor(t, func(s string) bool {
 		return strings.Contains(s, ": heartbeat")
@@ -779,11 +778,9 @@ func TestWithRetryInterval_EventsCarryRetry(t *testing.T) {
 	resp, stream := connectSSE(t, server)
 	defer func() { _ = resp.Body.Close() }()
 
-	evt := stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+	evt := stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 
-	if !strings.Contains(evt, "retry: 2000") {
-		t.Errorf("SSE event should contain 'retry: 2000', got:\n%s", evt)
-	}
+	ssetest.RequireRetry(t, evt, 2000)
 }
 
 func TestWithRetryInterval_DefaultOmitsRetryField(t *testing.T) {
@@ -799,14 +796,9 @@ func TestWithRetryInterval_DefaultOmitsRetryField(t *testing.T) {
 	resp, stream := connectSSE(t, server)
 	defer func() { _ = resp.Body.Close() }()
 
-	evt := stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+	evt := stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 
-	if strings.Contains(evt, "retry:") {
-		t.Errorf(
-			"SSE event should NOT contain 'retry:' when WithRetryInterval is zero, got:\n%s",
-			evt,
-		)
-	}
+	ssetest.RequireRetry(t, evt, 0)
 }
 
 // --- Reconnection tests ---.
@@ -879,7 +871,7 @@ func TestSSE_PatchesContainNoInlineScripts(t *testing.T) {
 	defer func() { _ = resp.Body.Close() }()
 
 	for range 3 {
-		evt := stream.waitFor(t, func(string) bool { return true }, 2*time.Second)
+		evt := stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
 		if strings.Contains(strings.ToLower(evt), "<script") {
 			t.Errorf(
 				"SSE patch must not contain <script> tags (CSP-safe inner-HTML), got:\n%s",
