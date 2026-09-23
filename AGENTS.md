@@ -147,8 +147,10 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   seed tests in plain `go test`; fuzz properly with `GOEXPERIMENT=jsonv2 go test
   -fuzz <Target> -fuzztime 60s <pkg-dir>` (cmd targets take their package
   directory, e.g. `./cmd/health-hub`). New fuzz target ⇒ `fuzz.yml` + this file
-  updated in the SAME change (the registry rule the UI pin guard already teaches).
-- Browser tests need Chrome: the devShell provides it (`GO_HEALTH_DASHBOARD_CHROME` is set to nix chromium), so `nix develop -c go test -run TestBrowser` just works; CI installs Chrome in the browser job. Screenshot capture additionally needs `SCREENSHOT_OUTPUT=docs/screenshot.png`.
+  updated in the SAME change — mechanized as `pre-push-checks.sh` check 5
+  (registry diff + per-package placement) since 2026-09-23.
+- Browser tests need Chrome: the devShell provides it (`GO_HEALTH_DASHBOARD_CHROME` is set to nix chromium), so `nix develop -c go test -run TestBrowser` just works; CI installs Chrome in the browser job. Screenshot capture additionally needs `SCREENSHOT_OUTPUT=docs/screenshot.png`. Chrome-launch latency is measured by the env-guarded `TestMeasureChromeLaunchLatency` (run it ISOLATED with `GO_HEALTH_DASHBOARD_MEASURE_CHROME=1`); ~155ms/launch vs the 45s timeout, verdict recorded in `docs/research/2026-09-10_benchmarks.md` (M91, 2026-09-23).
+- Load harness: `TestLoad_Aggregate20Sources` (`LOADTEST=1`) is env-parameterized since 2026-09-23 (`LOADTEST_SOURCES/CHECKS/CLIENTS/SCRAPERS/SCRAPES/DURATION/PUSH`); the research docs carry the 2026-09-23 evidence-era re-runs.
 - Lifecycle tests in `lifecycle_test.go`: `HealthCheck` before/after Start/Shutdown, `Register` participation in `do.HealthCheck`/`do.Shutdown` cascades, idempotent `Shutdown`.
 - Benchmarks: `BenchmarkHandler_HTMLRendering`.
 
@@ -200,7 +202,23 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   pattern: any value read from an environment variable that reaches a route
   or a log line gets validated/normalized first (log-injection defense).
   Copy it for new `DEMO_*` toggles and for library code absorbing example
-  logic.
+  logic. The hub's `HEALTH_HUB_PUSH_INTERVAL` (2026-09-23) follows it:
+  every pusher tick is a merge-on-read fetch per remote, so the cadence is
+  validated up front and the effective value lands in the startup log.
+- **The devShell banner prints to stderr** — since 2026-09-23 the
+  flake.nix `shellHook` echoes to fd 2 so `nix develop -c <tool>` stdout
+  stays parseable; scripts that exec `go` self-select the right toolchain
+  by probing a cheap module load and falling back to `nix develop -c go`
+  (see `check-ui-pins.sh` `go_list`) — the old "run these scripts from
+  inside the devShell" requirement is retired.
+- **Deploy stack facts live in deploy/README.md** — the compose stack is
+  digest-pinned, healthcheck-gated (Grafana waits on Prometheus
+  `/-/ready`), boots end to end (verified 2026-09-23, screenshot in
+  `docs/screenshot-grafana.png`), and the provisioned alert example takes
+  `relativeTimeRange` as integer SECONDS, not duration strings. Host ports
+  8080/9090/3000 collide with other projects on this machine — remap via a
+  compose override with `!override` port lists (plain overrides MERGE and
+  still bind the taken port).
 - **go-health marks non-critical failing checks `warn`, not `fail`** — only critical services produce `fail` per-check statuses (and overall fail). `setupDashboardWithFailures` yields cache/queue `warn` checks with overall `warn`; metrics tests assert accordingly.
 - **Parallel-session handshake (2026-09-17: two sessions, one tree)** —
   before ANY write: `git log --oneline -10`, `ls docs/status/ | tail`,
@@ -249,11 +267,16 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **erraudit blank-identifier policy** — response-writer discards are
   centralized in `writeBody` (handlers.go) with ONE reasoned
   `//nolint:erraudit`, instead of a suppression per call site.
-  `strings.Cut` blank identifiers are a known erraudit false positive
-  (the rule matches any `_, _ =` multi-return, not just errors) —
-  suppress with a reason, never restructure working code to appease it.
-  `//nolint:erraudit // reason` is the sanctioned form and
-  `erraudit nolint-audit` flags stale directives.
+  RE-VERIFIED 2026-09-23 (erraudit 1c6809a): the old "strings.Cut blank
+  identifiers are a false positive" claim no longer reproduces — the
+  analyzer fires nothing on those sites, so the status.go directive was
+  removed (docs/upstream/erraudit-nolint-audit-pattern-noop-issue-draft.md
+  records the verification AND a real remaining bug: `nolint-audit`
+  reports a directive as NEEDED even when the analyzer produces no
+  finding there, and `nolint-audit ./...` silently answers "no
+  directives" while `.` finds them). `//nolint:erraudit // reason` stays
+  the sanctioned form; strip a directive only after a strip-and-rerun
+  proves it suppresses nothing.
 - **go-structure-linter is skip-gated until the fleet bump** — the step is
   off in `.buildflow.yml` because BuildFlow pins go-structure-linter
   v0.10.0, whose SDK `Lint()` does not call `LoadProjectConfig`: the
@@ -390,7 +413,10 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.2.0 in go.mod). The dashboar
   module graph requires `go 1.27.1` — the fleet normalize step's `go 1.27` downgrade breaks
   every module load (see Gotchas). `cmd/health-hub` is the hub made
   runnable: `HEALTH_HUB_REMOTES` (validated `name=url` pairs, redacted in logs),
-  `HEALTH_HUB_TIMEOUT`, `HEALTH_HUB_TREND`, `HEALTH_HUB_METRICS`, and
+  `HEALTH_HUB_TIMEOUT`, `HEALTH_HUB_TREND`, `HEALTH_HUB_METRICS`,
+  `HEALTH_HUB_PUSH_INTERVAL` (SSE push cadence; every tick fetches each
+  remote once, so a LAN hub at the 2s default costs ~43k fetches/remote/day —
+  the startup log prints the effective interval), and
   `HEALTH_HUB_ADDR` (full listen address — loopback binds for reverse-proxy
   deployments; `PORT` is the simple fallback). The flake exposes
   `packages.health-hub` (buildGoModule, `go_1_27`, templ preBuild, ldflags version

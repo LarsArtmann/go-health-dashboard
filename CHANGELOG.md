@@ -17,11 +17,58 @@ forgetting.
 
 ### Added
 
-- Nothing yet.
+- `HEALTH_HUB_PUSH_INTERVAL` for the `health-hub` binary: the SSE push
+  cadence is now environment-configurable (default stays the library's 2s).
+  Every pusher tick fetches each federation remote once, so the startup log
+  now prints the effective interval alongside the fetch timeout. The library
+  exports `DefaultPushInterval` so consumers can log the default without
+  duplicating the constant.
+- `docs/metrics.md`: consumer-facing reference for every exported metric
+  (names, types, labels, histogram buckets, the status-encoding rationale,
+  and the cardinality guarantee that labels are bounded by configuration,
+  never traffic).
+- `deploy/README.md`: ports, provisioning layout, anonymous-viewer security
+  posture, teardown, and the boot-verification history for the demo stack.
+- Provisioned Grafana threshold-alert example
+  (`deploy/grafana/provisioning/alerting/dashboard-down-alert.yaml.example`),
+  live-verified against a failing probe before being made inert.
+- A nightly `release-check.yml` workflow verifying every tag has a GitHub
+  Release page (catches a missed `gh release create` mechanically).
+- `scripts/set-tag-protection.sh`: rulesets-as-code for
+  `protect-release-tags` — name-resolved, idempotent create-or-update, with
+  a read-only `--check` that verified the live ruleset byte-for-byte.
+- Gate coverage: `pre-push-checks.sh` now diffs `fuzz.yml`'s `-fuzz` steps
+  against the actual `Fuzz*` definitions (including per-package placement)
+  and rejects any bare `templ generate` / `pkgs.templ` invocation in
+  flake/CI/scripts; CI's build job runs `shellcheck` over all gate scripts.
+- Package-doc examples for the two most-asked option combinations:
+  webhook + public mode, and `WithBasePath` sub-path mounting.
+
+### Changed
+
+- The devShell banner prints to stderr, keeping `nix develop -c <tool>`
+  stdout parseable; `check-ui-pins.sh` self-selects the correct Go (probe
+  plus devShell fallback) instead of requiring a devShell-internal run.
+- `verify-dep-bump.sh` reads the coverage floor from `ci.yml` (single
+  source), retries the fmt dirty-tree check once to ride out auto-daemon
+  races, and runs the coverage parse through `nix develop -c`.
+- The compose demo stack digest-pins its images (dependabot `docker`
+  ecosystem entries for `/` and `/deploy`), gates Grafana on a Prometheus
+  readiness healthcheck, and its Dockerfile base now matches go.mod's
+  1.27.1 floor.
 
 ### Fixed
 
-- Nothing yet.
+- The compose stack had never been booted since the Go floor moved: the
+  Dockerfile's `golang:1.26` base failed `go mod download` against the
+  1.27.1 requirement. First full e2e boot now passes (live scrape, all 8
+  panels rendering, screenshot in `docs/screenshot-grafana.png`).
+- The load-test fixture is env-parameterized
+  (`LOADTEST_SOURCES/CHECKS/CLIENTS/SCRAPERS/SCRAPES/DURATION/PUSH`);
+  re-runs on the current render recorded in the research docs.
+- CI's version-guard grep is pinned by a unit test
+  (`TestVersionConst_MatchesCIGrep`), and the `shutting_down:true` webhook
+  branch is wire-pinned.
 
 ## [0.10.1] - 2026-09-22
 
