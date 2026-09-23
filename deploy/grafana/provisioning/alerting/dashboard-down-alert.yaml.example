@@ -1,0 +1,71 @@
+# Worked example of a provisioned Grafana alert for the demo dashboard.
+#
+# Grafana only loads *.yaml / *.yml from this alerting directory, so this
+# file is deliberately inert (.yaml.example). To activate the alert, copy
+# it to dashboard-down-alert.yaml and restart the stack:
+#
+#   cp dashboard-down-alert.yaml.example dashboard-down-alert.yaml
+#   docker compose -f deploy/docker-compose.yml restart grafana
+#
+# The rule fires when the demo dashboard's overall-health gauge drops
+# below 1 for one full minute — i.e. the monitored service stopped
+# passing. It is the smallest useful threshold alert over
+# docs/metrics.md's contract; the same shape extends to
+# dashboard_pusher_active < 1 (stale page) or NoDataExpression
+# (scrape target dark).
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: go-health-dashboard-demo
+    folder: go-health-dashboard
+    interval: 1m
+    rules:
+      - uid: dashboard-health-up-zero
+        title: go-health-dashboard is not passing
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 5m
+              to: 0s
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: min(dashboard_health_up)
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: true
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [1]
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                name: Expression
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              type: classic_conditions
+        for: 1m
+        annotations:
+          summary: >-
+            dashboard_health_up has been below 1 for over a minute — the
+            overall health status is no longer pass (warn/fail, shutdown
+            overlay, or scrape dark).
+        labels:
+          severity: warning

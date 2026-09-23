@@ -28,3 +28,15 @@ updates:
       actions:
         patterns:
           - "*"
+  # Demo-stack supply chain: the digest-pinned prometheus/grafana images
+  # (and the root Dockerfile base) bump via proposal, never silently.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: docker
+    directory: /deploy
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
