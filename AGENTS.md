@@ -186,7 +186,15 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **Two datastar packages** — `github.com/larsartmann/templ-components/datastar` (UI components: LiveRegion, SDKScript) and `github.com/larsartmann/go-datastar` (SSE protocol: ElementsFromTempl, WithModeInner). Import the latter as `dstar` to avoid name collision. A third package, `github.com/larsartmann/go-datastar/static`, embeds the real SDK JS bundle — use it in tests for hermetic browser runs.
 - **Datastar SDK requires `script-src 'unsafe-eval'`** — the SDK compiles `data-*` expressions with the `Function` constructor. Under a strict CSP without it, the bundle throws `Error: GenerateExpression` during init and the SSE connection never opens (discovered by `browser_test.go`). Nonce-based script delivery still works; styles stay clean with `WithCSSPath`.
 - **Headless Chrome must be launched manually in tests** — this machine's Chromium binds the DevTools listener to IPv6 `[::1]` and never announces a websocket with `--remote-debugging-port=0`. `startHeadlessChrome` (browser_test.go) picks a concrete free port, parses the `DevTools listening on ...` stderr line, and hands it to `chromedp.NewRemoteAllocator`. The profile dir is removed with a bounded retry because renderer children outlive the browser process.
-- **Bisect wall `071c251..HEAD`** — five auto-daemon mid-edit commits do not compile (immutable history); `git bisect skip` them. Root cause class: the daemon snapshots half-wired trees — run `go build ./...` before walking away. Full audit: `docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
+- **Bisect wall `071c251..HEAD`** — 5+19 auto-daemon mid-edit commits do not
+  compile (immutable history); `git bisect skip` them (list in the audit
+  doc's 2026-09-23 extension). Two classes: torn-tree carriers, and the
+  2026-09-22+ go-directive-sweep tears ("updates to go.mod needed"). Root
+  cause class: the daemon snapshots half-wired trees — run
+  `go build ./...` before walking away. Full audit:
+  `docs/status/archived/2026-09-04_19-15_bisectability-audit.md` (re-run
+  the extension's pinned-toolchain method — the ambient go now
+  false-fails every post-bump commit).
 - **UI dependencies are pinned and guarded** — templ-components v1.18.0 + go-datastar v0.5.0, re-audited 2026-09-18 with a green browser suite (the 2026-09-10 v1.16.0 audit retired the axe `definition-list`/`dlitem` tolerance in `TestBrowser_Accessibility` after upstream templ-components#6 was fixed; the audit now fails on any serious/critical violation, both themes). Undocumented sweeps have landed seven times (v1.18.0 arrived as an unguarded deps commit, 2026-09-18); `scripts/check-ui-pins.sh` (CI Build+Test steps) fails loudly on any movement. UI bumps require a dedicated change with a green browser suite — the unit suite cannot see these regressions — and the guard pins must be updated IN THE SAME CHANGE as any bump (a bump without its guard update leaves CI red). Script-emitting upstream components (CopyButton, Tooltip) are vetted for nonce/CSP compatibility before adoption: per-element inline scripts and unconditional `nonce=""` attributes clash with the per-request-nonce and SSE-patch paths here.
 - **Datastar v1.0 attribute names are colon-keyed** — the SDK (pinned
   v0.5.0 bundle) registers plugins by name and splits keys on `:`:
