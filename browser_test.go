@@ -584,8 +584,6 @@ func TestBrowser_Accessibility(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	browserStaticHandlers(t, s)
-
 	s.mux.HandleFunc("/static/axe.js", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/javascript")
 		_, _ = w.Write(axeBytes)
@@ -1484,7 +1482,7 @@ func TestBrowser_RetryAlwaysRidesOutMaxConnections(t *testing.T) {
 	defer s.cleanup()
 
 	bs := startBrowserSession(t, s, nonce)
-	ctx, errLog := bs.ctx, bs.errLog
+	errLog := bs.errLog
 
 	waitForSubscriber(t, s.dash)
 
@@ -1868,13 +1866,13 @@ func TestBrowser_RetryReconnectAfterLifetimeClose(t *testing.T) {
 		dashboard.WithPushMode(dashboard.PushAlways),
 		dashboard.WithRetryInterval(200*time.Millisecond),
 		dashboard.WithMaxConnectionLifetime(500*time.Millisecond),
-)
-defer s.cleanup()
+	)
+	defer s.cleanup()
 
-bs := startBrowserSession(t, s, "")
-ctx, errLog := bs.ctx, bs.errLog
+	bs := startBrowserSession(t, s, "")
+	errLog := bs.errLog
 
-waitForSubscriber(t, s.dash)
+	waitForSubscriber(t, s.dash)
 
 	// The lifetime cap closes the stream ~500ms in; the SDK must
 	// reconnect after its 200ms retry and resume streaming. Subscriber
