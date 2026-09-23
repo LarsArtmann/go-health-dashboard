@@ -26,8 +26,8 @@ groups:
         data:
           - refId: A
             relativeTimeRange:
-              from: 5m
-              to: 0s
+              from: 300 # provisioned alerts take SECONDS (int), not "5m"
+              to: 0
             datasourceUid: prometheus
             model:
               editorMode: code
