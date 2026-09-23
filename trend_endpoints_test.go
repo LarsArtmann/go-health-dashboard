@@ -340,7 +340,11 @@ func startByteStableScrapeTarget(t *testing.T, path, label string) *http.ServeMu
 // assertScrapeIsByteStable fetches path twice and fails unless both
 // payloads are byte-identical. Returns the first scrape for further
 // assertions.
-func assertScrapeIsByteStable(t *testing.T, mux *http.ServeMux, path string) *httptest.ResponseRecorder {
+func assertScrapeIsByteStable(
+	t *testing.T,
+	mux *http.ServeMux,
+	path string,
+) *httptest.ResponseRecorder {
 	t.Helper()
 
 	first := doRequest(t, mux, path)

@@ -205,11 +205,13 @@ func strictCSPMiddleware(nonce string, next http.Handler) http.Handler {
 // the first tab's execution context and cancel (for tests that release the
 // tab mid-test), and that tab's console-error log.
 type browserSession struct {
-	server   *httptest.Server
+	server *httptest.Server
+	//nolint:containedctx // a chromedp session IS a pair of contexts: the allocator and the tab
 	allocCtx context.Context
-	ctx      context.Context
-	cancel   context.CancelFunc
-	errLog   *browserErrorLog
+	//nolint:containedctx // the first tab's execution context, exposed for per-test assertions
+	ctx    context.Context
+	cancel context.CancelFunc
+	errLog *browserErrorLog
 }
 
 // browserRunTimeout bounds every chromedp operation; individual waits in
@@ -232,10 +234,15 @@ func startBrowserSession(t *testing.T, s *probeSetup, cspNonce string) *browserS
 // startBrowserSessionOn is startBrowserSession for tests that serve a
 // wrapped handler (proxied SSE, a custom mux) instead of the raw dashboard
 // mux.
-func startBrowserSessionOn(t *testing.T, dash *dashboard.Dashboard, next http.Handler, cspNonce string) *browserSession {
+func startBrowserSessionOn(
+	t *testing.T,
+	dash *dashboard.Dashboard,
+	next http.Handler,
+	cspNonce string,
+) *browserSession {
 	t.Helper()
 
-	var handler http.Handler = next
+	handler := next
 	if cspNonce != "" {
 		handler = strictCSPMiddleware(cspNonce, next)
 	}
@@ -294,8 +301,8 @@ func TestBrowser_CSPCleanRuntime(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	bs := startBrowserSession(t, s, nonce)
-	ctx, errLog := bs.ctx, bs.errLog
+	session := startBrowserSession(t, s, nonce)
+	ctx, errLog := session.ctx, session.errLog
 
 	deadline := time.Now().Add(15 * time.Second)
 	for s.dash.SubscriberCount() == 0 {
@@ -477,8 +484,8 @@ func TestBrowser_LiveSSEPatch(t *testing.T) {
 	}
 	defer dash.Shutdown()
 
-	bs := startBrowserSessionOn(t, dash, mux, nonce)
-	ctx, errLog := bs.ctx, bs.errLog
+	session := startBrowserSessionOn(t, dash, mux, nonce)
+	ctx, errLog := session.ctx, session.errLog
 
 	waitForSubscriber(t, dash)
 
@@ -589,8 +596,8 @@ func TestBrowser_Accessibility(t *testing.T) {
 		_, _ = w.Write(axeBytes)
 	})
 
-	bs := startBrowserSession(t, s, "")
-	ctx, errLog := bs.ctx, bs.errLog
+	session := startBrowserSession(t, s, "")
+	ctx, errLog := session.ctx, session.errLog
 
 	waitForSubscriber(t, s.dash)
 
@@ -814,8 +821,8 @@ func TestBrowser_KeyboardNavigation(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	bs := startBrowserSession(t, s, "")
-	ctx, errLog := bs.ctx, bs.errLog
+	session := startBrowserSession(t, s, "")
+	ctx, errLog := session.ctx, session.errLog
 
 	waitForSubscriber(t, s.dash)
 
@@ -897,8 +904,8 @@ func TestBrowser_MetricsUnderStrictCSP(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	bs := startBrowserSession(t, s, "")
-	ctx, errLog := bs.ctx, bs.errLog
+	session := startBrowserSession(t, s, "")
+	ctx, errLog := session.ctx, session.errLog
 
 	waitForSubscriber(t, s.dash)
 
@@ -981,8 +988,8 @@ func TestBrowser_AggregateCSPClean(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	bs := startBrowserSession(t, s, "")
-	ctx, errLog := bs.ctx, bs.errLog
+	session := startBrowserSession(t, s, "")
+	ctx, errLog := session.ctx, session.errLog
 
 	if dash := s.dash; dash.SubscriberCount() == 0 {
 		deadline := time.Now().Add(20 * time.Second)
@@ -1063,8 +1070,8 @@ func TestBrowser_CollapseInteract(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	bs := startBrowserSession(t, s, nonce)
-	ctx, errLog := bs.ctx, bs.errLog
+	session := startBrowserSession(t, s, nonce)
+	ctx, errLog := session.ctx, session.errLog
 
 	waitForSubscriber(t, s.dash)
 	time.Sleep(250 * time.Millisecond) // allow the initial SSE patch to apply
@@ -1135,8 +1142,8 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	bs := startBrowserSession(t, s, nonce)
-	ctx, errLog := bs.ctx, bs.errLog
+	session := startBrowserSession(t, s, nonce)
+	ctx, errLog := session.ctx, session.errLog
 
 	waitForSubscriber(t, s.dash)
 	time.Sleep(250 * time.Millisecond) // allow the initial SSE patch to apply
@@ -1206,7 +1213,7 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 	}
 
 	// A full reload must also honor the stored state.
-	if err := chromedp.Run(ctx, chromedp.Navigate(bs.server.URL+"/health")); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Navigate(session.server.URL+"/health")); err != nil {
 		t.Fatalf("browser reload: %v", err)
 	}
 
@@ -1232,8 +1239,8 @@ func TestBrowser_FilterInteract(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	bs := startBrowserSession(t, s, nonce)
-	ctx, errLog := bs.ctx, bs.errLog
+	session := startBrowserSession(t, s, nonce)
+	ctx, errLog := session.ctx, session.errLog
 
 	waitForSubscriber(t, s.dash)
 
@@ -1349,8 +1356,8 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 		s.mux.ServeHTTP(w, r)
 	})
 
-	bs := startBrowserSessionOn(t, s.dash, proxied, nonce)
-	ctx, errLog := bs.ctx, bs.errLog
+	session := startBrowserSessionOn(t, s.dash, proxied, nonce)
+	ctx, errLog := session.ctx, session.errLog
 
 	waitForSubscriber(t, s.dash)
 
@@ -1481,8 +1488,8 @@ func TestBrowser_RetryAlwaysRidesOutMaxConnections(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	bs := startBrowserSession(t, s, nonce)
-	errLog := bs.errLog
+	session := startBrowserSession(t, s, nonce)
+	errLog := session.errLog
 
 	waitForSubscriber(t, s.dash)
 
@@ -1490,12 +1497,12 @@ func TestBrowser_RetryAlwaysRidesOutMaxConnections(t *testing.T) {
 		t.Fatalf("connection limit 1: want exactly 1 subscriber, got %d", s.dash.SubscriberCount())
 	}
 
-	tabB, cancelB := chromedp.NewContext(bs.allocCtx)
+	tabB, cancelB := chromedp.NewContext(session.allocCtx)
 	defer cancelB()
 
 	errLogB := watchBrowserErrors(tabB)
 
-	if err := chromedp.Run(tabB, chromedp.Navigate(bs.server.URL+"/health")); err != nil {
+	if err := chromedp.Run(tabB, chromedp.Navigate(session.server.URL+"/health")); err != nil {
 		t.Fatalf("tab B navigate: %v", err)
 	}
 
@@ -1509,7 +1516,7 @@ func TestBrowser_RetryAlwaysRidesOutMaxConnections(t *testing.T) {
 
 	// Releasing tab A closes its SSE stream; tab B's pending retry should
 	// take the freed slot and render live state.
-	bs.cancel()
+	session.cancel()
 
 	deadline := time.Now().Add(20 * time.Second)
 
@@ -1543,14 +1550,14 @@ func TestBrowser_MobileViewport(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	bs := startBrowserSession(t, s, nonce)
-	ctx, errLog := bs.ctx, bs.errLog
+	session := startBrowserSession(t, s, nonce)
+	ctx, errLog := session.ctx, session.errLog
 
 	// The session's first navigation ran at the default viewport; reload
 	// under mobile emulation before asserting layout.
 	if err := chromedp.Run(ctx,
 		chromedp.EmulateViewport(375, 667),
-		chromedp.Navigate(bs.server.URL+"/health"),
+		chromedp.Navigate(session.server.URL+"/health"),
 	); err != nil {
 		t.Fatalf("browser navigate: %v", err)
 	}
@@ -1614,8 +1621,8 @@ func TestBrowser_KeyboardNewControls(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	bs := startBrowserSession(t, s, nonce)
-	ctx, errLog := bs.ctx, bs.errLog
+	session := startBrowserSession(t, s, nonce)
+	ctx, errLog := session.ctx, session.errLog
 
 	waitForSubscriber(t, s.dash)
 	time.Sleep(250 * time.Millisecond) // let the initial patch settle before focusing
@@ -1675,8 +1682,8 @@ func TestBrowser_KeyboardLinks(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	bs := startBrowserSession(t, s, nonce)
-	ctx, errLog := bs.ctx, bs.errLog
+	session := startBrowserSession(t, s, nonce)
+	ctx, errLog := session.ctx, session.errLog
 
 	waitForSubscriber(t, s.dash)
 	time.Sleep(250 * time.Millisecond) // let the initial patch settle
@@ -1798,8 +1805,8 @@ func TestBrowser_AggregateNewUI(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	bs := startBrowserSession(t, s, nonce)
-	ctx, errLog := bs.ctx, bs.errLog
+	session := startBrowserSession(t, s, nonce)
+	ctx, errLog := session.ctx, session.errLog
 
 	waitForSubscriber(t, s.dash)
 	time.Sleep(250 * time.Millisecond) // let the initial patch settle
@@ -1869,8 +1876,8 @@ func TestBrowser_RetryReconnectAfterLifetimeClose(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	bs := startBrowserSession(t, s, "")
-	errLog := bs.errLog
+	session := startBrowserSession(t, s, "")
+	errLog := session.errLog
 
 	waitForSubscriber(t, s.dash)
 
