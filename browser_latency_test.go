@@ -15,6 +15,8 @@ import (
 // numbers.
 //
 //	nix develop -c go test -run TestMeasureChromeLaunchLatency -v .
+//
+//nolint:paralleltest // isolation IS the measurement: no t.Parallel so parallel browser tests can't launch Chrome concurrently and skew the numbers
 func TestMeasureChromeLaunchLatency(t *testing.T) {
 	if os.Getenv("GO_HEALTH_DASHBOARD_MEASURE_CHROME") == "" {
 		t.Skip("set GO_HEALTH_DASHBOARD_MEASURE_CHROME=1 to measure Chrome launch latency")
@@ -42,7 +44,13 @@ func TestMeasureChromeLaunchLatency(t *testing.T) {
 			maxSeen = launch
 		}
 
-		t.Logf("launch %d/%d: start→announce %s (session overhead %s)", i+1, launches, launch, time.Since(sessionStart)-launch)
+		t.Logf(
+			"launch %d/%d: start→announce %s (session overhead %s)",
+			i+1,
+			launches,
+			launch,
+			time.Since(sessionStart)-launch,
+		)
 
 		stopChrome()
 	}
