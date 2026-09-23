@@ -337,7 +337,7 @@ func groupChecksBySource(checks map[string]health.Check) []checkGroup {
 		source, _, namespaced := strings.Cut(
 			name,
 			"/",
-		) //nolint:erraudit // strings.Cut returns strings and a bool, no error
+		)
 		if !namespaced || source == "" {
 			source = groupTitleServices
 		}
