@@ -285,8 +285,6 @@ func startBrowserSessionOn(t *testing.T, dash *dashboard.Dashboard, next http.Ha
 func TestBrowser_CSPCleanRuntime(t *testing.T) {
 	t.Parallel()
 
-	chromePath := findChrome(t)
-
 	const nonce = "browser-test-nonce"
 
 	s := setupDashboard(t,
@@ -296,28 +294,8 @@ func TestBrowser_CSPCleanRuntime(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	browserStaticHandlers(t, s)
-
-	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser navigate: %v", err)
-	}
+	bs := startBrowserSession(t, s, nonce)
+	ctx, errLog := bs.ctx, bs.errLog
 
 	deadline := time.Now().Add(15 * time.Second)
 	for s.dash.SubscriberCount() == 0 {
@@ -463,8 +441,6 @@ func assertNoBrowserErrors(t *testing.T, log *browserErrorLog) {
 func TestBrowser_LiveSSEPatch(t *testing.T) {
 	t.Parallel()
 
-	chromePath := findChrome(t)
-
 	const nonce = "browser-live-nonce"
 
 	toggle := &toggleService{}
@@ -501,26 +477,8 @@ func TestBrowser_LiveSSEPatch(t *testing.T) {
 	}
 	defer dash.Shutdown()
 
-	server := httptest.NewServer(strictCSPMiddleware(nonce, mux))
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser navigate: %v", err)
-	}
+	bs := startBrowserSessionOn(t, dash, mux, nonce)
+	ctx, errLog := bs.ctx, bs.errLog
 
 	waitForSubscriber(t, dash)
 
@@ -615,8 +573,6 @@ func fetchAxeCore(t *testing.T) []byte {
 func TestBrowser_Accessibility(t *testing.T) {
 	t.Parallel()
 
-	chromePath := findChrome(t)
-
 	axeBytes := fetchAxeCore(t)
 
 	const nonce = "browser-a11y-nonce"
@@ -635,26 +591,8 @@ func TestBrowser_Accessibility(t *testing.T) {
 		_, _ = w.Write(axeBytes)
 	})
 
-	server := httptest.NewServer(s.mux)
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser navigate: %v", err)
-	}
+	bs := startBrowserSession(t, s, "")
+	ctx, errLog := bs.ctx, bs.errLog
 
 	waitForSubscriber(t, s.dash)
 
@@ -869,8 +807,6 @@ func classifyFocusStop(desc string) (bool, bool) {
 func TestBrowser_KeyboardNavigation(t *testing.T) {
 	t.Parallel()
 
-	chromePath := findChrome(t)
-
 	const nonce = "browser-kbd-nonce"
 
 	s := setupDashboard(t,
@@ -880,28 +816,8 @@ func TestBrowser_KeyboardNavigation(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	browserStaticHandlers(t, s)
-
-	server := httptest.NewServer(s.mux)
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser navigate: %v", err)
-	}
+	bs := startBrowserSession(t, s, "")
+	ctx, errLog := bs.ctx, bs.errLog
 
 	waitForSubscriber(t, s.dash)
 
@@ -973,8 +889,6 @@ func TestBrowser_KeyboardNavigation(t *testing.T) {
 func TestBrowser_MetricsUnderStrictCSP(t *testing.T) {
 	t.Parallel()
 
-	chromePath := findChrome(t)
-
 	const nonce = "browser-metrics-nonce"
 
 	s := setupDashboard(t,
@@ -985,28 +899,8 @@ func TestBrowser_MetricsUnderStrictCSP(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	browserStaticHandlers(t, s)
-
-	server := httptest.NewServer(s.mux)
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser navigate: %v", err)
-	}
+	bs := startBrowserSession(t, s, "")
+	ctx, errLog := bs.ctx, bs.errLog
 
 	waitForSubscriber(t, s.dash)
 
@@ -1063,8 +957,6 @@ func TestBrowser_MetricsUnderStrictCSP(t *testing.T) {
 func TestBrowser_AggregateCSPClean(t *testing.T) {
 	t.Parallel()
 
-	chromePath := findChrome(t)
-
 	const nonce = "browser-agg-nonce"
 
 	apiInjector := do.New()
@@ -1091,28 +983,8 @@ func TestBrowser_AggregateCSPClean(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	browserStaticHandlers(t, s)
-
-	server := httptest.NewServer(s.mux)
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser navigate: %v", err)
-	}
+	bs := startBrowserSession(t, s, "")
+	ctx, errLog := bs.ctx, bs.errLog
 
 	if dash := s.dash; dash.SubscriberCount() == 0 {
 		deadline := time.Now().Add(20 * time.Second)
@@ -1180,8 +1052,6 @@ func TestBrowser_AggregateCSPClean(t *testing.T) {
 func TestBrowser_CollapseInteract(t *testing.T) {
 	t.Parallel()
 
-	chromePath := findChrome(t)
-
 	const nonce = "browser-collapse-nonce"
 
 	// PushAlways guarantees patches flow after the manual toggle without
@@ -1195,28 +1065,8 @@ func TestBrowser_CollapseInteract(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	browserStaticHandlers(t, s)
-
-	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser navigate: %v", err)
-	}
+	bs := startBrowserSession(t, s, nonce)
+	ctx, errLog := bs.ctx, bs.errLog
 
 	waitForSubscriber(t, s.dash)
 	time.Sleep(250 * time.Millisecond) // allow the initial SSE patch to apply
@@ -1275,8 +1125,6 @@ func TestBrowser_CollapseInteract(t *testing.T) {
 func TestBrowser_CollapsePersistInteract(t *testing.T) {
 	t.Parallel()
 
-	chromePath := findChrome(t)
-
 	const nonce = "browser-collapse-persist-nonce"
 
 	s := setupDashboardWithHealthyServices(t, 9,
@@ -1289,28 +1137,8 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	browserStaticHandlers(t, s)
-
-	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser navigate: %v", err)
-	}
+	bs := startBrowserSession(t, s, nonce)
+	ctx, errLog := bs.ctx, bs.errLog
 
 	waitForSubscriber(t, s.dash)
 	time.Sleep(250 * time.Millisecond) // allow the initial SSE patch to apply
@@ -1380,7 +1208,7 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 	}
 
 	// A full reload must also honor the stored state.
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Navigate(bs.server.URL+"/health")); err != nil {
 		t.Fatalf("browser reload: %v", err)
 	}
 
@@ -1395,8 +1223,6 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 func TestBrowser_FilterInteract(t *testing.T) {
 	t.Parallel()
 
-	chromePath := findChrome(t)
-
 	const nonce = "browser-filter-nonce"
 
 	s := setupDashboardWithHealthyServices(t, 12,
@@ -1408,28 +1234,8 @@ func TestBrowser_FilterInteract(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	browserStaticHandlers(t, s)
-
-	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser navigate: %v", err)
-	}
+	bs := startBrowserSession(t, s, nonce)
+	ctx, errLog := bs.ctx, bs.errLog
 
 	waitForSubscriber(t, s.dash)
 
@@ -1521,8 +1327,6 @@ func TestBrowser_FilterInteract(t *testing.T) {
 func TestBrowser_ConnectionPill(t *testing.T) {
 	t.Parallel()
 
-	chromePath := findChrome(t)
-
 	const nonce = "browser-pill-nonce"
 
 	var blockSSE atomic.Bool
@@ -1547,26 +1351,8 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 		s.mux.ServeHTTP(w, r)
 	})
 
-	server := httptest.NewServer(strictCSPMiddleware(nonce, proxied))
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 150*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser navigate: %v", err)
-	}
+	bs := startBrowserSessionOn(t, s.dash, proxied, nonce)
+	ctx, errLog := bs.ctx, bs.errLog
 
 	waitForSubscriber(t, s.dash)
 
@@ -1622,7 +1408,7 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 	// without any page reload.
 	blockSSE.Store(false)
 
-	if err := s.dash.Start(runCtx); err != nil {
+	if err := s.dash.Start(t.Context()); err != nil {
 		t.Fatalf("dash restart: %v", err)
 	}
 
@@ -1685,8 +1471,6 @@ func dumpFetchEvents(ctx context.Context) string {
 func TestBrowser_RetryAlwaysRidesOutMaxConnections(t *testing.T) {
 	t.Parallel()
 
-	chromePath := findChrome(t)
-
 	const nonce = "browser-retry-503-nonce"
 
 	s := setupDashboardWithHealthyServices(t, 4,
@@ -1699,28 +1483,8 @@ func TestBrowser_RetryAlwaysRidesOutMaxConnections(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	browserStaticHandlers(t, s)
-
-	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	tabA, cancelA := chromedp.NewContext(allocCtx)
-	defer cancelA()
-
-	errLogA := watchBrowserErrors(tabA)
-
-	if err := chromedp.Run(tabA, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("tab A navigate: %v", err)
-	}
+	bs := startBrowserSession(t, s, nonce)
+	ctx, errLog := bs.ctx, bs.errLog
 
 	waitForSubscriber(t, s.dash)
 
@@ -1728,12 +1492,12 @@ func TestBrowser_RetryAlwaysRidesOutMaxConnections(t *testing.T) {
 		t.Fatalf("connection limit 1: want exactly 1 subscriber, got %d", s.dash.SubscriberCount())
 	}
 
-	tabB, cancelB := chromedp.NewContext(allocCtx)
+	tabB, cancelB := chromedp.NewContext(bs.allocCtx)
 	defer cancelB()
 
 	errLogB := watchBrowserErrors(tabB)
 
-	if err := chromedp.Run(tabB, chromedp.Navigate(server.URL+"/health")); err != nil {
+	if err := chromedp.Run(tabB, chromedp.Navigate(bs.server.URL+"/health")); err != nil {
 		t.Fatalf("tab B navigate: %v", err)
 	}
 
@@ -1747,7 +1511,7 @@ func TestBrowser_RetryAlwaysRidesOutMaxConnections(t *testing.T) {
 
 	// Releasing tab A closes its SSE stream; tab B's pending retry should
 	// take the freed slot and render live state.
-	cancelA()
+	bs.cancel()
 
 	deadline := time.Now().Add(20 * time.Second)
 
@@ -1761,7 +1525,7 @@ func TestBrowser_RetryAlwaysRidesOutMaxConnections(t *testing.T) {
 
 	waitForBodyText(t, tabB, "Healthy")
 
-	assertNoBrowserErrors(t, errLogA)
+	assertNoBrowserErrors(t, errLog)
 	assertNoBrowserErrors(t, errLogB)
 }
 
@@ -1770,8 +1534,6 @@ func TestBrowser_RetryAlwaysRidesOutMaxConnections(t *testing.T) {
 // contains its own overflow), and the content is reachable.
 func TestBrowser_MobileViewport(t *testing.T) {
 	t.Parallel()
-
-	chromePath := findChrome(t)
 
 	const nonce = "browser-mobile-nonce"
 
@@ -1783,28 +1545,14 @@ func TestBrowser_MobileViewport(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	browserStaticHandlers(t, s)
+	bs := startBrowserSession(t, s, nonce)
+	ctx, errLog := bs.ctx, bs.errLog
 
-	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
+	// The session's first navigation ran at the default viewport; reload
+	// under mobile emulation before asserting layout.
 	if err := chromedp.Run(ctx,
 		chromedp.EmulateViewport(375, 667),
-		chromedp.Navigate(server.URL+"/health"),
+		chromedp.Navigate(bs.server.URL+"/health"),
 	); err != nil {
 		t.Fatalf("browser navigate: %v", err)
 	}
@@ -1858,8 +1606,6 @@ func TestBrowser_MobileViewport(t *testing.T) {
 func TestBrowser_KeyboardNewControls(t *testing.T) {
 	t.Parallel()
 
-	chromePath := findChrome(t)
-
 	const nonce = "browser-keyboard-nonce"
 
 	s := setupDashboardWithHealthyServices(t, 9,
@@ -1870,28 +1616,8 @@ func TestBrowser_KeyboardNewControls(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	browserStaticHandlers(t, s)
-
-	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser navigate: %v", err)
-	}
+	bs := startBrowserSession(t, s, nonce)
+	ctx, errLog := bs.ctx, bs.errLog
 
 	waitForSubscriber(t, s.dash)
 	time.Sleep(250 * time.Millisecond) // let the initial patch settle before focusing
@@ -1939,8 +1665,6 @@ func TestBrowser_KeyboardNewControls(t *testing.T) {
 func TestBrowser_KeyboardLinks(t *testing.T) {
 	t.Parallel()
 
-	chromePath := findChrome(t)
-
 	const nonce = "browser-keyboard-links-nonce"
 
 	s := setupDashboardWithFailures(t,
@@ -1953,28 +1677,8 @@ func TestBrowser_KeyboardLinks(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	browserStaticHandlers(t, s)
-
-	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser navigate: %v", err)
-	}
+	bs := startBrowserSession(t, s, nonce)
+	ctx, errLog := bs.ctx, bs.errLog
 
 	waitForSubscriber(t, s.dash)
 	time.Sleep(250 * time.Millisecond) // let the initial patch settle
@@ -2055,8 +1759,6 @@ func TestBrowser_KeyboardLinks(t *testing.T) {
 func TestBrowser_AggregateNewUI(t *testing.T) {
 	t.Parallel()
 
-	chromePath := findChrome(t)
-
 	const nonce = "browser-agg-newui-nonce"
 
 	apiInjector := do.New()
@@ -2098,28 +1800,8 @@ func TestBrowser_AggregateNewUI(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	browserStaticHandlers(t, s)
-
-	server := httptest.NewServer(strictCSPMiddleware(nonce, s.mux))
-	defer server.Close()
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser navigate: %v", err)
-	}
+	bs := startBrowserSession(t, s, nonce)
+	ctx, errLog := bs.ctx, bs.errLog
 
 	waitForSubscriber(t, s.dash)
 	time.Sleep(250 * time.Millisecond) // let the initial patch settle
@@ -2186,35 +1868,13 @@ func TestBrowser_RetryReconnectAfterLifetimeClose(t *testing.T) {
 		dashboard.WithPushMode(dashboard.PushAlways),
 		dashboard.WithRetryInterval(200*time.Millisecond),
 		dashboard.WithMaxConnectionLifetime(500*time.Millisecond),
-	)
-	defer s.cleanup()
+)
+defer s.cleanup()
 
-	browserStaticHandlers(t, s)
+bs := startBrowserSession(t, s, "")
+ctx, errLog := bs.ctx, bs.errLog
 
-	server := httptest.NewServer(s.mux)
-	defer server.Close()
-
-	chromePath := findChrome(t)
-
-	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
-	defer stopChrome()
-
-	runCtx, runCancel := context.WithTimeout(context.Background(), 120*time.Second)
-	defer runCancel()
-
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
-	defer allocCancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	errLog := watchBrowserErrors(ctx)
-
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
-		t.Fatalf("browser navigate: %v", err)
-	}
-
-	waitForSubscriber(t, s.dash)
+waitForSubscriber(t, s.dash)
 
 	// The lifetime cap closes the stream ~500ms in; the SDK must
 	// reconnect after its 200ms retry and resume streaming. Subscriber
