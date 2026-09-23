@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"slices"
 	"strings"
 	"sync"
@@ -23,11 +24,46 @@ import (
 // slice is derived once per reader without allocation-shape linter noise).
 const streamBufferSize = 32 * 1024
 
+// envInt returns the named environment variable as an int, falling back
+// to def when unset or unparseable — load-harness knobs stay operable
+// from the shell without code changes (M92).
+func envInt(name string, def int) int {
+	if raw := os.Getenv(name); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			return n
+		}
+	}
+
+	return def
+}
+
+// envDuration returns the named environment variable as a duration,
+// falling back to def when unset or unparseable.
+func envDuration(name string, def time.Duration) time.Duration {
+	if raw := os.Getenv(name); raw != "" {
+		if d, err := time.ParseDuration(raw); err == nil && d > 0 {
+			return d
+		}
+	}
+
+	return def
+}
+
 // TestLoad_Aggregate20Sources is the F8 load harness: a 20-source
 // aggregate (60 checks total) under concurrent SSE readers and HTTP
 // scrapes. Skipped unless LOADTEST=1 — it holds twenty streaming
 // connections open for several seconds and belongs to research runs,
 // not the CI suite. Results are recorded in docs/research/.
+//
+// Shape knobs (defaults reproduce the documented 20×3 fixture):
+//
+//	LOADTEST_SOURCES=20  aggregate sources
+//	LOADTEST_CHECKS=3    checks per source
+//	LOADTEST_CLIENTS=20  concurrent SSE readers
+//	LOADTEST_SCRAPERS=8  concurrent scrape workers
+//	LOADTEST_SCRAPES=25  scrapes per worker
+//	LOADTEST_DURATION=5s run duration
+//	LOADTEST_PUSH=100ms  SSE push interval (PushAlways mode)
 func TestLoad_Aggregate20Sources(t *testing.T) {
 	if os.Getenv("LOADTEST") == "" {
 		t.Skip("load test: set LOADTEST=1 to run (research harness, not CI)")
@@ -35,20 +71,21 @@ func TestLoad_Aggregate20Sources(t *testing.T) {
 
 	t.Parallel()
 
-	const (
-		sourceCount   = 20
-		checksPerSrc  = 3
-		sseClients    = 20
-		scrapeWorkers = 8
-		scrapesEach   = 25
-		runDuration   = 5 * time.Second
+	var (
+		sourceCount   = envInt("LOADTEST_SOURCES", 20)
+		checksPerSrc  = envInt("LOADTEST_CHECKS", 3)
+		sseClients    = envInt("LOADTEST_CLIENTS", 20)
+		scrapeWorkers = envInt("LOADTEST_SCRAPERS", 8)
+		scrapesEach   = envInt("LOADTEST_SCRAPES", 25)
+		runDuration   = envDuration("LOADTEST_DURATION", 5*time.Second)
+		pushInterval  = envDuration("LOADTEST_PUSH", 100*time.Millisecond)
 	)
 
 	agg := buildLoadAggregate(t, sourceCount, checksPerSrc)
 
 	s := setupDashboardWithProber(t, agg,
 		dashboard.WithPushMode(dashboard.PushAlways),
-		dashboard.WithPushInterval(100*time.Millisecond),
+		dashboard.WithPushInterval(pushInterval),
 		dashboard.WithMetrics(true),
 		dashboard.WithTrend(64),
 	)
