@@ -194,6 +194,15 @@ inflation. It happens when ALL of the following hold:
    shape, export shape, webhook payload, metric names) are golden- or
    test-locked so 1.0 consumers can rely on them.
 
+### Status sweep (2026-09-23, against the v0.10.1 tree)
+
+| # | Criterion | State | Remaining gap |
+| --- | --- | --- | --- |
+| 1 | API freeze | ❌ NOT MET — the option surface is still growing additively (`DefaultPushInterval` export, 2026-09-23); the branching-flow phantom-type/bool-flag redesign is explicitly DECLINED while it demands public-API churn (AGENTS.md branching-flow row), but no full release cycle with zero breaking changes has been observed, and fingerprint-format stability is still an open 0.x question | time + the fingerprint decision |
+| 2 | Consumer signal | ❌ NOT MET — CV still pins v0.6.1 (Blocked row); no second production consumer known | CV bump + one more consumer |
+| 3 | Compatibility policy | 🟡 PARTIAL — CHANGELOG carries Compatibility sections per behavior change (v0.7.0 precedent); SECURITY.md exists with the PVR caveat (PVR still disabled — Blocked row); the explicit support-policy statement (latest minor line, deprecation process) is not yet written down | write the policy section; PVR |
+| 4 | Contract hardening | ✅ LARGELY MET — `/health` JSON pinned by byte-stability tests and the never-extend freeze, webhook payload wire-pinned including both `shutting_down` branches (2026-09-23), export shape golden-locked, metric names documented in `docs/metrics.md` with deterministic sorted output | none material; keep golden updates intentional |
+
 Until then the module stays 0.x and behavior changes ship as CHANGELOG
 "Compatibility" notes (the v0.7.0 `WithBasePath` precedent).
 
