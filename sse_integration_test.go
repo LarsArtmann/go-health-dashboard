@@ -47,19 +47,14 @@ func provideToggleService(i do.Injector, name string, svc *toggleService) {
 // A single goroutine parses the wire format with ssetest's WHATWG-conformant
 // reader, eliminating reader-level races.
 type sseStream struct {
-	events   chan ssetest.Event
-	closedCh chan struct{}
+	events chan ssetest.Event
 }
 
 func newSSEStream(body io.Reader) *sseStream {
-	s := &sseStream{
-		events:   make(chan ssetest.Event, 32),
-		closedCh: make(chan struct{}),
-	}
+	s := &sseStream{events: make(chan ssetest.Event, 32)}
 
 	go func() {
 		defer close(s.events)
-		defer close(s.closedCh)
 
 		reader := ssetest.NewStreamReader(body)
 
@@ -74,17 +69,6 @@ func newSSEStream(body io.Reader) *sseStream {
 	}()
 
 	return s
-}
-
-// closed reports whether the stream reader has finished (connection closed
-// or unreadable). Safe to call from the test goroutine.
-func (s *sseStream) closed() bool {
-	select {
-	case <-s.closedCh:
-		return true
-	default:
-		return false
-	}
 }
 
 // waitFor reads SSE events until one matches the predicate or the timeout
