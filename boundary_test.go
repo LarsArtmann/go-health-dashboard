@@ -7,10 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/larsartmann/go-sse/ssetest"
-
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	"github.com/larsartmann/go-sse/ssetest"
 )
 
 // --- Trend/export boundaries (plan M80) ---

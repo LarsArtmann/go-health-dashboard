@@ -13,11 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/larsartmann/go-sse/ssetest"
-	"github.com/samber/do/v2"
-
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	"github.com/larsartmann/go-sse/ssetest"
+	"github.com/samber/do/v2"
 )
 
 // toggleService is a test service whose health can be toggled at runtime.
