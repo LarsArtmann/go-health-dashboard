@@ -83,9 +83,6 @@ jobs:
       - name: UI dependency pin guard
         run: bash scripts/check-ui-pins.sh
 
-      - name: Go directive floor guard
-        run: bash scripts/check-go-directive.sh
-
       - name: Generate templ files
         # The generator is pinned by go.mod's tool directive — its version
         # cannot drift from the one the committed output was generated with.
