@@ -739,7 +739,7 @@ func TestSSE_HeartbeatInterval_SendsKeepalive(t *testing.T) {
 	// surfaces them. The keepalive bytes are therefore probed directly on the
 	// raw wire: within 3s (30 heartbeat intervals) the connection must carry
 	// the comment frame even though no state change triggers a patch.
-	buf := make([]byte, 4096)
+	buf := make([]byte, 4096) //nolint:makezero // read buffer: Read fills buf[:n]; buf itself is never appended to
 	var seen []byte
 
 	deadline := time.Now().Add(3 * time.Second)
