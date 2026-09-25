@@ -56,6 +56,13 @@ forgetting.
   ecosystem entries for `/` and `/deploy`), gates Grafana on a Prometheus
   readiness healthcheck, and its Dockerfile base now matches go.mod's
   1.27.1 floor.
+- Bumped go-health to v0.4.1 (its floor lowered to minor form) and
+  settled this repo's `go` directive at `go 1.27` via
+  go-version-auto-configure's gate-verified fix; deleted the now-obsolete
+  `scripts/check-go-directive.sh` guard and its CI wiring (Build + Test
+  jobs). `who-forces` confirms no dependency forces a higher floor; the
+  go-mod-normalize downgrade class is fixed upstream (gvac v0.2.0+
+  dependency-floor gate).
 
 ### Fixed
 
