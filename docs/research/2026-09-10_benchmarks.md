@@ -102,20 +102,20 @@ and `BenchmarkDashboard_HealthCheck` at ~3ns / 0 allocs.
 
 ## Browser-suite startup latency (M91, 2026-09-23)
 
-|             |                                                                                                                                                                                              |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Date**    | 2026-09-23                                                                                                                                                                                   |
-| **Command** | `GO_HEALTH_DASHBOARD_MEASURE_CHROME=1 nix develop -c go test -run TestMeasureChromeLaunchLatency -v -count=1 .` then `nix develop -c go test -run TestBrowser -count=1 .`                      |
+|             |                                                                                                                                                                                                               |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Date**    | 2026-09-23                                                                                                                                                                                                    |
+| **Command** | `GO_HEALTH_DASHBOARD_MEASURE_CHROME=1 nix develop -c go test -run TestMeasureChromeLaunchLatency -v -count=1 .` then `nix develop -c go test -run TestBrowser -count=1 .`                                     |
 | **Context** | The rig serializes all browser tests (`browserSerial`) because parallel headless-Chrome launches historically pushed startup past the announce timeout. M91 asked whether the serialization can shrink again. |
 
 ### Chrome launch latency (5 isolated launches, idle machine)
 
-| Metric                        | Value           |
-| ----------------------------- | --------------- |
-| start → DevTools announce avg | 155 ms          |
-| start → DevTools announce max | 254 ms          |
-| announce timeout              | 45 s            |
-| timeout utilization (max)     | ~0.6%           |
+| Metric                        | Value  |
+| ----------------------------- | ------ |
+| start → DevTools announce avg | 155 ms |
+| start → DevTools announce max | 254 ms |
+| announce timeout              | 45 s   |
+| timeout utilization (max)     | ~0.6%  |
 
 Full browser suite (15 tests, serialized, incl. navigation + SSE waits): **~15s wall**.
 

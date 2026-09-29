@@ -6,7 +6,7 @@
 > verify-before-filing still applied and both commands below were run in
 > this repo before writing. Gate 5: no existing erraudit issue covers
 > `nolint-audit` behavior (the only open one, #2, is about a suppression
-> directive *namespace*, unrelated).
+> directive _namespace_, unrelated).
 
 ## Verification record (local reproduction, erraudit 1c6809a)
 

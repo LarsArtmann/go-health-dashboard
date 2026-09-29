@@ -12,12 +12,12 @@ mocked data (verified 2026-09-23; see `docs/screenshot-grafana.png`).
 docker compose -f deploy/docker-compose.yml up --build
 ```
 
-| Service    | URL                            | Notes                                   |
-| ---------- | ------------------------------ | --------------------------------------- |
-| Dashboard  | http://localhost:8080/health   | demo probe with pass/warn/fail checks   |
-| Metrics    | http://localhost:8080/health/metrics | what Prometheus scrapes           |
-| Prometheus | http://localhost:9090          | target `go-health-dashboard`, 5s scrape |
-| Grafana    | http://localhost:3000          | anonymous **Viewer**, no login          |
+| Service    | URL                                  | Notes                                   |
+| ---------- | ------------------------------------ | --------------------------------------- |
+| Dashboard  | http://localhost:8080/health         | demo probe with pass/warn/fail checks   |
+| Metrics    | http://localhost:8080/health/metrics | what Prometheus scrapes                 |
+| Prometheus | http://localhost:9090                | target `go-health-dashboard`, 5s scrape |
+| Grafana    | http://localhost:3000                | anonymous **Viewer**, no login          |
 
 Host ports are hard-coded in the compose file. If any of 8080/9090/3000
 is taken on your machine, remap without editing the repo:

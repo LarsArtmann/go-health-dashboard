@@ -40,19 +40,19 @@ dash.RegisterRoutes(mux) // serves Config.Routes.Metrics (default /health/metric
 
 All names carry the `dashboard_` prefix.
 
-| Metric | Type | Labels | Meaning |
-| --- | --- | --- | --- |
-| `dashboard_health_up` | gauge | — | 1 when the overall status is `pass`, else 0 |
-| `dashboard_health_status` | gauge | — | Overall status: 2 pass, 1 warn, 0 fail, −1 unknown |
-| `dashboard_health_check` | gauge | `check`, `status` | 1 when that check passes, else 0 |
-| `dashboard_health_check_last_duration_seconds` | gauge | `check` | Duration of the check's most recent execution |
-| `dashboard_health_latency_ms` | gauge | — | Wall-clock time of the last check batch, milliseconds |
-| `dashboard_health_shutting_down` | gauge | — | 1 once the probe is marked for shutdown |
-| `dashboard_sse_connections` | gauge | — | Currently connected SSE clients |
-| `dashboard_pusher_active` | gauge | — | 1 while the SSE pusher goroutine is running |
-| `dashboard_health_check_duration_seconds` | histogram | — | Batch durations across ticks (see buckets below) |
-| `dashboard_webhook_deliveries_total` | counter | `result` | Webhook deliveries by result (`ok` / `error`) |
-| `dashboard_webhook_delivery_duration_seconds` | histogram | — | Webhook delivery duration |
+| Metric                                         | Type      | Labels            | Meaning                                               |
+| ---------------------------------------------- | --------- | ----------------- | ----------------------------------------------------- |
+| `dashboard_health_up`                          | gauge     | —                 | 1 when the overall status is `pass`, else 0           |
+| `dashboard_health_status`                      | gauge     | —                 | Overall status: 2 pass, 1 warn, 0 fail, −1 unknown    |
+| `dashboard_health_check`                       | gauge     | `check`, `status` | 1 when that check passes, else 0                      |
+| `dashboard_health_check_last_duration_seconds` | gauge     | `check`           | Duration of the check's most recent execution         |
+| `dashboard_health_latency_ms`                  | gauge     | —                 | Wall-clock time of the last check batch, milliseconds |
+| `dashboard_health_shutting_down`               | gauge     | —                 | 1 once the probe is marked for shutdown               |
+| `dashboard_sse_connections`                    | gauge     | —                 | Currently connected SSE clients                       |
+| `dashboard_pusher_active`                      | gauge     | —                 | 1 while the SSE pusher goroutine is running           |
+| `dashboard_health_check_duration_seconds`      | histogram | —                 | Batch durations across ticks (see buckets below)      |
+| `dashboard_webhook_deliveries_total`           | counter   | `result`          | Webhook deliveries by result (`ok` / `error`)         |
+| `dashboard_webhook_delivery_duration_seconds`  | histogram | —                 | Webhook delivery duration                             |
 
 Conditional families:
 
