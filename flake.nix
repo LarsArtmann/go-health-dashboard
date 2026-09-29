@@ -104,7 +104,7 @@
                 "-X github.com/larsartmann/go-health-dashboard/pkg/version.injected=${self.shortRev or "dev"}"
               ];
 
-              vendorHash = "sha256-hFvQWYTUJB4DVZmkKjflYLGO2czJs4RymcekJIqhY+E=";
+              vendorHash = "sha256-6KdZlaNT7PD3oRGCFuijwcq+/xELc0IqXuTgUN0d4Qk=";
 
               meta.mainProgram = "health-hub";
             };
