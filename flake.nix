@@ -11,7 +11,6 @@
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    systems.url = "github:nix-systems/default";
   };
 
   outputs =
@@ -19,11 +18,15 @@
       self,
       flake-parts,
       treefmt-nix,
-      systems,
       ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = import systems;
+      # Inline systems: nixpkgs 26.11 dropped x86_64-darwin, which github:nix-systems/default still lists.
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
 
       imports = [
         treefmt-nix.flakeModule
@@ -104,7 +107,7 @@
                 "-X github.com/larsartmann/go-health-dashboard/pkg/version.injected=${self.shortRev or "dev"}"
               ];
 
-              vendorHash = "sha256-6KdZlaNT7PD3oRGCFuijwcq+/xELc0IqXuTgUN0d4Qk=";
+              vendorHash = "sha256-driDZ0bHQLISQSIuxNZneZWt887d7dEVDyi32pbn4+c=";
 
               meta.mainProgram = "health-hub";
             };
