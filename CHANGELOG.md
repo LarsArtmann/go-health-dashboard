@@ -17,6 +17,16 @@ forgetting.
 
 ### Added
 
+- Nothing yet.
+
+## [0.10.2] - 2026-10-03
+
+### Changed
+
+- **`go` directive back to minor form (`go 1.27`)** — the fleet supply-side de-poisoning (go-version-auto-configure campaign, 2026-10-03): the patch-form floor `1.27.1` re-poisoned every consumer's `go` directive through MVS. Pins moved to the clean generation in the same motion: go-sse v0.6.2, go-datastar v0.6.2. Proxy `.mod` verified post-push. Render goldens regenerated (templ/Tailwind class-order and a `tabindex` attribute from the dependency drift — no semantic change; reviewed line-by-line). Also carries the previously-Unreleased items below.
+
+### Added
+
 - `HEALTH_HUB_PUSH_INTERVAL` for the `health-hub` binary: the SSE push
   cadence is now environment-configurable (default stays the library's 2s).
   Every pusher tick fetches each federation remote once, so the startup log
