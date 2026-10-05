@@ -3,12 +3,12 @@ module github.com/larsartmann/go-health-dashboard
 go 1.27
 
 require (
-	github.com/a-h/templ v0.3.1020
+	github.com/a-h/templ v0.3.1070
 	github.com/chromedp/cdproto v0.0.0-20260922220944-a19bff23514f
 	github.com/chromedp/chromedp v0.16.0
 	github.com/larsartmann/go-datastar v0.6.2
 	github.com/larsartmann/go-datastar/static v0.6.1
-	github.com/larsartmann/go-health v0.4.1
+	github.com/larsartmann/go-health v0.5.0
 	github.com/larsartmann/go-sse v0.6.2
 	github.com/larsartmann/go-sse/ssetest v0.4.0
 	github.com/larsartmann/templ-components v1.19.4
@@ -22,7 +22,7 @@ require (
 require (
 	github.com/Oudwins/tailwind-merge-go v0.2.3 // indirect
 	github.com/a-h/parse v0.0.0-20250122154542-74294addb73e // indirect
-	github.com/andybalholm/brotli v1.2.5 // indirect
+	github.com/andybalholm/brotli v1.2.6 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/chromedp/sysutil v1.1.0 // indirect
 	github.com/cli/browser v1.3.0 // indirect
@@ -46,7 +46,7 @@ require (
 	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/tools v0.50.0 // indirect
+	golang.org/x/tools v0.51.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
 
