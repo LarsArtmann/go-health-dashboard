@@ -14,6 +14,12 @@
 
 ## Next Up
 
+- **Trim AGENTS.md to the 377-line linter budget** (458 lines today; excess
+  ~81). Exposed 2026-10-07 by unskipping go-structure-linter — the
+  agent-config rule is excluded in .go-structure-linter.yaml until this is
+  done; extract session detail to README/docs, keep AGENTS.md to
+  non-obvious, load-bearing facts.
+
 Swept 2026-09-23 (full-list execution session): every row harvested
 2026-09-18/22 was executed, verified, closed into CHANGELOG, or
 re-triaged — nothing is left in the 🔴 queue. Ground truth re-verified
