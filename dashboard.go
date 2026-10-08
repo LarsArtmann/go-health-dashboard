@@ -255,6 +255,8 @@ func (d *Dashboard) HealthCheck(_ context.Context) error {
 		staleAfter := stalenessFactor * push.interval
 
 		if elapsed := time.Since(time.Unix(0, last)); elapsed > staleAfter {
+			//nolint:gohumanize:H003 // watchdog diagnostic needs millisecond precision; humanize.RelTime would coarsen it
+
 			return fmt.Errorf("%w: last broadcast %s ago, stale after %s",
 				ErrPusherStale, elapsed.Round(time.Millisecond), staleAfter)
 		}

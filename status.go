@@ -499,6 +499,8 @@ func truncateError(s string) string {
 // formatAge renders a coarse human age for the Updated stamp: "just now",
 // "42s ago", "3m ago", or "2h ago". Future timestamps clamp to "just now".
 func formatAge(observation, now time.Time) string {
+	//nolint:gohumanize:H003 // coarse stamp is deliberate (anti-fingerprint, golden-pinned); humanize.Time renders finer ages
+
 	d := now.Sub(observation)
 
 	switch {
