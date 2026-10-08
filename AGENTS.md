@@ -179,6 +179,13 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   requirement. Upgrading templ = bump go.mod, run `go tool templ generate`,
   commit the (possibly re-formatted) output in the same change. The raw
   output is still unformatted Go: canonical order stays generate → fmt.
+  The rule was still missed once: the go.mod bump to v0.3.1070 landed
+  without the regenerated output, so the committed `view_templ.go` stayed
+  0.3.1020-generated until 2026-10-08 — the first fresh `nix run .#build`
+  then failed five golden tests on whitespace-only HTML drift (0.3.1070
+  folds the inter-component `" "` WriteString calls, e.g. `</div> <div` →
+  `</div><div`); regenerated files + refreshed goldens are the canonical
+  state now.
 - **Probe and Dashboard must be Started** — Call `probe.Start(ctx)` and `dash.Start(ctx)` before serving traffic. Without Start, `CachedResponse()` returns a zero-value Response and the pusher goroutine isn't running.
 - **No replace directives in the released module** — As of v0.1.0 all dependencies resolve from published versions. Local `replace` directives to sibling repos (`../go-health`, `../templ-components`, `../go-datastar`, `../go-sse`) are only needed for local development against unpublished sibling changes; never commit them.
 - **templ compiler doesn't support embedded fields** — Must use `utils.BaseProps{ID: "..."}` explicitly in templ struct literals, not `ID: "..."` at the top level.
@@ -324,7 +331,21 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   zero-runtime-deps policy; jscpd flags repeated test scaffolding, where
   per-test isolation is preferred over shared helpers. All three report
   without gating — don't "fix" them into dependency additions or API
-  churn.
+  churn. Resolution state (2026-10-08): the two genuine H003 matches carry
+  reasoned `//nolint:gohumanize` directives (`dashboard.go` HealthCheck
+  watchdog — millisecond precision beats RelTime's coarse buckets;
+  `status.go` formatAge — the coarse stamp IS the anti-fingerprint accepted
+  risk), so a manual `go-humanize-linter .` exits 0. Use the UNscoped
+  `//nolint:gohumanize` form: golangci's nolintlint rejects the linter's
+  own `//nolint:gohumanize:H003` colon-scoped syntax ("should match
+  //nolint[:<linters>]"), and wsl_v5 wants no blank line between directive
+  and statement. The third finding (H009 on `ExportHandler`) was an
+  upstream detector bug — `getBasicLit` strips the unary minus, so
+  `FormatFloat('g', -1, 64)` precision looked positive and CSV field
+  delimiters looked like digit grouping — fixed in go-humanize-linter
+  (sign-aware precision + `'f'`-verb check); the installed system binary
+  lags until the next rebuild, so check `--version` against the repo HEAD
+  before trusting its output.
 - **templ-generate is skip-gated: it races nix source snapshots** — the
   step re-raws `view_templ.go`/`page_scripts_templ.go` mid-run (templ
   emits unformatted Go; canonical order is generate → fmt). BuildFlow
