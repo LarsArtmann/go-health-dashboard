@@ -439,6 +439,13 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.2.0 in go.mod). The dashboar
   the dashboard applies it once at the response choke point (`currentResponse`)
   so every write seam (JSON, webhook, SSE, metrics, CSV) stays valid under
   jsonv2 semantics
+- `StatusOff` (v0.5.1, bump `d84f11f`) — `"off"` marks a deliberately
+  unconfigured dependency; pass-tier in Rank, never at the roll-up. The
+  dashboard renders it as a neutral badge in the healthy group, excludes it
+  from problem counts (alert scale, group roll-up, timeline direction) and
+  from the evidence universe (can neither deviate nor sit unproven-green);
+  `exhaustive` demands an explicit case in EVERY `health.Status` switch —
+  new switches must decide off, not default it
 - `NewWithHealthCheck(fn HealthCheckFunc, opts...)` — constructs a probe from
   a plain function, no samber/do injector involved (non-do apps use it +
   `dashboard.New` + `Start`/`Shutdown`; only `Register` needs the injector)

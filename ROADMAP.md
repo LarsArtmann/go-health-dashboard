@@ -284,21 +284,20 @@ These require user decisions and cannot be resolved by reading code:
   full compose stack with HTTP probes, or keep the demo manual-only
   (documented)? Costs CI minutes and Docker-in-CI surface; gates the
   deploy-e2e and release-page jobs.
-- **Latency stat-card tone policy (2026-10-09, from the UI-revamp report
-  §g Q1):** the latency card carries a fixed blue "metrics" tile today.
-  Keep it fixed (identity/metrics two-family system, no judgment implied)
-  or make it data-reactive (e.g. amber when the batch duration exceeds a
-  fraction of the probe's RefreshInterval)? Changes the public render
-  contract (goldens + contrast constraints).
+- **Latency stat-card tone policy — DECIDED 2026-10-09 (user pick:
+  data-reactive).** Shipped: the value text grades the batch against the
+  probe's refresh cadence (amber past half, red at/past the interval; tile
+  stays metrics-blue). Thresholds and rationale in `status.go`
+  (`latencyToneFor`) and the CHANGELOG.
 - **Age-stamp precision policy (2026-10-09, §g Q2):** the "Updated … · 2m
   ago" stamp is deliberately coarse (anti-fingerprint accepted risk,
   golden-pinned). Keep coarse, or relax via client-ticked `RelativeTime`
   — possibly tied to `WithPublicMode` so private deployments get precise
   ages? Decides how much the anti-fingerprint stance costs in UX terms.
-- **Release cadence (2026-10-09, §g Q3):** cut v0.11.0 with the UI revamp
-  alone (tree is release-candidate-quality), or batch it with more UI
-  work (e.g. timeline ListNote, touch tooltips) into one release? Push/tag
-  needs authorization regardless.
+- **Release cadence — DECIDED 2026-10-09 (user pick: batch).** v0.11.0
+  waits for the UI batch (reactive latency card ✓, timeline truncation
+  notice ✓, touch tooltips story open — TODO_LIST) instead of shipping the
+  revamp alone. Push/tag authorization still required at cut time.
 
 ## Design Spikes (v0.3.x cycle, not implemented)
 
