@@ -15,9 +15,26 @@ forgetting.
 
 ## [Unreleased]
 
+### Changed
+
+- **Dashboard UI revamp on templ-components v1.21.0.** The header renders
+  through `display.PageHeader` (gains `flex-wrap` on narrow viewports), the
+  stat cards carry icon tiles with semantic tones, the overall-status banner
+  answers "how bad?" with a scale line ("1 of 3 services reporting issues."),
+  the export/trend/metrics links wear inline glyphs, the status-change
+  timeline rows became direction glyph + SM badge, the empty state explains
+  how checks appear, and the theme toggle has a visible keyboard-focus ring.
+  The Health Trend and Status Changes cards share a half/half grid when both
+  have content and render full-width alone (a lone half-width sparkline was
+  caught on the README recapture and pinned by `TestTrendTimelineLayout`).
+  Stat-card tones deliberately stay in the blue/purple families: upstream's
+  green icon tile renders `text-green-600`, which fails the page-wide
+  WCAG scan in `TestRender_ContrastSafeStatusColors`.
+
 ### Added
 
-- Nothing yet.
+- `templ-components/icons` promoted to a direct dependency (stat-card and
+  timeline glyphs) at the audited v1.21.0 pin.
 
 ## [0.10.2] - 2026-10-03
 
