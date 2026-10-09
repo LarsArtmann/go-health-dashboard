@@ -134,6 +134,13 @@ type viewModel struct {
 	// disabled (default) or no samples recorded yet.
 	History  []float64
 	Timeline []TimelineEntry
+	// TimelineTotal is the pre-cap transition count when the ring held more
+	// transitions than maxTimelineEntries (zero when nothing was dropped).
+	// The timeline note discloses the cap honestly: "Showing the latest 5
+	// of 12 status changes." Aged-out entries (WithTimelineMaxAge) are the
+	// operator's own window choice and are not counted — the note discloses
+	// only the dashboard's own bounding.
+	TimelineTotal int
 	// LastUpdated is the "Updated <time>" stamp. With trend history enabled
 	// it is the observation time of the most recent sample (when the health
 	// state was actually seen); without it, the render time.
@@ -297,16 +304,16 @@ const (
 const latencyWarnDivisor = 2
 
 // latencyToneFor grades a probe batch duration against the probe's refresh
-// interval: critical past the whole interval, warn past half of it, neutral
-// otherwise. Non-positive input on either side is neutral — no cadence, no
-// judgment.
+// interval: critical at or past the whole interval, warn past half of it,
+// neutral otherwise. Non-positive input on either side is neutral — no
+// cadence, no judgment.
 func latencyToneFor(latency, refresh time.Duration) latencyTone {
 	if refresh <= 0 || latency <= 0 {
 		return latencyToneNeutral
 	}
 
 	switch {
-	case latency > refresh:
+	case latency >= refresh:
 		return latencyToneCritical
 	case latency*latencyWarnDivisor > refresh:
 		return latencyToneWarn

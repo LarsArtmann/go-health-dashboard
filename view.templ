@@ -433,6 +433,23 @@ templ timelineCard(data viewModel) {
 				</li>
 			}
 		</ol>
+		@timelineNote(len(data.Timeline), data.TimelineTotal)
+	}
+}
+
+// timelineNote discloses the ring cap when transitions were dropped: the
+// "Showing N of M" shape of display.ListNote with honest copy — upstream's
+// truncated variant advises "narrow your search", which is wrong for a
+// rolling window (no search exists; older entries age out by design). It
+// mirrors the ListNote shell classes and role so the notice renders
+// identically; the custom-message hook is an upstream filing candidate.
+// Only the dashboard's own bounding is disclosed — aged-out entries
+// (WithTimelineMaxAge) are the operator's window choice, not truncation.
+templ timelineNote(shown, total int) {
+	if total > shown {
+		<div class="border-t border-gray-200 dark:border-gray-700 px-4 py-2.5 text-xs text-gray-500 dark:text-gray-400" role="status">
+			Showing the latest { shown } of { total } status changes.
+		</div>
 	}
 }
 

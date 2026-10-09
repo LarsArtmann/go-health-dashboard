@@ -192,3 +192,68 @@ func TestPopulateHistory_EmptyBufferKeepsRenderTime(t *testing.T) {
 		t.Errorf("empty history must not touch LastUpdated, got %q", vm.LastUpdated)
 	}
 }
+
+func TestPopulateHistory_TimelineTotalDisclosesCap(t *testing.T) {
+	t.Parallel()
+
+	history := newHistoryBuffer(16)
+	at := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
+
+	// Eight alternating samples produce seven transitions — more than the
+	// five the timeline keeps, so the note's pre-cap count must be set.
+	statuses := []string{
+		string(health.StatusPass), string(health.StatusWarn),
+		string(health.StatusPass), string(health.StatusWarn),
+		string(health.StatusPass), string(health.StatusWarn),
+		string(health.StatusPass), string(health.StatusWarn),
+	}
+
+	for i, st := range statuses {
+		value := trendPassValue
+		if st == string(health.StatusWarn) {
+			value = trendWarnValue
+		}
+
+		history.record(sample{At: at.Add(time.Duration(i) * time.Second), Value: value, Status: st})
+	}
+
+	vm := viewModel{}
+	populateHistory(&vm, history, 0)
+
+	if len(vm.Timeline) != maxTimelineEntries {
+		t.Fatalf("timeline entries = %d, want capped at %d", len(vm.Timeline), maxTimelineEntries)
+	}
+
+	if vm.TimelineTotal != len(statuses)-1 {
+		t.Errorf(
+			"TimelineTotal = %d, want %d (pre-cap transition count)",
+			vm.TimelineTotal,
+			len(statuses)-1,
+		)
+	}
+}
+
+func TestPopulateHistory_TimelineTotalZeroWhenAllFit(t *testing.T) {
+	t.Parallel()
+
+	history := newHistoryBuffer(8)
+	at := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
+
+	for i := range 3 {
+		st := string(health.StatusPass)
+		value := trendPassValue
+		if i%2 == 1 {
+			st = string(health.StatusWarn)
+			value = trendWarnValue
+		}
+
+		history.record(sample{At: at.Add(time.Duration(i) * time.Second), Value: value, Status: st})
+	}
+
+	vm := viewModel{}
+	populateHistory(&vm, history, 0)
+
+	if vm.TimelineTotal != 0 {
+		t.Errorf("TimelineTotal = %d, want 0 when nothing was dropped", vm.TimelineTotal)
+	}
+}

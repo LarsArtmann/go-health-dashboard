@@ -133,6 +133,7 @@ func populateHistory(vm *viewModel, buffer *historyBuffer, maxAge time.Duration)
 	}
 
 	if len(transitions) > maxTimelineEntries {
+		vm.TimelineTotal = len(transitions)
 		transitions = transitions[len(transitions)-maxTimelineEntries:]
 	}
 
