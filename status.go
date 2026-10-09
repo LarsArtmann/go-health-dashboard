@@ -16,7 +16,9 @@ import (
 )
 
 // mapStatusToBadge converts a go-health Status to the corresponding
-// templ-components BadgeType.
+// templ-components BadgeType. Off renders neutral: an intentionally
+// unconfigured dependency is visibility, not an alarm (go-health v0.5.1 —
+// off beats criticality and never alerts).
 func mapStatusToBadge(s health.Status) display.BadgeType {
 	switch s {
 	case health.StatusPass:
@@ -25,13 +27,17 @@ func mapStatusToBadge(s health.Status) display.BadgeType {
 		return display.BadgeWarning
 	case health.StatusFail:
 		return display.BadgeError
+	case health.StatusOff:
+		return display.BadgeNeutral
 	default:
 		return display.BadgeNeutral
 	}
 }
 
 // mapStatusToFeedback converts a go-health Status to the corresponding
-// templ-components FeedbackType for the overall status banner.
+// templ-components FeedbackType for the overall status banner. Off is
+// unreachable here — the roll-up never reports off (go-health v0.5.1:
+// off is visibility, never a verdict) — the case exists for totality.
 func mapStatusToFeedback(s health.Status) feedback.FeedbackType {
 	switch s {
 	case health.StatusPass:
@@ -40,12 +46,16 @@ func mapStatusToFeedback(s health.Status) feedback.FeedbackType {
 		return feedback.FeedbackWarning
 	case health.StatusFail:
 		return feedback.FeedbackError
+	case health.StatusOff:
+		return feedback.FeedbackInfo
 	default:
 		return feedback.FeedbackInfo
 	}
 }
 
 // mapStatusToText returns human-readable display text for each status.
+// Off is unreachable at the roll-up (never reports off); the text exists
+// so the mapping stays total.
 func mapStatusToText(s health.Status) string {
 	switch s {
 	case health.StatusPass:
@@ -54,6 +64,8 @@ func mapStatusToText(s health.Status) string {
 		return "Degraded — Non-Critical Issues"
 	case health.StatusFail:
 		return "Unhealthy — Critical Failures"
+	case health.StatusOff:
+		return "Off"
 	default:
 		return fmt.Sprintf("Unknown status: %s", s)
 	}
@@ -250,7 +262,9 @@ func buildViewModelAt(
 // "N of N services reporting pass." so the banner also answers "how many
 // services am I looking at". Empty when nothing is registered (the bare
 // title reads better than "0 of 0") and while shutting down (the title
-// carries that story; a health verdict would contradict it).
+// carries that story; a health verdict would contradict it). Off services
+// are outside the population entirely — they are not reporting at all
+// (go-health v0.5.1: intentionally unconfigured, never a verdict).
 func alertSummary(vm viewModel) string {
 	if vm.ShuttingDown {
 		return ""
@@ -260,6 +274,10 @@ func alertSummary(vm viewModel) string {
 
 	for _, group := range vm.Groups {
 		for _, row := range group.Rows {
+			if row.Status == health.StatusOff {
+				continue
+			}
+
 			total++
 
 			if row.Status != health.StatusPass {
@@ -335,6 +353,8 @@ func applyLatencyTone(vm *viewModel, refreshInterval time.Duration) {
 // TestRender_ContrastSafeStatusColors locks.
 func latencyValueClass(t latencyTone) string {
 	switch t {
+	case latencyToneNeutral:
+		return "text-gray-900 dark:text-white"
 	case latencyToneWarn:
 		return "text-amber-700 dark:text-amber-400"
 	case latencyToneCritical:
@@ -355,12 +375,15 @@ const (
 // pass=1, warn=0.5, fail=0. This is a plot scale, not a re-encoding of
 // [health.Status.Rank]: for known statuses it is exactly Rank/2 (the
 // severity ladder inverted and rescaled so worse plots lower, warn at the
-// midpoint), derived rather than restated so the two cannot drift. Unknown
-// statuses plot as fail — the trend line dips on anything that is not
-// provably healthy, stricter than Rank's unknown→pass merge default.
+// midpoint), derived rather than restated so the two cannot drift. Off
+// ranks pass-tier upstream (visibility, never a verdict), so it plots
+// green — unreachable in production: the sparkline plots the roll-up only
+// and the roll-up never reports off. Unknown statuses plot as fail — the
+// trend line dips on anything that is not provably healthy, stricter than
+// Rank's unknown→pass merge default.
 func statusValue(s health.Status) float64 {
 	switch s {
-	case health.StatusPass, health.StatusWarn, health.StatusFail:
+	case health.StatusPass, health.StatusOff, health.StatusWarn, health.StatusFail:
 		return float64(s.Rank()) / 2
 	default:
 		return trendFailValue
@@ -395,6 +418,12 @@ func groupChecks(checks map[string]health.Check) []checkGroup {
 		case health.StatusWarn:
 			warning = append(warning, row)
 		case health.StatusPass:
+			healthy = append(healthy, row)
+		case health.StatusOff:
+			// Off is visibility, not a verdict (go-health v0.5.1): an
+			// intentionally unconfigured dependency must not inflate the
+			// problem groups, and lands healthy pass-tier like upstream's
+			// Rank order.
 			healthy = append(healthy, row)
 		default:
 			healthy = append(healthy, row)
@@ -510,6 +539,9 @@ func worstGroupStatus(rows []checkRow) health.Status {
 			status = health.StatusWarn
 		case health.StatusPass:
 			// pass keeps the floor
+		case health.StatusOff:
+			// off keeps the floor: pass-tier upstream — an intentionally
+			// unconfigured dependency must not warn the group
 		default:
 			status = health.StatusWarn
 		}

@@ -52,13 +52,15 @@ func newEvidenceLog() *evidenceLog {
 // observe records one tick's checks. Pass results add nothing — only a
 // non-pass observation proves a check can deviate from green (the
 // healthaudit "errored is the only proof" semantics, generalized to warn,
-// which equally proves real logic ran).
+// which equally proves real logic ran). Off results add nothing either: an
+// intentionally unconfigured dependency (go-health v0.5.1) has not run and
+// proves nothing in either direction.
 func (e *evidenceLog) observe(resp health.Response, observedAt time.Time) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
 	for name, check := range resp.Checks {
-		if check.Status == health.StatusPass {
+		if check.Status == health.StatusPass || check.Status == health.StatusOff {
 			continue
 		}
 
@@ -134,9 +136,19 @@ func populateEvidence(vm *viewModel, log *evidenceLog, resp health.Response) {
 	}
 
 	sum := log.snapshot()
-	sum.Total = len(resp.Checks)
+	sum.Total = 0
 
 	for name := range resp.Checks {
+		// Off checks are outside the evidence universe: they can neither
+		// deviate from pass nor sit unproven-green (go-health v0.5.1 —
+		// intentionally unconfigured, never evaluated). An all-off instance
+		// renders no strip: there is nothing to prove.
+		if resp.Checks[name].Status == health.StatusOff {
+			continue
+		}
+
+		sum.Total++
+
 		if sum.everNonPass(name) {
 			sum.Proven++
 		}

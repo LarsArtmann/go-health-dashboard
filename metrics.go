@@ -197,7 +197,9 @@ func boolGauge(b bool) int {
 // status is healthy, and must never collide with fail's 0.
 func numericHealthStatus(s health.Status) int {
 	switch s {
-	case health.StatusPass, health.StatusWarn, health.StatusFail:
+	case health.StatusPass, health.StatusOff, health.StatusWarn, health.StatusFail:
+		// off ranks pass-tier upstream (go-health v0.5.1) — the gauge
+		// derives from Rank and never invents its own ordering
 		return s.Rank()
 	default:
 		return -1

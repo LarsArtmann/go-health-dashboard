@@ -141,7 +141,7 @@ func populateHistory(vm *viewModel, buffer *historyBuffer, maxAge time.Duration)
 		vm.Timeline = append(vm.Timeline, TimelineEntry{
 			At:       tr.At.Format("15:04:05"),
 			Status:   tr.To,
-			Degraded: tr.To != string(health.StatusPass),
+			Degraded: tr.To != string(health.StatusPass) && tr.To != string(health.StatusOff),
 		})
 	}
 }

@@ -131,10 +131,7 @@ func TestTimelineNoteDisclosesCap(t *testing.T) {
 
 	body := renderDashboardHTML(t, capped)
 	if !strings.Contains(body, "Showing the latest 5 of 7 status changes.") {
-		t.Errorf(
-			"capped timeline must disclose the window, got: %s",
-			extractLine(body, "status changes."),
-		)
+		t.Error("capped timeline must disclose the window: showing-the-latest line missing")
 	}
 
 	uncapped := trendLayoutViewModel(4, 5)
