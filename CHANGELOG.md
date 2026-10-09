@@ -36,6 +36,13 @@ forgetting.
 - `templ-components/icons` promoted to a direct dependency (stat-card and
   timeline glyphs) at the audited v1.21.0 pin.
 
+### Fixed
+
+- Evidence truth-strip grammar: "0 of N checks **have** ever deviated from
+  pass" (was "has"), and the unproven remainder now pluralizes correctly —
+  "the other 1 green row **is** unproven" (was "1 green rows are"). Copy-only;
+  found by visually reviewing the recaptured degraded README screenshot.
+
 ## [0.10.2] - 2026-10-03
 
 ### Changed

@@ -205,6 +205,9 @@ Raw ideas:
 - Two-family tone rule folded into the AGENTS dark-mode checklist (after
   the tone-system ADR lands — TODO_LIST)
 - Annotate superseded UI plans in `docs/status/archived/`
+- Revisit the `WithGrouping(GroupBySource)` collapse-persistence exclusion
+  docs (why the filter box persists choices but collapse does not on
+  source cards — FEATURES UX rationale)
 
 ## v1.0 Criteria
 
