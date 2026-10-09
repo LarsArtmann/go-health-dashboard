@@ -228,42 +228,17 @@ templ dashboardContent(data viewModel) {
 	}
 	if len(data.History) >= 2 || len(data.Timeline) > 0 {
 		<div class="mt-6">
-			@display.Grid(display.GridProps{Cols: display.GridCols2}) {
+			if len(data.History) >= 2 && len(data.Timeline) > 0 {
+				@display.Grid(display.GridProps{Cols: display.GridCols2}) {
+					@trendCard(data)
+					@timelineCard(data)
+				}
+			} else {
 				if len(data.History) >= 2 {
-					@display.Card(display.CardProps{Title: "Health Trend"}) {
-						<div class="text-blue-500 dark:text-blue-400">
-							@display.Sparkline(display.SparklineProps{
-								BaseProps: utils.BaseProps{
-									AriaLabel: "Recent health status trend: one point per push interval, from pass (top) to fail (bottom)",
-								},
-								Values: data.History,
-								Filled: true,
-								Min:    &trendMinVal,
-								Max:    &trendMaxVal,
-								Width:  trendWidth,
-								Height: trendHeight,
-							})
-						</div>
-					}
+					@trendCard(data)
 				}
 				if len(data.Timeline) > 0 {
-					@display.Card(display.CardProps{Title: "Status Changes"}) {
-						<ol class="divide-y divide-gray-200 dark:divide-gray-700">
-							for _, entry := range data.Timeline {
-								<li class="flex items-center justify-between gap-4 py-2 text-sm first:pt-0 last:pb-0">
-									<time class="font-mono text-gray-500 tabular-nums dark:text-gray-400">{ entry.At }</time>
-									<span class="flex items-center gap-1.5">
-										@icons.Icon(timelineTrendIcon(entry.Degraded), timelineTrendIconClass(entry.Degraded))
-										@display.Badge(display.BadgeProps{
-											Text: entry.Status,
-											Type: timelineBadgeType(entry.Degraded),
-											Size: display.BadgeSizeSM,
-										})
-									</span>
-								</li>
-							}
-						</ol>
-					}
+					@timelineCard(data)
 				}
 			}
 		</div>

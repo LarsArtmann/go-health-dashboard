@@ -202,9 +202,27 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   `docs/status/archived/2026-09-04_19-15_bisectability-audit.md` (re-run
   the extension's pinned-toolchain method — the ambient go now
   false-fails every post-bump commit).
-- **UI dependencies are pinned and guarded** — templ-components v1.18.0 + go-datastar v0.5.0, re-audited 2026-09-18 with a green browser suite (the 2026-09-10 v1.16.0 audit retired the axe `definition-list`/`dlitem` tolerance in `TestBrowser_Accessibility` after upstream templ-components#6 was fixed; the audit now fails on any serious/critical violation, both themes). Undocumented sweeps have landed seven times (v1.18.0 arrived as an unguarded deps commit, 2026-09-18); `scripts/check-ui-pins.sh` (CI Build+Test steps) fails loudly on any movement. UI bumps require a dedicated change with a green browser suite — the unit suite cannot see these regressions — and the guard pins must be updated IN THE SAME CHANGE as any bump (a bump without its guard update leaves CI red). Script-emitting upstream components (CopyButton, Tooltip) are vetted for nonce/CSP compatibility before adoption: per-element inline scripts and unconditional `nonce=""` attributes clash with the per-request-nonce and SSE-patch paths here.
+- **UI dependencies are pinned and guarded** — templ-components v1.21.0
+  (root/datastar/utils/icons) + go-datastar v0.6.2 / static v0.6.1,
+  re-audited 2026-10-09 with a green browser suite (the 2026-09-10 v1.16.0
+  audit retired the axe `definition-list`/`dlitem` tolerance in
+  `TestBrowser_Accessibility` after upstream templ-components#6 was fixed;
+  the audit now fails on any serious/critical violation, both themes).
+  Undocumented sweeps have landed eight times (v1.19.2→v1.21.0 rode the
+  2026-10-08 fleet sweep, daemon commit `54cdc59`; adopted deliberately
+  2026-10-09); `scripts/check-ui-pins.sh` (CI Build+Test steps) fails
+  loudly on any movement. UI bumps require a dedicated change with a green
+  browser suite — the unit suite cannot see these regressions — and the
+  guard pins must be updated IN THE SAME CHANGE as any bump (a bump
+  without its guard update leaves CI red). Script-emitting upstream
+  components (CopyButton, Tooltip) are vetted for nonce/CSP compatibility
+  before adoption: per-element inline scripts and unconditional `nonce=""`
+  attributes clash with the per-request-nonce and SSE-patch paths here.
+  Upstream StatCard icon tiles use `text-green-600` on the green tone —
+  banned page-wide by `TestRender_ContrastSafeStatusColors`, so stat-card
+  tones stay in the blue/purple families (contrast-measured).
 - **Datastar v1.0 attribute names are colon-keyed** — the SDK (pinned
-  v0.5.0 bundle) registers plugins by name and splits keys on `:`:
+  v0.6.2 bundle) registers plugins by name and splits keys on `:`:
   `data-bind="query"` (not the pre-1.0 `data-model`) and
   `data-class:hidden="expr"` (not `data-class-hidden` — plugin names
   contain hyphens, so hyphen-keyed class attributes silently match

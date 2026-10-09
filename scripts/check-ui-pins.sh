@@ -35,6 +35,16 @@
 #     axe re-audit) ran green on the bumped set under strict CSP before
 #     these pins were updated in the same change.
 #
+# Re-audited 2026-10-09 on templ-components v1.21.0 + go-datastar v0.6.2:
+#   - the v1.19.2 → v1.21.0 climb rode the 2026-10-08 fleet sweep (daemon
+#     commit 54cdc59, eighth unguarded occurrence); the unit suite was
+#     already green and the full browser suite (CSP, live SSE patch, axe
+#     a11y both themes, keyboard, pill, collapse, filter, metrics, mobile)
+#     ran green on the bumped set under strict CSP before these pins were
+#     updated.
+#   - templ-components/icons joined as a DIRECT dependency (timeline trend
+#     glyphs, stat-card icons) at the same v1.21.0 — pinned from here on.
+#
 # CEREMONY RULE: if you bump any of these dependencies, update the pins
 # in this file IN THE SAME CHANGE and re-run the browser suite. A bump
 # without its guard update leaves CI red for every subsequent commit.
@@ -44,10 +54,12 @@
 # change that updates these pins and re-runs the browser suite.
 set -euo pipefail
 
-expected_templ_components="v1.18.0"
-expected_templ_components_datastar="v1.18.0"
-expected_templ_components_utils="v1.18.0"
-expected_go_datastar="v0.5.0"
+expected_templ_components="v1.21.0"
+expected_templ_components_datastar="v1.21.0"
+expected_templ_components_utils="v1.21.0"
+expected_templ_components_icons="v1.21.0"
+expected_go_datastar="v0.6.2"
+expected_go_datastar_static="v0.6.1"
 
 cd "$(dirname "$0")/.."
 
@@ -78,7 +90,8 @@ check_pin() {
 check_pin github.com/larsartmann/templ-components "$expected_templ_components"
 check_pin github.com/larsartmann/templ-components/datastar "$expected_templ_components_datastar"
 check_pin github.com/larsartmann/templ-components/utils "$expected_templ_components_utils"
+check_pin github.com/larsartmann/templ-components/icons "$expected_templ_components_icons"
 check_pin github.com/larsartmann/go-datastar "$expected_go_datastar"
-check_pin github.com/larsartmann/go-datastar/static "$expected_go_datastar"
+check_pin github.com/larsartmann/go-datastar/static "$expected_go_datastar_static"
 
 exit "$fail"
