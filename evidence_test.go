@@ -326,7 +326,7 @@ func TestEvidenceSummaryText(t *testing.T) {
 			summary: evidenceSummary{
 				Since: since, Total: 60,
 			},
-			contains: "0 of 60 checks has ever deviated from pass",
+			contains: "0 of 60 checks have ever deviated from pass",
 		},
 		{
 			name: "split names the unproven remainder",
@@ -334,6 +334,13 @@ func TestEvidenceSummaryText(t *testing.T) {
 				Since: since, Total: 60, Proven: 6,
 			},
 			contains: "6 of 60 checks have deviated from pass",
+		},
+		{
+			name: "singular unproven remainder reads grammatically",
+			summary: evidenceSummary{
+				Since: since, Total: 2, Proven: 1,
+			},
+			contains: "the other 1 green row is unproven",
 		},
 		{
 			name: "full house",

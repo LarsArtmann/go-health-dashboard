@@ -68,7 +68,7 @@ func TestIntegration_EvidenceStripReflectsObservations(t *testing.T) {
 
 	body := waitForBody(t, s.mux, "/health", "Failure evidence: 2 of 3 checks")
 
-	if !strings.Contains(body, "the other 1 green rows are unproven") {
+	if !strings.Contains(body, "the other 1 green row is unproven") {
 		t.Errorf(
 			"strip should name the unproven remainder: %s",
 			extractLine(body, "Failure evidence"),

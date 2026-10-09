@@ -299,7 +299,7 @@ func TestSSE_PatchCarriesCheckMetadata(t *testing.T) {
 
 		return strings.Contains(data, "since ") &&
 			strings.Contains(data, "42ms") &&
-			strings.Contains(data, "has ever deviated from pass")
+			strings.Contains(data, "have ever deviated from pass")
 	}
 
 	stream.waitFor(t, carriesMetadata, 2*time.Second)

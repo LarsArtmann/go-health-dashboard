@@ -159,7 +159,7 @@ func evidenceSummaryText(s evidenceSummary) string {
 
 	if s.Proven == 0 {
 		return fmt.Sprintf(
-			"Failure evidence: 0 of %d checks has ever deviated from pass since %s — green rows are unproven, not verified; they may be unable to fail.",
+			"Failure evidence: 0 of %d checks have ever deviated from pass since %s — green rows are unproven, not verified; they may be unable to fail.",
 			s.Total,
 			since,
 		)
@@ -171,12 +171,23 @@ func evidenceSummaryText(s evidenceSummary) string {
 			s.Total, since)
 	}
 
+	unproven := s.Total - s.Proven
+
+	if unproven == 1 {
+		return fmt.Sprintf(
+			"Failure evidence: %d of %d checks have deviated from pass at least once since %s; the other 1 green row is unproven.",
+			s.Proven,
+			s.Total,
+			since,
+		)
+	}
+
 	return fmt.Sprintf(
 		"Failure evidence: %d of %d checks have deviated from pass at least once since %s; the other %d green rows are unproven.",
 		s.Proven,
 		s.Total,
 		since,
-		s.Total-s.Proven,
+		unproven,
 	)
 }
 
