@@ -115,7 +115,13 @@ type viewModel struct {
 	// host or zone names).
 	InstanceID    string
 	Uptime        string
-	LatencyMs     int64
+	LatencyMs int64
+	// LatencyTone grades the batch latency against the probe's refresh
+	// cadence (applyLatencyTone): neutral within half the interval, warn
+	// past half, critical past the whole interval. Derived at build time so
+	// HTML and SSE patches agree and goldens stay deterministic. The tile
+	// keeps its metrics blue — the value text carries the judgment.
+	LatencyTone latencyTone
 	Groups        []checkGroup
 	SSEURL        string
 	FaviconURL    string
@@ -265,6 +271,70 @@ func alertSummary(vm viewModel) string {
 	}
 
 	return fmt.Sprintf("%d of %d services reporting %s.", problems, total, state)
+}
+
+// latencyTone grades the most recent probe batch against the refresh
+// cadence it has to fit into.
+type latencyTone int
+
+const (
+	// latencyToneNeutral: the batch fits comfortably in its cadence — and
+	// the no-judgment default when either side is unknown (zero latency or
+	// no refresh interval).
+	latencyToneNeutral latencyTone = iota
+	// latencyToneWarn: the batch consumed more than half the refresh
+	// interval.
+	latencyToneWarn
+	// latencyToneCritical: the batch exceeded the whole refresh interval —
+	// the checks cannot keep up with their own cadence.
+	latencyToneCritical
+)
+
+// latencyWarnDivisor is the warn line of the latency budget: a batch that
+// consumes more than 1/divisor of the refresh interval turns warn (half the
+// cadence spent checking is the early-warning line; the whole interval is
+// the critical one).
+const latencyWarnDivisor = 2
+
+// latencyToneFor grades a probe batch duration against the probe's refresh
+// interval: critical past the whole interval, warn past half of it, neutral
+// otherwise. Non-positive input on either side is neutral — no cadence, no
+// judgment.
+func latencyToneFor(latency, refresh time.Duration) latencyTone {
+	if refresh <= 0 || latency <= 0 {
+		return latencyToneNeutral
+	}
+
+	switch {
+	case latency > refresh:
+		return latencyToneCritical
+	case latency*latencyWarnDivisor > refresh:
+		return latencyToneWarn
+	default:
+		return latencyToneNeutral
+	}
+}
+
+// applyLatencyTone stamps vm.LatencyTone from the probe's refresh cadence.
+// Both render paths (initial HTML and SSE patches) call it next to
+// applyCollapsePolicy, so a patch always re-derives the same judgment.
+func applyLatencyTone(vm *viewModel, refreshInterval time.Duration) {
+	vm.LatencyTone = latencyToneFor(time.Duration(vm.LatencyMs)*time.Millisecond, refreshInterval)
+}
+
+// latencyValueClass maps the latency tone onto the value-text color. All
+// three pairs are the page's measured WCAG decisions (amber-700 5.02:1 and
+// red-600 4.83:1 on white; the -400 variants on gray-800) — the same pairs
+// TestRender_ContrastSafeStatusColors locks.
+func latencyValueClass(t latencyTone) string {
+	switch t {
+	case latencyToneWarn:
+		return "text-amber-700 dark:text-amber-400"
+	case latencyToneCritical:
+		return "text-red-600 dark:text-red-400"
+	default:
+		return "text-gray-900 dark:text-white"
+	}
 }
 
 // Trend scale values for the sparkline.

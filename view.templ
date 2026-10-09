@@ -65,22 +65,7 @@ templ View(data viewModel) {
 							Tone:  display.StatToneBlue,
 							Icon:  icons.Clock,
 						})
-						@display.StatCard(display.StatCardProps{
-							BaseProps: utils.BaseProps{
-								Attrs: templ.Attributes{
-									// Native hover tooltip: honest framing for the
-									// number without a script (the upstream Tooltip
-									// component emits its aria script with a nonce
-									// attribute even for nonce-less pages, which
-									// breaks the CSP-no-nonce contract).
-									"title": "Duration of the most recent probe batch across all services, refreshed every probe interval",
-								},
-							},
-							Value: fmt.Sprintf("%dms", data.LatencyMs),
-							Label: "Check Latency",
-							Tone:  display.StatToneBlue,
-							Icon:  icons.Bolt,
-						})
+						@latencyStatCard(data)
 						if data.InstanceID != "" {
 							@display.StatCard(display.StatCardProps{
 								Value: data.InstanceID,
@@ -449,6 +434,38 @@ templ timelineCard(data viewModel) {
 			}
 		</ol>
 	}
+}
+
+// latencyStatCard renders the Check Latency card on the StatCard skeleton.
+// Hand-rolled rather than display.StatCard because the reactive value tone
+// needs a hook upstream lacks: StatCardProps cannot color the <dd>, and its
+// yellow tile ships text-yellow-600 (~2.9:1 on white — the same failure
+// class the page-wide WCAG scan bans for green/amber-600). So the tile
+// keeps the metrics blue in every state (the two-family tone system) while
+// the value text carries the budget judgment in this page's validated
+// warn/critical pairs. Neutral bytes mirror StatCard output; the goldens
+// pin that fidelity. The native title tooltip keeps the honest framing the
+// upstream Tooltip component can't provide here (it emits its aria script
+// with a nonce attribute even for nonce-less pages).
+templ latencyStatCard(data viewModel) {
+	<div
+		class={ utils.Class(display.CardShellClass + " p-5") }
+		title="Duration of the most recent probe batch across all services, refreshed every probe interval"
+	>
+		<div class="flex items-center gap-4">
+			<div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/30">
+				@icons.Icon(icons.Bolt, "h-6 w-6 text-blue-600 dark:text-blue-400")
+			</div>
+			<dl class="min-w-0 flex-1">
+				<div class="mt-1 flex flex-col">
+					<dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Check Latency</dt>
+					<dd class={ "text-2xl font-semibold", latencyValueClass(data.LatencyTone) }>
+						{ fmt.Sprintf("%dms", data.LatencyMs) }
+					</dd>
+				</div>
+			</dl>
+		</div>
+	</div>
 }
 
 // headerActions renders the PageHeader action slot: the SSE connection pill
