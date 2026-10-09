@@ -62,10 +62,38 @@ func TestTrendTimelineLayout(t *testing.T) {
 		wantTrend    bool
 		wantTimeline bool
 	}{
-		{name: "both cards share the grid", samples: 3, transitions: 1, wantGrid: true, wantTrend: true, wantTimeline: true},
-		{name: "trend alone renders full-width", samples: 3, transitions: 0, wantGrid: false, wantTrend: true, wantTimeline: false},
-		{name: "timeline alone renders full-width", samples: 0, transitions: 1, wantGrid: false, wantTrend: false, wantTimeline: true},
-		{name: "neither renders the row", samples: 0, transitions: 0, wantGrid: false, wantTrend: false, wantTimeline: false},
+		{
+			name:         "both cards share the grid",
+			samples:      3,
+			transitions:  1,
+			wantGrid:     true,
+			wantTrend:    true,
+			wantTimeline: true,
+		},
+		{
+			name:         "trend alone renders full-width",
+			samples:      3,
+			transitions:  0,
+			wantGrid:     false,
+			wantTrend:    true,
+			wantTimeline: false,
+		},
+		{
+			name:         "timeline alone renders full-width",
+			samples:      0,
+			transitions:  1,
+			wantGrid:     false,
+			wantTrend:    false,
+			wantTimeline: true,
+		},
+		{
+			name:         "neither renders the row",
+			samples:      0,
+			transitions:  0,
+			wantGrid:     false,
+			wantTrend:    false,
+			wantTimeline: false,
+		},
 	}
 
 	for _, tt := range tests {

@@ -244,9 +244,11 @@ func alertSummary(vm viewModel) string {
 	}
 
 	total, problems := 0, 0
+
 	for _, group := range vm.Groups {
 		for _, row := range group.Rows {
 			total++
+
 			if row.Status != health.StatusPass {
 				problems++
 			}
