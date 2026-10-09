@@ -165,9 +165,8 @@ templ dashboardContent(data viewModel) {
 				// private audiences get live precision; the server text
 				// is already correct without JS (progressive enhancement).
 				· @display.RelativeTime(display.RelativeTimeProps{
-					BaseProps: utils.BaseProps{Nonce: data.DatastarNonce},
+					BaseProps: utils.BaseProps{Nonce: data.DatastarNonce, Class: "text-xs"},
 					Time:      data.LastUpdatedTime,
-					Class:     "text-xs",
 				})
 			}
 		}

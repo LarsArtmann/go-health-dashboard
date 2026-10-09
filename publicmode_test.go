@@ -1,11 +1,15 @@
 package dashboard_test
 
 import (
+	"context"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	"github.com/larsartmann/go-sse/ssetest"
 )
 
 func TestPublicMode_AnonymizesHTML(t *testing.T) {
@@ -190,10 +194,13 @@ func TestPublicMode_PatchesStayAnonymized(t *testing.T) {
 	)
 	defer s.cleanup()
 
+	server := httptest.NewServer(s.mux)
+	defer server.Close()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.server.URL+"/health/sse", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, server.URL+"/health/sse", nil)
 	if err != nil {
 		t.Fatalf("SSE request: %v", err)
 	}
