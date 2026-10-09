@@ -209,7 +209,7 @@ func TestPopulateHistory_TimelineTotalDisclosesCap(t *testing.T) {
 	}
 
 	for i, st := range statuses {
-		value := trendPassValue
+		value := float64(trendPassValue)
 		if st == string(health.StatusWarn) {
 			value = trendWarnValue
 		}
@@ -241,7 +241,7 @@ func TestPopulateHistory_TimelineTotalZeroWhenAllFit(t *testing.T) {
 
 	for i := range 3 {
 		st := string(health.StatusPass)
-		value := trendPassValue
+		value := float64(trendPassValue)
 		if i%2 == 1 {
 			st = string(health.StatusWarn)
 			value = trendWarnValue

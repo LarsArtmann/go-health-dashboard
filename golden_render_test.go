@@ -206,6 +206,26 @@ func TestGoldenRender_TrendTimeline(t *testing.T) {
 	goldenRender(t, "trendtimeline", vm)
 }
 
+// TestGoldenRender_LatencyBudget locks the reactive latency card in its
+// warn state: a batch that consumed more than half the refresh interval
+// renders the value in the page's measured warn pair (amber-700 light,
+// amber-400 dark) while the tile keeps its metrics blue. The tone is
+// stamped through the real applyLatencyTone mutator, so the golden pins
+// the wiring, not just the class map.
+func TestGoldenRender_LatencyBudget(t *testing.T) {
+	t.Parallel()
+
+	vm := goldenViewModel(t)
+	vm.LatencyMs = 1500
+	applyLatencyTone(&vm, 2*time.Second)
+
+	if vm.LatencyTone != latencyToneWarn {
+		t.Fatalf("1500ms against a 2s interval = %v, want warn", vm.LatencyTone)
+	}
+
+	goldenRender(t, "latencywarn", vm)
+}
+
 func goldenRender(t *testing.T, name string, vm viewModel) {
 	t.Helper()
 

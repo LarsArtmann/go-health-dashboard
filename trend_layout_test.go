@@ -117,3 +117,30 @@ func TestTrendTimelineLayout(t *testing.T) {
 		})
 	}
 }
+
+// TestTimelineNoteDisclosesCap pins the truncation notice: it renders only
+// when the ring dropped transitions (TimelineTotal > shown), with copy that
+// is honest about the window semantics — "latest", not a search-filter
+// promise (the upstream ListNote truncated variant's advice line would lie
+// here).
+func TestTimelineNoteDisclosesCap(t *testing.T) {
+	t.Parallel()
+
+	capped := trendLayoutViewModel(4, 5)
+	capped.TimelineTotal = 7
+
+	body := renderDashboardHTML(t, capped)
+	if !strings.Contains(body, "Showing the latest 5 of 7 status changes.") {
+		t.Errorf(
+			"capped timeline must disclose the window, got: %s",
+			extractLine(body, "status changes."),
+		)
+	}
+
+	uncapped := trendLayoutViewModel(4, 5)
+
+	body = renderDashboardHTML(t, uncapped)
+	if strings.Contains(body, "status changes.") {
+		t.Error("uncapped timeline must not render the truncation notice")
+	}
+}
