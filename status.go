@@ -166,6 +166,12 @@ type viewModel struct {
 	// keeps the coarse stamp while private deployments get the precise one
 	// (decided 2026-10-09, ROADMAP Open Questions Q2).
 	PublicMode bool
+	// InitialRender marks the page HTML (vs an SSE patch). The age's
+	// auto-refresh script may install only here — patches must stay
+	// script-free (TestSSE_PatchesContainNoInlineScripts); patch renders
+	// emit the bare <time data-tc-relative> element, which the singleton
+	// script installed at page load keeps ticking via its 30s re-query.
+	InitialRender bool
 	// ExportURL, TrendURL, and MetricsURL are the non-empty endpoints
 	// surfaced in the header links row: export/history JSON, trend JSON, and
 	// Prometheus metrics. Empty means the endpoint is disabled.

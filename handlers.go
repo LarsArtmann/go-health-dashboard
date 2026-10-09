@@ -173,6 +173,7 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 	vm.ExportURL = d.exportURL()
 	vm.TrendURL = d.trendURL()
 	vm.MetricsURL = d.metricsURL()
+	vm.InitialRender = true
 
 	if d.cfg.PublicMode {
 		anonymizeViewModel(&vm)

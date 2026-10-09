@@ -289,11 +289,14 @@ These require user decisions and cannot be resolved by reading code:
   probe's refresh cadence (amber past half, red at/past the interval; tile
   stays metrics-blue). Thresholds and rationale in `status.go`
   (`latencyToneFor`) and the CHANGELOG.
-- **Age-stamp precision policy (2026-10-09, §g Q2):** the "Updated … · 2m
-  ago" stamp is deliberately coarse (anti-fingerprint accepted risk,
-  golden-pinned). Keep coarse, or relax via client-ticked `RelativeTime`
-  — possibly tied to `WithPublicMode` so private deployments get precise
-  ages? Decides how much the anti-fingerprint stance costs in UX terms.
+- **Age-stamp precision policy — DECIDED 2026-10-09 (user pick: tie to
+  public mode).** Private deployments render the precise client-ticked age
+  (`display.RelativeTime`); `WithPublicMode` keeps the coarse
+  anti-fingerprint stamp. Shipped; wiring + leak-scanner extension in the
+  CHANGELOG. The threat model for the record: fine-grained ages on a
+  public page fingerprint the deployment (exact restart times correlate
+  with deploy cadence; precise uptimes/durations identify instances and
+  machine load).
 - **Release cadence — DECIDED 2026-10-09 (user pick: batch).** v0.11.0
   waits for the UI batch (reactive latency card ✓, timeline truncation
   notice ✓, touch tooltips story open — TODO_LIST) instead of shipping the

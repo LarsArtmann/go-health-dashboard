@@ -160,15 +160,27 @@ templ dashboardContent(data viewModel) {
 				// (exact restart times, instance uptime) — the anti-
 				// fingerprint accepted risk holds for untrusted audiences.
 				· { formatAge(data.LastUpdatedTime, time.Now().UTC()) }
-			} else {
-				// Precise, client-ticked age (decided 2026-10-09, Q2):
-				// private audiences get live precision; the server text
-				// is already correct without JS (progressive enhancement).
+			} else if data.InitialRender {
+				// Precise, client-ticked age (decided 2026-10-09, Q2).
+				// The page render installs the singleton auto-refresh
+				// script; the server text is already correct without JS.
 				· @display.RelativeTime(display.RelativeTimeProps{
 					BaseProps:   utils.BaseProps{Nonce: data.DatastarNonce, Class: "text-xs"},
 					Time:        data.LastUpdatedTime,
 					AutoRefresh: true,
 				})
+			} else {
+				// Patch render: bare element with the ticking attribute —
+				// patches must stay script-free (patch purity invariant),
+				// and the singleton script from the page render re-queries
+				// time[data-tc-relative] every 30s, so swapped elements
+				// keep ticking. formatAge is the honest pre-JS fallback
+				// text until the script formats it.
+				· <time
+					datetime={ data.LastUpdatedTime.Format(time.RFC3339) }
+					data-tc-relative
+					class="text-xs text-gray-500 dark:text-gray-400"
+				>{ formatAge(data.LastUpdatedTime, time.Now().UTC()) }</time>
 			}
 		}
 	</p>
