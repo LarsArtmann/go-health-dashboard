@@ -22,7 +22,7 @@ jobs:
     name: Draft release notes from CHANGELOG
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # The version-guard discipline guarantees the tag's commit carries
       # the re-headed CHANGELOG section (Version const + section + tag in
