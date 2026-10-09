@@ -179,6 +179,33 @@ func TestGoldenRender_SourceProvenTooltips(t *testing.T) {
 	goldenRender(t, "sourceproven", vm)
 }
 
+// TestGoldenRender_TrendTimeline captures the both-cards grid path: trend
+// history (>=2 samples) and timeline entries coexist, so the two cards
+// share the half/half grid (TestTrendTimelineLayout pins the branching by
+// markup assertions; this golden makes the grid markup itself reviewable in
+// diffs, like every other layout churn). The timeline carries BOTH
+// directions — a degrade into warn and a recovery into pass — locking the
+// direction glyph + badge pairing for each branch, and the sparkline holds
+// a full pass→warn→fail story so the polyline bytes are pinned too.
+func TestGoldenRender_TrendTimeline(t *testing.T) {
+	t.Parallel()
+
+	vm := goldenViewModel(t)
+	vm.History = []float64{
+		statusValue(health.StatusPass),
+		statusValue(health.StatusPass),
+		statusValue(health.StatusWarn),
+		statusValue(health.StatusFail),
+		statusValue(health.StatusFail),
+	}
+	vm.Timeline = []TimelineEntry{
+		{At: "11:58:41", Status: string(health.StatusWarn), Degraded: true},
+		{At: "12:01:07", Status: string(health.StatusPass), Degraded: false},
+	}
+
+	goldenRender(t, "trendtimeline", vm)
+}
+
 func goldenRender(t *testing.T, name string, vm viewModel) {
 	t.Helper()
 
