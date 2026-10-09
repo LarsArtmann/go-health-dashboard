@@ -56,8 +56,24 @@ forgetting.
   and gauges pass-tier via the upstream Rank, and sits outside the
   evidence universe (can neither deviate nor sit unproven-green); an
   all-off instance renders no truth strip.
+- **Age precision tied to public mode (decided 2026-10-09, Q2).** Private
+  deployments render a precise client-ticked age (`display.RelativeTime`,
+  server text correct without JS); `WithPublicMode` keeps the coarse
+  stamp — precise ages fingerprint a deployment (exact restart times,
+  instance uptime), so the anti-fingerprint stance follows the audience
+  switch. While wiring this, the public-mode patch path was found to skip
+  anonymization entirely — see Fixed.
 
 ### Fixed
+
+- **Public-mode SSE patches leaked real names and errors.**
+  `anonymizeViewModel` ran only on the initial HTML render; every SSE
+  broadcast re-renders `dashboardContent` from the raw response, so a
+  public-mode dashboard pushed real check names and error strings into
+  every connected browser's DOM. The leak scanner swept only `/health` and
+  `/health/metrics`, never patches — it now has a patch-path companion
+  (`TestPublicMode_PatchesStayAnonymized`). Caught 2026-10-09 while wiring
+  the age-precision flag.
 
 - Evidence truth-strip grammar: "0 of N checks **have** ever deviated from
   pass" (was "has"), and the unproven remainder now pluralizes correctly —

@@ -5,6 +5,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	health "github.com/larsartmann/go-health"
 )
@@ -139,5 +140,43 @@ func TestTimelineNoteDisclosesCap(t *testing.T) {
 	body = renderDashboardHTML(t, uncapped)
 	if strings.Contains(body, "status changes.") {
 		t.Error("uncapped timeline must not render the truncation notice")
+	}
+}
+
+// TestUpdatedAgePrecisionKeysOffPublicMode pins the age-precision decision
+// (2026-10-09, ROADMAP Q2): private deployments render the client-ticked
+// <time> element (server text already correct without JS), public mode
+// keeps the coarse formatAge stamp — precise ages fingerprint a deployment
+// (exact restart times, instance uptime), so the stance follows the
+// WithPublicMode audience switch.
+func TestUpdatedAgePrecisionKeysOffPublicMode(t *testing.T) {
+	t.Parallel()
+
+	stamp := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
+
+	private := trendLayoutViewModel(0, 0)
+	private.LastUpdated = "12:00:00 UTC"
+	private.LastUpdatedTime = stamp
+
+	body := renderDashboardHTML(t, private)
+	if !strings.Contains(body, "data-tc-relative") {
+		t.Error("private mode must render the ticking relative-time element")
+	}
+
+	wantDatetime := `datetime="` + stamp.Format(time.RFC3339) + `"`
+	if !strings.Contains(body, wantDatetime) {
+		t.Errorf("relative time must carry the pinned RFC3339 datetime %s", wantDatetime)
+	}
+
+	public := private
+	public.PublicMode = true
+
+	body = renderDashboardHTML(t, public)
+	if strings.Contains(body, "data-tc-relative") {
+		t.Error("public mode must keep the coarse stamp (no ticking element)")
+	}
+
+	if !strings.Contains(body, "Updated 12:00:00 UTC") {
+		t.Error("public mode must keep the absolute stamp line")
 	}
 }

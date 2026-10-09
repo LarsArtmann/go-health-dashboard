@@ -224,6 +224,7 @@ func TestPublicMode_PatchesStayAnonymized(t *testing.T) {
 		for _, secret := range secrets {
 			if strings.Contains(data, secret) {
 				t.Errorf("SSE patch leaked %q in public mode:\n%.200s", secret, data)
+
 				return true
 			}
 		}
