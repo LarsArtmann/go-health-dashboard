@@ -780,3 +780,109 @@ func TestBuildViewModelAt_DerivesMetadataTexts(t *testing.T) {
 		)
 	}
 }
+
+func TestLatencyToneFor(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		latency time.Duration
+		refresh time.Duration
+		want    latencyTone
+	}{
+		{
+			name:    "no refresh cadence means no judgment",
+			latency: time.Minute,
+			refresh: 0,
+			want:    latencyToneNeutral,
+		},
+		{
+			name:    "no latency measured means no judgment",
+			latency: 0,
+			refresh: 2 * time.Second,
+			want:    latencyToneNeutral,
+		},
+		{
+			name:    "well inside the budget is neutral",
+			latency: 200 * time.Millisecond,
+			refresh: 2 * time.Second,
+			want:    latencyToneNeutral,
+		},
+		{
+			name:    "exactly half the interval is still neutral",
+			latency: time.Second,
+			refresh: 2 * time.Second,
+			want:    latencyToneNeutral,
+		},
+		{
+			name:    "past half the interval is warn",
+			latency: time.Second + time.Nanosecond,
+			refresh: 2 * time.Second,
+			want:    latencyToneWarn,
+		},
+		{
+			name:    "three quarters of the interval is warn",
+			latency: 1500 * time.Millisecond,
+			refresh: 2 * time.Second,
+			want:    latencyToneWarn,
+		},
+		{
+			name:    "exactly the interval is critical",
+			latency: 2 * time.Second,
+			refresh: 2 * time.Second,
+			want:    latencyToneCritical,
+		},
+		{
+			name:    "past the interval is critical",
+			latency: 3 * time.Second,
+			refresh: 2 * time.Second,
+			want:    latencyToneCritical,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := latencyToneFor(tt.latency, tt.refresh); got != tt.want {
+				t.Errorf(
+					"latencyToneFor(%v, %v) = %v, want %v",
+					tt.latency,
+					tt.refresh,
+					got,
+					tt.want,
+				)
+			}
+		})
+	}
+}
+
+func TestApplyLatencyTone(t *testing.T) {
+	t.Parallel()
+
+	vm := viewModel{LatencyMs: 1500}
+	applyLatencyTone(&vm, 2*time.Second)
+
+	if vm.LatencyTone != latencyToneWarn {
+		t.Errorf("1500ms against a 2s interval = %v, want warn", vm.LatencyTone)
+	}
+}
+
+func TestLatencyValueClass(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		tone latencyTone
+		want string
+	}{
+		{latencyToneNeutral, "text-gray-900 dark:text-white"},
+		{latencyToneWarn, "text-amber-700 dark:text-amber-400"},
+		{latencyToneCritical, "text-red-600 dark:text-red-400"},
+	}
+
+	for _, tt := range tests {
+		if got := latencyValueClass(tt.tone); got != tt.want {
+			t.Errorf("latencyValueClass(%v) = %q, want %q", tt.tone, got, tt.want)
+		}
+	}
+}

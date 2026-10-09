@@ -113,15 +113,15 @@ type viewModel struct {
 	// replicas behind one load balancer are distinguishable. Cleared in
 	// public mode: instance IDs are semi-identifying (they often encode
 	// host or zone names).
-	InstanceID    string
-	Uptime        string
-	LatencyMs int64
+	InstanceID string
+	Uptime     string
+	LatencyMs  int64
 	// LatencyTone grades the batch latency against the probe's refresh
 	// cadence (applyLatencyTone): neutral within half the interval, warn
 	// past half, critical past the whole interval. Derived at build time so
 	// HTML and SSE patches agree and goldens stay deterministic. The tile
 	// keeps its metrics blue — the value text carries the judgment.
-	LatencyTone latencyTone
+	LatencyTone   latencyTone
 	Groups        []checkGroup
 	SSEURL        string
 	FaviconURL    string

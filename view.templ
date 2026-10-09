@@ -449,7 +449,7 @@ templ timelineCard(data viewModel) {
 // with a nonce attribute even for nonce-less pages).
 templ latencyStatCard(data viewModel) {
 	<div
-		class={ utils.Class(display.CardShellClass + " p-5") }
+		class={ utils.Class("bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xs print:shadow-none print:border-0 print:bg-transparent p-5") }
 		title="Duration of the most recent probe batch across all services, refreshed every probe interval"
 	>
 		<div class="flex items-center gap-4">

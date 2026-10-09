@@ -152,6 +152,7 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 	resp := d.currentResponse()
 	vm := buildViewModel(resp, d.cfg.Title, d.cfg.Routes.SSE, d.cfg.Grouping)
 	applyCollapsePolicy(&vm, d.cfg.HealthyGroupCollapseThreshold)
+	applyLatencyTone(&vm, d.probe.RefreshInterval())
 
 	nonce := d.cfg.Nonce
 	if d.cfg.NonceExtractor != nil {

@@ -158,6 +158,7 @@ func (p *pusher) renderPatch(resp health.Response) (sse.Event, bool) {
 		p.dashboard.cfg.Grouping,
 	)
 	applyCollapsePolicy(&vm, p.dashboard.cfg.HealthyGroupCollapseThreshold)
+	applyLatencyTone(&vm, p.dashboard.probe.RefreshInterval())
 	vm.CSSPath = p.dashboard.cfg.CSSPath
 	vm.HasDatastarRuntime = !p.dashboard.cfg.NoDatastarRuntime
 	vm.DatastarSrc = p.dashboard.cfg.DatastarSrc
