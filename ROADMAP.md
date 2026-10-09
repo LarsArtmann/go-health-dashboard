@@ -158,8 +158,10 @@ Raw ideas:
 - README: coverage badge; "protect probes via network policy" note;
   screenshot regenerate one-liner + caption for the light screenshot
 - doc.go: webhook + public-mode combo example; `WithBasePath` example
-- templ-components UI follow-ups (PageHeader, Stack, StatCard icons, Dot) —
-  verify not already shipped upstream, then adopt
+- templ-components UI follow-ups — PageHeader and StatCard icon tiles
+  ADOPTED in the 2026-10-09 UI revamp (goldens + browser suite green);
+  remaining upstream candidates: Stack, Dot (verify not already shipped
+  upstream, then adopt)
 - Deprecate `WithNonce` in favor of `WithNonceExtractor` (long-term)
 - `nix run .#ci` local mirror of the GitHub Actions steps
 - Re-check the gopls stdversion false positive on a future gopls release
@@ -173,6 +175,36 @@ Raw ideas:
   relaxation; blocked until both UI modules move)
 - Sign release tags (`tag.gpgSign`, documented in `docs/release-checklist.md`;
   compare links shipped in the CHANGELOG footer 2026-09-04)
+
+### 6. Dashboard UI/UX polish (post-2026-10-09 revamp follow-ups)
+
+Low-impact or design-heavy ideas surfaced by the UI-revamp status report
+(`docs/status/2026-10-09_16-20_ui-ux-revamp-v1210-adoption-status.md` §f);
+bounded high-signal siblings live in TODO_LIST.md.
+
+Raw ideas:
+
+- Browser-level half/half grid assertion at desktop width (the branching is
+  unit- and golden-pinned; a rendered-width assertion would close the loop)
+- Sticky table header for long healthy groups
+- Print-style verification pass over the new cards (`print:` classes)
+- Dark-mode aggregate screenshot for the federation docs
+- `datastar.PolledRegion` evaluation for a future non-SSE fallback mode
+- `EmptyState` for the no-match filter hint (currently text-only)
+- Status-badge transition animation (motion-reduce safe, CSP-safe)
+- Tone for group count badges (amber count on warn groups)
+- `datastar.SSEErrorHandling` as an opt-in complement to the connection pill
+- Probe `RefreshInterval` surfaced in the latency tooltip (context for the
+  number)
+- Document the icons-module adoption pattern in the templ-components
+  consumer notes (fleet-wide guidance)
+- Verify BuildFlow cannot sweep icons/datastar/utils to divergent versions;
+  document the pin-guard failure mode for that case (fleet-level)
+- Upstream ask: connection-pill `[hidden]` resilience without Tailwind
+  preflight (after the harness fix lands — TODO_LIST)
+- Two-family tone rule folded into the AGENTS dark-mode checklist (after
+  the tone-system ADR lands — TODO_LIST)
+- Annotate superseded UI plans in `docs/status/archived/`
 
 ## v1.0 Criteria
 
@@ -249,6 +281,21 @@ These require user decisions and cannot be resolved by reading code:
   full compose stack with HTTP probes, or keep the demo manual-only
   (documented)? Costs CI minutes and Docker-in-CI surface; gates the
   deploy-e2e and release-page jobs.
+- **Latency stat-card tone policy (2026-10-09, from the UI-revamp report
+  §g Q1):** the latency card carries a fixed blue "metrics" tile today.
+  Keep it fixed (identity/metrics two-family system, no judgment implied)
+  or make it data-reactive (e.g. amber when the batch duration exceeds a
+  fraction of the probe's RefreshInterval)? Changes the public render
+  contract (goldens + contrast constraints).
+- **Age-stamp precision policy (2026-10-09, §g Q2):** the "Updated … · 2m
+  ago" stamp is deliberately coarse (anti-fingerprint accepted risk,
+  golden-pinned). Keep coarse, or relax via client-ticked `RelativeTime`
+  — possibly tied to `WithPublicMode` so private deployments get precise
+  ages? Decides how much the anti-fingerprint stance costs in UX terms.
+- **Release cadence (2026-10-09, §g Q3):** cut v0.11.0 with the UI revamp
+  alone (tree is release-candidate-quality), or batch it with more UI
+  work (e.g. timeline ListNote, touch tooltips) into one release? Push/tag
+  needs authorization regardless.
 
 ## Design Spikes (v0.3.x cycle, not implemented)
 
@@ -271,8 +318,12 @@ Summaries in `docs/planning/archived/2026-09-03_v03-cycle-decisions-notes.md`.
   not-yet-started or drained dashboard SHOULD show unhealthy. Users who do
   not want it construct with `New` instead of `Register`. No filter option;
   revisit only with a concrete demand signal.
-- **InstanceID UI: defer.** go-health carries `InstanceID` in its JSON only;
-  the dashboard adds no StatCard for it. Rationale: public mode would need a
-  masking rule for it, single-replica users gain nothing, and the JSON field
-  already serves load-balancer attribution. Revisit if multi-replica
-  dashboard UI demand materializes.
+- **InstanceID UI: DEFER OVERTAKEN (annotated 2026-10-09).** The stat card
+  shipped anyway in `c57869c` (2026-09-22, v0.10.x cycle): `viewModel.InstanceID`
+  renders as its own stat card when non-empty, cleared in public mode
+  (instance IDs are semi-identifying) — see `status.go` viewModel. The
+  masking rule this decision worried about shipped WITH the card, so the
+  rationale is satisfied; recorded here so the decision trail stays honest.
+  Original rationale: public mode would need a masking rule for it,
+  single-replica users gain nothing, and the JSON field already serves
+  load-balancer attribution.
