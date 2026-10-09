@@ -21,7 +21,7 @@ func respWithChecks(statuses map[string]health.Status) health.Response {
 }
 
 // worstOf rolls per-check statuses up the way go-health does: fail beats
-// warn beats pass.
+// warn beats pass; off keeps the floor (pass-tier, v0.5.1).
 func worstOf(statuses map[string]health.Status) health.Status {
 	status := health.StatusPass
 
@@ -33,6 +33,8 @@ func worstOf(statuses map[string]health.Status) health.Status {
 			status = health.StatusWarn
 		case health.StatusPass:
 			// pass keeps the floor
+		case health.StatusOff:
+			// off keeps the floor
 		}
 	}
 

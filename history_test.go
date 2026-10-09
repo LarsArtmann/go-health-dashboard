@@ -197,7 +197,7 @@ func TestPopulateHistory_TimelineTotalDisclosesCap(t *testing.T) {
 	t.Parallel()
 
 	history := newHistoryBuffer(16)
-	at := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
+	firstAt := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
 
 	// Eight alternating samples produce seven transitions — more than the
 	// five the timeline keeps, so the note's pre-cap count must be set.
@@ -208,13 +208,15 @@ func TestPopulateHistory_TimelineTotalDisclosesCap(t *testing.T) {
 		string(health.StatusPass), string(health.StatusWarn),
 	}
 
-	for i, st := range statuses {
+	for i, status := range statuses {
 		value := float64(trendPassValue)
-		if st == string(health.StatusWarn) {
+		if status == string(health.StatusWarn) {
 			value = trendWarnValue
 		}
 
-		history.record(sample{At: at.Add(time.Duration(i) * time.Second), Value: value, Status: st})
+		history.record(
+			sample{At: firstAt.Add(time.Duration(i) * time.Second), Value: value, Status: status},
+		)
 	}
 
 	vm := viewModel{}
@@ -237,17 +239,19 @@ func TestPopulateHistory_TimelineTotalZeroWhenAllFit(t *testing.T) {
 	t.Parallel()
 
 	history := newHistoryBuffer(8)
-	at := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
+	firstAt := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
 
 	for i := range 3 {
-		st := string(health.StatusPass)
+		status := string(health.StatusPass)
 		value := float64(trendPassValue)
 		if i%2 == 1 {
-			st = string(health.StatusWarn)
+			status = string(health.StatusWarn)
 			value = trendWarnValue
 		}
 
-		history.record(sample{At: at.Add(time.Duration(i) * time.Second), Value: value, Status: st})
+		history.record(
+			sample{At: firstAt.Add(time.Duration(i) * time.Second), Value: value, Status: status},
+		)
 	}
 
 	vm := viewModel{}

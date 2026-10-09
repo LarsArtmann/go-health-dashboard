@@ -8,6 +8,7 @@ import (
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/display"
 	"github.com/larsartmann/templ-components/feedback"
+	"github.com/larsartmann/templ-components/icons"
 )
 
 func TestMapStatusToBadge(t *testing.T) {
@@ -296,6 +297,19 @@ func TestAlertSummary(t *testing.T) {
 			name: "shutting down suppresses the summary",
 			vm:   viewModel{ShuttingDown: true},
 			want: "",
+		},
+		{
+			name: "off services are outside the reporting population",
+			vm: viewModel{Groups: []checkGroup{
+				{Status: health.StatusWarn, Rows: []checkRow{
+					{Name: "cache", Status: health.StatusWarn},
+				}},
+				{Status: health.StatusPass, Rows: []checkRow{
+					{Name: "db", Status: health.StatusPass},
+					{Name: "feature-flagged", Status: health.StatusOff},
+				}},
+			}},
+			want: "1 of 2 services reporting issues.",
 		},
 	}
 
@@ -884,5 +898,24 @@ func TestLatencyValueClass(t *testing.T) {
 		if got := latencyValueClass(tt.tone); got != tt.want {
 			t.Errorf("latencyValueClass(%v) = %q, want %q", tt.tone, got, tt.want)
 		}
+	}
+}
+
+func TestTimelineEntryMappers_OffIsNeutral(t *testing.T) {
+	t.Parallel()
+
+	entry := TimelineEntry{At: "12:00:00", Status: string(health.StatusOff), Degraded: false}
+
+	if got := timelineBadgeType(entry); got != display.BadgeNeutral {
+		t.Errorf("off badge = %v, want neutral (off is visibility, not a verdict)", got)
+	}
+
+	if got := timelineTrendIcon(entry); got != icons.Minus {
+		t.Errorf("off glyph = %v, want minus (neither up nor down)", got)
+	}
+
+	wantClass := "h-4 w-4 text-gray-500 dark:text-gray-400"
+	if got := timelineTrendIconClass(entry); got != wantClass {
+		t.Errorf("off glyph class = %q, want %q", got, wantClass)
 	}
 }

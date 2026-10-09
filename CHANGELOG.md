@@ -35,6 +35,27 @@ forgetting.
 
 - `templ-components/icons` promoted to a direct dependency (stat-card and
   timeline glyphs) at the audited v1.21.0 pin.
+- **Reactive latency stat card.** The Check Latency value text grades the
+  probe batch against its refresh cadence (derived from the probe's
+  `RefreshInterval`, decided 2026-10-09): neutral within half the interval,
+  amber past half (`text-amber-700 dark:text-amber-400`, 5.02:1), red at or
+  past the whole interval (`text-red-600 dark:text-red-400`, 4.83:1). The
+  tile keeps its metrics blue — the two-family tone system holds; the
+  card is hand-rolled on the StatCard skeleton because upstream has no
+  value-tone hook (filed upstream). Both render paths re-derive the tone;
+  goldens pin the wiring (`latencywarn`).
+- **Timeline truncation notice.** When the trend ring held more transitions
+  than the 5-entry cap, the Status Changes card discloses "Showing the
+  latest 5 of N status changes." (ListNote shell classes, honest window
+  copy — upstream's truncated variant advises "narrow your search", which
+  is wrong for a rolling window; custom-message hook filed upstream).
+- **go-health v0.5.1 `StatusOff` integration.** A deliberately unconfigured
+  dependency (`health.Off`, status `"off"`) renders as a neutral badge in
+  the healthy group, never counts as a problem (alert scale, group roll-up,
+  timeline direction all treat off as visibility, never a verdict), plots
+  and gauges pass-tier via the upstream Rank, and sits outside the
+  evidence universe (can neither deviate nor sit unproven-green); an
+  all-off instance renders no truth strip.
 
 ### Fixed
 

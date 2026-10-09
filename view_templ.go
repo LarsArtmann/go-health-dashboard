@@ -1425,13 +1425,13 @@ func timelineCard(data viewModel) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = icons.Icon(timelineTrendIcon(entry.Degraded), timelineTrendIconClass(entry.Degraded)).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.Icon(timelineTrendIcon(entry), timelineTrendIconClass(entry)).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				templ_7745c5c3_Err = display.Badge(display.BadgeProps{
 					Text: entry.Status,
-					Type: timelineBadgeType(entry.Degraded),
+					Type: timelineBadgeType(entry),
 					Size: display.BadgeSizeSM,
 				}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
@@ -1676,36 +1676,49 @@ func headerActions(data viewModel) templ.Component {
 // metrics). One shared declaration keeps the four render sites in lockstep.
 const endpointLinkClass = "inline-flex items-center gap-1 font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300"
 
-// timelineBadgeType maps a timeline entry's direction to its badge style:
-// a transition away from pass is the warning story, a recovery the success one.
-func timelineBadgeType(degraded bool) display.BadgeType {
-	if degraded {
+// timelineBadgeType maps a timeline entry to its badge style: a transition
+// away from pass is the warning story, a recovery the success one, and an
+// off entry the neutral one (go-health v0.5.1: off is visibility — neither
+// a degradation nor a recovery).
+func timelineBadgeType(entry TimelineEntry) display.BadgeType {
+	switch {
+	case entry.Status == string(health.StatusOff):
+		return display.BadgeNeutral
+	case entry.Degraded:
 		return display.BadgeWarning
+	default:
+		return display.BadgeSuccess
 	}
-
-	return display.BadgeSuccess
 }
 
-// timelineTrendIcon picks the direction glyph for a status change: an arrow
-// down when the service degraded, a trending-up arrow when it recovered.
-// Decorative only — the adjacent badge carries the status text.
-func timelineTrendIcon(degraded bool) icons.Name {
-	if degraded {
+// timelineTrendIcon picks the direction glyph: an arrow down when the
+// service degraded, a trending-up arrow when it recovered, a minus for off
+// (an unconfigured dependency flipped — neither up nor down). Decorative
+// only — the adjacent badge carries the status text.
+func timelineTrendIcon(entry TimelineEntry) icons.Name {
+	switch {
+	case entry.Status == string(health.StatusOff):
+		return icons.Minus
+	case entry.Degraded:
 		return icons.ArrowDown
+	default:
+		return icons.ArrowTrendingUp
 	}
-
-	return icons.ArrowTrendingUp
 }
 
 // timelineTrendIconClass colors the direction glyph to match its badge tone.
 // The -700 light variants carry the WCAG AA contrast decisions locked by
-// TestRender_ContrastSafeStatusColors (-600 fails on white).
-func timelineTrendIconClass(degraded bool) string {
-	if degraded {
+// TestRender_ContrastSafeStatusColors (-600 fails on white); off uses the
+// page's notice gray (4.83:1 on white).
+func timelineTrendIconClass(entry TimelineEntry) string {
+	switch {
+	case entry.Status == string(health.StatusOff):
+		return "h-4 w-4 text-gray-500 dark:text-gray-400"
+	case entry.Degraded:
 		return "h-4 w-4 text-amber-700 dark:text-amber-400"
+	default:
+		return "h-4 w-4 text-green-700 dark:text-green-400"
 	}
-
-	return "h-4 w-4 text-green-700 dark:text-green-400"
 }
 
 // versionOrUnknown returns the version string or "unknown" when empty.
