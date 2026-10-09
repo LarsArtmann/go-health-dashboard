@@ -236,6 +236,78 @@ func TestBuildViewModel_ShuttingDown(t *testing.T) {
 	if vm.StatusText != "Shutting Down — Draining Traffic" {
 		t.Errorf("shutdown text: want 'Shutting Down — Draining Traffic', got %q", vm.StatusText)
 	}
+
+	if !vm.ShuttingDown {
+		t.Error("ShuttingDown flag: want true, got false")
+	}
+
+	if got := alertSummary(vm); got != "" {
+		t.Errorf("shutdown alert summary: want empty, got %q", got)
+	}
+}
+
+func TestAlertSummary(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		vm   viewModel
+		want string
+	}{
+		{
+			name: "no services renders nothing",
+			vm:   viewModel{},
+			want: "",
+		},
+		{
+			name: "all pass reports the count",
+			vm: viewModel{Groups: []checkGroup{
+				{Status: health.StatusPass, Rows: []checkRow{
+					{Name: "db", Status: health.StatusPass},
+					{Name: "cache", Status: health.StatusPass},
+				}},
+			}},
+			want: "0 of 2 services reporting pass.",
+		},
+		{
+			name: "mixed reports the problem scale",
+			vm: viewModel{Groups: []checkGroup{
+				{Status: health.StatusWarn, Rows: []checkRow{
+					{Name: "cache", Status: health.StatusWarn},
+				}},
+				{Status: health.StatusPass, Rows: []checkRow{
+					{Name: "db", Status: health.StatusPass},
+					{Name: "queue", Status: health.StatusPass},
+				}},
+			}},
+			want: "1 of 3 services reporting issues.",
+		},
+		{
+			name: "all fail reports every service",
+			vm: viewModel{Groups: []checkGroup{
+				{Status: health.StatusFail, Rows: []checkRow{
+					{Name: "db", Status: health.StatusFail},
+					{Name: "cache", Status: health.StatusFail},
+				}},
+			}},
+			want: "2 of 2 services reporting issues.",
+		},
+		{
+			name: "shutting down suppresses the summary",
+			vm:   viewModel{ShuttingDown: true},
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := alertSummary(tt.vm); got != tt.want {
+				t.Errorf("alertSummary: want %q, got %q", tt.want, got)
+			}
+		})
+	}
 }
 
 func TestFingerprintChecks_Deterministic(t *testing.T) {

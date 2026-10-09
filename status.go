@@ -163,6 +163,11 @@ type viewModel struct {
 	// HasDatastarRuntime is false when the page is served without the
 	// Datastar SDK (WithNoDatastarRuntime); SDK-dependent UI is omitted.
 	HasDatastarRuntime bool
+	// ShuttingDown mirrors go-health's Response flag: the probe is draining
+	// and the overall banner announces that instead of the health story.
+	// The alert's scale summary suppresses itself while set — "All services
+	// pass" would contradict "Shutting Down".
+	ShuttingDown bool
 	// Evidence summarizes the observational record behind the green rows:
 	// how many of the current checks have ever deviated from pass under
 	// this pusher, and since when. Populated by populateEvidence; zero
@@ -223,7 +228,41 @@ func buildViewModelAt(
 		SSEURL:          sseURL,
 		ShowStatCards:   true,
 		Grouping:        mode,
+		ShuttingDown:    resp.ShuttingDown,
 	}
+}
+
+// alertSummary renders the one-line scale inside the overall-status alert:
+// "1 of 3 services reporting issues." when anything is non-pass, otherwise
+// "N of N services reporting pass." so the banner also answers "how many
+// services am I looking at". Empty when nothing is registered (the bare
+// title reads better than "0 of 0") and while shutting down (the title
+// carries that story; a health verdict would contradict it).
+func alertSummary(vm viewModel) string {
+	if vm.ShuttingDown {
+		return ""
+	}
+
+	total, problems := 0, 0
+	for _, group := range vm.Groups {
+		for _, row := range group.Rows {
+			total++
+			if row.Status != health.StatusPass {
+				problems++
+			}
+		}
+	}
+
+	if total == 0 {
+		return ""
+	}
+
+	state := "pass"
+	if problems > 0 {
+		state = "issues"
+	}
+
+	return fmt.Sprintf("%d of %d services reporting %s.", problems, total, state)
 }
 
 // Trend scale values for the sparkline.
