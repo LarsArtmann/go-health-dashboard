@@ -160,6 +160,12 @@ type viewModel struct {
 	// LastUpdatedTime is the machine timestamp behind LastUpdated, used to
 	// render the coarse "2m ago" age next to the absolute stamp.
 	LastUpdatedTime time.Time
+	// PublicMode marks the anonymized presentation (WithPublicMode). The
+	// Updated age keys off it: precise client-ticked ages fingerprint a
+	// deployment (exact restart times, instance uptime), so public mode
+	// keeps the coarse stamp while private deployments get the precise one
+	// (decided 2026-10-09, ROADMAP Open Questions Q2).
+	PublicMode bool
 	// ExportURL, TrendURL, and MetricsURL are the non-empty endpoints
 	// surfaced in the header links row: export/history JSON, trend JSON, and
 	// Prometheus metrics. Empty means the endpoint is disabled.
@@ -817,6 +823,7 @@ type TimelineEntry struct {
 // are masked too — topology is as identifying as names. The instance ID is
 // cleared outright: it often encodes a host or zone name.
 func anonymizeViewModel(vm *viewModel) {
+	vm.PublicMode = true
 	vm.InstanceID = ""
 
 	for groupIdx := range vm.Groups {

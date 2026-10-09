@@ -168,6 +168,16 @@ func (p *pusher) renderPatch(resp health.Response) (sse.Event, bool) {
 	vm.TrendURL = p.dashboard.trendURL()
 	vm.MetricsURL = p.dashboard.metricsURL()
 
+	// Public mode must hold on the patch path too: every broadcast
+	// re-renders dashboardContent from the raw response, so skipping
+	// anonymization here would leak real names and errors into the DOM of
+	// every connected browser (the leak scanner originally swept only the
+	// initial HTML — caught 2026-10-09 while wiring the age-precision
+	// flag).
+	if p.dashboard.cfg.PublicMode {
+		anonymizeViewModel(&vm)
+	}
+
 	if p.history != nil {
 		populateHistory(&vm, p.history, p.dashboard.cfg.TimelineMaxAge)
 	}

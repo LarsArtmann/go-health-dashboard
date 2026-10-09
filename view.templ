@@ -155,7 +155,21 @@ templ dashboardContent(data viewModel) {
 	<p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
 		Updated { data.LastUpdated }
 		if !data.LastUpdatedTime.IsZero() {
-			· { formatAge(data.LastUpdatedTime, time.Now().UTC()) }
+			if data.PublicMode {
+				// Coarse stamp: precise ages fingerprint a deployment
+				// (exact restart times, instance uptime) — the anti-
+				// fingerprint accepted risk holds for untrusted audiences.
+				· { formatAge(data.LastUpdatedTime, time.Now().UTC()) }
+			} else {
+				// Precise, client-ticked age (decided 2026-10-09, Q2):
+				// private audiences get live precision; the server text
+				// is already correct without JS (progressive enhancement).
+				· @display.RelativeTime(display.RelativeTimeProps{
+					BaseProps: utils.BaseProps{Nonce: data.DatastarNonce},
+					Time:      data.LastUpdatedTime,
+					Class:     "text-xs",
+				})
+			}
 		}
 	</p>
 	if !data.Evidence.Since.IsZero() && data.Evidence.Total > 0 {

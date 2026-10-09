@@ -173,3 +173,54 @@ func TestPublicMode_FilterHaystackStaysMaskedAndSearchable(t *testing.T) {
 		"no masked check-N name found in the filter haystack — the filter is effectively dead in public mode",
 	)
 }
+
+// TestPublicMode_PatchesStayAnonymized extends the leak scanner to the SSE
+// patch path: every broadcast re-renders dashboardContent from the raw
+// response, so a patch built without anonymization would leak real names
+// and errors into the DOM of every connected browser — invisible to the
+// HTML-only sweep above (caught 2026-10-09 while wiring age precision).
+func TestPublicMode_PatchesStayAnonymized(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboardWithFailures(t,
+		dashboard.WithPublicMode(),
+		dashboard.WithEmbeddedDatastarSDK(),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithPushMode(dashboard.PushAlways),
+	)
+	defer s.cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.server.URL+"/health/sse", nil)
+	if err != nil {
+		t.Fatalf("SSE request: %v", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("SSE connect: %v", err)
+	}
+	defer resp.Body.Close()
+
+	stream := newSSEStream(resp.Body)
+
+	secrets := []string{"database", "cache", "queue", "connection refused", "timeout"}
+
+	stream.waitFor(t, func(evt ssetest.Event) bool {
+		data := evt.Data()
+		if !strings.Contains(data, "data-filter-row") {
+			return false
+		}
+
+		for _, secret := range secrets {
+			if strings.Contains(data, secret) {
+				t.Errorf("SSE patch leaked %q in public mode:\n%.200s", secret, data)
+				return true
+			}
+		}
+
+		return true
+	}, 3*time.Second)
+}
