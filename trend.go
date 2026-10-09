@@ -175,8 +175,6 @@ func (d *Dashboard) TrendHandler() http.HandlerFunc {
 // CSV and NDJSON stay per-sample rows (check-level fields have no sample
 // column to live in); the /health JSON contract stays go-health-shaped by
 // design — export is the one endpoint that extends the shape.
-//
-//nolint:gohumanize // this is CSV serialization: 'g'-format floats are deliberate and thousands separators would corrupt the unquoted CSV field
 func (d *Dashboard) ExportHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		push := d.push.Load()
