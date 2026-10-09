@@ -1065,113 +1065,590 @@
 
         <!-- Findings -->
         <section id="findings">
-          <h2><span class="num">01</span>Findings</h2>
-          <p>These are the issues that need attention, ordered by impact.</p>
+          <h2><span class="num">01</span>Capability gaps, ordered by impact</h2>
+          <p>
+            Each card grades one go-health capability against this repository's
+            actual usage. Statuses: Missed Opportunity (never touched),
+            Partially Used (a stronger built-in path exists or the wiring is
+            half-done), Fully Leveraged (covered in the strengths section).
+            Zero capabilities graded as misused.
+          </p>
 
-          <!-- Issue 1 -->
-          <div class="issue issue-critical" id="issue-1">
+          <div class="issue issue-critical" id="finding-hook">
             <span class="severity severity-critical"
-              >Blocking &middot; High impact</span
+              >Missed Opportunity &middot; High impact</span
             >
-            <h3>Critical issue title</h3>
+            <h3>
+              WithEvaluationHook is unused — trend and evidence are blind
+              between push ticks
+            </h3>
             <div class="where">
-              path/to/file.go:42-58 &middot; short context
+              go-health README "Observability" + docs/panic-recovery-design.md
+              &middot; 0 references in this repo &middot; observation points:
+              pusher.go tick loop, history.go, evidence.go
             </div>
             <p>
-              Describe the problem, cite the code or behavior, and explain why
-              it matters to the reader's goals.
+              The hook fires synchronously after every probe evaluation (probe
+              cadence = WithRefreshInterval, default 1s) with a defensive copy
+              of the classified response, and — since v0.5.1 — a panicking hook
+              is recovered into a visible non-critical "evaluation-hook" warn
+              row. go-health documents it as "the seam for metrics and
+              alerting ... without polling". This repo's trend ring and
+              evidence log instead sample only inside the pusher tick, so a
+              flap that starts and clears between two pushes never deviates,
+              never enters the evidence strip, and never plots on the timeline
+              — precisely the health-washing window the evidence strip exists
+              to close. Constraint: the hook attaches at probe construction,
+              and the dashboard receives an already-built Prober, so the
+              library cannot register it; adoption needs a small ingest API
+              plus consumer wiring.
             </p>
-            <pre><code>// Example of the problematic pattern
-func BadExample() {}</code></pre>
+            <pre><code>// Today: observation cadence == push cadence
+for {
+    select {
+    case &lt;-ticker.C: // PushInterval
+        resp := dash.currentResponse()
+        ring.record(resp) // trend + evidence sampled here, and only here
+    ...
+}
+
+// Target: probe cadence feeds the ring, push stays a render cadence
+probe := health.NewChecks(demoChecks,
+    health.WithEvaluationHook(func(r health.Response) {
+        dash.Observe(r) // new: WithEvaluationSink — ring + evidence see every evaluation
+    }))</code></pre>
             <div class="callout callout-teal">
-              <strong>Fix: recommended action</strong>
-              State the concrete fix, including file names, function names, or
-              configuration changes.
+              <strong>Recommendation</strong>
+              Add WithEvaluationSink(func(health.Response)) to the dashboard
+              (ring + evidence ingest, reusing the tick-path recorders), wire
+              the hook in example and hub, and document the consumer-side
+              pattern for external users. Note federation has no hook — its
+              observation happens on the remotes.
             </div>
           </div>
 
-          <!-- Issue 2 -->
-          <div class="issue issue-important" id="issue-2">
-            <span class="severity severity-important"
-              >Important &middot; Medium impact</span
+          <div class="issue issue-critical" id="finding-drain">
+            <span class="severity severity-critical"
+              >Missed Opportunity &middot; High impact</span
             >
-            <h3>Important issue title</h3>
-            <div class="where">path/to/another.go:12-19</div>
+            <h3>
+              Two-phase drain unused — readiness reports 200 while the HTTP
+              server is draining
+            </h3>
+            <div class="where">
+              example/main.go:112-121 &middot; cmd/health-hub/main.go:175,206-208
+              &middot; go-health: WithShutdownGracePeriod, MarkShuttingDown (0
+              references here)
+            </div>
             <p>
-              Explain the risk. Important issues are not blockers but would make
-              a careful reviewer hesitate before shipping.
+              go-health ships the exact primitive for graceful drains:
+              WithShutdownGracePeriod(d) makes Probe.Shutdown first mark the
+              probe draining — readiness flips to 503 while the refresh loop
+              keeps serving fresh 503s for the window — and MarkShuttingDown is
+              the manual two-phase path. Both binaries do the opposite: the
+              HTTP server stops accepting and waits out in-flight requests
+              while the probe still reports ready, so a load balancer polling
+              /readyz keeps routing traffic into a closing process for the
+              entire drain window. The dashboard already models the pattern for
+              its own surface (WithShutdownDrain drains SSE before the
+              broadcaster closes) — the probe side is the missing half.
+            </p>
+            <pre><code>&lt;-ctx.Done()
+probe.MarkShuttingDown() // readiness -&gt; 503 immediately
+
+drainCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+defer cancel()
+server.Shutdown(drainCtx) // LBs observed 503s throughout the drain
+probe.Shutdown()          // then stop the refresh loop</code></pre>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              In example and health-hub, mark the probe (or rely on a
+              WithShutdownGracePeriod) BEFORE server.Shutdown, so readiness
+              leads the drain instead of trailing it. One-line reorder in each
+              binary's shutdown path.
+            </div>
+          </div>
+
+          <div class="issue issue-important" id="finding-cascade">
+            <span class="severity severity-important"
+              >Partially Used &middot; Design decision needed</span
+            >
+            <h3>
+              The probe's roll-up verdict never reaches the samber/do health
+              cascade
+            </h3>
+            <div class="where">
+              dashboard.go:242-265 (HealthCheck reports pusher state only)
+              &middot; go-health Probe.HealthCheck wraps ErrProbeUnhealthy — 0
+              references here
+            </div>
+            <p>
+              go-health gives the probe its own cascade verdict:
+              Probe.HealthCheck implements do.HealthcheckerWithContext and
+              wraps ErrProbeUnhealthy when the cached roll-up is fail. When a
+              consumer registers the dashboard via dashboard.Register, the
+              cascade only hears the dashboard's pusher verdict (not started /
+              shut down / stale). The example's probes are standalone (never
+              registered as do services), so a fully failing fleet still passes
+              container-wide health checks. The two verdicts are genuinely
+              different questions — "is the real-time surface alive" vs "is the
+              fleet healthy" — so this is a semantics decision, not a bug.
+            </p>
+            <pre><code>// Optional-capability pattern already proven by Healthzer (dashboard.go:43-54)
+type Healthchecker interface { // do.HealthcheckerWithContext shape
+    HealthCheck(ctx context.Context) error
+}
+
+func (d *Dashboard) HealthCheck(ctx context.Context) error {
+    if err := d.pusherVerdict(); err != nil {
+        return err
+    }
+    if hc, ok := d.probe.(Healthchecker); ok {
+        return hc.HealthCheck(ctx) // ErrProbeUnhealthy on fail
+    }
+    return nil
+}</code></pre>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Generalize the Healthzer pattern: if the prober implements the
+              do.HealthcheckerWithContext shape, Register forwards its verdict
+              into the cascade (or document that consumers should register the
+              probe separately). Decide the semantics first: federation
+              fail-over staging may WANT the cascade to stay pusher-scoped.
+            </div>
+          </div>
+
+          <div class="issue issue-important" id="finding-checks">
+            <span class="severity severity-important"
+              >Missed Opportunity &middot; Medium impact</span
+            >
+            <h3>
+              The checks batteries (v0.5.0) have zero adoption — the demo
+              fabricates every state it shows
+            </h3>
+            <div class="where">
+              go-health/checks: Disk, Memory, HTTP, Database &middot; 0
+              references in this repo &middot; example/main.go:134-152 mocks all
+              checks
+            </div>
+            <p>
+              v0.5.0 shipped batteries-included CheckFunc-compatible probes
+              with zero dependencies beyond the stdlib, warn-by-default
+              criticality for resource checks (a full disk should alert, not
+              restart the pod — docs/batteries-ownership-decision.md). The
+              example instead scripts its failure states (flapping redis,
+              always-failing exporter), so screenshots and live demos show
+              synthetic data where real moving data is one import away.
+            </p>
+            <pre><code>probe := health.NewChecks(map[string]health.CheckFunc{
+    "postgres":        new(alwaysHealthy).HealthCheck,
+    "disk-headroom":   checks.Disk("/", 5&lt;&lt;30),   // warn-by-default
+    "memory-pressure": checks.Memory(1&lt;&lt;30),
+}, health.WithCriticalServices("postgres"))</code></pre>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Add two battery rows (Disk, Memory) to the example's default
+              probe — real states, real warn-by-default semantics, and the
+              demo stops lying about where its data comes from.
+            </div>
+          </div>
+
+          <div class="issue issue-important" id="finding-off">
+            <span class="severity severity-important"
+              >Partially Used &middot; Render side done, producer side absent</span
+            >
+            <h3>
+              health.Off is rendered but never produced — the off path ships
+              unexercised in its own consumer
+            </h3>
+            <div class="where">
+              Rendering: status.go neutral badge, evidence.go exclusion, v0.5.1
+              pin &middot; Production: health.Off/OffError has 0 call sites here
+            </div>
+            <p>
+              v0.5.1's headline feature expresses a deliberately unconfigured
+              dependency as a visible row carrying its enable recipe. This
+              repo did the harder half — rendering, roll-up exclusion,
+              evidence-universe exclusion, problem-count exclusion — but
+              nothing in the repository ever returns health.Off, so screenshots,
+              browser tests, and live demos never exercise the state. One line
+              in the example closes the gap.
+            </p>
+            <pre><code>"analytics": func(_ context.Context) error {
+    return health.Off("not configured: set DEMO_ANALYTICS_URL to enable")
+},</code></pre>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Add one off row to the example's default probe and refresh the
+              README screenshot — the off badge, its tooltip, and its absence
+              from the evidence strip get exercised on every demo run.
+            </div>
+          </div>
+
+          <div class="issue issue-important" id="finding-version">
+            <span class="severity severity-important"
+              >Missed Opportunity &middot; Low effort</span
+            >
+            <h3>
+              health.VersionHandler unused — the build stamp lives in logs,
+              not on a endpoint
+            </h3>
+            <div class="where">
+              example/main.go:90-95 and cmd/health-hub/main.go:181-188 log the
+              version &middot; health.VersionHandler (v0.5.0): 0 references
+            </div>
+            <p>
+              Both binaries print the version into startup logs and stamp it
+              into health payloads via WithVersion, but neither serves the
+              dedicated identity endpoint the library ships pre-marshaled and
+              GET-guarded (405 + Allow on anything else, unaffected by
+              shutdown). It answers "which build am I talking to?" for
+              scrapers and operators without grepping logs.
+            </p>
+            <pre><code>mux.HandleFunc("GET /version", health.VersionHandler(version.Version))</code></pre>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Wire /version in example and health-hub; consider a Routes
+              opt-in if the dashboard should own it (identity, not health —
+              keep it out of the probe route set by default).
+            </div>
+          </div>
+
+          <div class="issue issue-important" id="finding-healthz">
+            <span class="severity severity-important"
+              >Partially Used &middot; Forwarding complete, never configured</span
+            >
+            <h3>
+              Routes.Healthz is never turned on — the load-balancer story is
+              only exercised by unit tests
+            </h3>
+            <div class="where">
+              handlers.go:249-256 registers it when set &middot; routes.go:38
+              defaults to "" &middot; example and hub never set Routes
+            </div>
+            <p>
+              The Healthz forwarding machinery is complete and pinned by tests
+              (aggregate forwards it — dashboard_test.go:1132; federation
+              deliberately does not — federation_test.go:195), but no in-repo
+              deployment ever configures the route, so the combined-traffic
+              endpoint ("should traffic be routed here?") exists only in unit
+              tests. The example's single and aggregate modes can flip one
+              option; the hub deliberately cannot — federation.Prober has no
+              Healthz by upstream design, so the hub has no single-endpoint LB
+              answer today.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              Demo Routes.Healthz in the example (one WithRoutes entry), and
+              note for hub operators that the LB story needs an aggregate or
+              probe-backed deployment — or raise the federation.Healthz gap
+              upstream.
+            </div>
+          </div>
+
+          <div class="issue issue-important" id="finding-sourcestatuses">
+            <span class="severity severity-important"
+              >Missed Opportunity &middot; Blocked on upstream release</span
+            >
+            <h3>
+              aggregate.SourceStatuses (unreleased) — per-source roll-ups
+              without refolding namespaced keys
+            </h3>
+            <div class="where">
+              go-health unreleased changelog + aggregate.go:170-177 &middot;
+              go.mod pins v0.5.1
+            </div>
+            <p>
+              One map[string]health.Status entry per source, one atomic cache
+              load per source, no evaluation, no wire impact — it answers "is
+              source api healthy overall?" without folding source/check keys.
+              The hub's per-remote cards currently re-derive exactly this by
+              grouping namespaced checks. Ride the v0.6 bump: the same train
+              carries aggregate.New's joined invalid-source errors and the
+              never-started grace-window fix.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Recommendation</strong>
+              When v0.6 tags: bump, then render per-source status from
+              SourceStatuses in the hub's stat cards and add a pin to
+              scripts/check-ui-pins.sh's sibling guard.
+            </div>
+          </div>
+
+          <div class="issue issue-nice" id="finding-federationclient">
+            <span class="severity severity-nice"
+              >Partially Used &middot; Niche</span
+            >
+            <h3>federation.WithClient — the hub has no TLS/proxy transport knob</h3>
+            <div class="where">
+              cmd/health-hub/main.go:151 uses only WithTimeout &middot; WithClient:
+              0 references
+            </div>
+            <p>
+              federation.New accepts a custom *http.Client for transport
+              pooling, TLS, or proxying, but the hub's HEALTH_HUB_* environment
+              has no surface for it — a hub that needs a custom CA pool or an
+              egress proxy cannot get one without a code change. Almost
+              certainly fine for the LAN topology the hub targets; worth one
+              env knob if federating across trust boundaries ever becomes real.
             </p>
           </div>
 
-          <!-- Issue 3 -->
-          <div class="issue issue-nice" id="issue-3">
+          <div class="issue issue-nice" id="finding-awaitready">
             <span class="severity severity-nice"
-              >Nice to have &middot; Low impact</span
+              >Partially Used &middot; Narrow window</span
             >
-            <h3>Nice-to-have improvement</h3>
-            <div class="where">docs/ or config</div>
+            <h3>AwaitReady unused — binaries serve before the first observation</h3>
+            <div class="where">
+              go-health Probe.AwaitReady (50ms polling, ctx-bounded) &middot; 0
+              references here
+            </div>
             <p>
-              Minor polish, documentation gaps, or future-proofing suggestions
-              go here.
+              Cached-mode probes pre-populate their cache inside Start, so the
+              window is small — but example and hub still begin serving before
+              the first refresh/fetch completes, and the hub's first seconds
+              render against an empty federation view. One AwaitReady(ctx)
+              before ListenAndServe closes the window; the direct accessors
+              (Ready/Status/Alive) remain deliberately bypassed — the dashboard
+              reads CachedResponse so view, metrics, and change detection share
+              one snapshot.
             </p>
           </div>
         </section>
 
         <!-- Proposal -->
-        <section id="proposal">
-          <h2><span class="num">02</span>What the solution could look like</h2>
+        <section id="currency">
+          <h2><span class="num">02</span>Version currency</h2>
           <p>
-            If the findings were fixed, what would the new state be? Show the
-            target API, structure, or workflow.
+            go.mod pins <code>github.com/larsartmann/go-health v0.5.1</code>,
+            which is the newest tag in the upstream repository. The version gap
+            is zero; the only currency work is the v0.6 train once it tags.
           </p>
-          <pre><code>// Target state after the recommended changes
-type BetterAPI struct {
-    Field string
-}</code></pre>
           <div class="callout callout-teal">
-            <strong>This is the target</strong>
-            Summarize why this state is better and what it unlocks.
+            <strong>On the latest release</strong>
+            v0.5.1 was adopted the day it shipped (2026-10-09, StatusOff +
+            evaluation-hook hardening). Everything graded in this report is
+            available at the pin — nothing here requires an upgrade.
           </div>
-        </section>
-
-        <!-- Appendix -->
-        <section id="appendix">
-          <h2><span class="num">03</span>Appendix</h2>
-          <p>
-            Methodology, links to related files, or a priority matrix can live
-            here.
-          </p>
           <table class="compare">
             <thead>
               <tr>
-                <th>Issue</th>
-                <th>Severity</th>
-                <th>Effort</th>
-                <th>Status</th>
+                <th>Version</th>
+                <th>Feature</th>
+                <th>Adoption in this repo</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Issue one</td>
-                <td class="no">Critical</td>
-                <td>Low</td>
-                <td class="no">Open</td>
+                <td>unreleased (v0.6 train)</td>
+                <td><code>aggregate.SourceStatuses()</code> per-source roll-ups</td>
+                <td class="no">Planned — finding above; bump when it tags</td>
               </tr>
               <tr>
-                <td>Issue two</td>
-                <td class="no">Important</td>
-                <td>Medium</td>
-                <td class="yes">In progress</td>
+                <td>unreleased (v0.6 train)</td>
+                <td><code>aggregate.New</code> joins all invalid sources; never-started grace-window fix</td>
+                <td class="yes">Rides the same bump automatically</td>
+              </tr>
+              <tr>
+                <td>v0.5.1 (pinned)</td>
+                <td><code>health.Off</code> / StatusOff</td>
+                <td class="no">Rendering adopted; zero producers — finding above</td>
+              </tr>
+              <tr>
+                <td>v0.5.0</td>
+                <td><code>health/checks</code> batteries (Disk, Memory, HTTP, Database)</td>
+                <td class="no">Missed — finding above</td>
+              </tr>
+              <tr>
+                <td>v0.5.0</td>
+                <td><code>health.VersionHandler</code> identity endpoint</td>
+                <td class="no">Missed — finding above</td>
+              </tr>
+              <tr>
+                <td>v0.5.0</td>
+                <td>Start-time critical-name validation (<code>ErrUnknownCriticalService</code>)</td>
+                <td class="yes">Active in every binary via Start</td>
+              </tr>
+              <tr>
+                <td>v0.4.x</td>
+                <td><code>Aggregate.Healthz</code>, <code>Status.Rank</code>, federation</td>
+                <td class="yes">Adopted and test-pinned</td>
+              </tr>
+              <tr>
+                <td>v0.3.0</td>
+                <td><code>NewChecks</code>, federation package, <code>Status.Rank</code> public</td>
+                <td class="yes">Adopted (example single mode; health-hub)</td>
               </tr>
             </tbody>
           </table>
         </section>
 
+        <section id="priorities">
+          <h2><span class="num">03</span>Priorities — impact × ease</h2>
+          <p>
+            The Pareto ordering of everything above. Impact and ease are 1-5;
+            priority is their product. Items 1-3 are one-binary tweaks with no
+            library changes; items 4 and 7 need a design decision first.
+          </p>
+          <table class="compare">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Opportunity</th>
+                <th>Impact</th>
+                <th>Ease</th>
+                <th>Priority</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>Two-phase drain in example + hub (MarkShuttingDown before server.Shutdown)</td>
+                <td class="yes">4</td>
+                <td class="yes">5</td>
+                <td><span class="highlight">20</span></td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>Wire <code>/version</code> via health.VersionHandler in example + hub</td>
+                <td class="yes">3</td>
+                <td class="yes">5</td>
+                <td><span class="highlight">15</span></td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>Demo honesty: health.Off row + checks.Disk/Memory in the example</td>
+                <td class="yes">3</td>
+                <td class="yes">5</td>
+                <td><span class="highlight">15</span></td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>Evaluation-hook ingest (WithEvaluationSink) for probe-cadence trend/evidence</td>
+                <td class="yes">5</td>
+                <td>2</td>
+                <td><span class="highlight">10</span></td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>health.WithInstanceID(hostname) producer in example + hub</td>
+                <td>2</td>
+                <td class="yes">5</td>
+                <td><span class="highlight">10</span></td>
+              </tr>
+              <tr>
+                <td>6</td>
+                <td>aggregate.SourceStatuses for hub per-source cards (at v0.6)</td>
+                <td class="yes">3</td>
+                <td>3</td>
+                <td><span class="highlight">9</span></td>
+              </tr>
+              <tr>
+                <td>7</td>
+                <td>Forward the probe's do.HealthcheckerWithContext verdict (optional capability)</td>
+                <td class="yes">4</td>
+                <td>2</td>
+                <td><span class="highlight">8</span></td>
+              </tr>
+              <tr>
+                <td>8</td>
+                <td>Routes.Healthz demo in the example's aggregate mode</td>
+                <td>2</td>
+                <td class="yes">4</td>
+                <td><span class="highlight">8</span></td>
+              </tr>
+              <tr>
+                <td>9</td>
+                <td>AwaitReady before ListenAndServe in both binaries</td>
+                <td>1</td>
+                <td class="yes">4</td>
+                <td><span class="highlight">4</span></td>
+              </tr>
+              <tr>
+                <td>10</td>
+                <td>Hub env knob for federation.WithClient (TLS/proxy transport)</td>
+                <td>1</td>
+                <td>3</td>
+                <td><span class="highlight">3</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- Appendix -->
+        <section id="appendix">
+          <h2><span class="num">04</span>Appendix</h2>
+          <p>
+            <strong>Method.</strong> The full public surface of
+            github.com/larsartmann/go-health at the pinned v0.5.1 was enumerated
+            from <code>go doc -all</code> across all four packages (root,
+            aggregate, federation, checks), cross-read against the upstream
+            CHANGELOG (including the unreleased v0.6 train) and design docs.
+            The consumer side was inventoried with alias-safe symbol searches
+            over every .go file in this repository (including example/ and
+            cmd/health-hub), followed by targeted reads of each construction
+            and wiring site cited below. The upstream adoption matrix
+            (go-health/docs/adoption-matrix.md, 2026-10-02) records this
+            repo as the only adopter of several features — this report is the
+            reverse view: what this repo does not yet use.
+          </p>
+          <table class="compare">
+            <thead>
+              <tr>
+                <th>Capability (go-health v0.5.1)</th>
+                <th>Status</th>
+                <th>Evidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>CachedResponse snapshot reads</td><td class="yes">Fully</td><td>dashboard.go:171-173 — lock-free read at the choke point</td></tr>
+              <tr><td>SanitizeResponse wire hygiene</td><td class="yes">Fully</td><td>applied once, feeds every write seam (dashboard.go:171-173)</td></tr>
+              <tr><td>Consumer-side Prober interface</td><td class="yes">Fully</td><td>dashboard.go:28-41; Probe, aggregate, federation all satisfy it</td></tr>
+              <tr><td>Kubelet handler trio + RegisterRoutes</td><td class="yes">Fully</td><td>handlers.go — routes read from Config, single source of truth</td></tr>
+              <tr><td>Healthz single-endpoint</td><td class="no">Partial</td><td>capability forwarded (handlers.go:249-256); Routes.Healthz never set in-repo</td></tr>
+              <tr><td>Status constants + Status.Rank</td><td class="yes">Fully</td><td>status.go:399 (trend scale), metrics.go:203 (metrics)</td></tr>
+              <tr><td>Off / OffError production</td><td class="no">Partial</td><td>rendering + exclusions shipped; zero producers in repo</td></tr>
+              <tr><td>Check.Since metadata</td><td class="yes">Fully</td><td>row metadata via injected clock, golden-pinned</td></tr>
+              <tr><td>Check.DurationNanos</td><td class="yes">Fully</td><td>rows + latency metric + export endpoints</td></tr>
+              <tr><td>New (injector)</td><td class="yes">Fully</td><td>example aggregate mode (example/main.go:172)</td></tr>
+              <tr><td>NewChecks</td><td class="yes">Fully</td><td>example single mode (example/main.go:138)</td></tr>
+              <tr><td>NewWithHealthCheck</td><td class="yes">Fully</td><td>tests (dashboard_test.go:1139)</td></tr>
+              <tr><td>NewWithDetailedCheck</td><td class="yes">Fully</td><td>DEMO_DETAILED (example/main.go:189) + integration_test.go:394</td></tr>
+              <tr><td>HealthRecorder / DetailedHealthRecorder</td><td class="no">Partial</td><td>test-only recorder (screenshot_test.go:103); no auditlog wiring</td></tr>
+              <tr><td>WithEvaluationHook</td><td class="no">Missed</td><td>0 references — finding 1</td></tr>
+              <tr><td>Start / Shutdown lifecycle</td><td class="yes">Fully</td><td>example + hub; do cascades via Register</td></tr>
+              <tr><td>Two-phase drain (MarkShuttingDown / WithShutdownGracePeriod)</td><td class="no">Missed</td><td>0 references — finding 2</td></tr>
+              <tr><td>AwaitReady / Ready / Status accessors</td><td class="no">Partial</td><td>direct accessors bypassed deliberately; AwaitReady unadopted — finding 10</td></tr>
+              <tr><td>Start-time validation (ErrUnknownCriticalService)</td><td class="yes">Fully</td><td>active in every binary via Start</td></tr>
+              <tr><td>VersionHandler</td><td class="no">Missed</td><td>0 references — finding 6</td></tr>
+              <tr><td>checks batteries (Disk / Memory / HTTP / Database)</td><td class="no">Missed</td><td>0 references — finding 4</td></tr>
+              <tr><td>aggregate (New / Source / Healthz)</td><td class="yes">Fully</td><td>example, 20-source load test, SSE, Healthz passthrough tests</td></tr>
+              <tr><td>federation (New / Remote / WithTimeout)</td><td class="yes">Fully</td><td>health-hub env-wired (cmd/health-hub/main.go:151); startup latch via /startupz</td></tr>
+              <tr><td>federation.WithClient</td><td class="no">Partial</td><td>no transport knob in hub env — finding 9</td></tr>
+              <tr><td>WithInstanceID</td><td class="no">Partial</td><td>rendering ready (status.go:261); no producer in repo</td></tr>
+              <tr><td>aggregate.SourceStatuses</td><td class="no">Missed</td><td>unreleased upstream — finding 8; adopt at v0.6</td></tr>
+            </tbody>
+          </table>
+          <p>
+            <strong>Deliberate non-adoptions (not gaps).</strong>
+            WithLiveThrottle (live-mode-only protective; this repo always runs
+            cached), WithAllowedMethods / WithGETOnly (GET-only default already
+            enforced; the dashboard rate-limits its own routes and exempts
+            probes), WithNowFunc (the dashboard has its own injected-clock
+            seams), WithBootTime (New-time default is correct for containers),
+            Validate (redundant since v0.5.0 — Start validates), Evaluate
+            (pusher reads CachedResponse by design so view, metrics, and change
+            detection share one snapshot), AsShutdowner (probes shut down via
+            explicit bundles today).
+          </p>
+        </section>
+
         <!-- Footer -->
         <footer class="footer">
           <p>
-            Generated YYYY-MM-DD &middot; Reviewed against version X.Y.Z
-            &middot; All claims verified against source code where noted
+            Generated 2026-10-09 &middot; audited against go-health v0.5.1
+            (go.mod pin) and the go-health-dashboard working tree &middot; every
+            claim cited to source in one of the two repositories
           </p>
         </footer>
       </main>
