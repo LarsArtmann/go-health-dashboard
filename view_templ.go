@@ -5,14 +5,14 @@ package dashboard
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
-
 import (
 	"fmt"
 	"strconv"
 	"time"
 	"unicode/utf8"
+
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
 
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/datastar"
@@ -125,7 +125,7 @@ func View(data viewModel) templ.Component {
 						templ_7745c5c3_Err = display.StatCard(display.StatCardProps{
 							Value: data.Uptime,
 							Label: "Uptime",
-							Tone:  display.StatToneGreen,
+							Tone:  display.StatToneBlue,
 							Icon:  icons.Clock,
 						}).Render(ctx, templ_7745c5c3_Buffer)
 						if templ_7745c5c3_Err != nil {
@@ -480,7 +480,7 @@ func dashboardContent(data viewModel) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if data.ExportURL != "" {
-				var templ_7745c5c3_Var17 = []any{endpointLinkClass}
+				templ_7745c5c3_Var17 := []any{endpointLinkClass}
 				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var17...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -523,7 +523,7 @@ func dashboardContent(data viewModel) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var20 = []any{endpointLinkClass}
+				templ_7745c5c3_Var20 := []any{endpointLinkClass}
 				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var20...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -568,7 +568,7 @@ func dashboardContent(data viewModel) templ.Component {
 				}
 			}
 			if data.TrendURL != "" {
-				var templ_7745c5c3_Var23 = []any{endpointLinkClass}
+				templ_7745c5c3_Var23 := []any{endpointLinkClass}
 				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var23...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -613,7 +613,7 @@ func dashboardContent(data viewModel) templ.Component {
 				}
 			}
 			if data.MetricsURL != "" {
-				var templ_7745c5c3_Var26 = []any{endpointLinkClass}
+				templ_7745c5c3_Var26 := []any{endpointLinkClass}
 				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var26...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1118,7 +1118,7 @@ func groupCountBadge(count int) templ.Component {
 			templ_7745c5c3_Var42 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var43 = []any{"ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium tabular-nums", "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"}
+		templ_7745c5c3_Var43 := []any{"ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium tabular-nums", "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var43...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -1469,12 +1469,14 @@ func timelineTrendIcon(degraded bool) icons.Name {
 }
 
 // timelineTrendIconClass colors the direction glyph to match its badge tone.
+// The -700 light variants carry the WCAG AA contrast decisions locked by
+// TestRender_ContrastSafeStatusColors (-600 fails on white).
 func timelineTrendIconClass(degraded bool) string {
 	if degraded {
-		return "h-4 w-4 text-amber-600 dark:text-amber-400"
+		return "h-4 w-4 text-amber-700 dark:text-amber-400"
 	}
 
-	return "h-4 w-4 text-green-600 dark:text-green-400"
+	return "h-4 w-4 text-green-700 dark:text-green-400"
 }
 
 // versionOrUnknown returns the version string or "unknown" when empty.

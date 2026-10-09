@@ -62,7 +62,7 @@ templ View(data viewModel) {
 						@display.StatCard(display.StatCardProps{
 							Value: data.Uptime,
 							Label: "Uptime",
-							Tone:  display.StatToneGreen,
+							Tone:  display.StatToneBlue,
 							Icon:  icons.Clock,
 						})
 						@display.StatCard(display.StatCardProps{
@@ -469,12 +469,14 @@ func timelineTrendIcon(degraded bool) icons.Name {
 }
 
 // timelineTrendIconClass colors the direction glyph to match its badge tone.
+// The -700 light variants carry the WCAG AA contrast decisions locked by
+// TestRender_ContrastSafeStatusColors (-600 fails on white).
 func timelineTrendIconClass(degraded bool) string {
 	if degraded {
-		return "h-4 w-4 text-amber-600 dark:text-amber-400"
+		return "h-4 w-4 text-amber-700 dark:text-amber-400"
 	}
 
-	return "h-4 w-4 text-green-600 dark:text-green-400"
+	return "h-4 w-4 text-green-700 dark:text-green-400"
 }
 
 // versionOrUnknown returns the version string or "unknown" when empty.
