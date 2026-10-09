@@ -10,6 +10,7 @@ import (
 	"github.com/larsartmann/templ-components/datastar"
 	"github.com/larsartmann/templ-components/display"
 	"github.com/larsartmann/templ-components/feedback"
+	"github.com/larsartmann/templ-components/icons"
 	"github.com/larsartmann/templ-components/layout"
 	"github.com/larsartmann/templ-components/utils"
 )
@@ -32,8 +33,8 @@ func storageKey(data viewModel) string {
 }
 
 // View renders the full HTML dashboard page: Base shell (no HTMX), Datastar
-// SDK in head, header, StatCards, and a LiveRegion that auto-connects to the
-// SSE endpoint for real-time health updates.
+// SDK in head, PageHeader with the live controls, StatCards, and a LiveRegion
+// that auto-connects to the SSE endpoint for real-time health updates.
 templ View(data viewModel) {
 	@layout.Base(layout.PageProps{
 		Title:       data.Title,
@@ -45,31 +46,24 @@ templ View(data viewModel) {
 	}) {
 		@layout.Container(layout.DefaultContainerProps()) {
 			<div class="py-8">
-				<div class="mb-6 flex items-center justify-between">
-					<div>
-						<h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-							{ data.Title }
-						</h1>
-						<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-							Real-time health monitoring
-						</p>
-					</div>
-					<div class="flex items-center gap-3">
-						if data.HasDatastarRuntime {
-							@connectionPill()
-						}
-						@themeToggle()
-					</div>
-				</div>
+				@display.PageHeader(display.PageHeaderProps{
+					Title:    data.Title,
+					Subtitle: "Real-time health monitoring",
+					Action:   headerActions(data),
+				})
 				if data.ShowStatCards {
 					@display.Grid(display.GridProps{Cols: display.GridCols3}) {
 						@display.StatCard(display.StatCardProps{
 							Value: versionOrUnknown(data.Version),
 							Label: "Version",
+							Tone:  display.StatTonePurple,
+							Icon:  icons.Tag,
 						})
 						@display.StatCard(display.StatCardProps{
 							Value: data.Uptime,
 							Label: "Uptime",
+							Tone:  display.StatToneGreen,
+							Icon:  icons.Clock,
 						})
 						@display.StatCard(display.StatCardProps{
 							BaseProps: utils.BaseProps{
@@ -84,11 +78,15 @@ templ View(data viewModel) {
 							},
 							Value: fmt.Sprintf("%dms", data.LatencyMs),
 							Label: "Check Latency",
+							Tone:  display.StatToneBlue,
+							Icon:  icons.Bolt,
 						})
 						if data.InstanceID != "" {
 							@display.StatCard(display.StatCardProps{
 								Value: data.InstanceID,
 								Label: "Instance",
+								Tone:  display.StatTonePurple,
+								Icon:  icons.Server,
 							})
 						}
 					}
@@ -167,8 +165,9 @@ templ dashboardContent(data viewModel) {
 		problemsAssigned := false
 	}}
 	@feedback.Alert(feedback.AlertProps{
-		Type:  data.FeedbackType,
-		Title: data.StatusText,
+		Type:    data.FeedbackType,
+		Title:   data.StatusText,
+		Message: alertSummary(data),
 	})
 	<p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
 		Updated { data.LastUpdated }
@@ -184,14 +183,26 @@ templ dashboardContent(data viewModel) {
 	if data.ExportURL != "" || data.TrendURL != "" || data.MetricsURL != "" {
 		<p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs">
 			if data.ExportURL != "" {
-				<a class="font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300" href={ data.ExportURL + "?format=csv" }>Export CSV</a>
-				<a class="font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300" href={ data.ExportURL }>Export JSON</a>
+				<a class={ endpointLinkClass } href={ data.ExportURL + "?format=csv" }>
+					@icons.Icon(icons.Download, "h-3.5 w-3.5")
+					Export CSV
+				</a>
+				<a class={ endpointLinkClass } href={ data.ExportURL }>
+					@icons.Icon(icons.Download, "h-3.5 w-3.5")
+					Export JSON
+				</a>
 			}
 			if data.TrendURL != "" {
-				<a class="font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300" href={ data.TrendURL }>Trend JSON</a>
+				<a class={ endpointLinkClass } href={ data.TrendURL }>
+					@icons.Icon(icons.ArrowTrendingUp, "h-3.5 w-3.5")
+					Trend JSON
+				</a>
 			}
 			if data.MetricsURL != "" {
-				<a class="font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300" href={ data.MetricsURL }>Metrics</a>
+				<a class={ endpointLinkClass } href={ data.MetricsURL }>
+					@icons.Icon(icons.Chart, "h-3.5 w-3.5")
+					Metrics
+				</a>
 			}
 		</p>
 	}
@@ -215,47 +226,56 @@ templ dashboardContent(data viewModel) {
 			/>
 		</div>
 	}
-	if len(data.History) >= 2 {
+	if len(data.History) >= 2 || len(data.Timeline) > 0 {
 		<div class="mt-6">
-			@display.Card(display.CardProps{Title: "Health Trend"}) {
-				<div class="text-blue-500 dark:text-blue-400">
-					@display.Sparkline(display.SparklineProps{
-						BaseProps: utils.BaseProps{
-							AriaLabel: "Recent health status trend: one point per push interval, from pass (top) to fail (bottom)",
-						},
-						Values: data.History,
-						Filled: true,
-						Min:    &trendMinVal,
-						Max:    &trendMaxVal,
-						Width:  trendWidth,
-						Height: trendHeight,
-					})
-				</div>
-			}
-		</div>
-	}
-	if len(data.Timeline) > 0 {
-		<div class="mt-6">
-			@display.Card(display.CardProps{Title: "Status Changes"}) {
-				<ol class="divide-y divide-gray-200 dark:divide-gray-700">
-					for _, entry := range data.Timeline {
-						<li class="flex items-center justify-between gap-4 py-2 text-sm first:pt-0 last:pb-0">
-							<time class="font-mono text-gray-500 tabular-nums dark:text-gray-400">{ entry.At }</time>
-							if entry.Degraded {
-								<span class="font-medium text-amber-700 dark:text-amber-400">{ entry.Status }</span>
-							} else {
-								<span class="font-medium text-green-700 dark:text-green-400">{ entry.Status }</span>
-							}
-						</li>
+			@display.Grid(display.GridProps{Cols: display.GridCols2}) {
+				if len(data.History) >= 2 {
+					@display.Card(display.CardProps{Title: "Health Trend"}) {
+						<div class="text-blue-500 dark:text-blue-400">
+							@display.Sparkline(display.SparklineProps{
+								BaseProps: utils.BaseProps{
+									AriaLabel: "Recent health status trend: one point per push interval, from pass (top) to fail (bottom)",
+								},
+								Values: data.History,
+								Filled: true,
+								Min:    &trendMinVal,
+								Max:    &trendMaxVal,
+								Width:  trendWidth,
+								Height: trendHeight,
+							})
+						</div>
 					}
-				</ol>
+				}
+				if len(data.Timeline) > 0 {
+					@display.Card(display.CardProps{Title: "Status Changes"}) {
+						<ol class="divide-y divide-gray-200 dark:divide-gray-700">
+							for _, entry := range data.Timeline {
+								<li class="flex items-center justify-between gap-4 py-2 text-sm first:pt-0 last:pb-0">
+									<time class="font-mono text-gray-500 tabular-nums dark:text-gray-400">{ entry.At }</time>
+									<span class="flex items-center gap-1.5">
+										@icons.Icon(timelineTrendIcon(entry.Degraded), timelineTrendIconClass(entry.Degraded))
+										@display.Badge(display.BadgeProps{
+											Text: entry.Status,
+											Type: timelineBadgeType(entry.Degraded),
+											Size: display.BadgeSizeSM,
+										})
+									</span>
+								</li>
+							}
+						</ol>
+					}
+				}
 			}
 		</div>
 	}
 	<div class="mt-6 space-y-6">
 		if len(data.Groups) == 0 {
 			@display.Card(display.CardProps{Title: "Service Status"}) {
-				@display.SimpleEmptyState("No services registered yet.")
+				@display.EmptyState(display.EmptyStateProps{
+					Icon:        icons.Inbox,
+					Title:       "No services registered yet",
+					Description: "Health checks appear here once services are registered with the probe.",
+				})
 			}
 		} else {
 			for _, group := range data.Groups {
@@ -409,6 +429,52 @@ templ rowDetailsCell(row checkRow) {
 			}
 		</span>
 	}
+}
+
+// headerActions renders the PageHeader action slot: the SSE connection pill
+// (when the SDK runtime is present) and the theme toggle. Lives outside the
+// SSE-patched region, so both controls survive every content update.
+templ headerActions(data viewModel) {
+	<div class="flex items-center gap-3">
+		if data.HasDatastarRuntime {
+			@connectionPill()
+		}
+		@themeToggle()
+	</div>
+}
+
+// endpointLinkClass styles the operator endpoint links (export, trend,
+// metrics). One shared declaration keeps the four render sites in lockstep.
+const endpointLinkClass = "inline-flex items-center gap-1 font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300"
+
+// timelineBadgeType maps a timeline entry's direction to its badge style:
+// a transition away from pass is the warning story, a recovery the success one.
+func timelineBadgeType(degraded bool) display.BadgeType {
+	if degraded {
+		return display.BadgeWarning
+	}
+
+	return display.BadgeSuccess
+}
+
+// timelineTrendIcon picks the direction glyph for a status change: an arrow
+// down when the service degraded, a trending-up arrow when it recovered.
+// Decorative only — the adjacent badge carries the status text.
+func timelineTrendIcon(degraded bool) icons.Name {
+	if degraded {
+		return icons.ArrowDown
+	}
+
+	return icons.ArrowTrendingUp
+}
+
+// timelineTrendIconClass colors the direction glyph to match its badge tone.
+func timelineTrendIconClass(degraded bool) string {
+	if degraded {
+		return "h-4 w-4 text-amber-600 dark:text-amber-400"
+	}
+
+	return "h-4 w-4 text-green-600 dark:text-green-400"
 }
 
 // versionOrUnknown returns the version string or "unknown" when empty.

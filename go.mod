@@ -13,6 +13,7 @@ require (
 	github.com/larsartmann/go-sse/ssetest v0.4.0
 	github.com/larsartmann/templ-components v1.21.0
 	github.com/larsartmann/templ-components/datastar v1.21.0
+	github.com/larsartmann/templ-components/icons v1.21.0
 	github.com/larsartmann/templ-components/utils v1.21.0
 	github.com/prometheus/client_model v0.6.3
 	github.com/prometheus/common v0.72.0
@@ -36,7 +37,6 @@ require (
 	github.com/larsartmann/go-error-family v0.11.0 // indirect
 	github.com/larsartmann/go-sse/sseparse v0.1.0 // indirect
 	github.com/larsartmann/templ-components/htmx v1.21.0 // indirect
-	github.com/larsartmann/templ-components/icons v1.21.0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
