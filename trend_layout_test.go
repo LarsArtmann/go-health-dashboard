@@ -177,7 +177,15 @@ func TestUpdatedAgePrecisionKeysOffPublicMode(t *testing.T) {
 	patch := initial
 	patch.InitialRender = false
 
-	body = renderDashboardHTML(t, patch)
+	// A patch carries only dashboardContent — the page scripts live in the
+	// shell — so the script-free assertion must scope to the patched
+	// region, exactly what the wire carries.
+	var content strings.Builder
+	if err := dashboardContent(patch).Render(context.Background(), &content); err != nil {
+		t.Fatalf("render dashboardContent: %v", err)
+	}
+
+	body = content.String()
 	if !strings.Contains(body, "data-tc-relative") || !strings.Contains(body, wantDatetime) {
 		t.Error("patch render must keep the ticking element with its datetime")
 	}
