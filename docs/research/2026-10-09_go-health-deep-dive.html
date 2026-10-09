@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Report Title</title>
+    <title>go-health — Adoption &amp; Utilization Audit · go-health-dashboard</title>
     <style>
       /* =========================================================================
          BAUHAUS LIGHT — Editorial template
@@ -850,9 +850,9 @@
   <body>
     <!-- Full-bleed top bar (optional — remove for quieter reports) -->
     <div class="top-bar">
-      <span>REPORT TYPE</span>
-      <span>YYYY-MM-DD</span>
-      <span>AUTHOR / TEAM</span>
+      <span>LIBRARY DEEP DIVE</span>
+      <span>2026-10-09</span>
+      <span>go-health-dashboard &middot; dashboard package</span>
     </div>
 
     <div class="layout">
@@ -862,9 +862,10 @@
           <div class="label">Contents</div>
           <a href="#summary">Summary</a>
           <a href="#scorecard">Scorecard</a>
-          <a href="#strengths">Strengths</a>
-          <a href="#findings">Findings</a>
-          <a href="#proposal">Proposal</a>
+          <a href="#strengths">Leveraged</a>
+          <a href="#findings">Gaps</a>
+          <a href="#currency">Version currency</a>
+          <a href="#priorities">Priorities</a>
           <a href="#appendix">Appendix</a>
         </nav>
       </aside>
@@ -880,36 +881,43 @@
             <div class="square"></div>
             <div class="tri"></div>
           </div>
-          <div class="eyebrow">REPORT TYPE &middot; YYYY-MM-DD</div>
-          <h1>Report Title</h1>
+          <div class="eyebrow">LIBRARY DEEP DIVE &middot; 2026-10-09</div>
+          <h1>go-health — Adoption &amp; Utilization Audit</h1>
           <p class="subtitle">
-            One or two sentences that set the frame: who this is for, what was
-            reviewed, and what the reader will take away.
+            A capability-by-capability audit of how go-health-dashboard consumes
+            its core dependency, github.com/larsartmann/go-health: what is fully
+            leveraged, what is only half-wired, and what the library offers that
+            this repo has never touched. Every claim is cited to source lines in
+            one of the two repositories.
           </p>
           <div class="meta">
-            <span class="tag amber">Scope: example</span>
-            <span class="tag">Version: 1.0.0</span>
-            <span class="tag teal">Status: draft</span>
+            <span class="tag amber">Pinned: v0.5.1</span>
+            <span class="tag">Latest tag: v0.5.1</span>
+            <span class="tag teal">Adoption score: 78/100</span>
           </div>
         </header>
 
         <!-- Scorecard -->
         <section id="scorecard" class="scorecard">
           <div class="score-card score-good">
-            <div class="score">8</div>
-            <div class="label">Items passing</div>
+            <div class="score">78</div>
+            <div class="label">Adoption score /100</div>
           </div>
           <div class="score-card score-warn">
-            <div class="score">3</div>
-            <div class="label">Warnings</div>
+            <div class="score">15/26</div>
+            <div class="label">Capabilities fully leveraged</div>
           </div>
-          <div class="score-card score-bad">
-            <div class="score">1</div>
-            <div class="label">Blockers</div>
+          <div class="score-card score-warn">
+            <div class="score">5</div>
+            <div class="label">Missed opportunities</div>
           </div>
-          <div class="score-card">
-            <div class="score">12</div>
-            <div class="label">Total reviewed</div>
+          <div class="score-card score-good">
+            <div class="score">0</div>
+            <div class="label">Anti-patterns found</div>
+          </div>
+          <div class="score-card score-good">
+            <div class="score">0</div>
+            <div class="label">Tags behind latest</div>
           </div>
         </section>
 
@@ -917,14 +925,28 @@
         <section id="summary">
           <h2><span class="num">00</span>Summary</h2>
           <p>
-            Replace this with the bottom-line verdict. A good summary tells the
-            reader whether the subject is ready, what the biggest risk is, and
-            what one action would unlock the most value.
+            go-health-dashboard is go-health's richest consumer: it renders the
+            probe's cached view over Datastar SSE, forwards every JSON probe
+            handler, and pins upstream capabilities with tests. This audit
+            walked go-health's entire public surface — root package, aggregate,
+            federation, and the checks batteries — at the pinned v0.5.1 and
+            compared each capability against every reference in this
+            repository. The core consumption is exemplary; the gaps cluster in
+            the two consumer binaries (example, health-hub) and two design
+            seams, and nothing is misused.
           </p>
           <div class="callout callout-amber">
             <strong>The bottom line</strong>
-            State the verdict plainly. If the report is blocking, say so. If
-            it's mostly positive, lead with that.
+            The library's core is fully leveraged, but its two newest
+            observation seams are not. <em>WithEvaluationHook</em> — the
+            probe-cadence observation seam — is unused, so the trend ring and
+            evidence log are blind to flaps that start and clear between two
+            push ticks. And the two-phase drain
+            (<em>WithShutdownGracePeriod</em> / <em>MarkShuttingDown</em>) is
+            unused, so both binaries keep reporting ready while the HTTP server
+            is already draining. Both fixes are small; the hook needs one
+            design decision first because the dashboard receives an
+            already-constructed prober.
           </div>
         </section>
 
@@ -940,16 +962,101 @@
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
-                <strong>Specific strength one</strong>
-                <span>Explain why it matters and what it enables.</span>
+                <strong>SanitizeResponse at the single choke point</strong>
+                <span
+                  >dashboard.go:171-173 applies go-health's UTF-8 sanitizer
+                  once, so every write seam (JSON, webhook, SSE patch, metrics
+                  labels, CSV) stays valid under jsonv2 — the strongest form of
+                  the documented pattern.</span
+                >
               </div>
             </div>
             <div class="strength">
               <div class="check">+</div>
               <div class="text">
-                <strong>Specific strength two</strong>
+                <strong>The consumer-side Prober interface, used as designed</strong>
                 <span
-                  >Reference files, metrics, or patterns where possible.</span
+                  >dashboard.go:28-41 keeps providers concrete; *health.Probe,
+                  aggregate.Aggregate, and federation.Prober all satisfy it, so
+                  one dashboard renders single, merged, and federated
+                  surfaces.</span
+                >
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Healthz capability forwarded within one release of the
+                upstream feature</strong>
+                <span
+                  >handlers.go:249-256 registers go-health's combined-traffic
+                  handler for probers that implement the optional Healthzer
+                  interface; the capability matrix is pinned by tests
+                  (dashboard_test.go:1132, federation_test.go:195 — federation
+                  must NOT forward it).</span
+                >
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>StatusOff rendered end to end, Rank shared with the
+                library</strong>
+                <span
+                  >v0.5.1's off rows get the neutral badge, are excluded from
+                  problem counts and the evidence universe, and
+                  Status.Rank() drives the trend scale (status.go:399) and
+                  metrics (metrics.go:203).</span
+                >
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Check.Since / DurationNanos fully surfaced</strong>
+                <span
+                  >Per-check metadata rides the rows (injected clock,
+                  golden-pinned), the
+                  dashboard_health_check_last_duration_seconds metric, and the
+                  export endpoints.</span
+                >
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>All four probe construction paths demoed</strong>
+                <span
+                  >NewChecks (example/main.go:138), New+injector
+                  (example/main.go:172), NewWithDetailedCheck
+                  (example/main.go:189, DEMO_DETAILED), NewWithHealthCheck
+                  (dashboard_test.go:1139) — plus a HealthRecorder in the
+                  screenshot tests (screenshot_test.go:103).</span
+                >
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Aggregate and federation wired deep, not cosmetically</strong>
+                <span
+                  >A 20-source load test, SSE integration, and fuzz corpora
+                  exercise aggregate; health-hub env-wires federation
+                  (cmd/health-hub/main.go:151) and gets the per-remote startup
+                  latch via /startupz.</span
+                >
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>On the latest tag, and honest about deliberate
+                non-usage</strong>
+                <span
+                  >go.mod pins v0.5.1 — the newest tag. Direct accessors
+                  (Status/Alive/Ready), Evaluate, and the method-guard options
+                  are bypassed for documented reasons, not overlooked (see
+                  appendix).</span
                 >
               </div>
             </div>
