@@ -532,13 +532,20 @@ func TestTrendEndpoints_ServeRecordedHistoryBeforeStart(t *testing.T) {
 		} {
 			w := httptest.NewRecorder()
 
-			probeCase.handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/health/trend", nil))
+			probeCase.handler.ServeHTTP(
+				w,
+				httptest.NewRequest(http.MethodGet, "/health/trend", nil),
+			)
 
 			if w.Code != http.StatusServiceUnavailable {
 				t.Errorf("%s without WithTrend: want 503, got %d", probeCase.name, w.Code)
 			}
 			if !strings.Contains(w.Body.String(), "trend history is not enabled") {
-				t.Errorf("%s 503 body should name the missing trend: %s", probeCase.name, w.Body.String())
+				t.Errorf(
+					"%s 503 body should name the missing trend: %s",
+					probeCase.name,
+					w.Body.String(),
+				)
 			}
 		}
 	})

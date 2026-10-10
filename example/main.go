@@ -181,7 +181,7 @@ func awaitStartupGate(ctx context.Context, await func(context.Context) bool) {
 		log.Println("readiness gate: startup latch set (every critical service passed once)")
 	} else {
 		log.Println(
-			"readiness gate: startup latch not set within 15s (serving anyway — demo binary)",
+			"readiness gate: startup latch not set within 15s (serving anyway; demo binary)",
 		)
 	}
 }
@@ -211,7 +211,8 @@ func awaitStartupComplete(p *health.Probe, ctx context.Context) bool {
 		}
 
 		rec := httptest.NewRecorder()
-		p.StartupHandler().ServeHTTP(rec, httptest.NewRequestWithContext(ctx, http.MethodGet, "/startupz", nil))
+		p.StartupHandler().
+			ServeHTTP(rec, httptest.NewRequestWithContext(ctx, http.MethodGet, "/startupz", nil))
 
 		if p.StartupComplete() {
 			return true

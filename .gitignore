@@ -75,3 +75,4 @@ result-*
 # <<< buildflow-managed (.gitignore) <<<
 
 example/example
+/health-hub
