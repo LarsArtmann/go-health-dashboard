@@ -106,6 +106,14 @@ type Config struct {
 	// missed an event self-heals. Zero (default) disables re-assertion.
 	PushOnChangeTTL int
 
+	// CascadeProbeVerdict forwards the prober's own roll-up verdict from
+	// HealthCheck when the prober implements the ProberHealthchecker
+	// capability (go-health's Probe.HealthCheck). Default off: the cascade
+	// reports the real-time surface only — a federation hub stays healthy
+	// when its remotes are dark. See ADR-0004. Set via
+	// WithCascadeProbeVerdict.
+	CascadeProbeVerdict bool
+
 	// TimelineMaxAge drops timeline entries older than this duration.
 	// Zero (default) keeps every recorded transition.
 	TimelineMaxAge time.Duration
@@ -324,6 +332,17 @@ func WithPushInterval(d time.Duration) Option {
 // (default) or on every tick.
 func WithPushMode(mode PushMode) Option {
 	return func(c *Config) { c.PushMode = mode }
+}
+
+// WithCascadeProbeVerdict opts the do.HealthCheck cascade into the prober's
+// own roll-up verdict: when the prober implements ProberHealthchecker (the
+// method shape of go-health's Probe.HealthCheck), Dashboard.HealthCheck
+// forwards it after its own pusher-state checks pass. Default off — the
+// cascade reports the real-time surface only, so a federation hub stays
+// healthy while its remotes are dark (their health is content, not
+// liveness). See ADR-0004.
+func WithCascadeProbeVerdict() Option {
+	return func(c *Config) { c.CascadeProbeVerdict = true }
 }
 
 // WithNonce sets a fixed CSP nonce used in script and style tags. Required
