@@ -98,23 +98,7 @@ func main() {
 
 	// Assemble the option set from environment toggles so every feature can
 	// be demonstrated without code changes.
-	opts := buildOptions()
-
-	if os.Getenv("DEMO_AGGREGATE") != "" {
-		// The aggregate implements go-health's Healthz combined-traffic
-		// handler (200 pass/warn, 503 fail-or-unlatched). Single-endpoint
-		// deployments behind load balancers point ONE route at it; the demo
-		// serves it at /livez, off the kubelet-owned /healthz. The example's
-		// AwaitReady startup gate means the listener opens only after every
-		// source latched, so the handler's 503-on-boot window shows up in
-		// real deployments without such a gate, not here.
-		routes := dashboard.DefaultRoutes()
-		routes.Healthz = "/livez"
-		opts = append(opts, dashboard.WithRoutes(routes))
-		log.Println("healthz: combined-traffic /livez registered (aggregate Healthz)")
-	}
-
-	dash := dashboard.Register(injector, probe, opts...)
+	dash := dashboard.Register(injector, probe, buildOptions()...)
 	evaluationSink.Store(dash)
 	log.Println(
 		"evaluation hook: probe-cadence observations feed trend + evidence (WithEvaluationHook -> Observe)",
@@ -542,9 +526,29 @@ func buildOptions() []dashboard.Option {
 		log.Println("base path: dashboard routes mounted under the DEMO_BASE_PATH prefix")
 	}
 
+	appendLivezRouteOption(&opts)
+
 	opts = appendUIGrowthOptions(opts)
 
 	return opts
+}
+
+// appendLivezRouteOption registers the aggregate's combined-traffic Healthz
+// handler at /livez in aggregate mode (go-health's Healthzer capability,
+// 200 pass/warn, 503 fail-or-unlatched). Single-endpoint deployments behind
+// load balancers point ONE route at it; the demo serves it at /livez, off
+// the kubelet-owned /healthz. The example's startup gate means the listener
+// opens only after every source latched, so the handler's 503-on-boot
+// window shows up in real deployments without such a gate, not here.
+func appendLivezRouteOption(opts *[]dashboard.Option) {
+	if os.Getenv("DEMO_AGGREGATE") == "" {
+		return
+	}
+
+	routes := dashboard.DefaultRoutes()
+	routes.Healthz = "/livez"
+	*opts = append(*opts, dashboard.WithRoutes(routes))
+	log.Println("healthz: combined-traffic /livez registered (aggregate Healthz)")
 }
 
 // appendUIGrowthOptions appends the 0.7.x UI toggles: collapse threshold,

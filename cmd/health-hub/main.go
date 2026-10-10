@@ -204,25 +204,9 @@ func run() error {
 		return err
 	}
 
-	client, err := federationClient(cfg)
-	if err != nil && !errors.Is(err, errNoTransportOverride) {
-		return err
-	}
-
-	fedOpts := []healthfederation.Option{healthfederation.WithTimeout(cfg.fetchExpiry)}
-
-	if client != nil {
-		fedOpts = append(fedOpts, healthfederation.WithClient(client))
-		log.Printf(
-			"transport: custom HTTP client for remote fetches (TLS CA: %s, proxy: %s)",
-			transportTLSCADescription(cfg),
-			transportProxyDescription(cfg),
-		)
-	}
-
-	fed, err := healthfederation.New(cfg.remotes, fedOpts...)
+	fed, err := newFederation(cfg)
 	if err != nil {
-		return fmt.Errorf("federation.New: %w", err)
+		return err
 	}
 
 	opts := append(
@@ -397,6 +381,34 @@ func federationClient(cfg hubConfig) (*http.Client, error) {
 	// per-fetch deadline (HEALTH_HUB_TIMEOUT); a global cap here would only
 	// duplicate it.
 	return &http.Client{Transport: transport}, nil
+}
+
+// newFederation builds the federation prober with the validated transport
+// configuration: the per-fetch deadline always applies, and the custom HTTP
+// client joins when either transport knob is set (logged redacted).
+func newFederation(cfg hubConfig) (*healthfederation.Prober, error) {
+	client, err := federationClient(cfg)
+	if err != nil && !errors.Is(err, errNoTransportOverride) {
+		return nil, err
+	}
+
+	fedOpts := []healthfederation.Option{healthfederation.WithTimeout(cfg.fetchExpiry)}
+
+	if client != nil {
+		fedOpts = append(fedOpts, healthfederation.WithClient(client))
+		log.Printf(
+			"transport: custom HTTP client for remote fetches (TLS CA: %s, proxy: %s)",
+			transportTLSCADescription(cfg),
+			transportProxyDescription(cfg),
+		)
+	}
+
+	fed, err := healthfederation.New(cfg.remotes, fedOpts...)
+	if err != nil {
+		return nil, fmt.Errorf("federation.New: %w", err)
+	}
+
+	return fed, nil
 }
 
 // transportTLSCADescription renders the CA knob for the startup log.
