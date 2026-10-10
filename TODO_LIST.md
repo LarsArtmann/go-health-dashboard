@@ -103,7 +103,7 @@ session close; audit evidence:
 | T11 sink implementation + WithEvaluationHook wiring | 🔴 `TODO` | probe-cadence observations feed trend+evidence; sub-interval flap test |
 | T12 cascade verdict capability | 🔴 `TODO` | gate D1 default: optional Healthchecker capability (Healthzer pattern), pusher fallback preserved |
 | T14 hub transport knob (federation.WithClient) | 🔴 `TODO` | TLS CA / proxy env knobs, validate-before-use |
-| T15 upstream federation readiness proposal | 🔵 `BLOCKED` | verification + draft ready (`docs/upstream/go-health-federation-mark-shutting-down.md`); filing + push are remote actions per gate D3 |
+| T15 upstream federation readiness proposal | ✅ closed 2026-10-10 | verified (live hub + v0.5.1 source) and FILED: go-health#5; voice-checked; draft + verdict: `docs/upstream/go-health-federation-mark-shutting-down.md` |
 | T16 gates + push | 🔵 `BLOCKED` | `pre-push-checks.sh` green locally; the push itself awaits D3 authorization |
 | T13 go-health v0.6 train (SourceStatuses hub cards) | 🔵 `BLOCKED` | needs the upstream v0.6 tag; SourceStatuses exists on master, unreleased |
 | T17 deep-dive templ-components | 🔴 `TODO` | same rubric as the go-health audit |

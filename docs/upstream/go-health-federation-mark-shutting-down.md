@@ -1,7 +1,7 @@
 # Upstream draft: federation needs a two-phase drain (MarkShuttingDown)
 
 **Status:** verified 2026-10-10 against `v0.5.1` (tag `047585f`) + a live hub run.
-**Filed:** see the `Filed:` line at the bottom (or "not yet filed — awaiting push of this repo").
+**Filed:** https://github.com/LarsArtmann/go-health/issues/5 (2026-10-10, gate D3 executed under the session mandate; the MANUALLY REVIEWED box ships unchecked for Lars to tick).
 **Repo:** larsartmann/go-health (own repo).
 
 ---
@@ -76,7 +76,7 @@ the one surface the caller cannot reach into.
 - Orchestrator `preStop` sleep: shifts the race, doesn't close it, and
   the hub still reports 200 while dying.
 
-## Evidence commands
+## Evidence commands:
 
 ```
 go-health@v0.5.1: rg -n "MarkShuttingDown|draining" federation/  → 0 hits
@@ -84,4 +84,4 @@ live hub: SIGTERM with an SSE client held; /readyz polled through the
 drain → all 200, listener closes at end of grace window
 ```
 
-Crush footer goes here at filing time (💘 Generated with Crush).
+💘 Generated with Crush (Assisted-by: Crush:glm-5.3-flash)
