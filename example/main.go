@@ -45,6 +45,7 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 	"unicode"
@@ -56,6 +57,20 @@ import (
 	"github.com/larsartmann/go-health/checks"
 	"github.com/samber/do/v2"
 )
+
+// observeEvaluations is the WithEvaluationHook target (ADR-0003): forwards
+// probe-cadence evaluations into the dashboard's trend ring + evidence log
+// once it exists. The probes are built BEFORE the dashboard (they are its
+// data source), so the hook captures this holder and main stores the
+// dashboard in it after Register — the closure is nil-safe, so the
+// pre-registration fires are dropped rather than panicking.
+var observeEvaluations = func(resp health.Response) {
+	if d := evaluationSink.Load(); d != nil {
+		d.Observe(resp)
+	}
+}
+
+var evaluationSink atomic.Pointer[dashboard.Dashboard]
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -71,11 +86,11 @@ func main() {
 	var bundle probeBundle
 	switch {
 	case os.Getenv("DEMO_AGGREGATE") != "":
-		bundle = buildAggregateProbe(ctx, os.Getenv("DEMO_DETAILED") != "")
+		bundle = buildAggregateProbe(ctx, os.Getenv("DEMO_DETAILED") != "", observeEvaluations)
 	case os.Getenv("DEMO_DETAILED") != "":
-		bundle = buildDetailedProbe(ctx)
+		bundle = buildDetailedProbe(ctx, observeEvaluations)
 	default:
-		bundle = buildSingleProbe(ctx)
+		bundle = buildSingleProbe(ctx, observeEvaluations)
 	}
 	defer bundle.shutdown()
 
@@ -100,6 +115,8 @@ func main() {
 	}
 
 	dash := dashboard.Register(injector, probe, opts...)
+	evaluationSink.Store(dash)
+	log.Println("evaluation hook: probe-cadence observations feed trend + evidence (WithEvaluationHook -> Observe)")
 
 	if err := dash.Start(ctx); err != nil {
 		log.Fatalf("dash.Start: %v", err)
@@ -219,7 +236,7 @@ func awaitStartupComplete(p *health.Probe, ctx context.Context) bool {
 // error), an analytics row that is deliberately off (health.Off) until
 // DEMO_ANALYTICS_URL turns it into a live HTTP check, and the classic
 // postgres/redis/exporter trio.
-func buildSingleProbe(ctx context.Context) probeBundle {
+func buildSingleProbe(ctx context.Context, observe func(health.Response)) probeBundle {
 	redis := &flappingService{failEvery: 15 * time.Second}
 	exporter := &alwaysFailing{reason: exporterUnreachableReason}
 
@@ -235,6 +252,7 @@ func buildSingleProbe(ctx context.Context) probeBundle {
 	probeOpts := append(probeIdentityOptions(),
 		health.WithCriticalServices("postgres", "redis"),
 		health.WithRefreshInterval(2*time.Second),
+		health.WithEvaluationHook(observe),
 	)
 
 	probe := health.NewChecks(checksByName, probeOpts...)
@@ -310,7 +328,7 @@ func analyticsCheck() health.CheckFunc {
 // from AGENTS.md. Sources must have unique, slash-free names (go-health
 // v0.1.3 contract). With withDetailed, a third self-timed source joins the
 // aggregate so the demo shows per-check metadata for one source.
-func buildAggregateProbe(ctx context.Context, withDetailed bool) probeBundle {
+func buildAggregateProbe(ctx context.Context, withDetailed bool, observe func(health.Response)) probeBundle {
 	apiInjector := do.New()
 	registerService(apiInjector, "postgres", &alwaysHealthy{})
 	registerService(apiInjector, "redis", &flappingService{failEvery: 15 * time.Second})
@@ -326,11 +344,13 @@ func buildAggregateProbe(ctx context.Context, withDetailed bool) probeBundle {
 		append(probeIdentityOptions(),
 			health.WithCriticalServices("postgres"),
 			health.WithRefreshInterval(2*time.Second),
+			health.WithEvaluationHook(observe),
 		)...,
 	)
 	workerProbe := health.New(workerInjector,
 		append(probeIdentityOptions(),
 			health.WithRefreshInterval(2*time.Second),
+			health.WithEvaluationHook(observe),
 		)...,
 	)
 
@@ -344,7 +364,10 @@ func buildAggregateProbe(ctx context.Context, withDetailed bool) probeBundle {
 	if withDetailed {
 		detailedProbe := health.NewWithDetailedCheck(
 			detailedDemoChecks,
-			health.WithRefreshInterval(2*time.Second),
+			append(probeIdentityOptions(),
+				health.WithRefreshInterval(2*time.Second),
+				health.WithEvaluationHook(observe),
+			)...,
 		)
 		sources = append(sources, aggregate.Source{Name: "detailed", Probe: detailedProbe})
 		shuttingDown = append(shuttingDown, detailedProbe.Shutdown)
@@ -392,11 +415,12 @@ func buildAggregateProbe(ctx context.Context, withDetailed bool) probeBundle {
 // function (go-health v0.2.0's NewWithDetailedCheck, no injector
 // involved) — the smallest complete showcase for the per-check metadata
 // UI: rows render the state-entry since/age and the executor duration.
-func buildDetailedProbe(ctx context.Context) probeBundle {
+func buildDetailedProbe(ctx context.Context, observe func(health.Response)) probeBundle {
 	probe := health.NewWithDetailedCheck(
 		detailedDemoChecks,
 		append(probeIdentityOptions(),
 			health.WithRefreshInterval(2*time.Second),
+			health.WithEvaluationHook(observe),
 		)...,
 	)
 

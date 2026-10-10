@@ -140,6 +140,7 @@ dash := dashboard.New(probe,
     dashboard.WithPushOnChangeTTL(10),                         // In PushOnChange mode, re-assert unchanged state every 10th tick
     dashboard.WithTimelineMaxAge(24 * time.Hour),              // Hide timeline entries older than 24h
     dashboard.WithIntrospection(),                             // GET /health/introspect: resolved config as JSON
+    dashboard.WithCascadeProbeVerdict(),                       // do.HealthCheck cascade also hears the probe's verdict (ADR-0004)
     dashboard.WithBasePath("/admin"),                          // Prefix all routes for sub-path mounting
     dashboard.WithRoutes(dashboard.Routes{
         Dashboard: "/status",
@@ -150,10 +151,23 @@ dash := dashboard.New(probe,
 )
 ```
 
-`WithRateLimit` configures a **single shared token bucket** across all
+`WithRateLimit` configures **a single shared token bucket** across all
 dashboard-owned routes (dashboard HTML, SSE, favicon, metrics, trend,
 export) — not one bucket per route. Kubernetes probe endpoints are never
 limited.
+
+**Probe-cadence observation (ADR-0003):** wire go-health's evaluation hook
+into `Dashboard.Observe` where the probe is built, and trend + evidence
+sample at probe cadence instead of push cadence — sub-interval flaps stop
+being invisible:
+
+```go
+probe := health.NewChecks(checks, health.WithEvaluationHook(dash.Observe))
+```
+
+(The probe is usually built before the dashboard; the example shows the
+nil-safe forwarding-closure pattern. `/health/trend` and `/health/export`
+serve recorded samples even before `Start`.)
 
 ## Reading the Dashboard
 

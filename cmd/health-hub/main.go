@@ -19,7 +19,10 @@
 // scalars deliberately do NOT ride the merged /health document: federation
 // drops Version/Uptime/InstanceID in the merge (they would lie about a
 // federated view), so WithInstanceID has nothing to attach to here — that
-// surface belongs to the remotes themselves.
+// surface belongs to the remotes themselves. The same asymmetry applies to
+// ADR-0003's evaluation sink: federation.Prober has no evaluation hook, so
+// probe-cadence Observe wiring belongs on the REMOTES (each remote's
+// WithEvaluationHook), not on the hub.
 //
 // Checks land namespaced as "name/check" (worst-of across remotes); a
 // dark remote surfaces as a "name/reachable" fail row instead of a silent

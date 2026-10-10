@@ -15,6 +15,28 @@ forgetting.
 
 ## [Unreleased]
 
+### Added
+
+- **Probe-cadence evaluation sink (`Dashboard.Observe`, ADR-0003).** The
+  trend ring and evidence log previously sampled only at pusher cadence, so
+  a flap that started and cleared between two push ticks was invisible (the
+  health-washing window). `Observe(health.Response)` is the public ingest
+  seam for go-health's `WithEvaluationHook`: wire
+  `health.WithEvaluationHook(dash.Observe)` where the probe is constructed
+  (the example does, via a nil-safe forwarding closure) and trend/evidence
+  sample at probe cadence. The history buffer and evidence log are now
+  Dashboard-owned — observations accrue from the first hook fire,
+  `/health/trend` and `/health/export` serve recorded samples even before
+  `Start` (previously a 503 "pusher not active"), and the evidence strip
+  renders pre-Start. JSON/webhook/metrics contracts untouched.
+- **Opt-in cascade verdict forwarding (`WithCascadeProbeVerdict`,
+  ADR-0004).** `Dashboard.HealthCheck` still reports the real-time surface
+  by default (pusher started/alive — a federation hub stays healthy when
+  its remotes are dark). With the option, and when the prober implements
+  the `ProberHealthchecker` capability (go-health's `Probe.HealthCheck`
+  shape), the `do.HealthCheck` cascade also hears the fleet's roll-up
+  verdict; pusher-state errors keep precedence.
+
 ### Changed
 
 - **Dashboard UI revamp on templ-components v1.21.0.** The header renders
