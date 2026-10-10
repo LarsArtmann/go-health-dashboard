@@ -60,12 +60,11 @@ Test files: notable ones are `browser_test.go`
 (chromedp runtime CSP, serialized Chrome launches), `integration_test.go`
 (`Prober` interface + go-health `aggregate` end-to-end), `screenshot_test.go` /
 `screenshot_dark_test.go` (env-guarded README captures), `fuzz_test.go`,
-`evidence_test.go` + `evidence_integration_test.go`, and `history_test.go`
-(internal `dashboard` package), `hardening_test.go` /
-`watchdog_test.go` (SSE drain, lifetime, rate limit, staleness watchdog),
-`csp_policy_test.go` (`RecommendedCSP`), `publicmode_test.go`,
-`trend_endpoints_test.go`, `metrics_bench_test.go`, plus the standard
-per-file suites.
+`evidence_test.go` + `evidence_integration_test.go`, `history_test.go`
+(internal `dashboard` package), `hardening_test.go` / `watchdog_test.go`
+(SSE drain, lifetime, rate limit, watchdog), `csp_policy_test.go`,
+`publicmode_test.go`, `trend_endpoints_test.go`, `metrics_bench_test.go`,
+plus the standard per-file suites.
 
 ### Key Design Decisions
 
@@ -146,7 +145,7 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   `.github/workflows/fuzz.yml` — one 60s campaign per target nightly) also runs as
   seed tests in plain `go test`; fuzz properly with `GOEXPERIMENT=jsonv2 go test
   -fuzz <Target> -fuzztime 60s <pkg-dir>` (cmd targets take their package
-  directory, e.g. `./cmd/health-hub`). New fuzz target ⇒ `fuzz.yml` + this file
+  directory). New fuzz target ⇒ `fuzz.yml` + this file
   updated in the SAME change — mechanized as `pre-push-checks.sh` check 5
   (registry diff + per-package placement) since 2026-09-23.
 - Browser tests need Chrome: the devShell provides it (`GO_HEALTH_DASHBOARD_CHROME` is set to nix chromium), so `nix develop -c go test -run TestBrowser` just works; CI installs Chrome in the browser job. Screenshot capture additionally needs `SCREENSHOT_OUTPUT=docs/screenshot.png`. Chrome-launch latency is measured by the env-guarded `TestMeasureChromeLaunchLatency` (run it ISOLATED with `GO_HEALTH_DASHBOARD_MEASURE_CHROME=1`); ~155ms/launch vs the 45s timeout, verdict recorded in `docs/research/2026-09-10_benchmarks.md` (M91, 2026-09-23).
@@ -171,18 +170,16 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **GOWORK=off in devShell** — The parent `~/projects/go.work` includes all sibling repos. The flake.nix sets `GOWORK=off` to prevent workspace interference.
 - **Gates race the auto-daemon** — a `nix fmt` dirty-tree check (or any diff-based gate) can false-fail when the daemon commits the fmt output between the diff and the status call. Gates must retry once before trusting a failure; and never run Go tooling (erraudit, go list, tests) while a buildflow run is active — its steps mutate go.mod and `*_templ.go` mid-flight.
 - **Daemon-race recovery recipes (2026-10-10, used 5× in one session)** —
-  (1) intent commit hits "nothing to commit": `git log --oneline -2`, and if
-  `git show HEAD -- <files> | rg <fresh-symbol>` confirms HEAD's daemon
-  commit holds your content, `git commit --amend` carries the full intent
-  message (never rebase a daemon commit away; a split across a daemon
-  commit + your tail commit is fine — the intent message discloses it).
-  (2) `git add` + commit dies on `.git/index.lock`: the daemon is mid-commit
-  — wait 2s, re-check what HEAD holds, then amend-relabel per (1).
-  (3) Before ANY write: handshake (`git log --oneline -10` + `git status` +
-  `ls docs/status/ | tail`) — the newest status file is another session's
-  handoff. (4) Proofread greps after docs edits: `rg "a endpoint|teh|  +$"`
-  class checks catch what spellcheck misses (the audit report shipped "a
-  endpoint" for a day).
+  (1) intent commit hits "nothing to commit": verify HEAD's daemon commit
+  holds your content (`git show HEAD -- <files> | rg <fresh-symbol>`), then
+  `git commit --amend` carries the full intent message (never rebase a
+  daemon commit away; a split across a daemon commit + your tail commit is
+  fine — the intent message discloses it). (2) commit dies on
+  `.git/index.lock`: the daemon is mid-commit — wait 2s, re-check HEAD,
+  amend-relabel per (1). (3) Before ANY write: handshake (`git log
+  --oneline -10`, `git status`, `ls docs/status/ | tail`) — the newest
+  status file is another session's handoff. (4) Proofread greps after docs
+  edits (`rg "a endpoint|teh"` class) catch what spellcheck misses.
 - **Repo scripts that exec `go` need the devShell** — `check-ui-pins.sh`, `verify-release.sh`, and any script invoking Go must run as `nix develop -c bash scripts/<x>.sh`: the ambient PATH go is 1.26.7 with `GOTOOLCHAIN=local`, which dies on go.mod's 1.27.1 floor with a misleading `go: updates to go.mod needed` (hit three times on 2026-09-22; the devShell's go_1_27 is the only correct context). Root-fix queued: scripts should self-select the right go.
 - **treefmt's goimports needs the flake's go, not nixpkgs'** — nixpkgs' gotools wrapper pins its build go (1.26.x) onto PATH; with go.mod's `1.27.1` floor, `go list` attempts a GOTOOLCHAIN download inside the NETWORK-LESS treefmt sandbox and `checks.format` fails deterministically (CI included — not a local-DNS problem, first misdiagnosed as one on 2026-09-22). Fixed by wrapping goimports with `goPkg` in `flake.nix`; any new go-invoking formatter needs the same treatment.
 - **The v0.10.1 dual-cut (2026-09-22)** — tag-commit hygiene failures + an `awk -v` regex bug in the release-draft workflow; recovered as the green-CI re-cut v0.10.1. Full story: `docs/gotchas.md`.
@@ -295,11 +292,7 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.5.1 in go.mod). The dashboar
   samber/do injector path reports zero duration. The wire field is `duration_ns`
   (int64), not `time.Duration` — encoding/json/v2 cannot marshal time.Duration.
   The dashboard surfaces both in the check rows (HTML) and as
-  `dashboard_health_check_last_duration_seconds` (metrics); since v0.2.0's own go
-  directive relaxed to `go 1.26`, but this module's floor moved to `1.27.1`
-  (2026-09-19, dep-driven with the go-health federation pin — nixpkgs ships
-  `go_1_27 = 1.27.1`; the flake builds with `go_1_27` and CI flows via
-  `go-version-file: go.mod`)
+  `dashboard_health_check_last_duration_seconds` (metrics)
 - `SanitizeResponse(Response) Response` — replaces invalid UTF-8 with U+FFFD;
   the dashboard applies it once at the response choke point (`currentResponse`)
   so every write seam (JSON, webhook, SSE, metrics, CSV) stays valid under
@@ -310,15 +303,14 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.5.1 in go.mod). The dashboar
   from problem counts (alert scale, group roll-up, timeline direction) and
   from the evidence universe (can neither deviate nor sit unproven-green);
   `exhaustive` demands an explicit case in EVERY `health.Status` switch —
-  new switches must decide off, not default it. ADOPTED END TO END
-  (2026-10-10): `health.Off` demo row in the example (`analytics`, with
-  `DEMO_ANALYTICS_URL` promoting it to a live `checks.HTTP` battery) and
-  `TestBrowser_OffRowContract` pinning neutral-badge + population-exclusion
-  in a real browser
+  new switches must decide off, not default it. Adopted end to end
+  (2026-10-10): the example's `analytics` row (`health.Off` with
+  `DEMO_ANALYTICS_URL` promoting it to a live `checks.HTTP` battery) +
+  `TestBrowser_OffRowContract`
 - `checks` battery package (v0.5.1) — `checks.Disk/Memory/HTTP` are plain
-  `CheckFunc`s, warn-by-default. Adopted in the example: `disk-headroom`
-  (pass), `memory-pressure` (1 MiB threshold → warn with the REAL heap
-  number), `analytics` via `checks.HTTP` when configured
+  `CheckFunc`s, warn-by-default; example rows: `disk-headroom` (pass),
+  `memory-pressure` (warn with the REAL heap number), `analytics` via
+  `checks.HTTP` when configured
 - `NewWithHealthCheck(fn HealthCheckFunc, opts...)` — constructs a probe from
   a plain function, no samber/do injector involved (non-do apps use it +
   `dashboard.New` + `Start`/`Shutdown`; only `Register` needs the injector)
@@ -331,21 +323,19 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.5.1 in go.mod). The dashboar
   `StartupComplete()` (below)
 - `Probe.StartupComplete()` — the ONE-WAY startup latch. Lazy: evaluated
   ONLY inside served `StartupHandler` requests (the kubelet's job); a
-  process nobody startup-probes NEVER latches. The example's gate drives
-  the evaluation in-process (`StartupHandler` + recorder) while polling
+  process nobody startup-probes NEVER latches — the example's gate drives
+  the evaluation in-process while polling
 - `Probe.MarkShuttingDown()` / `WithShutdownGracePeriod` — two-phase drain:
-  mark first (readiness → 503, refresh loop keeps serving), stop later.
-  Adopted in both binaries (2026-10-10). GOTCHA: `server.Shutdown` closes
-  listeners immediately, so a mark without a grace beat is unobservable —
-  the example holds `DEMO_DRAIN_GRACE` (2s default) between mark and
-  `server.Shutdown` so LB health checks see the 503
-- `health.VersionHandler(v)` / `WithInstanceID(id)` — build/replica
-  identity: `/version` (`{"version":"..."}`) on both binaries;
-  `WithInstanceID(hostname)` stamps the example's `/health` JSON.
-  Federation deliberately drops per-process scalars in the merge, so the
+  mark first (readiness → 503, refresh loop keeps serving), stop later;
+  adopted in both binaries. `server.Shutdown` closes listeners immediately,
+  so the example holds `DEMO_DRAIN_GRACE` (2s default) after the mark so
+  LB health checks observe the 503
+- `health.VersionHandler(v)` / `WithInstanceID(id)` — build/replica identity:
+  `/version` on both binaries; `WithInstanceID(hostname)` stamps the example's
+  `/health` JSON. Federation drops per-process scalars in the merge, so the
   hub gets `/version` only
 - `Healthzer` optional capability (`Aggregate.Healthz()`) — combined-traffic
-  handler (503 latch-unset/fail, 200 pass/warn). Demoed via
+  handler (503 latch-unset/fail, 200 pass/warn); demoed via
   `Routes.Healthz = "/livez"` in the example's aggregate mode
 - `Probe.RefreshInterval() time.Duration` — returns configured refresh interval
 - `Probe.LivenessHandler()`, `Probe.ReadinessHandler()`, `Probe.StartupHandler()` — JSON HTTP handlers
