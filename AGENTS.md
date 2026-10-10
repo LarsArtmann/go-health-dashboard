@@ -419,7 +419,7 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 
 ### go-health (`github.com/larsartmann/go-health`)
 
-Provides `Probe`, `Response`, `Check`, `Status` (v0.2.0 in go.mod). The dashboard is a pure consumer — zero changes needed to go-health:
+Provides `Probe`, `Response`, `Check`, `Status` (v0.5.1 in go.mod). The dashboard is a pure consumer — zero changes needed to go-health:
 
 - `Probe.CachedResponse() Response` — reads atomic cache, overlays shutdown flag
 - `Check.Since` / `Check.DurationNanos` (since v0.2.0, additive, `omitzero` on the
@@ -445,31 +445,61 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.2.0 in go.mod). The dashboar
   from problem counts (alert scale, group roll-up, timeline direction) and
   from the evidence universe (can neither deviate nor sit unproven-green);
   `exhaustive` demands an explicit case in EVERY `health.Status` switch —
-  new switches must decide off, not default it
+  new switches must decide off, not default it. ADOPTED END TO END
+  (2026-10-10): `health.Off` demo row in the example (`analytics`, with
+  `DEMO_ANALYTICS_URL` promoting it to a live `checks.HTTP` battery) and
+  `TestBrowser_OffRowContract` pinning neutral-badge + population-exclusion
+  in a real browser
+- `checks` battery package (v0.5.1) — `checks.Disk/Memory/HTTP` are plain
+  `CheckFunc`s, warn-by-default. Adopted in the example: `disk-headroom`
+  (pass), `memory-pressure` (1 MiB threshold → warn with the REAL heap
+  number), `analytics` via `checks.HTTP` when configured
 - `NewWithHealthCheck(fn HealthCheckFunc, opts...)` — constructs a probe from
   a plain function, no samber/do injector involved (non-do apps use it +
   `dashboard.New` + `Start`/`Shutdown`; only `Register` needs the injector)
 - `Probe.Status()`/`Alive()`/`Ready()`/`AwaitReady()` — cheap cached accessors
   available to consumers; the dashboard deliberately reads `CachedResponse`
-  so the view, metrics, and change detection share one snapshot
+  so the view, metrics, and change detection share one snapshot. GOTCHA
+  (2026-10-10): `Ready()` is "not currently failing" — TRUE on the
+  zero-value pass cache before any check ran, so `AwaitReady` passes
+  instantly and proves nothing; startup gates must poll
+  `StartupComplete()` (below)
+- `Probe.StartupComplete()` — the ONE-WAY startup latch. Lazy: evaluated
+  ONLY inside served `StartupHandler` requests (the kubelet's job); a
+  process nobody startup-probes NEVER latches. The example's gate drives
+  the evaluation in-process (`StartupHandler` + recorder) while polling
+- `Probe.MarkShuttingDown()` / `WithShutdownGracePeriod` — two-phase drain:
+  mark first (readiness → 503, refresh loop keeps serving), stop later.
+  Adopted in both binaries (2026-10-10). GOTCHA: `server.Shutdown` closes
+  listeners immediately, so a mark without a grace beat is unobservable —
+  the example holds `DEMO_DRAIN_GRACE` (2s default) between mark and
+  `server.Shutdown` so LB health checks see the 503
+- `health.VersionHandler(v)` / `WithInstanceID(id)` — build/replica
+  identity: `/version` (`{"version":"..."}`) on both binaries;
+  `WithInstanceID(hostname)` stamps the example's `/health` JSON.
+  Federation deliberately drops per-process scalars in the merge, so the
+  hub gets `/version` only
+- `Healthzer` optional capability (`Aggregate.Healthz()`) — combined-traffic
+  handler (503 latch-unset/fail, 200 pass/warn). Demoed via
+  `Routes.Healthz = "/livez"` in the example's aggregate mode
 - `Probe.RefreshInterval() time.Duration` — returns configured refresh interval
 - `Probe.LivenessHandler()`, `Probe.ReadinessHandler()`, `Probe.StartupHandler()` — JSON HTTP handlers
 - `aggregate` sub-package (since v0.1.0) — `aggregate.New(sources...)` merges N probes into
   one `Prober`-compatible surface for multi-service dashboards. Sources must have unique
   non-empty names; checks land namespaced as `source/check`. Sources must eagerly invoke
   their samber/do services or they silently health-check as pass (same gotcha as single probes).
-- `federation` sub-package (unreleased; v0.3.0 vehicle) — `federation.New(remotes,
+- `federation` sub-package (RELEASED; adopted) — `federation.New(remotes,
   opts...)` pulls N remote go-health instances over HTTP into one `Prober`-compatible
   surface: merge-on-read (one parallel fetch per remote per read, per-fetch timeout default 5s),
   checks namespaced `name/check`, unreachable remotes surface as a `name/reachable` FAIL row
   (never a silent freeze), `Check.Since` survives the wire, startup latches per remote on first
   successful fetch. A hub (`health.home.lan`) is `dashboard.New(fed, WithGrouping(GroupBySource))`
   — verified end to end 2026-09-18 (HTML renders per-remote cards; JSON negotiation 503s while a
-  remote is dark). go.mod pins the **v0.4.0 tag** (2026-09-22): federation, `Status.Rank()`,
-  `NewChecks`, and `Aggregate.Healthz()` — additive for this module, ratified with a green gate
-  chain the same day. History: the 2026-09-18 master pseudo-version pin
-  (`v0.2.1-0.20260918115637-aafc76e229a5`) was swept to v0.4.0 by a buildflow go-mod-update run
-  (daemon commit `b1128ae`) and verified deliberately afterwards instead of reverted. v0.4.0's
+  remote is dark). go.mod pins the **v0.5.1 tag** (2026-10-10, from v0.4.0 set 2026-09-22):
+  v0.5.x added `StatusOff`, the `checks` batteries, `VersionHandler`,
+  `WithInstanceID`, `MarkShuttingDown` — all adopted here. Known federation gaps
+  (upstream proposals): no `MarkShuttingDown` (a hub cannot flip readiness 503
+  during drain). v0.4.0's
   module graph requires `go 1.27.1` — the fleet normalize step's `go 1.27` downgrade breaks
   every module load (see Gotchas). `cmd/health-hub` is the hub made
   runnable: `HEALTH_HUB_REMOTES` (validated `name=url` pairs, redacted in logs),
