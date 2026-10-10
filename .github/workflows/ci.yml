@@ -181,7 +181,12 @@ jobs:
 
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.13.1
+          # v2.14.0: the release binary builds with Go 1.27.0 and reads the
+          # Go 1.27 stdlib export data (version 5) that go.mod's 1.27 floor
+          # produces on the runner; v2.13.1 (Go 1.26-built) fails typecheck
+          # with "export data version 5 is greater than maximum supported
+          # version 4".
+          version: v2.14.0
           args: ./...
 
   vulncheck:
