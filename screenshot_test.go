@@ -10,8 +10,8 @@ import (
 
 	"github.com/chromedp/chromedp"
 	health "github.com/larsartmann/go-health"
-	"github.com/larsartmann/go-health/checks"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	"github.com/larsartmann/go-health/checks"
 	"github.com/samber/do/v2"
 )
 
