@@ -460,6 +460,24 @@ toggle button for manual switching. The preference is persisted in
 
 Dark screenshot captured by `screenshot_dark_test.go` (`SCREENSHOT_OUTPUT_DARK=docs/screenshot-dark.png`).
 
+### Screenshot freshness
+
+The captures show the full state spectrum on purpose: `pass`, `warn`
+(`memory-pressure` from go-health's `checks` battery, reporting its real
+live heap number), `fail` (degraded capture), and `off` (`analytics`, the
+deliberately-unconfigured row carrying its enable recipe). The memory
+warning's byte count and every timestamp are live data — captures differ
+between runs, which is the point: the demo measures, it does not
+fabricate.
+
+There is no CI freshness gate on the PNGs — a byte-level golden would
+break on every timestamp tick. Instead the capture fixture lives next to
+the test that produces it (`screenshot_test.go`), and UI-affecting changes
+should regenerate the captures in the same change
+(`SCREENSHOT_OUTPUT=... go test -run TestCaptureREADME_Screenshot`). The
+browser suite pins the rendered contract (badges, groups, counts) that
+the pictures illustrate.
+
 ## Failure State
 
 With a critical service down, the banner leads with the failure, a
