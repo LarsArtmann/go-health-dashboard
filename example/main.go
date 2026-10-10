@@ -122,17 +122,7 @@ func main() {
 
 	mux.HandleFunc("/version", health.VersionHandler(version.Version))
 
-	if bundle.awaitStartup != nil {
-		readyCtx, readyCancel := context.WithTimeout(ctx, 15*time.Second)
-		if bundle.awaitStartup(readyCtx) {
-			log.Println("readiness gate: startup latch set (every critical service passed once)")
-		} else {
-			log.Println(
-				"readiness gate: startup latch not set within 15s (serving anyway — demo binary)",
-			)
-		}
-		readyCancel()
-	}
+	awaitStartupGate(ctx, bundle.awaitStartup)
 
 	server := &http.Server{
 		Addr:              addr,
@@ -174,6 +164,26 @@ func main() {
 	}
 
 	bundle.shutdown()
+}
+
+// awaitStartupGate blocks until the probe's startup latch is set (or the
+// 15s demo timeout expires) and logs the outcome; a nil callback (probe
+// without startup controls) skips the gate entirely.
+func awaitStartupGate(ctx context.Context, await func(context.Context) bool) {
+	if await == nil {
+		return
+	}
+
+	readyCtx, readyCancel := context.WithTimeout(ctx, 15*time.Second)
+	defer readyCancel()
+
+	if await(readyCtx) {
+		log.Println("readiness gate: startup latch set (every critical service passed once)")
+	} else {
+		log.Println(
+			"readiness gate: startup latch not set within 15s (serving anyway — demo binary)",
+		)
+	}
 }
 
 // probeBundle pairs a ready prober with its lifecycle controls: shutdown

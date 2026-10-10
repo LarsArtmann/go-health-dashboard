@@ -396,6 +396,7 @@ func newFederation(cfg hubConfig) (*healthfederation.Prober, error) {
 
 	if client != nil {
 		fedOpts = append(fedOpts, healthfederation.WithClient(client))
+
 		log.Printf(
 			"transport: custom HTTP client for remote fetches (TLS CA: %s, proxy: %s)",
 			transportTLSCADescription(cfg),
