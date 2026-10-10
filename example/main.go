@@ -118,12 +118,12 @@ func main() {
 
 	mux.HandleFunc("/version", health.VersionHandler(version.Version))
 
-	if bundle.awaitReady != nil {
+	if bundle.awaitStartup != nil {
 		readyCtx, readyCancel := context.WithTimeout(ctx, 15*time.Second)
-		if err := bundle.awaitReady(readyCtx); err != nil {
-			log.Printf("readiness gate: %v (serving anyway — demo binary)", err)
+		if bundle.awaitStartup(readyCtx) {
+			log.Println("readiness gate: startup latch set (every critical service passed once)")
 		} else {
-			log.Println("readiness gate: first check batch cached")
+			log.Println("readiness gate: startup latch not set within 15s (serving anyway — demo binary)")
 		}
 		readyCancel()
 	}
@@ -169,14 +169,30 @@ func main() {
 
 // probeBundle pairs a ready prober with its lifecycle controls: shutdown
 // stops the probes, markShuttingDown flips readiness to 503 while the
-// refresh loop keeps serving fresh data (two-phase drain), and awaitReady
-// blocks until the first check batch is cached. Aggregate mode forwards
-// both to every source probe.
+// refresh loop keeps serving fresh data (two-phase drain), and
+// awaitStartup blocks until the probe's ONE-WAY startup latch is set
+// (StartupComplete — not Ready(), which is true on the zero-value pass
+// cache before any check ran). Aggregate mode forwards to every source.
 type probeBundle struct {
 	prober           dashboard.Prober
 	shutdown         func()
 	markShuttingDown func()
-	awaitReady       func(context.Context) error
+	awaitStartup     func(context.Context) bool
+}
+
+// awaitStartupComplete polls p.StartupComplete() until set or ctx done.
+func awaitStartupComplete(p *health.Probe, ctx context.Context) bool {
+	for {
+		if p.StartupComplete() {
+			return true
+		}
+
+		if ctx.Err() != nil {
+			return false
+		}
+
+		time.Sleep(50 * time.Millisecond)
+	}
 }
 
 // buildSingleProbe builds the classic single-process probe over the default
@@ -219,7 +235,9 @@ func buildSingleProbe(ctx context.Context) probeBundle {
 		prober:           probe,
 		shutdown:         probe.Shutdown,
 		markShuttingDown: probe.MarkShuttingDown,
-		awaitReady:       probe.AwaitReady,
+		awaitStartup: func(ctx context.Context) bool {
+			return awaitStartupComplete(probe, ctx)
+		},
 	}
 }
 
@@ -346,14 +364,14 @@ func buildAggregateProbe(ctx context.Context, withDetailed bool) probeBundle {
 				source.Probe.MarkShuttingDown()
 			}
 		},
-		awaitReady: func(ctx context.Context) error {
+		awaitStartup: func(ctx context.Context) bool {
 			for _, source := range sources {
-				if err := source.Probe.AwaitReady(ctx); err != nil {
-					return fmt.Errorf("%s: %w", source.Name, err)
+				if !awaitStartupComplete(source.Probe, ctx) {
+					return false
 				}
 			}
 
-			return nil
+			return true
 		},
 	}
 }
@@ -378,7 +396,9 @@ func buildDetailedProbe(ctx context.Context) probeBundle {
 		prober:           probe,
 		shutdown:         probe.Shutdown,
 		markShuttingDown: probe.MarkShuttingDown,
-		awaitReady:       probe.AwaitReady,
+		awaitStartup: func(ctx context.Context) bool {
+			return awaitStartupComplete(probe, ctx)
+		},
 	}
 }
 
