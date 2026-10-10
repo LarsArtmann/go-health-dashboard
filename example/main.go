@@ -39,6 +39,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"os/signal"
@@ -180,9 +181,20 @@ type probeBundle struct {
 	awaitStartup     func(context.Context) bool
 }
 
-// awaitStartupComplete polls p.StartupComplete() until set or ctx done.
+// awaitStartupComplete polls p's one-way startup latch, driving the
+// startup evaluation while it polls: go-health latches startup LAZILY,
+// on served StartupHandler requests — the kubelet's job in production.
+// A demo without a kubelet does that job itself, so the startup gate and
+// the aggregate's combined-traffic /livez see a latched probe.
 func awaitStartupComplete(p *health.Probe, ctx context.Context) bool {
 	for {
+		if p.StartupComplete() {
+			return true
+		}
+
+		rec := httptest.NewRecorder()
+		p.StartupHandler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/startupz", nil))
+
 		if p.StartupComplete() {
 			return true
 		}
