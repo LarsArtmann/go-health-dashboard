@@ -60,20 +60,18 @@ func main() {
 		}
 	}()
 
-	var probeBundle struct {
-		prober   dashboard.Prober
-		shutdown func()
+	var bundle probeBundle
+	switch {
+	case os.Getenv("DEMO_AGGREGATE") != "":
+		bundle = buildAggregateProbe(ctx, os.Getenv("DEMO_DETAILED") != "")
+	case os.Getenv("DEMO_DETAILED") != "":
+		bundle = buildDetailedProbe(ctx)
+	default:
+		bundle = buildSingleProbe(ctx)
 	}
-	if os.Getenv("DEMO_AGGREGATE") != "" {
-		probeBundle = buildAggregateProbe(ctx, os.Getenv("DEMO_DETAILED") != "")
-	} else if os.Getenv("DEMO_DETAILED") != "" {
-		probeBundle = buildDetailedProbe(ctx)
-	} else {
-		probeBundle = buildSingleProbe(ctx)
-	}
-	defer probeBundle.shutdown()
+	defer bundle.shutdown()
 
-	probe := probeBundle.prober
+	probe := bundle.prober
 
 	// Assemble the option set from environment toggles so every feature can
 	// be demonstrated without code changes.
@@ -94,6 +92,16 @@ func main() {
 	)
 	log.Printf("readiness: http://localhost%s/readyz", addr)
 
+	if bundle.awaitReady != nil {
+		readyCtx, readyCancel := context.WithTimeout(ctx, 15*time.Second)
+		if err := bundle.awaitReady(readyCtx); err != nil {
+			log.Printf("readiness gate: %v (serving anyway — demo binary)", err)
+		} else {
+			log.Println("readiness gate: first check batch cached")
+		}
+		readyCancel()
+	}
+
 	server := &http.Server{
 		Addr:              addr,
 		Handler:           mux,
@@ -101,8 +109,12 @@ func main() {
 	}
 
 	// Run the server until ctx is cancelled (SIGINT/SIGTERM), then shut down
-	// gracefully: stop accepting new connections, wait for in-flight requests,
-	// then let the deferred injector.Shutdown() cascade to all services.
+	// in drain-safe order: flip probe readiness to 503 first so load
+	// balancers stop routing while HTTP drains, then stop accepting
+	// connections and wait for in-flight requests, then stop the probes.
+	// bundle.shutdown stays deferred as the early-exit safety net (and is
+	// idempotent), and the deferred injector.Shutdown() cascades to the
+	// dashboard's own SSE teardown.
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("server: %v", err)
@@ -112,18 +124,31 @@ func main() {
 	<-ctx.Done()
 	log.Println("shutting down...")
 
+	if bundle.markShuttingDown != nil {
+		bundle.markShuttingDown()
+		log.Println("drain: probe readiness flipped to 503 (refresh loop still serving)")
+	}
+
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Printf("server.Shutdown: %v", err)
 	}
+
+	bundle.shutdown()
 }
 
-// probeBundle pairs a ready prober with its shutdown func.
+// probeBundle pairs a ready prober with its lifecycle controls: shutdown
+// stops the probes, markShuttingDown flips readiness to 503 while the
+// refresh loop keeps serving fresh data (two-phase drain), and awaitReady
+// blocks until the first check batch is cached. Aggregate mode forwards
+// both to every source probe.
 type probeBundle struct {
-	prober   dashboard.Prober
-	shutdown func()
+	prober           dashboard.Prober
+	shutdown         func()
+	markShuttingDown func()
+	awaitReady       func(context.Context) error
 }
 
 // buildSingleProbe builds the classic single-process probe over the default
@@ -149,7 +174,12 @@ func buildSingleProbe(ctx context.Context) probeBundle {
 		log.Fatalf("probe.Start: %v", err)
 	}
 
-	return probeBundle{prober: probe, shutdown: probe.Shutdown}
+	return probeBundle{
+		prober:           probe,
+		shutdown:         probe.Shutdown,
+		markShuttingDown: probe.MarkShuttingDown,
+		awaitReady:       probe.AwaitReady,
+	}
 }
 
 // buildAggregateProbe builds two independent probes (api + worker service
@@ -215,6 +245,20 @@ func buildAggregateProbe(ctx context.Context, withDetailed bool) probeBundle {
 				fn()
 			}
 		},
+		markShuttingDown: func() {
+			for _, source := range sources {
+				source.Probe.MarkShuttingDown()
+			}
+		},
+		awaitReady: func(ctx context.Context) error {
+			for _, source := range sources {
+				if err := source.Probe.AwaitReady(ctx); err != nil {
+					return fmt.Errorf("%s: %w", source.Name, err)
+				}
+			}
+
+			return nil
+		},
 	}
 }
 
@@ -233,7 +277,12 @@ func buildDetailedProbe(ctx context.Context) probeBundle {
 		log.Fatalf("probe.Start: %v", err)
 	}
 
-	return probeBundle{prober: probe, shutdown: probe.Shutdown}
+	return probeBundle{
+		prober:           probe,
+		shutdown:         probe.Shutdown,
+		markShuttingDown: probe.MarkShuttingDown,
+		awaitReady:       probe.AwaitReady,
+	}
 }
 
 // detailedDemoChecks is the self-timed check batch: each dependency sleeps
