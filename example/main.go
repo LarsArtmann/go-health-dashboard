@@ -179,7 +179,7 @@ func buildSingleProbe(ctx context.Context) probeBundle {
 		"redis":            redis.HealthCheck,
 		"metrics-exporter": exporter.HealthCheck,
 		"disk-headroom":    checks.Disk(".", 1<<30),
-		"memory-pressure":  checks.Memory(8 << 20),
+		"memory-pressure":  checks.Memory(1 << 20),
 		"analytics":        analyticsCheck(),
 	}
 
