@@ -101,6 +101,13 @@ builds a probe from a plain function — use it with `dashboard.New` +
 | `/readyz`             | GET    | application/json              | Readiness probe (503 when critical services fail)                                                                         |
 | `/startupz`           | GET    | application/json              | Startup probe (latched once all critical services pass)                                                                   |
 
+Routes above are the dashboard's own surface. Both shipped binaries add one
+route of their own: **`GET /version`** (`{"version":"..."}`, go-health's
+`VersionHandler`) answers "which build am I hitting?" without touching the
+probe. The example also stamps `WithInstanceID(hostname)`, so the `/health`
+JSON attributes responses to the replica that produced them; federation
+hubs deliberately don't (per-process scalars would lie about a merged view).
+
 ## Options
 
 ```go
