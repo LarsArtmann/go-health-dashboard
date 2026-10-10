@@ -81,6 +81,36 @@ theme 6; the three policy questions live in ROADMAP Open Questions.
 | Keyboard-reachability of the endpoint links                                        | 🔴 `TODO`    | Confirm `TestBrowser_KeyboardLinks` actually covers the Export/Trend/Metrics glyph links                                                                                                                                                                                                                                                                                                                                     | report §f23                                               |
 | One-command capture wrapper for the three README screenshots                       | 🔴 `TODO`    | The three captures use three different env vars (`SCREENSHOT_OUTPUT`, `_DARK`, `_DEGRADED`) and exact test names; one wrapper script removes the footgun                                                                                                                                                                                                                                                                     | report §f42; hit live in this session                     |
 
+## Harvested 2026-10-10 (go-health leverage pareto plan)
+
+Execution of `docs/planning/2026-10-10_01-44_go-health-leverage-pareto-plan.md`
+(all 41 todos from the 2026-10-09 deep-dive session). Statuses updated at
+session close; audit evidence:
+`docs/research/2026-10-09_go-health-deep-dive.html`.
+
+| Task | Status | Notes / evidence |
+| --- | --- | --- |
+| T01 example drain-safety (MarkShuttingDown + grace beat + gate) | ✅ closed 2026-10-10 | readiness 503 observed during drain (single+aggregate); commit `6007280` + the honest-gate correction in `0b6a646` |
+| T02 hub drain-safety (dash.Shutdown leads, HEALTH_HUB_SSE_DRAIN, startup gate) | ✅ closed 2026-10-10 | 1ms shutdown with SSE held (was >=10s); commit `4c01c63` |
+| T03 demo truth: health.Off analytics row + checks.Disk/Memory | ✅ closed 2026-10-10 | pass/warn/off mix verified on JSON surface; commit `a4c58e3` |
+| T04 off-row browser contract test | ✅ closed 2026-10-10 | `TestBrowser_OffRowContract` (neutral badge, evidence/alert exclusion); commit `2c25935` |
+| T05 /version + WithInstanceID on both binaries | ✅ closed 2026-10-10 | verified live on both; federation scalar-drop documented; commit `497cf89` |
+| T06 README captures with full state spectrum + freshness decision | ✅ closed 2026-10-10 | off/battery rows visible; manual-capture gate documented in README; commit `afb5693` |
+| T07 Routes.Healthz demo in example aggregate mode | ✅ closed 2026-10-10 | /livez 200-on-warn verified; exposed+fixed the fake AwaitReady gate; commit `0b6a646` |
+| T08 docs sync (AGENTS go-health section, this harvest, FEATURES, NewWithHealthCheck framing) | ✅ closed 2026-10-10 | this section + AGENTS dependency notes + FEATURES leverage line |
+| T09 audit-report quality pass | 🔴 `TODO` | typo fix, render-verify all sections, citation re-check, re-score |
+| T10 WithEvaluationSink ADR | 🔴 `TODO` | gate D2 default: library API now (opt-in, zero-dep) — awaiting execution |
+| T11 sink implementation + WithEvaluationHook wiring | 🔴 `TODO` | probe-cadence observations feed trend+evidence; sub-interval flap test |
+| T12 cascade verdict capability | 🔴 `TODO` | gate D1 default: optional Healthchecker capability (Healthzer pattern), pusher fallback preserved |
+| T14 hub transport knob (federation.WithClient) | 🔴 `TODO` | TLS CA / proxy env knobs, validate-before-use |
+| T15 upstream federation readiness proposal | 🔵 `BLOCKED` | verification + draft ready (`docs/upstream/go-health-federation-mark-shutting-down.md`); filing + push are remote actions per gate D3 |
+| T16 gates + push | 🔵 `BLOCKED` | `pre-push-checks.sh` green locally; the push itself awaits D3 authorization |
+| T13 go-health v0.6 train (SourceStatuses hub cards) | 🔵 `BLOCKED` | needs the upstream v0.6 tag; SourceStatuses exists on master, unreleased |
+| T17 deep-dive templ-components | 🔴 `TODO` | same rubric as the go-health audit |
+| T18 deep-dive go-datastar + go-sse | 🔴 `TODO` | same rubric as the go-health audit |
+| T19 process recipes into AGENTS.md | 🔴 `TODO` | daemon-race amend-relabel, handshake-first, proofread greps |
+| T20 trim AGENTS.md to 377-line budget | 🔴 `TODO` | after T08+T19 land, let the trim win; re-enables the agent-config lint rule |
+
 ## Blocked (needs user decision)
 
 Premises re-verified against the 2026-09-23 tree (triage row executed);

@@ -180,6 +180,14 @@
 | Domain language docs     | 🟢 `FULLY_FUNCTIONAL` | `docs/DOMAIN_LANGUAGE.md` — ubiquitous language glossary                                                                                                                                                                                                          |
 | Released (pkg.go.dev)    | 🟢 `FULLY_FUNCTIONAL` | Tagged v0.10.1 (2026-09-22, green-CI re-cut of v0.10.0; verify-release checks 1-4 green, check 5 = the release-draft awk run's known exception); v0.5.0+ proxy-resolved; zero replace directives                                                                  |
 
+## go-Health Leverage Baseline
+
+| Fact | Value |
+| --- | --- |
+| Audit (2026-10-09, pinned v0.5.1) | 78/100 adoption, 15/26 capabilities fully leveraged, 0 anti-patterns — `docs/research/2026-10-09_go-health-deep-dive.html` |
+| Adopted 2026-10-10 (leverage plan) | `MarkShuttingDown` two-phase drain (both binaries), `checks` batteries + `health.Off` demo row, `VersionHandler` `/version` + `WithInstanceID`, `Routes.Healthz` combined-traffic demo, `WithShutdownGracePeriod` semantics via the drain-grace beat, honest startup gate (`StartupComplete`, not `AwaitReady`) |
+| Known federation gaps | No `MarkShuttingDown` (hub can't flip readiness during drain); per-process scalars dropped by design; upstream draft in `docs/upstream/` |
+
 ## Known Gaps
 
 | Gap                             | Where documented                                                                                                                           |
