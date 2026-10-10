@@ -10,6 +10,7 @@ import (
 
 	"github.com/chromedp/chromedp"
 	health "github.com/larsartmann/go-health"
+	"github.com/larsartmann/go-health/checks"
 	dashboard "github.com/larsartmann/go-health-dashboard"
 	"github.com/samber/do/v2"
 )
@@ -72,6 +73,31 @@ func normalizeScreenshotPerms(t *testing.T, out string) {
 	}
 }
 
+// offService is a deliberately-unconfigured dependency: its check returns
+// health.Off so the README captures show the intentional-absence row next
+// to the verdict states.
+type offService struct{ detail string }
+
+func (s offService) HealthCheck(_ context.Context) error { return health.Off(s.detail) }
+
+func provideOff(i do.Injector, name, detail string) {
+	do.ProvideNamed(i, name, func(_ do.Injector) (offService, error) {
+		return offService{detail: detail}, nil
+	})
+}
+
+// batteryService adapts a go-health checks battery func to the injector
+// service surface, so the README captures show a real resource row.
+type batteryService struct{ fn func(context.Context) error }
+
+func (s batteryService) HealthCheck(ctx context.Context) error { return s.fn(ctx) }
+
+func provideBattery(i do.Injector, name string, fn func(context.Context) error) {
+	do.ProvideNamed(i, name, func(_ do.Injector) (batteryService, error) {
+		return batteryService{fn: fn}, nil
+	})
+}
+
 // captureThemeScreenshot renders the dashboard in the requested theme and
 // writes a PNG to out. Skipped when envVar is unset: screenshot capture is
 // a manual documentation tool.
@@ -92,9 +118,13 @@ func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
 	provideHealthy(injector, "postgres")
 	provideHealthy(injector, "api-gateway")
 	provideUnhealthy(injector, "metrics-exporter", "exporter endpoint unreachable")
+	provideOff(injector, "analytics", "not configured: set DEMO_ANALYTICS_URL=<url> to enable analytics")
+	provideBattery(injector, "memory-pressure", checks.Memory(1<<20))
 	invoke[*healthyService](t, injector, "postgres")
 	invoke[*healthyService](t, injector, "api-gateway")
 	invoke[*unhealthyService](t, injector, "metrics-exporter")
+	invoke[offService](t, injector, "analytics")
+	invoke[batteryService](t, injector, "memory-pressure")
 
 	probe := health.New(injector,
 		health.WithVersion("1.2.3"),
