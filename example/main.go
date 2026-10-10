@@ -18,7 +18,8 @@
 //	                             listener closes, so LB health checks observe the drain
 //	DEMO_PUBLIC=1                public status-page mode (WithPublicMode)
 //	DEMO_BASE_PATH=/status       mount the dashboard under a sub-path (WithBasePath)
-//	DEMO_AGGREGATE=1             serve a two-probe aggregate instead of one probe (go-health aggregate)
+//	DEMO_AGGREGATE=1             serve a two-probe aggregate instead of one probe (go-health aggregate);
+//	                             also registers the combined-traffic /livez (aggregate Healthz)
 //	DEMO_ANALYTICS_URL=<url>     make the analytics row a live HTTP check (checks.HTTP) instead of
 //	                             the deliberate off row (health.Off) it shows when unset
 //	DEMO_DETAILED=1              add a detailed-check source (NewWithDetailedCheck) whose self-timed
@@ -81,7 +82,23 @@ func main() {
 
 	// Assemble the option set from environment toggles so every feature can
 	// be demonstrated without code changes.
-	dash := dashboard.Register(injector, probe, buildOptions()...)
+	opts := buildOptions()
+
+	if os.Getenv("DEMO_AGGREGATE") != "" {
+		// The aggregate implements go-health's Healthz combined-traffic
+		// handler (200 pass/warn, 503 fail-or-unlatched). Single-endpoint
+		// deployments behind load balancers point ONE route at it; the demo
+		// serves it at /livez, off the kubelet-owned /healthz. The example's
+		// AwaitReady startup gate means the listener opens only after every
+		// source latched, so the handler's 503-on-boot window shows up in
+		// real deployments without such a gate, not here.
+		routes := dashboard.DefaultRoutes()
+		routes.Healthz = "/livez"
+		opts = append(opts, dashboard.WithRoutes(routes))
+		log.Println("healthz: combined-traffic /livez registered (aggregate Healthz)")
+	}
+
+	dash := dashboard.Register(injector, probe, opts...)
 
 	if err := dash.Start(ctx); err != nil {
 		log.Fatalf("dash.Start: %v", err)
