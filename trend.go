@@ -99,17 +99,7 @@ func jsonTransitions(transitions []statusTransition) []jsonTransition {
 // notActiveMessage maps a nil-push / nil-history state to the right 503
 // message: a nil pusher means the dashboard was never started (or was shut
 // down), while a nil history means trend recording is not enabled.
-func trendUnavailable(w http.ResponseWriter, push *pusher, history *historyBuffer) bool {
-	if push == nil {
-		http.Error(
-			w,
-			"dashboard: SSE pusher is not active (call Start before serving traffic)",
-			http.StatusServiceUnavailable,
-		)
-
-		return true
-	}
-
+func trendUnavailable(w http.ResponseWriter, history *historyBuffer) bool {
 	if history == nil {
 		http.Error(
 			w,
@@ -137,14 +127,13 @@ func (d *Dashboard) TrendHandler() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, _ *http.Request) {
-		push := d.push.Load()
-		if trendUnavailable(w, push, pushHistory(push)) {
+		if trendUnavailable(w, d.history) {
 			return
 		}
 
 		out := trendPayload{
-			Samples:     jsonSamples(push.history.snapshot()),
-			Transitions: jsonTransitions(push.history.transitions()),
+			Samples:     jsonSamples(d.history.snapshot()),
+			Transitions: jsonTransitions(d.history.transitions()),
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -177,8 +166,7 @@ func (d *Dashboard) TrendHandler() http.HandlerFunc {
 // design — export is the one endpoint that extends the shape.
 func (d *Dashboard) ExportHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		push := d.push.Load()
-		if trendUnavailable(w, push, pushHistory(push)) {
+		if trendUnavailable(w, d.history) {
 			return
 		}
 
@@ -191,7 +179,7 @@ func (d *Dashboard) ExportHandler() http.HandlerFunc {
 			}
 		}
 
-		samples := push.history.snapshot()
+		samples := d.history.snapshot()
 
 		switch format {
 		case "csv":

@@ -179,12 +179,12 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 		anonymizeViewModel(&vm)
 	}
 
-	if p := d.push.Load(); p != nil && p.history != nil {
-		populateHistory(&vm, p.history, d.cfg.TimelineMaxAge)
+	if d.history != nil {
+		populateHistory(&vm, d.history, d.cfg.TimelineMaxAge)
 	}
 
-	if p := d.push.Load(); p != nil {
-		populateEvidence(&vm, p.evidence, resp)
+	if d.evidence != nil {
+		populateEvidence(&vm, d.evidence, resp)
 	}
 
 	return vm

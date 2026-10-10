@@ -127,10 +127,10 @@ func TestHealthCheck_CascadeVerdictForwarding(t *testing.T) {
 	probeErr := errors.New("probe: roll-up fail")
 
 	newVerdictProber := func() *verdictProber {
-	return &verdictProber{
-		stubProber: newStubProber(healthResponse(health.StatusPass, "db", "")),
-		verdict:    func(context.Context) error { return probeErr },
-	}
+		return &verdictProber{
+			stubProber: newStubProber(healthResponse(health.StatusPass, "db", "")),
+			verdict:    func(context.Context) error { return probeErr },
+		}
 	}
 
 	t.Run("default stays pusher-scoped", func(t *testing.T) {
