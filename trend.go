@@ -237,13 +237,3 @@ func (d *Dashboard) ExportHandler() http.HandlerFunc {
 		}
 	}
 }
-
-// pushHistory returns the pusher's trend buffer, or nil when either is
-// absent. A helper so the two trend endpoints share one nil-handling path.
-func pushHistory(push *pusher) *historyBuffer {
-	if push == nil {
-		return nil
-	}
-
-	return push.history
-}

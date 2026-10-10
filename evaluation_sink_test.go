@@ -19,6 +19,7 @@ import (
 // capability detection without a real probe.
 type verdictProber struct {
 	*stubProber
+
 	verdict func(context.Context) error
 }
 
@@ -64,7 +65,7 @@ func renderDashboardHTML(t *testing.T, d *dashboard.Dashboard) string {
 // end: a flap that happens entirely BETWEEN pusher ticks — a fail
 // observation followed by a pass, with no Start/ tick in between — shows
 // up in both the trend ring (via /health/trend) and the evidence strip
-// ("1 of 1 checks have deviated").
+// ("all 1 checks have deviated").
 func TestObserve_CapturesSubIntervalFlap(t *testing.T) {
 	t.Parallel()
 
@@ -96,7 +97,7 @@ func TestObserve_CapturesSubIntervalFlap(t *testing.T) {
 
 	// Evidence strip: the fail observation proves the check can deviate.
 	html := renderDashboardHTML(t, d)
-	if !strings.Contains(html, "1 of 1 checks have deviated") {
+	if !strings.Contains(html, "all 1 checks have deviated") {
 		t.Errorf("evidence strip missing the proven deviation; html: %.400s", html)
 	}
 }
@@ -113,7 +114,7 @@ func TestObserve_NilSafeWithoutTrend(t *testing.T) {
 	d.Observe(healthResponse(health.StatusPass, "db", ""))
 
 	html := renderDashboardHTML(t, d)
-	if !strings.Contains(html, "1 of 1 checks have deviated") {
+	if !strings.Contains(html, "all 1 checks have deviated") {
 		t.Errorf("evidence strip missing the proven deviation without trend; html: %.400s", html)
 	}
 }
