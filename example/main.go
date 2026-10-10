@@ -14,6 +14,8 @@
 //	DEMO_AUTH=<token>            require "Authorization: Bearer <token>" on dashboard routes
 //	DEMO_RATELIMIT=<n>/<window>  e.g. 30/1m — token-bucket limit on dashboard routes
 //	DEMO_DRAIN=5s                graceful SSE drain window on shutdown
+//	DEMO_DRAIN_GRACE=2s          hold readiness at 503 after MarkShuttingDown before the
+//	                             listener closes, so LB health checks observe the drain
 //	DEMO_PUBLIC=1                public status-page mode (WithPublicMode)
 //	DEMO_BASE_PATH=/status       mount the dashboard under a sub-path (WithBasePath)
 //	DEMO_AGGREGATE=1             serve a two-probe aggregate instead of one probe (go-health aggregate)
@@ -126,7 +128,9 @@ func main() {
 
 	if bundle.markShuttingDown != nil {
 		bundle.markShuttingDown()
-		log.Println("drain: probe readiness flipped to 503 (refresh loop still serving)")
+		grace := drainGraceWindow()
+		log.Printf("drain: probe readiness flipped to 503; holding the drain window for %s so LB health checks observe it", grace)
+		time.Sleep(grace)
 	}
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -564,6 +568,19 @@ func parseDuration(key string) time.Duration {
 	}
 
 	return d
+}
+
+// drainGraceWindow is how long the example holds readiness at 503 after
+// MarkShuttingDown before closing the listener (DEMO_DRAIN_GRACE, default
+// 2s). Without this beat the mark would be unobservable: server.Shutdown
+// closes listeners immediately, so a load balancer's health checks would
+// see connection refused instead of the honest 503 during the drain.
+func drainGraceWindow() time.Duration {
+	if d := parseDuration("DEMO_DRAIN_GRACE"); d != 0 {
+		return d
+	}
+
+	return 2 * time.Second
 }
 
 // parseRateLimit parses "30/1m", "5/s", "100/1h" style specifications.
