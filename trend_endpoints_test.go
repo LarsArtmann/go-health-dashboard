@@ -523,16 +523,22 @@ func TestTrendEndpoints_ServeRecordedHistoryBeforeStart(t *testing.T) {
 
 		dash := dashboard.New(probe)
 
-		mux := http.NewServeMux()
-		dash.RegisterRoutes(mux)
+		for _, tc := range []struct {
+			name    string
+			handler http.HandlerFunc
+		}{
+			{"trend", dash.TrendHandler()},
+			{"export", dash.ExportHandler()},
+		} {
+			w := httptest.NewRecorder()
 
-		for _, path := range []string{"/health/trend", "/health/export"} {
-			w := doRequest(t, mux, path)
+			tc.handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/health/trend", nil))
+
 			if w.Code != http.StatusServiceUnavailable {
-				t.Errorf("%s without WithTrend: want 503, got %d", path, w.Code)
+				t.Errorf("%s without WithTrend: want 503, got %d", tc.name, w.Code)
 			}
 			if !strings.Contains(w.Body.String(), "trend history is not enabled") {
-				t.Errorf("%s 503 body should name the missing trend: %s", path, w.Body.String())
+				t.Errorf("%s 503 body should name the missing trend: %s", tc.name, w.Body.String())
 			}
 		}
 	})
