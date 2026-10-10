@@ -921,6 +921,57 @@
           </div>
         </section>
 
+        <!-- Post-plan update (2026-10-10) -->
+        <section id="post-plan-update">
+          <h2><span class="num">&#9670;</span>Post-plan update &middot; 2026-10-10</h2>
+          <div class="callout callout-green">
+            <strong>Executed:</strong>
+            the leverage plan
+            (<code>docs/planning/2026-10-10_01-44_go-health-leverage-pareto-plan.md</code>)
+            resolved every Low-effort finding the same week: two-phase drain in
+            both binaries (<em>MarkShuttingDown</em> + a drain-grace beat so
+            the 503 is observable &mdash; readiness verified 503 during drain
+            live), the <em>checks</em> batteries + <code>health.Off</code>
+            production in the example (pass/warn/off mix, pinned by a browser
+            test), <em>VersionHandler</em> at <code>/version</code> plus
+            <em>WithInstanceID</em> on both binaries, and
+            <code>Routes.Healthz</code> (<code>/livez</code>) in aggregate
+            mode.
+          </div>
+          <p>
+            <strong>Bonus find while executing:</strong> the plan's startup
+            gate initially used <code>AwaitReady</code>, which polls
+            <code>Ready()</code> &mdash; "not currently failing", true
+            instantly on the zero-value pass cache. The honest gate polls the
+            one-way <code>StartupComplete()</code> latch, and this repo's demo
+            now drives the startup evaluation itself (go-health latches
+            startup lazily, only on served <code>/startupz</code> requests).
+            <strong>Synthetic-row evidence investigation closed:</strong> the
+            evidence log is safe by construction &mdash; it observes only
+            <code>CachedResponse</code> checks and intersects proven counts
+            with the current response, so the aggregate
+            <code>Healthz</code>-only synthetic "startup" check never reaches
+            it, panic-recovery synthetic errors attribute to their named
+            check (a genuine deviation), and federation's
+            <code>name/reachable</code> fail row is itself a real
+            observation.
+          </p>
+          <p>
+            <strong>Score re-run (provisional, post waves 1&ndash;3):</strong>
+            capabilities fully leveraged <strong>15/26 &rarr; 21/26</strong>
+            (all five missed-opportunity findings resolved; two partials
+            improved); anti-patterns still 0. Adoption score re-anchored at
+            <strong>~88/100</strong>, final after the design-leverage wave
+            (<em>WithEvaluationSink</em>, cascade verdict,
+            <em>federation.WithClient</em>, v0.6
+            <em>SourceStatuses</em>). Citation note: file:line references
+            below reflect the audit-time tree (<code>61e9d98</code>); the
+            binaries' line numbers moved with the adoption, the library
+            citations are unchanged (verified against <code>HEAD</code>).
+            Known defect fixed: "a endpoint" &rarr; "an endpoint" below.
+          </p>
+        </section>
+
         <!-- Summary -->
         <section id="summary">
           <h2><span class="num">00</span>Summary</h2>
