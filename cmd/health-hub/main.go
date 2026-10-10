@@ -11,6 +11,12 @@
 //	HEALTH_HUB_PUSH_INTERVAL=10s  SSE push cadence (default 2s; every tick
 //	                             fetches EVERY remote — raise this for LAN hubs)
 //	HEALTH_HUB_SSE_DRAIN=5s      graceful SSE drain window on shutdown (default off)
+//	HEALTH_HUB_CLIENT_TLS_CA=/path/ca.pem  trust this CA bundle for remote TLS
+//	                             connections (self-signed/PKI remotes); validated
+//	                             at startup, fails fast on a missing/PEM-less file
+//	HEALTH_HUB_HTTP_PROXY=http://proxy:3128  route remote fetches through this
+//	                             proxy (absolute http/https URL; credentials
+//	                             allowed in the URL, never logged)
 //	PORT=8080                    port to listen on
 //	HEALTH_HUB_ADDR=127.0.0.1:8080  full listen address (overrides PORT)
 //
@@ -44,6 +50,8 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"log"
@@ -71,6 +79,8 @@ const (
 	metricsEnvVar      = "HEALTH_HUB_METRICS"
 	pushIntervalEnvVar = "HEALTH_HUB_PUSH_INTERVAL"
 	sseDrainEnvVar     = "HEALTH_HUB_SSE_DRAIN"
+	clientCAEnvVar     = "HEALTH_HUB_CLIENT_TLS_CA"
+	proxyEnvVar        = "HEALTH_HUB_HTTP_PROXY"
 	portEnvVar         = "PORT"
 	addrEnvVar         = "HEALTH_HUB_ADDR"
 	shutdownGrace      = 10 * time.Second
@@ -103,6 +113,8 @@ type hubConfig struct {
 	fetchExpiry  time.Duration
 	pushInterval time.Duration // zero = library default
 	sseDrain     time.Duration // zero = disabled (library default)
+	tlsCAPath    string        // empty = system trust store
+	httpProxy    string        // empty = no proxy override
 }
 
 // configFromEnv reads and validates all environment configuration up
@@ -142,6 +154,8 @@ func configFromEnv() (hubConfig, error) {
 		fetchExpiry:  fetchExpiry,
 		pushInterval: pushInterval,
 		sseDrain:     sseDrain,
+		tlsCAPath:    strings.TrimSpace(os.Getenv(clientCAEnvVar)),
+		httpProxy:    strings.TrimSpace(os.Getenv(proxyEnvVar)),
 	}, nil
 }
 
@@ -186,7 +200,22 @@ func run() error {
 		return err
 	}
 
-	fed, err := healthfederation.New(cfg.remotes, healthfederation.WithTimeout(cfg.fetchExpiry))
+	client, err := federationClient(cfg)
+	if err != nil {
+		return err
+	}
+
+	fedOpts := []healthfederation.Option{healthfederation.WithTimeout(cfg.fetchExpiry)}
+	if client != nil {
+		fedOpts = append(fedOpts, healthfederation.WithClient(client))
+		log.Printf(
+			"transport: custom HTTP client for remote fetches (TLS CA: %s, proxy: %s)",
+			transportTLSCADescription(cfg),
+			transportProxyDescription(cfg),
+		)
+	}
+
+	fed, err := healthfederation.New(cfg.remotes, fedOpts...)
 	if err != nil {
 		return fmt.Errorf("federation.New: %w", err)
 	}
@@ -304,6 +333,77 @@ func newServeMux(dash *dashboard.Dashboard) *http.ServeMux {
 	)
 
 	return mux
+}
+
+// federationClient builds the HTTP client the federation fetches with when
+// the transport knobs are set (TLS CA bundle, proxy); nil means "library
+// default client". Validation is a startup concern: a missing CA file or a
+// non-absolute proxy URL fails before any goroutine exists (the fleet's
+// validate-before-use pattern).
+func federationClient(cfg hubConfig) (*http.Client, error) {
+	if cfg.tlsCAPath == "" && cfg.httpProxy == "" {
+		return nil, nil
+	}
+
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+
+	if cfg.httpProxy != "" {
+		parsed, err := url.Parse(cfg.httpProxy)
+		switch {
+		case err != nil:
+			return nil, fmt.Errorf("%s: %w", proxyEnvVar, err)
+		case (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "":
+			return nil, fmt.Errorf("%s: %w", proxyEnvVar, errNonAbsoluteURL)
+		}
+
+		transport.Proxy = http.ProxyURL(parsed)
+	}
+
+	if cfg.tlsCAPath != "" {
+		pem, err := os.ReadFile(cfg.tlsCAPath)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", clientCAEnvVar, err)
+		}
+
+		pool := x509.NewCertPool()
+		if !pool.AppendCertsFromPEM(pem) {
+			return nil, fmt.Errorf("%s: no PEM certificates found in %q", clientCAEnvVar, cfg.tlsCAPath)
+		}
+
+		transport.TLSClientConfig = &tls.Config{
+			RootCAs:    pool,
+			MinVersion: tls.VersionTLS12,
+		}
+	}
+
+	// No client-level Timeout: federation bounds every fetch with its own
+	// per-fetch deadline (HEALTH_HUB_TIMEOUT); a global cap here would only
+	// duplicate it.
+	return &http.Client{Transport: transport}, nil
+}
+
+// transportTLSCADescription renders the CA knob for the startup log.
+func transportTLSCADescription(cfg hubConfig) string {
+	if cfg.tlsCAPath == "" {
+		return "system trust store"
+	}
+
+	return "custom bundle"
+}
+
+// transportProxyDescription renders the proxy knob redacted: the URL may
+// embed credentials, and they never reach the log.
+func transportProxyDescription(cfg hubConfig) string {
+	if cfg.httpProxy == "" {
+		return "none"
+	}
+
+	parsed, err := url.Parse(cfg.httpProxy)
+	if err != nil {
+		return "(unloggable proxy URL)"
+	}
+
+	return parsed.Redacted()
 }
 
 // logRemotes announces each remote with its credentials redacted, so an
