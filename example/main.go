@@ -45,6 +45,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"unicode"
 
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
@@ -96,6 +97,9 @@ func main() {
 		version.Version,
 	)
 	log.Printf("readiness: http://localhost%s/readyz", addr)
+	log.Printf("version: http://localhost%s/version", addr)
+
+	mux.HandleFunc("/version", health.VersionHandler(version.Version))
 
 	if bundle.awaitReady != nil {
 		readyCtx, readyCancel := context.WithTimeout(ctx, 15*time.Second)
@@ -183,11 +187,12 @@ func buildSingleProbe(ctx context.Context) probeBundle {
 		"analytics":        analyticsCheck(),
 	}
 
-	probe := health.NewChecks(checksByName,
-		health.WithVersion(version.Version),
+	probeOpts := append(probeIdentityOptions(),
 		health.WithCriticalServices("postgres", "redis"),
 		health.WithRefreshInterval(2*time.Second),
 	)
+
+	probe := health.NewChecks(checksByName, probeOpts...)
 
 	if err := probe.Start(ctx); err != nil {
 		log.Fatalf("probe.Start: %v", err)
@@ -199,6 +204,45 @@ func buildSingleProbe(ctx context.Context) probeBundle {
 		markShuttingDown: probe.MarkShuttingDown,
 		awaitReady:       probe.AwaitReady,
 	}
+}
+
+// probeIdentityOptions is the identity stamp shared by every demo probe:
+// the build version and, when resolvable, this replica's instance ID
+// ("which build/pod am I hitting?" is answerable from any surface).
+func probeIdentityOptions() []health.Option {
+	opts := []health.Option{health.WithVersion(version.Version)}
+
+	if id, ok := instanceID(); ok {
+		opts = append(opts, health.WithInstanceID(id))
+	}
+
+	return opts
+}
+
+// instanceID resolves this replica's identity for WithInstanceID: the OS
+// hostname, sanitized so a hostile hostname cannot inject into logs or
+// the health document (the fleet's validate-before-use pattern). ok is
+// false when the hostname is missing or sanitizes to nothing; the option
+// is omitted then — an absent instance ID is the truth.
+func instanceID() (string, bool) {
+	host, err := os.Hostname()
+	if err != nil {
+		return "", false
+	}
+
+	clean := strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) || unicode.IsSpace(r) {
+			return -1
+		}
+
+		return r
+	}, host)
+
+	if clean == "" {
+		return "", false
+	}
+
+	return clean, true
 }
 
 // analyticsCheck is the health.Off demo: an intentionally unconfigured
@@ -232,12 +276,15 @@ func buildAggregateProbe(ctx context.Context, withDetailed bool) probeBundle {
 	)
 
 	apiProbe := health.New(apiInjector,
-		health.WithVersion(version.Version),
-		health.WithCriticalServices("postgres"),
-		health.WithRefreshInterval(2*time.Second),
+		append(probeIdentityOptions(),
+			health.WithCriticalServices("postgres"),
+			health.WithRefreshInterval(2*time.Second),
+		)...,
 	)
 	workerProbe := health.New(workerInjector,
-		health.WithRefreshInterval(2*time.Second),
+		append(probeIdentityOptions(),
+			health.WithRefreshInterval(2*time.Second),
+		)...,
 	)
 
 	sources := []aggregate.Source{
@@ -301,8 +348,9 @@ func buildAggregateProbe(ctx context.Context, withDetailed bool) probeBundle {
 func buildDetailedProbe(ctx context.Context) probeBundle {
 	probe := health.NewWithDetailedCheck(
 		detailedDemoChecks,
-		health.WithVersion(version.Version),
-		health.WithRefreshInterval(2*time.Second),
+		append(probeIdentityOptions(),
+			health.WithRefreshInterval(2*time.Second),
+		)...,
 	)
 
 	if err := probe.Start(ctx); err != nil {

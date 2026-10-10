@@ -14,6 +14,13 @@
 //	PORT=8080                    port to listen on
 //	HEALTH_HUB_ADDR=127.0.0.1:8080  full listen address (overrides PORT)
 //
+// The hub serves /version (go-health VersionHandler, {"version":"..."}) so
+// "which build am I hitting?" is answerable at the HTTP level. Per-process
+// scalars deliberately do NOT ride the merged /health document: federation
+// drops Version/Uptime/InstanceID in the merge (they would lie about a
+// federated view), so WithInstanceID has nothing to attach to here — that
+// surface belongs to the remotes themselves.
+//
 // Checks land namespaced as "name/check" (worst-of across remotes); a
 // dark remote surfaces as a "name/reachable" fail row instead of a silent
 // freeze. The dashboard groups cards per remote, so the hub reads as one
@@ -46,6 +53,7 @@ import (
 	"time"
 	"unicode"
 
+	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
 	"github.com/larsartmann/go-health-dashboard/pkg/version"
 	healthfederation "github.com/larsartmann/go-health/federation"
@@ -286,6 +294,7 @@ func newServeMux(dash *dashboard.Dashboard) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	dash.RegisterRoutes(mux)
+	mux.HandleFunc("/version", health.VersionHandler(version.Version))
 	mux.Handle(
 		"/{$}",
 		http.RedirectHandler(dashboard.DefaultRoutes().Dashboard, http.StatusTemporaryRedirect),
