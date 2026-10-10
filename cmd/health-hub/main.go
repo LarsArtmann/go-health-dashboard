@@ -91,6 +91,10 @@ const (
 )
 
 var (
+	errNoTransportOverride = errors.New("transport: no override configured")
+	errTransportNotHTTP2   = errors.New("default transport is not *http.Transport")
+	errNoPEMCertificates   = errors.New("no PEM certificates found in the CA bundle")
+
 	errNoRemotesSpecified = errors.New(
 		"at least one name=url entry is required (comma-separated, e.g. cv=http://127.0.0.1:8080/health)",
 	)
@@ -201,7 +205,7 @@ func run() error {
 	}
 
 	client, err := federationClient(cfg)
-	if err != nil {
+	if err != nil && !errors.Is(err, errNoTransportOverride) {
 		return err
 	}
 
@@ -345,10 +349,15 @@ func newServeMux(dash *dashboard.Dashboard) *http.ServeMux {
 // validate-before-use pattern).
 func federationClient(cfg hubConfig) (*http.Client, error) {
 	if cfg.tlsCAPath == "" && cfg.httpProxy == "" {
-		return nil, nil
+		return nil, errNoTransportOverride
 	}
 
-	transport := http.DefaultTransport.(*http.Transport).Clone()
+	defaultTransport, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		return nil, fmt.Errorf("transport: %w", errTransportNotHTTP2)
+	}
+
+	transport := defaultTransport.Clone()
 
 	if cfg.httpProxy != "" {
 		parsed, err := url.Parse(cfg.httpProxy)
@@ -371,8 +380,9 @@ func federationClient(cfg hubConfig) (*http.Client, error) {
 		pool := x509.NewCertPool()
 		if !pool.AppendCertsFromPEM(pem) {
 			return nil, fmt.Errorf(
-				"%s: no PEM certificates found in %q",
+				"%s: %w: %q",
 				clientCAEnvVar,
+				errNoPEMCertificates,
 				cfg.tlsCAPath,
 			)
 		}

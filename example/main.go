@@ -58,23 +58,23 @@ import (
 	"github.com/samber/do/v2"
 )
 
-// observeEvaluations is the WithEvaluationHook target (ADR-0003): forwards
-// probe-cadence evaluations into the dashboard's trend ring + evidence log
-// once it exists. The probes are built BEFORE the dashboard (they are its
-// data source), so the hook captures this holder and main stores the
-// dashboard in it after Register — the closure is nil-safe, so the
-// pre-registration fires are dropped rather than panicking.
-var observeEvaluations = func(resp health.Response) {
-	if d := evaluationSink.Load(); d != nil {
-		d.Observe(resp)
-	}
-}
-
-var evaluationSink atomic.Pointer[dashboard.Dashboard]
-
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+
+	// observeEvaluations is the WithEvaluationHook target (ADR-0003): it
+	// forwards probe-cadence evaluations into the dashboard's trend ring +
+	// evidence log once it exists. The probes are built BEFORE the dashboard
+	// (they are its data source), so the hook captures this holder and main
+	// stores the dashboard in it after Register — the closure is nil-safe,
+	// so the pre-registration fires are dropped rather than panicking.
+	var evaluationSink atomic.Pointer[dashboard.Dashboard]
+
+	observeEvaluations := func(resp health.Response) {
+		if d := evaluationSink.Load(); d != nil {
+			d.Observe(resp)
+		}
+	}
 
 	injector := do.New()
 	defer func() {
