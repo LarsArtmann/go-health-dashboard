@@ -161,7 +161,12 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **GOEXPERIMENT=jsonv2 is required** — The go-sse dependency uses `encoding/json/v2`. Set `GOEXPERIMENT=jsonv2` for all Go commands. The flake.nix devShell does this automatically.
 - **Version stamps follow the fleet standard** — `pkg/version` (copied kit) feeds the example server startup line and `health.WithVersion` sources; contract + nix wiring: `../file-and-image-renamer/docs/FLEET-STANDARD-VERSION-STAMPS.md`.
 - **Metrics output is not byte-frozen** — the latency histogram `_sum`/counts change per tick; `TestMetrics_ChecksSortedForDeterministicOutput` strips `dashboard_health_check_duration_seconds*` lines before comparing. Sorted check names stay stable.
-- **Browser tests serialize via `browserSerial` mutex** — headless-Chrome startups are heavyweight; parallel launches on loaded machines pushed startup past the announce timeout (now 45s). New browser tests must go through `startBrowserSession(t, s, cspNonce)` (or `startBrowserSessionOn` for wrapped/proxied handlers), which owns static handlers, the HTTP server (strict-CSP middleware when a nonce is passed), Chrome startup (`startHeadlessChrome`, which takes the lock), and the first-tab navigation; the test then calls `waitForSubscriber` itself or runs a custom readiness loop (deduplicated 2026-09-23, 15 tests). The axe audit downloads axe-core from cdnjs at test setup and skips when offline.
+- **Browser tests serialize via `browserSerial` mutex** — parallel headless-Chrome
+  launches pushed startup past the 45s announce timeout on loaded machines. New
+  browser tests go through `startBrowserSession(t, s, cspNonce)` (or
+  `startBrowserSessionOn` for wrapped handlers), which owns static handlers, the
+  HTTP server, Chrome startup, and first-tab navigation; the test then calls
+  `waitForSubscriber` itself. The axe audit downloads axe-core at setup, skips offline.
 - **gopls stdversion warnings dismissed** — gopls flags `json.Unmarshal requires go1.27` identically with AND without `GOEXPERIMENT=jsonv2` (gopls v0.23.0); `json.Unmarshal` is legitimate on go1.26 under the experiment. Dismissed via `analyses.stdversion: false` in `.vscode/settings.json` (which also sets the gopls env). Trust `nix run .#lint` over editor squiggles; re-check on gopls upgrade (ROADMAP).
 - **GOWORK=off in devShell** — The parent `~/projects/go.work` includes all sibling repos. The flake.nix sets `GOWORK=off` to prevent workspace interference.
 - **Gates race the auto-daemon** — a `nix fmt` dirty-tree check (or any diff-based gate) can false-fail when the daemon commits the fmt output between the diff and the status call. Gates must retry once before trusting a failure; and never run Go tooling (erraudit, go list, tests) while a buildflow run is active — its steps mutate go.mod and `*_templ.go` mid-flight.
@@ -209,183 +214,69 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   the connection pill maps to "live" (retry-success paths emit no
   `started`/`finished`).
 - **Env toggles validate before use** — the example's `safeBasePath` is the
-  pattern: any value read from an environment variable that reaches a route
-  or a log line gets validated/normalized first (log-injection defense).
-  Copy it for new `DEMO_*` toggles and for library code absorbing example
-  logic. The hub's `HEALTH_HUB_PUSH_INTERVAL` (2026-09-23) follows it:
-  every pusher tick is a merge-on-read fetch per remote, so the cadence is
-  validated up front and the effective value lands in the startup log.
-- **The devShell banner prints to stderr** — since 2026-09-23 the
-  flake.nix `shellHook` echoes to fd 2 so `nix develop -c <tool>` stdout
-  stays parseable; scripts that exec `go` self-select the right toolchain
-  by probing a cheap module load and falling back to `nix develop -c go`
-  (see `check-ui-pins.sh` `go_list`) — the old "run these scripts from
-  inside the devShell" requirement is retired.
+  pattern: any env value reaching a route or log line gets validated/normalized
+  first (log-injection defense). Copy it for new `DEMO_*`/`HEALTH_HUB_*` toggles
+  and for library code absorbing example logic.
+- **The devShell banner prints to stderr** — `nix develop -c <tool>` stdout
+  stays parseable; go-invoking scripts self-select the right toolchain by
+  probing a cheap module load, falling back to `nix develop -c go` (see
+  `check-ui-pins.sh`).
 - **Deploy stack facts live in deploy/README.md** — digest-pinned,
   healthcheck-gated, boot-verified 2026-09-23. Machine traps: the alert
   example takes `relativeTimeRange` as integer SECONDS; host ports
   8080/9090/3000 collide with other projects here — remap via a compose
   override with `!override` port lists (plain overrides MERGE).
 - **go-health marks non-critical failing checks `warn`, not `fail`** — only critical services produce `fail` per-check statuses (and overall fail). `setupDashboardWithFailures` yields cache/queue `warn` checks with overall `warn`; metrics tests assert accordingly.
-- **Parallel-session handshake (2026-09-17: two sessions, one tree)** —
-  before ANY write: `git log --oneline -10`, `ls docs/status/ | tail`,
-  `git status`. The newest file in `docs/status/` is another session's
-  handoff: it lists what they landed (cross it off, don't redo it) and
-  what they left. This repo routinely runs TWO agent sessions plus the
-  auto-daemon. Concurrency also means gate results go stale: re-run gates
-  on the tip immediately before pushing, and expect `nix run .#build`'s
-  templ regeneration to be swept into a daemon commit — run `nix fmt` and
-  commit the canonical formatting yourself if it lands raw.
-- **Release discipline (all four bit or paid off during the v0.7.0 cut)** —
-  (0) **Commit beats the daemon — verify batch → commit immediately.** The
-  auto-daemon commits continuously and NEVER pushes: master can sit
-  arbitrarily ahead of origin with CI blind to it — caveat (2026-09-22
-  evening): the directive-restore commit reached origin BEFORE the explicit
-  push ran (push printed "Everything up-to-date"), while later daemon
-  commits sat unpushed, so SOMETHING auto-pushes under unknown conditions;
-  never claim unpushed state without `git fetch` + comparing
-  `master...origin/master`. So: the moment a batch
-  is verified (build+tests green), `git add` + commit in the same
-  tool-call chain, before starting the NEXT batch (the v0.7.0 release
-  commit's message was lost this way, `ebf52d0`; four batches in the
-  2026-09-17 session); and run `git status -sb` before any "CI is green"
-  claim, pushing deliberately at milestones (push needs authorization).
-  Release sessions additionally start with `bash scripts/pre-push-checks.sh`
-  (the desk gate) — see `docs/release-checklist.md` §4 gate 0.
-  (1) `nix fmt` runs AFTER the last `templ generate`: every build/test app
-  regenerates `view_templ.go` in raw form, so fmt-before-generate gets
-  undone and the CI hygiene drift check goes red; canonical order is
-  generate → fmt (the CI hygiene job's comment says so). (2) Commit
-  intent-bearing changes immediately after each verified batch: the
-  auto-daemon commits continuously and eats whatever sits uncommitted —
-  the v0.7.0 release commit's message was lost this way (`ebf52d0`), and
-  on 2026-09-10 two freshly written release scripts were swept into an
-  adjacent auto-commit seconds before their intent commit landed. New
-  files: commit right after their first successful run, before long
-  verification chains. And a long gate chain is ONE GIANT uncommitted
-  window: on 2026-09-17 (v0.9.0) the daemon swept the raw templ output
-  MID-CHAIN (`bdcb69c`, between the build's regenerate and nix fmt), so
-  fmt + commit must run back-to-back at the chain's tail and the daemon
-  commit gets folded forward, never rebased away. (3) Push the TAG first, then master — the master
-  run's `fetch-depth: 0` checkout then sees the tag and the version-guard
-  job cannot lose a fetch race. (4) External-state verification (proxy
-  hash, sumdb, clean-dir consumer, GitHub Release state, CI on the release
-  commit) is a script, not a memory: `bash scripts/verify-release.sh <ver>`.
+- **Release discipline** — (0) verify batch → commit immediately; never
+  claim unpushed state without `git fetch` + `master...origin/master`
+  (something auto-pushes under unknown conditions); release sessions start
+  with `bash scripts/pre-push-checks.sh`. (1) `nix fmt` AFTER the last
+  `templ generate` (canonical order generate → fmt). (2) Commit
+  intent-bearing changes right after each verified batch — a long gate
+  chain is one giant uncommitted window. (3) Push the TAG first, then
+  master. (4) External-state verification is a script:
+  `bash scripts/verify-release.sh <ver>`. The war stories:
+  `docs/gotchas.md`.
 - **erraudit blank-identifier policy** — response-writer discards are
   centralized in `writeBody` (handlers.go) with ONE reasoned
-  `//nolint:erraudit`, instead of a suppression per call site.
-  RE-VERIFIED 2026-09-23 (erraudit 1c6809a): the old "strings.Cut blank
-  identifiers are a false positive" claim no longer reproduces — the
-  analyzer fires nothing on those sites, so the status.go directive was
-  removed (docs/upstream/erraudit-nolint-audit-pattern-noop-issue-draft.md
-  records the verification AND a real remaining bug: `nolint-audit`
-  reports a directive as NEEDED even when the analyzer produces no
-  finding there, and `nolint-audit ./...` silently answers "no
-  directives" while `.` finds them). `//nolint:erraudit // reason` stays
-  the sanctioned form; strip a directive only after a strip-and-rerun
-  proves it suppresses nothing.
-- **go-structure-linter is skip-gated until the fleet bump** — the step is
-  off in `.buildflow.yml` because BuildFlow pins go-structure-linter
-  v0.10.0, whose SDK `Lint()` does not call `LoadProjectConfig`: the
-  `.go-structure-linter.yaml` `flat` preset (the root package IS the
-  public import path of this single-package library, same rationale as
-  go-datastar ADR-002) stays inert and 17 root-package-files errors gate
-  every run. The config file is committed and becomes effective the
-  moment BuildFlow pins a release with project-config support; unskip
-  then (TODO_LIST Blocked row). Use the named preset rather than a
-  hand-maintained exclude list — it is the tool's own answer for
-  deliberately-flat packages.
+  `//nolint:erraudit`; `//nolint:erraudit // reason` is the sanctioned
+  form; strip a directive only after a strip-and-rerun proves it
+  suppresses nothing. Re-verification history: `docs/gotchas.md`.
+- **go-structure-linter is skip-gated until the fleet bump** — BuildFlow's
+  pinned v0.10.0 predates project-config support; the committed `.go-structure-linter.yaml`
+  `flat` preset becomes effective the moment that lands (TODO_LIST Blocked
+  row). Rationale: `docs/gotchas.md`.
 - **go-auto-upgrade's samber/lo suggestions are a deliberate non-adoption**
-  — stdlib2lo flags manual Filter/GroupBy loops and suggests adding
-  github.com/samber/lo; this module keeps zero runtime dependencies (same
-  policy as the hand-rolled rate limiter and metrics exposition), so those
-  suggestion warnings are noise, not work. BuildFlow runs the migrators
-  in-process and ignores `.go-auto-upgrade.json`, so there is currently no
-  per-project way to silence them — a fleet-level BuildFlow change, not a
-  per-repo script.
-- **branching-flow is skip-gated pending a fleet fix** — the step gates on
-  24 PHANTOM_TYPE findings that demand named string types across the
-  PUBLIC option API (a breaking redesign needing a versioning decision)
-  and 2 BOOL_BLIND errors wanting Config/introspectModes bools packed
-  into bit flags. There is no scoping mechanism: `.branching-flow.yml`
-  carries only tuning knobs (no rule exclusion), BuildFlow's provider
-  hardcodes `analysis.RunAll` options, and the phantom/boolblind
-  analyzers ignore `//nolint` (only roleak/do honor it). The real-bug
-  analyzers (panic, split-brain, ro-leak) are missed meanwhile — the two
-  INDEX_OUT_OF_RANGE warnings it did surface here were false positives
-  made structurally impossible anyway (the latency histogram buckets are
-  now sized `[len(latencyBucketBounds)]` at the type level).
-- **Detect-only advisories that are deliberate non-fixes** — branching-flow
-  flags `Config`/`viewModel` field counts and bool clusters as bit-flag
-  candidates: the With*-option surface is the library's public API and
-  named bools beat packed flags for readability; go-humanize-linter
-  suggests dustin/go-humanize (RelTime/Commaf), which would break the
-  zero-runtime-deps policy; jscpd flags repeated test scaffolding, where
-  per-test isolation is preferred over shared helpers. All three report
-  without gating — don't "fix" them into dependency additions or API
-  churn. Resolution state (2026-10-08): the two genuine H003 matches carry
-  reasoned `//nolint:gohumanize` directives (`dashboard.go` HealthCheck
-  watchdog — millisecond precision beats RelTime's coarse buckets;
-  `status.go` formatAge — the coarse stamp IS the anti-fingerprint accepted
-  risk), so a manual `go-humanize-linter .` exits 0. Use the UNscoped
-  `//nolint:gohumanize` form: golangci's nolintlint rejects the linter's
-  own `//nolint:gohumanize:H003` colon-scoped syntax ("should match
-  //nolint[:<linters>]"), and wsl_v5 wants no blank line between directive
-  and statement. The third finding (H009 on `ExportHandler`) was an
-  upstream detector bug — `getBasicLit` strips the unary minus, so
-  `FormatFloat('g', -1, 64)` precision looked positive and CSV field
-  delimiters looked like digit grouping — fixed in go-humanize-linter
-  (sign-aware precision + `'f'`-verb check); the installed system binary
-  lags until the next rebuild, so check `--version` against the repo HEAD
-  before trusting its output.
+  — zero runtime deps beats stdlib2lo's loops→lo rewrites; BuildFlow runs
+  the migrators in-process and ignores `.go-auto-upgrade.json` (fleet-level
+  gap). Details: `docs/gotchas.md`.
+- **branching-flow skip history** — unskipped 2026-09-22 under the v0.6.2+
+  severity cap; the original gate condition (24 PHANTOM_TYPE + 2
+  BOOL_BLIND on the public option API, no scoping mechanism, `//nolint`
+  ignored) is recorded in `docs/gotchas.md` in case it re-gates.
+- **Detect-only advisories that are deliberate non-fixes** — bit-flag
+  suggestions on the public option API (named bools win),
+  go-humanize-linter's go-humanize suggestion (zero-deps policy; the two
+  real H003 sites carry unscoped `//nolint:gohumanize` — colon-scoped form
+  breaks nolintlint), jscpd's test-scaffolding flags (per-test isolation
+  preferred). All report without gating — don't "fix" them into dependency
+  additions or API churn. Full resolution state: `docs/gotchas.md`.
 - **templ-generate is skip-gated: it races nix source snapshots** — the
-  step re-raws `view_templ.go`/`page_scripts_templ.go` mid-run (templ
-  emits unformatted Go; canonical order is generate → fmt). BuildFlow
-  lets nix-evaluating steps run concurrently, and a `git+file` source
-  snapshot ingested during the raw window poisons the flake's
-  treefmt-check derivation: verified 2026-09-16, files were repaired by
-  nix-fmt at 15:19:12 yet treefmt-check failed at 15:19:57 on gofumpt
-  diffs against the already-gone raw state — the check never saw the
-  repaired tree. This made nix-build fail nondeterministically
-  (nix-build-verify 0/10 before the skip, green after). With the step
-  skipped the pipeline tree is immutable and runs are deterministic;
-  generated-file freshness stays owned by the CI hygiene job and the
-  flake apps (both regenerate pre-build). Unskip when BuildFlow orders
-  tree-mutating generators before all nix-evaluating steps (fleet-level
-  DAG change; TODO_LIST Blocked row — includes the upstream-file vs
-  local-patch decision).
+  step re-raws `*_templ.go` mid-run and BuildFlow lets nix-evaluating steps
+  snapshot during the raw window, poisoning the treefmt check
+  (nix-build-verify 0/10 before the skip, green after). Generated-file
+  freshness stays owned by CI hygiene + the flake apps. Re-verification
+  evidence + unskip condition: `docs/gotchas.md`.
 - **BuildFlow-adjacent tool traps** — (1) `erraudit nolint-audit` takes a
-  DIRECTORY argument, not a package pattern: `./...` doesn't exist as a
-  directory and its best-effort walk silently reports "No directives
-  found" — use `.`. (2) A stale erraudit binary fails the same audit
-  with a bogus "go: updates to go.mod needed" package-load error;
-  rebuilding from HEAD fixed it (same stale-binary class as the
-  buildflow doctor check — trust `erraudit version`/git log, not PATH).
-  (3) Never run Go tooling (erraudit, go list, tests) while a buildflow
-  run is active: its go-mod/templ steps mutate go.mod and `*_templ.go`
-  mid-flight and the concurrent loader reads torn state.
-  (4) **BuildFlow's `go-mod-update` step sweeps the UI pins** — on
-  2026-09-22 it bumped templ-components 1.18.0→1.19.1, go-datastar
-  0.5.0→0.6.0, go-health →v0.3.0, go-sse →0.6.1 in one run and the
-  auto-daemon committed it (`68ac162`); the golden render tests caught
-  the drift only after the fact and the commit had to be reverted, and
-  the same run's go-mod-normalize downgraded the `go` directive
-  1.27.1→1.27 (breaking module loading against go-health's floor). Run
-  local gates as `buildflow --build-mode dev --exclude go-mod-update`
-  and check `git diff go.mod go.sum` after ANY buildflow run — the
-  check-ui-pins.sh guard only fires in CI
-  (Build+Test jobs), after the sweep already landed locally. RESOLVED
-  2026-09-25: go-health v0.4.1 lowered its floor to minor form, this
-  repo's directive settled at `go 1.27` legitimately, and
-  go-version-auto-configure v0.2.0+ gates its own rewrites with a
-  dependency-floor check (verified: the dashboard shape comes back
-  dep-forced and the file is left untouched) — the
-  check-go-directive.sh guard was deleted as obsolete. The go-mod-update
-  sweep itself remains a real trap (see the templ-components revert). (5) The flake's nix-build steps fail on this machine
-  with `lookup proxy.golang.org ... connection refused` (FOD sandbox
-  DNS vs the local DNS blocker) — chronic 100% failure, environmental,
-  not a code signal; `--exclude nix-hash-fix --exclude
-  nix-build-verify` for local dev gates and trust CI for flake builds.
+  DIRECTORY (`.`), not `./...`. (2) A stale erraudit binary fails with a
+  bogus "updates to go.mod needed" — trust `erraudit version`, rebuild from
+  HEAD. (3) Never run Go tooling while a buildflow run is active (torn
+  go.mod/`*_templ.go` state). (4) `go-mod-update` sweeps the UI pins — run
+  local gates as `buildflow --build-mode dev --exclude go-mod-update` and
+  check `git diff go.mod go.sum` after ANY buildflow run (the 2026-09-22
+  sweep + revert: `docs/gotchas.md`). (5) The flake's nix-build steps fail
+  on this machine with proxy DNS refusal — `--exclude nix-hash-fix
+  --exclude nix-build-verify` locally, trust CI for flake builds.
 
 ---
 
@@ -463,28 +354,19 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.5.1 in go.mod). The dashboar
   non-empty names; checks land namespaced as `source/check`. Sources must eagerly invoke
   their samber/do services or they silently health-check as pass (same gotcha as single probes).
 - `federation` sub-package (RELEASED; adopted) — `federation.New(remotes,
-  opts...)` pulls N remote go-health instances over HTTP into one `Prober`-compatible
-  surface: merge-on-read (one parallel fetch per remote per read, per-fetch timeout default 5s),
-  checks namespaced `name/check`, unreachable remotes surface as a `name/reachable` FAIL row
-  (never a silent freeze), `Check.Since` survives the wire, startup latches per remote on first
-  successful fetch. A hub (`health.home.lan`) is `dashboard.New(fed, WithGrouping(GroupBySource))`
-  — verified end to end 2026-09-18 (HTML renders per-remote cards; JSON negotiation 503s while a
-  remote is dark). go.mod pins the **v0.5.1 tag** (2026-10-10, from v0.4.0 set 2026-09-22):
-  v0.5.x added `StatusOff`, the `checks` batteries, `VersionHandler`,
-  `WithInstanceID`, `MarkShuttingDown` — all adopted here. Known federation gaps
-  (upstream proposals): no `MarkShuttingDown` (a hub cannot flip readiness 503
-  during drain). v0.4.0's
-  module graph requires `go 1.27.1` — the fleet normalize step's `go 1.27` downgrade breaks
-  every module load (see Gotchas). `cmd/health-hub` is the hub made
-  runnable: `HEALTH_HUB_REMOTES` (validated `name=url` pairs, redacted in logs),
-  `HEALTH_HUB_TIMEOUT`, `HEALTH_HUB_TREND`, `HEALTH_HUB_METRICS`,
-  `HEALTH_HUB_PUSH_INTERVAL` (SSE push cadence; every tick fetches each
-  remote once, so a LAN hub at the 2s default costs ~43k fetches/remote/day —
-  the startup log prints the effective interval), and
-  `HEALTH_HUB_ADDR` (full listen address — loopback binds for reverse-proxy
-  deployments; `PORT` is the simple fallback). The flake exposes
-  `packages.health-hub` (buildGoModule, `go_1_27`, templ preBuild, ldflags version
-  stamp) so consumers don't hand-roll the build.
+  opts...)` merges N remote go-health instances over HTTP into one
+  `Prober`-compatible surface: merge-on-read (one parallel fetch per remote
+  per read, 5s default timeout), checks namespaced `name/check`, dark
+  remotes surface as `name/reachable` FAIL rows (never a silent freeze),
+  `Check.Since` survives the wire, startup latches per remote on first
+  successful fetch. go.mod pins the **v0.5.1 tag** (2026-10-10): v0.5.x
+  added `StatusOff`, `checks`, `VersionHandler`, `WithInstanceID`,
+  `MarkShuttingDown` — all adopted here. Known gaps (upstream proposals):
+  no `MarkShuttingDown` (a hub cannot flip readiness 503 during drain);
+  per-process scalars dropped by design. `cmd/health-hub` is the hub made
+  runnable — env knobs are documented in that binary's package comment
+  (`HEALTH_HUB_REMOTES`/`_TIMEOUT`/`_TREND`/`_METRICS`/`_PUSH_INTERVAL`/`_SSE_DRAIN`/`_ADDR`);
+  the flake exposes `packages.health-hub`.
 
 ### templ-components (`github.com/larsartmann/templ-components`)
 
