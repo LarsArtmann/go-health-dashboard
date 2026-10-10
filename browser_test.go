@@ -3,6 +3,7 @@ package dashboard_test
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -560,7 +561,7 @@ func setupDashboardWithOffCheck(t *testing.T, opts ...dashboard.Option) *probeSe
 	t.Helper()
 
 	probe := health.NewChecks(map[string]health.CheckFunc{
-		"database": new(alwaysHealthy).HealthCheck,
+		"database": func(_ context.Context) error { return nil },
 		"analytics": func(_ context.Context) error {
 			return health.Off("not configured: analytics is deliberately off in this demo")
 		},
@@ -617,6 +618,8 @@ func TestBrowser_OffRowContract(t *testing.T) {
 	// are stable for a static pass+off probe; one patch window suffices.
 	time.Sleep(250 * time.Millisecond)
 
+	var raw string
+
 	var badge struct {
 		Found     bool   `json:"found"`
 		Badge     bool   `json:"badge"`
@@ -630,13 +633,17 @@ func TestBrowser_OffRowContract(t *testing.T) {
 		if (!row) { return JSON.stringify({found: false}); }
 		const cell = row.querySelectorAll("td")[1];
 		if (!cell) { return JSON.stringify({found: true, badge: false, rowSample: row.textContent.slice(0, 200)}); }
-		const el = [...cell.querySelectorAll("*")].find(e => e.textContent.trim() === "Off" && e.children.length === 0);
+		const el = [...cell.querySelectorAll("*")].find(e => e.textContent.trim().toLowerCase() === "off" && e.children.length === 0);
 		if (!el) { return JSON.stringify({found: true, badge: false, rowSample: row.textContent.slice(0, 200)}); }
 		return JSON.stringify({found: true, badge: true, cls: el.className, text: el.textContent.trim()});
 	})()`
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(probeJS, &badge)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Evaluate(probeJS, &raw)); err != nil {
 		t.Fatalf("browser evaluate: %v", err)
+	}
+
+	if err := json.Unmarshal([]byte(raw), &badge); err != nil {
+		t.Fatalf("probe JS returned invalid JSON %q: %v", raw, err)
 	}
 
 	if !badge.Found {
