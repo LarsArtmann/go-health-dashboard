@@ -47,11 +47,11 @@ As an operator running a federation hub behind an LB, I want
 hub before the listener closes — same contract a single-probe service
 already gets:
 
-|                                | `health.Probe` today | `federation.Prober` today | desired |
-| ------------------------------ | -------------------- | ------------------------- | ------- |
-| Readiness 503 after mark       | ✅                   | ❌ (no mark exists)       | same    |
-| Fetch loop keeps serving 503s  | ✅ (refresh loop)    | n/a (merge-on-read)       | ✅ (fetches continue) |
-| Startup/liveness unaffected    | ✅                   | ✅                        | same    |
+|                               | `health.Probe` today | `federation.Prober` today | desired               |
+| ----------------------------- | -------------------- | ------------------------- | --------------------- |
+| Readiness 503 after mark      | ✅                   | ❌ (no mark exists)       | same                  |
+| Fetch loop keeps serving 503s | ✅ (refresh loop)    | n/a (merge-on-read)       | ✅ (fetches continue) |
+| Startup/liveness unaffected   | ✅                   | ✅                        | same                  |
 
 ## Suggested shape (not implementation dictatorship)
 

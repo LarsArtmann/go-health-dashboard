@@ -131,10 +131,11 @@ fixed, one still live: "a endpoint"), and a skipped pre-write handshake.
 
 ## f) UP TO 50 THINGS TO GET DONE NEXT
 
-*Pareto top from the audit first (P = impact × ease), then repo hygiene,
-upstream watch, process.*
+_Pareto top from the audit first (P = impact × ease), then repo hygiene,
+upstream watch, process._
 
 **Library leverage (the actual answer to the original question):**
+
 1. Two-phase drain in example: `probe.MarkShuttingDown()` before `server.Shutdown` (P20).
 2. Same reorder in health-hub `shutdown()` (P20).
 3. `/version` endpoint in example via `health.VersionHandler(version.Version)` (P15).
@@ -182,7 +183,7 @@ upstream watch, process.*
 39. Document the amend-relabel daemon-race recovery (worked; guard conditions) in AGENTS.md release discipline.
 40. Process fix: handshake-before-first-write; proofread-greps before "done"; both recorded here and in e).
 
-*(40 items — within the "up to 50" budget; items 1-15 are the audit's actionable core.)*
+_(40 items — within the "up to 50" budget; items 1-15 are the audit's actionable core.)_
 
 ## g) QUESTIONS I CANNOT FIGURE OUT MYSELF
 

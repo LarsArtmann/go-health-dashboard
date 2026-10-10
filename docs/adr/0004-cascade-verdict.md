@@ -20,7 +20,7 @@ Both semantics are legitimate, and they diverge on purpose:
 
 - **Pusher-scoped** (current default): "can this instance render and push
   live updates?" A federation hub whose **remotes are dark** is still a
-  healthy hub — remote health is the dashboard's *content*, and restarting
+  healthy hub — remote health is the dashboard's _content_, and restarting
   the hub over a remote blip would cause a restart cascade (the same
   reasoning as federation's liveness handler, which never fetches).
 - **Probe-forwarding**: "is the fleet this instance watches healthy?" What
