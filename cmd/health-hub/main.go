@@ -10,6 +10,7 @@
 //	HEALTH_HUB_METRICS=1         serve Prometheus text at /health/metrics
 //	HEALTH_HUB_PUSH_INTERVAL=10s  SSE push cadence (default 2s; every tick
 //	                             fetches EVERY remote — raise this for LAN hubs)
+//	HEALTH_HUB_SSE_DRAIN=5s      graceful SSE drain window on shutdown (default off)
 //	PORT=8080                    port to listen on
 //	HEALTH_HUB_ADDR=127.0.0.1:8080  full listen address (overrides PORT)
 //
@@ -17,6 +18,14 @@
 // dark remote surfaces as a "name/reachable" fail row instead of a silent
 // freeze. The dashboard groups cards per remote, so the hub reads as one
 // card per service.
+//
+// Drain-safety limitation: go-health's federation Prober has no
+// MarkShuttingDown, so /readyz keeps answering from merge-on-read fetches
+// until the listener closes — the hub cannot flip its own readiness to 503
+// during a drain the way a single probe can. Shutdown therefore leads with
+// the dashboard (SSE clients disconnected promptly instead of holding the
+// server open for the full grace window); flipping readiness at the source
+// is tracked as a go-health upstream proposal.
 //
 // The server root (/) redirects to the dashboard page — the vhost in
 // front of the hub proxies every path, and a bare 404 on "/" reads as
@@ -50,11 +59,14 @@ const (
 	trendEnvVar        = "HEALTH_HUB_TREND"
 	metricsEnvVar      = "HEALTH_HUB_METRICS"
 	pushIntervalEnvVar = "HEALTH_HUB_PUSH_INTERVAL"
+	sseDrainEnvVar     = "HEALTH_HUB_SSE_DRAIN"
 	portEnvVar         = "PORT"
 	addrEnvVar         = "HEALTH_HUB_ADDR"
 	shutdownGrace      = 10 * time.Second
 	readHeaderTimeout  = 5 * time.Second
 	defaultFetchExpiry = 5 * time.Second
+	startupGate        = 15 * time.Second
+	startupPollStep    = 100 * time.Millisecond
 )
 
 var (
@@ -79,6 +91,7 @@ type hubConfig struct {
 	remotes      []healthfederation.Remote
 	fetchExpiry  time.Duration
 	pushInterval time.Duration // zero = library default
+	sseDrain     time.Duration // zero = disabled (library default)
 }
 
 // configFromEnv reads and validates all environment configuration up
@@ -104,7 +117,21 @@ func configFromEnv() (hubConfig, error) {
 		return hubConfig{}, fmt.Errorf("%s: %w", pushIntervalEnvVar, err)
 	}
 
-	return hubConfig{remotes: remotes, fetchExpiry: fetchExpiry, pushInterval: pushInterval}, nil
+	var sseDrain time.Duration
+
+	if raw := os.Getenv(sseDrainEnvVar); raw != "" {
+		sseDrain, err = parseTimeout(raw)
+		if err != nil {
+			return hubConfig{}, fmt.Errorf("%s: %w", sseDrainEnvVar, err)
+		}
+	}
+
+	return hubConfig{
+		remotes:      remotes,
+		fetchExpiry:  fetchExpiry,
+		pushInterval: pushInterval,
+		sseDrain:     sseDrain,
+	}, nil
 }
 
 // parsePushInterval validates the SSE push cadence from the environment.
@@ -162,6 +189,11 @@ func run() error {
 		opts = append(opts, dashboard.WithPushInterval(cfg.pushInterval))
 	}
 
+	if cfg.sseDrain > 0 {
+		opts = append(opts, dashboard.WithShutdownDrain(cfg.sseDrain))
+		log.Printf("sse drain: graceful SSE drain window %s on shutdown", cfg.sseDrain)
+	}
+
 	dash := dashboard.New(fed, opts...)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -189,6 +221,17 @@ func run() error {
 
 	logRemotes(cfg.remotes)
 
+	gateCtx, gateCancel := context.WithTimeout(ctx, startupGate)
+	if waitForStartup(fed, gateCtx) {
+		log.Println("startup gate: every remote has answered at least once")
+	} else {
+		log.Printf(
+			"startup gate: not every remote answered within %s (serving anyway; dark remotes surface as reachable rows)",
+			startupGate,
+		)
+	}
+	gateCancel()
+
 	server := &http.Server{
 		Addr:              addr,
 		Handler:           mux,
@@ -205,9 +248,33 @@ func run() error {
 
 	select {
 	case <-ctx.Done():
+		// Drain-safe order: stop the dashboard BEFORE the HTTP server so
+		// SSE clients are disconnected promptly (and, with a drain window,
+		// new SSE connections already see 503) instead of their open
+		// streams holding server.Shutdown open for the entire grace
+		// window. The deferred dash.Shutdown stays as the early-exit
+		// safety net and is idempotent. Federation cannot flip /readyz to
+		// 503 (no MarkShuttingDown) - documented in the package comment.
+		dash.Shutdown()
 		return shutdown(server)
 	case err := <-listenErr:
 		return fmt.Errorf("server: %w", err)
+	}
+}
+
+// waitForStartup polls the federation's startup latch (every remote has
+// answered successfully at least once) until it completes or ctx is done.
+func waitForStartup(fed *healthfederation.Prober, ctx context.Context) bool {
+	for {
+		if fed.StartupComplete() {
+			return true
+		}
+
+		if ctx.Err() != nil {
+			return false
+		}
+
+		time.Sleep(startupPollStep)
 	}
 }
 
