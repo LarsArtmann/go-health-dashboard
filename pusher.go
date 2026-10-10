@@ -62,11 +62,6 @@ type pusher struct {
 // push interval. When TrendSamples is configured, the pusher also maintains
 // a ring buffer of recent status samples for the trend sparkline.
 func newPusher(d *Dashboard) *pusher {
-	var history *historyBuffer
-	if d.cfg.TrendSamples > 0 {
-		history = newHistoryBuffer(d.cfg.TrendSamples)
-	}
-
 	return &pusher{
 		broadcaster: sse.NewBroadcaster[sse.Event](),
 		dashboard:   d,
@@ -76,8 +71,8 @@ func newPusher(d *Dashboard) *pusher {
 		maxConns:    d.cfg.MaxSSEConnections,
 		retry:       d.cfg.RetryInterval,
 		maxLifetime: d.cfg.MaxConnectionLifetime,
-		history:     history,
-		evidence:    newEvidenceLog(),
+		history:     d.history,
+		evidence:    d.evidence,
 		ttl:         d.cfg.PushOnChangeTTL,
 	}
 }

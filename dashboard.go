@@ -70,6 +70,14 @@ type Dashboard struct {
 	latency *latencyHistogram
 	notify  *webhookNotifier
 
+	// history and evidence are the presentation-state ingest buffers,
+	// owned by the Dashboard (not the pusher) so probe-cadence observations
+	// via Observe accrue from the first hook fire — including before Start —
+	// and survive Shutdown/restart of the pusher. Both are internally
+	// mutex-guarded; ADR-0003.
+	history  *historyBuffer
+	evidence *evidenceLog
+
 	// webhookStats accumulates delivery outcomes for the metrics endpoint.
 	webhookStats *webhookDeliveryStats
 
@@ -127,6 +135,11 @@ func New(probe Prober, opts ...Option) *Dashboard {
 		latency:      newLatencyHistogram(),
 		webhookStats: &webhookDeliveryStats{duration: *newLatencyHistogram()},
 		notify:       newWebhookNotifier(cfg),
+		evidence:     newEvidenceLog(),
+	}
+
+	if cfg.TrendSamples > 0 {
+		d.history = newHistoryBuffer(cfg.TrendSamples)
 	}
 
 	if d.notify != nil {
@@ -261,5 +274,53 @@ func (d *Dashboard) HealthCheck(_ context.Context) error {
 		}
 	}
 
+	// Opt-in cascade verdict forwarding (ADR-0004): when enabled and the
+	// prober carries its own roll-up verdict (go-health's Probe.HealthCheck),
+	// the container cascade hears the fleet's health, not just the real-time
+	// surface's. Pusher-state errors above take precedence: a shut-down
+	// dashboard never masquerades as healthy because the probe would pass.
+	if d.cfg.CascadeProbeVerdict {
+		if hc, ok := d.probe.(ProberHealthchecker); ok {
+			return hc.HealthCheck(context.Background())
+		}
+	}
+
 	return nil
+}
+
+// ProberHealthchecker is the optional capability of a prober that carries
+// its own roll-up verdict — the method shape of do.HealthcheckerWithContext
+// and go-health's Probe.HealthCheck. Forwarding is gated behind
+// WithCascadeProbeVerdict (ADR-0004).
+type ProberHealthchecker interface {
+	HealthCheck(ctx context.Context) error
+}
+
+// Observe ingests one probe evaluation into the trend ring and the evidence
+// log — the ingest seam for go-health's WithEvaluationHook (ADR-0003).
+// Wire it where the probe is constructed:
+//
+//	health.WithEvaluationHook(dash.Observe)
+//
+// or, when the probe must be built before the dashboard exists, through a
+// nil-safe forwarding closure. Observe is safe for concurrent use, no-ops
+// when the corresponding buffer is unset (no WithTrend), and never touches
+// the wire contracts (JSON, webhook, metrics) — it feeds the HTML-only
+// presentation state. With the hook wired, trend and evidence sample at
+// probe cadence; the pusher keeps its own tick ingest, so adjacent samples
+// agree (both paths read the same evaluated state).
+func (d *Dashboard) Observe(resp health.Response) {
+	now := time.Now()
+
+	if d.evidence != nil {
+		d.evidence.observe(resp, now)
+	}
+
+	if d.history != nil {
+		d.history.record(sample{
+			At:     now,
+			Value:  statusValue(resp.Status),
+			Status: string(resp.Status),
+		})
+	}
 }
