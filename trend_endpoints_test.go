@@ -503,33 +503,64 @@ func TestTrendEndpoints_DisabledWithoutTrend(t *testing.T) {
 	}
 }
 
-// TestTrendEndpoints_503WhenPusherNotStarted covers the nil-pusher branch:
-// a dashboard that was constructed but never started must answer both trend
-// endpoints with 503 and a message that distinguishes "not started" from
-// "trend not enabled".
-func TestTrendEndpoints_503WhenPusherNotStarted(t *testing.T) {
+// TestTrendEndpoints_ServeRecordedHistoryBeforeStart covers the ADR-0003
+// ownership move: the trend history is Dashboard-owned, so a dashboard that
+// was constructed but never started still answers both trend endpoints with
+// its recorded samples (probe-cadence Observe calls accrue pre-Start), and
+// a dashboard without WithTrend still answers 503 with the "not enabled"
+// message.
+func TestTrendEndpoints_ServeRecordedHistoryBeforeStart(t *testing.T) {
 	t.Parallel()
 
-	injector := do.New()
-	provideHealthy(injector, "database")
-	invoke[*healthyService](t, injector, "database")
+	t.Run("without WithTrend: 503 trend not enabled", func(t *testing.T) {
+		t.Parallel()
 
-	probe := health.New(injector, health.WithRefreshInterval(time.Hour))
+		injector := do.New()
+		provideHealthy(injector, "database")
+		invoke[*healthyService](t, injector, "database")
 
-	dash := dashboard.New(probe, dashboard.WithTrend(10))
+		probe := health.New(injector, health.WithRefreshInterval(time.Hour))
 
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
+		dash := dashboard.New(probe)
 
-	for _, path := range []string{"/health/trend", "/health/export"} {
-		w := doRequest(t, mux, path)
-		if w.Code != http.StatusServiceUnavailable {
-			t.Errorf("%s without Start: want 503, got %d", path, w.Code)
+		mux := http.NewServeMux()
+		dash.RegisterRoutes(mux)
+
+		for _, path := range []string{"/health/trend", "/health/export"} {
+			w := doRequest(t, mux, path)
+			if w.Code != http.StatusServiceUnavailable {
+				t.Errorf("%s without WithTrend: want 503, got %d", path, w.Code)
+			}
+			if !strings.Contains(w.Body.String(), "trend history is not enabled") {
+				t.Errorf("%s 503 body should name the missing trend: %s", path, w.Body.String())
+			}
 		}
-		if !strings.Contains(w.Body.String(), "pusher is not active") {
-			t.Errorf("%s 503 body should name the inactive pusher: %s", path, w.Body.String())
+	})
+
+	t.Run("with WithTrend: recorded samples serve pre-Start", func(t *testing.T) {
+		t.Parallel()
+
+		probe := newStubProber(healthResponse(health.StatusPass, "db", ""))
+
+		dash := dashboard.New(probe, dashboard.WithTrend(10))
+
+		fail := healthResponse(health.StatusFail, "db", "blip")
+		pass := healthResponse(health.StatusPass, "db", "")
+		dash.Observe(fail)
+		dash.Observe(pass)
+
+		mux := http.NewServeMux()
+		dash.RegisterRoutes(mux)
+
+		w := doRequest(t, mux, "/health/trend")
+		if w.Code != http.StatusOK {
+			t.Fatalf("/health/trend pre-Start: want 200, got %d: %s", w.Code, w.Body.String())
 		}
-	}
+		if !strings.Contains(w.Body.String(), `"status":"fail"`) ||
+			!strings.Contains(w.Body.String(), `"status":"pass"`) {
+			t.Errorf("trend body missing the recorded flap pair: %s", w.Body.String())
+		}
+	})
 }
 
 func TestMetrics_LatencyHistogram(t *testing.T) {
