@@ -206,6 +206,7 @@ func run() error {
 	}
 
 	fedOpts := []healthfederation.Option{healthfederation.WithTimeout(cfg.fetchExpiry)}
+
 	if client != nil {
 		fedOpts = append(fedOpts, healthfederation.WithClient(client))
 		log.Printf(
@@ -270,6 +271,7 @@ func run() error {
 			startupGate,
 		)
 	}
+
 	gateCancel()
 
 	server := &http.Server{
@@ -296,6 +298,7 @@ func run() error {
 		// safety net and is idempotent. Federation cannot flip /readyz to
 		// 503 (no MarkShuttingDown) - documented in the package comment.
 		dash.Shutdown()
+
 		return shutdown(server)
 	case err := <-listenErr:
 		return fmt.Errorf("server: %w", err)

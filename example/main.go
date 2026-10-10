@@ -217,7 +217,7 @@ func awaitStartupComplete(p *health.Probe, ctx context.Context) bool {
 		}
 
 		rec := httptest.NewRecorder()
-		p.StartupHandler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/startupz", nil))
+		p.StartupHandler().ServeHTTP(rec, httptest.NewRequestWithContext(ctx, http.MethodGet, "/startupz", nil))
 
 		if p.StartupComplete() {
 			return true

@@ -281,7 +281,9 @@ func (d *Dashboard) HealthCheck(_ context.Context) error {
 	// dashboard never masquerades as healthy because the probe would pass.
 	if d.cfg.CascadeProbeVerdict {
 		if hc, ok := d.probe.(ProberHealthchecker); ok {
-			return hc.HealthCheck(context.Background())
+			if err := hc.HealthCheck(context.Background()); err != nil {
+				return fmt.Errorf("dashboard: probe verdict: %w", err)
+			}
 		}
 	}
 

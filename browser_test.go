@@ -625,7 +625,7 @@ func TestBrowser_OffRowContract(t *testing.T) {
 		Badge     bool   `json:"badge"`
 		Class     string `json:"cls"`
 		Text      string `json:"text"`
-		RowSample string `json:"rowSample,omitempty"`
+		RowSample string `json:"row_sample,omitempty"`
 	}
 
 	const probeJS = `(() => {
