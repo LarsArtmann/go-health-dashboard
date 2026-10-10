@@ -180,25 +180,8 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   endpoint" for a day).
 - **Repo scripts that exec `go` need the devShell** — `check-ui-pins.sh`, `verify-release.sh`, and any script invoking Go must run as `nix develop -c bash scripts/<x>.sh`: the ambient PATH go is 1.26.7 with `GOTOOLCHAIN=local`, which dies on go.mod's 1.27.1 floor with a misleading `go: updates to go.mod needed` (hit three times on 2026-09-22; the devShell's go_1_27 is the only correct context). Root-fix queued: scripts should self-select the right go.
 - **treefmt's goimports needs the flake's go, not nixpkgs'** — nixpkgs' gotools wrapper pins its build go (1.26.x) onto PATH; with go.mod's `1.27.1` floor, `go list` attempts a GOTOOLCHAIN download inside the NETWORK-LESS treefmt sandbox and `checks.format` fails deterministically (CI included — not a local-DNS problem, first misdiagnosed as one on 2026-09-22). Fixed by wrapping goimports with `goPkg` in `flake.nix`; any new go-invoking formatter needs the same treatment.
-- **The v0.10.1 dual-cut (2026-09-22)** — v0.10.0's tag commit failed two hygiene CI jobs (missing CHANGELOG footer link; the treefmt goimports bug above), and the release-draft workflow's `awk -v` collapsed `\\[` to a plain `[`, turning the version into a regex char-class so both tags' draft runs died with "no section found" (fixed by index() matching, `83962f4`). Since tags are immutable, the recovery was the green-CI re-cut v0.10.1 (identical code) with both pages backfilled manually; verify-release check 5 permanently reports the red draft run on both tags — a disclosed v0.8.0-class known exception, not a quality-gate failure.
-- **The templ generator is pinned by go.mod's `tool` directive** — `go tool
-  templ generate` is the ONLY sanctioned invocation, everywhere (flake apps,
-  the health-hub FOD preBuild, CI, local shells; `pkgs.templ` was removed).
-  The old split-brain: the FOD regenerated with nixpkgs' `templ`, an
-  UNPINNED version that happened to equal go.mod's `v0.3.1020` on
-  2026-09-19 by coincidence — any nixpkgs bump would silently change the
-  generated output the golden tests pin. With the tool directive the
-  generator version structurally cannot diverge from the module's own
-  requirement. Upgrading templ = bump go.mod, run `go tool templ generate`,
-  commit the (possibly re-formatted) output in the same change. The raw
-  output is still unformatted Go: canonical order stays generate → fmt.
-  The rule was still missed once: the go.mod bump to v0.3.1070 landed
-  without the regenerated output, so the committed `view_templ.go` stayed
-  0.3.1020-generated until 2026-10-08 — the first fresh `nix run .#build`
-  then failed five golden tests on whitespace-only HTML drift (0.3.1070
-  folds the inter-component `" "` WriteString calls, e.g. `</div> <div` →
-  `</div><div`); regenerated files + refreshed goldens are the canonical
-  state now.
+- **The v0.10.1 dual-cut (2026-09-22)** — tag-commit hygiene failures + an `awk -v` regex bug in the release-draft workflow; recovered as the green-CI re-cut v0.10.1. Full story: `docs/gotchas.md`.
+- **The templ generator is pinned by go.mod's `tool` directive** — `go tool templ generate` is the ONLY sanctioned invocation, everywhere (flake apps, the health-hub FOD preBuild, CI, local shells; `pkgs.templ` was removed), so the generator version structurally cannot diverge from the module's own requirement. Upgrading templ = bump go.mod, run `go tool templ generate`, commit the (re-formatted) output in the same change; canonical order stays generate → fmt. History of the two misses: `docs/gotchas.md`.
 - **Probe and Dashboard must be Started** — Call `probe.Start(ctx)` and `dash.Start(ctx)` before serving traffic. Without Start, `CachedResponse()` returns a zero-value Response and the pusher goroutine isn't running.
 - **No replace directives in the released module** — As of v0.1.0 all dependencies resolve from published versions. Local `replace` directives to sibling repos (`../go-health`, `../templ-components`, `../go-datastar`, `../go-sse`) are only needed for local development against unpublished sibling changes; never commit them.
 - **templ compiler doesn't support embedded fields** — Must use `utils.BaseProps{ID: "..."}` explicitly in templ struct literals, not `ID: "..."` at the top level.
@@ -206,34 +189,15 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **Two datastar packages** — `github.com/larsartmann/templ-components/datastar` (UI components: LiveRegion, SDKScript) and `github.com/larsartmann/go-datastar` (SSE protocol: ElementsFromTempl, WithModeInner). Import the latter as `dstar` to avoid name collision. A third package, `github.com/larsartmann/go-datastar/static`, embeds the real SDK JS bundle — use it in tests for hermetic browser runs.
 - **Datastar SDK requires `script-src 'unsafe-eval'`** — the SDK compiles `data-*` expressions with the `Function` constructor. Under a strict CSP without it, the bundle throws `Error: GenerateExpression` during init and the SSE connection never opens (discovered by `browser_test.go`). Nonce-based script delivery still works; styles stay clean with `WithCSSPath`.
 - **Headless Chrome must be launched manually in tests** — this machine's Chromium binds the DevTools listener to IPv6 `[::1]` and never announces a websocket with `--remote-debugging-port=0`. `startHeadlessChrome` (browser_test.go) picks a concrete free port, parses the `DevTools listening on ...` stderr line, and hands it to `chromedp.NewRemoteAllocator`. The profile dir is removed with a bounded retry because renderer children outlive the browser process.
-- **Bisect wall `071c251..HEAD`** — 5+19 auto-daemon mid-edit commits do not
-  compile (immutable history); `git bisect skip` them (list in the audit
-  doc's 2026-09-23 extension). Two classes: torn-tree carriers, and the
-  2026-09-22+ go-directive-sweep tears ("updates to go.mod needed"). Root
-  cause class: the daemon snapshots half-wired trees — run
-  `go build ./...` before walking away. Full audit:
-  `docs/status/archived/2026-09-04_19-15_bisectability-audit.md` (re-run
-  the extension's pinned-toolchain method — the ambient go now
-  false-fails every post-bump commit).
+- **Bisect wall `071c251..HEAD`** — 24 auto-daemon mid-edit commits do not compile (immutable history); `git bisect skip` them — classes + list: `docs/gotchas.md`, `docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
 - **UI dependencies are pinned and guarded** — templ-components v1.21.0
-  (root/datastar/utils/icons) + go-datastar v0.6.2 / static v0.6.1,
-  re-audited 2026-10-09 with a green browser suite (the 2026-09-10 v1.16.0
-  audit retired the axe `definition-list`/`dlitem` tolerance in
-  `TestBrowser_Accessibility` after upstream templ-components#6 was fixed;
-  the audit now fails on any serious/critical violation, both themes).
-  Undocumented sweeps have landed eight times (v1.19.2→v1.21.0 rode the
-  2026-10-08 fleet sweep, daemon commit `54cdc59`; adopted deliberately
-  2026-10-09); `scripts/check-ui-pins.sh` (CI Build+Test steps) fails
-  loudly on any movement. UI bumps require a dedicated change with a green
-  browser suite — the unit suite cannot see these regressions — and the
-  guard pins must be updated IN THE SAME CHANGE as any bump (a bump
-  without its guard update leaves CI red). Script-emitting upstream
-  components (CopyButton, Tooltip) are vetted for nonce/CSP compatibility
-  before adoption: per-element inline scripts and unconditional `nonce=""`
-  attributes clash with the per-request-nonce and SSE-patch paths here.
-  Upstream StatCard icon tiles use `text-green-600` on the green tone —
-  banned page-wide by `TestRender_ContrastSafeStatusColors`, so stat-card
-  tones stay in the blue/purple families (contrast-measured).
+  (root/datastar/utils/icons) + go-datastar v0.6.2 / static v0.6.1;
+  `scripts/check-ui-pins.sh` (CI Build+Test steps) fails loudly on any
+  movement — undocumented sweeps have landed eight times. UI bumps require
+  a dedicated change with a green browser suite (the unit suite cannot see
+  these regressions) and the guard pins updated IN THE SAME CHANGE.
+  Audit history, script-emitting-component vetting, and the green-tone
+  contrast ban: `docs/gotchas.md`.
 - **Datastar v1.0 attribute names are colon-keyed** — the SDK (pinned
   v0.6.2 bundle) registers plugins by name and splits keys on `:`:
   `data-bind="query"` (not the pre-1.0 `data-model`) and
@@ -257,14 +221,11 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   by probing a cheap module load and falling back to `nix develop -c go`
   (see `check-ui-pins.sh` `go_list`) — the old "run these scripts from
   inside the devShell" requirement is retired.
-- **Deploy stack facts live in deploy/README.md** — the compose stack is
-  digest-pinned, healthcheck-gated (Grafana waits on Prometheus
-  `/-/ready`), boots end to end (verified 2026-09-23, screenshot in
-  `docs/screenshot-grafana.png`), and the provisioned alert example takes
-  `relativeTimeRange` as integer SECONDS, not duration strings. Host ports
-  8080/9090/3000 collide with other projects on this machine — remap via a
-  compose override with `!override` port lists (plain overrides MERGE and
-  still bind the taken port).
+- **Deploy stack facts live in deploy/README.md** — digest-pinned,
+  healthcheck-gated, boot-verified 2026-09-23. Machine traps: the alert
+  example takes `relativeTimeRange` as integer SECONDS; host ports
+  8080/9090/3000 collide with other projects here — remap via a compose
+  override with `!override` port lists (plain overrides MERGE).
 - **go-health marks non-critical failing checks `warn`, not `fail`** — only critical services produce `fail` per-check statuses (and overall fail). `setupDashboardWithFailures` yields cache/queue `warn` checks with overall `warn`; metrics tests assert accordingly.
 - **Parallel-session handshake (2026-09-17: two sessions, one tree)** —
   before ANY write: `git log --oneline -10`, `ls docs/status/ | tail`,
