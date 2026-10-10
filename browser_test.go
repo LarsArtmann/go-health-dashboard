@@ -551,6 +551,137 @@ func waitForBodyText(t *testing.T, ctx context.Context, want string) {
 	}
 }
 
+// --- Off row contract (go-health v0.5.1 StatusOff) ---
+
+// setupDashboardWithOffCheck builds a probe whose rows exercise the off
+// contract end to end: one healthy pass row and one deliberately-off
+// analytics row (health.Off, the intentional-absence state).
+func setupDashboardWithOffCheck(t *testing.T, opts ...dashboard.Option) *probeSetup {
+	t.Helper()
+
+	probe := health.NewChecks(map[string]health.CheckFunc{
+		"database": new(alwaysHealthy).HealthCheck,
+		"analytics": func(_ context.Context) error {
+			return health.Off("not configured: analytics is deliberately off in this demo")
+		},
+	},
+		health.WithRefreshInterval(100*time.Millisecond),
+	)
+
+	dash := dashboard.New(probe, opts...)
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	if err := probe.Start(t.Context()); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
+
+	if err := dash.Start(t.Context()); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+
+	return &probeSetup{
+		probe: probe,
+		dash:  dash,
+		mux:   mux,
+		cleanup: func() {
+			dash.Shutdown()
+			probe.Shutdown()
+		},
+	}
+}
+
+// TestBrowser_OffRowContract pins the off contract in a real browser: the
+// off row renders a NEUTRAL badge (no warn/fail/success tone), stays
+// outside the evidence strip's population, and stays outside the alert
+// banner's problem counts — visibility, never a verdict.
+func TestBrowser_OffRowContract(t *testing.T) {
+	t.Parallel()
+
+	const nonce = "off-row-contract-nonce"
+
+	s := setupDashboardWithOffCheck(t,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+	)
+	defer s.cleanup()
+
+	session := startBrowserSession(t, s, nonce)
+	ctx, errLog := session.ctx, session.errLog
+
+	waitForSubscriber(t, s.dash)
+
+	// The evidence strip and alert banner render from the initial HTML and
+	// are stable for a static pass+off probe; one patch window suffices.
+	time.Sleep(250 * time.Millisecond)
+
+	var badge struct {
+		Found     bool   `json:"found"`
+		Badge     bool   `json:"badge"`
+		Class     string `json:"cls"`
+		Text      string `json:"text"`
+		RowSample string `json:"rowSample,omitempty"`
+	}
+
+	const probeJS = `(() => {
+		const row = document.querySelector('tr[data-filter-row*="analytics"]');
+		if (!row) { return JSON.stringify({found: false}); }
+		const cell = row.querySelectorAll("td")[1];
+		if (!cell) { return JSON.stringify({found: true, badge: false, rowSample: row.textContent.slice(0, 200)}); }
+		const el = [...cell.querySelectorAll("*")].find(e => e.textContent.trim() === "Off" && e.children.length === 0);
+		if (!el) { return JSON.stringify({found: true, badge: false, rowSample: row.textContent.slice(0, 200)}); }
+		return JSON.stringify({found: true, badge: true, cls: el.className, text: el.textContent.trim()});
+	})()`
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(probeJS, &badge)); err != nil {
+		t.Fatalf("browser evaluate: %v", err)
+	}
+
+	if !badge.Found {
+		t.Fatal("off row (analytics) never rendered")
+	}
+
+	if !badge.Badge {
+		t.Fatalf("off row rendered without an Off badge; row text: %s", badge.RowSample)
+	}
+
+	for _, banned := range []string{"bg-yellow", "bg-red", "bg-green", "text-yellow", "text-red", "text-green"} {
+		if strings.Contains(badge.Class, banned) {
+			t.Errorf(
+				"off badge carries verdict styling %q (class: %q) — off must render neutral",
+				banned,
+				badge.Class,
+			)
+		}
+	}
+
+	if !strings.Contains(badge.Class, "bg-gray-100") {
+		t.Errorf("off badge lacks the neutral tone (class: %q)", badge.Class)
+	}
+
+	// Evidence strip: off is outside the population. One pass row means
+	// "0 of 1" — the off row must not count as a green that could be proven.
+	waitForBodyText(t, ctx, "Failure evidence: 0 of 1 checks")
+
+	// Alert banner problem counts: "0 of 1 services reporting pass." — the
+	// off row is not a service reporting anything.
+	waitForBodyText(t, ctx, "0 of 1 services reporting pass")
+
+	var bodyText string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.body.innerText`, &bodyText)); err != nil {
+		t.Fatalf("browser evaluate: %v", err)
+	}
+
+	if strings.Contains(bodyText, "0 of 2 checks") || strings.Contains(bodyText, "2 of 2") || strings.Contains(bodyText, "of 2 services") {
+		t.Errorf("off row leaked into a population count; body text: %.400s", bodyText)
+	}
+
+	assertNoBrowserErrors(t, errLog)
+}
+
 // --- Accessibility ---
 
 // axeCoreCDN is the pinned axe-core build injected into the page for the
