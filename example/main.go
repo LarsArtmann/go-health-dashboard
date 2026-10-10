@@ -116,7 +116,9 @@ func main() {
 
 	dash := dashboard.Register(injector, probe, opts...)
 	evaluationSink.Store(dash)
-	log.Println("evaluation hook: probe-cadence observations feed trend + evidence (WithEvaluationHook -> Observe)")
+	log.Println(
+		"evaluation hook: probe-cadence observations feed trend + evidence (WithEvaluationHook -> Observe)",
+	)
 
 	if err := dash.Start(ctx); err != nil {
 		log.Fatalf("dash.Start: %v", err)
@@ -141,7 +143,9 @@ func main() {
 		if bundle.awaitStartup(readyCtx) {
 			log.Println("readiness gate: startup latch set (every critical service passed once)")
 		} else {
-			log.Println("readiness gate: startup latch not set within 15s (serving anyway — demo binary)")
+			log.Println(
+				"readiness gate: startup latch not set within 15s (serving anyway — demo binary)",
+			)
 		}
 		readyCancel()
 	}
@@ -171,7 +175,10 @@ func main() {
 	if bundle.markShuttingDown != nil {
 		bundle.markShuttingDown()
 		grace := drainGraceWindow()
-		log.Printf("drain: probe readiness flipped to 503; holding the drain window for %s so LB health checks observe it", grace)
+		log.Printf(
+			"drain: probe readiness flipped to 503; holding the drain window for %s so LB health checks observe it",
+			grace,
+		)
 		time.Sleep(grace)
 	}
 
@@ -328,7 +335,11 @@ func analyticsCheck() health.CheckFunc {
 // from AGENTS.md. Sources must have unique, slash-free names (go-health
 // v0.1.3 contract). With withDetailed, a third self-timed source joins the
 // aggregate so the demo shows per-check metadata for one source.
-func buildAggregateProbe(ctx context.Context, withDetailed bool, observe func(health.Response)) probeBundle {
+func buildAggregateProbe(
+	ctx context.Context,
+	withDetailed bool,
+	observe func(health.Response),
+) probeBundle {
 	apiInjector := do.New()
 	registerService(apiInjector, "postgres", &alwaysHealthy{})
 	registerService(apiInjector, "redis", &flappingService{failEvery: 15 * time.Second})

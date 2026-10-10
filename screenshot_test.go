@@ -118,7 +118,11 @@ func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
 	provideHealthy(injector, "postgres")
 	provideHealthy(injector, "api-gateway")
 	provideUnhealthy(injector, "metrics-exporter", "exporter endpoint unreachable")
-	provideOff(injector, "analytics", "not configured: set DEMO_ANALYTICS_URL=<url> to enable analytics")
+	provideOff(
+		injector,
+		"analytics",
+		"not configured: set DEMO_ANALYTICS_URL=<url> to enable analytics",
+	)
 	provideBattery(injector, "memory-pressure", checks.Memory(1<<20))
 	invoke[*healthyService](t, injector, "postgres")
 	invoke[*healthyService](t, injector, "api-gateway")

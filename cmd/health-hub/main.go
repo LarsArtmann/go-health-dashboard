@@ -367,7 +367,11 @@ func federationClient(cfg hubConfig) (*http.Client, error) {
 
 		pool := x509.NewCertPool()
 		if !pool.AppendCertsFromPEM(pem) {
-			return nil, fmt.Errorf("%s: no PEM certificates found in %q", clientCAEnvVar, cfg.tlsCAPath)
+			return nil, fmt.Errorf(
+				"%s: no PEM certificates found in %q",
+				clientCAEnvVar,
+				cfg.tlsCAPath,
+			)
 		}
 
 		transport.TLSClientConfig = &tls.Config{

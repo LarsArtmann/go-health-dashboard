@@ -678,11 +678,15 @@ func TestBrowser_OffRowContract(t *testing.T) {
 
 	var bodyText string
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.body.innerText`, &bodyText)); err != nil {
+	if err := chromedp.Run(
+		ctx,
+		chromedp.Evaluate(`document.body.innerText`, &bodyText),
+	); err != nil {
 		t.Fatalf("browser evaluate: %v", err)
 	}
 
-	if strings.Contains(bodyText, "0 of 2 checks") || strings.Contains(bodyText, "2 of 2") || strings.Contains(bodyText, "of 2 services") {
+	if strings.Contains(bodyText, "0 of 2 checks") || strings.Contains(bodyText, "2 of 2") ||
+		strings.Contains(bodyText, "of 2 services") {
 		t.Errorf("off row leaked into a population count; body text: %.400s", bodyText)
 	}
 
