@@ -957,18 +957,24 @@
             observation.
           </p>
           <p>
-            <strong>Score re-run (provisional, post waves 1&ndash;3):</strong>
+            <strong>Score re-run (FINAL, 2026-10-10 session close):</strong>
             capabilities fully leveraged <strong>15/26 &rarr; 21/26</strong>
             (all five missed-opportunity findings resolved; two partials
-            improved); anti-patterns still 0. Adoption score re-anchored at
-            <strong>~88/100</strong>, final after the design-leverage wave
-            (<em>WithEvaluationSink</em>, cascade verdict,
-            <em>federation.WithClient</em>, v0.6
-            <em>SourceStatuses</em>). Citation note: file:line references
-            below reflect the audit-time tree (<code>61e9d98</code>); the
-            binaries' line numbers moved with the adoption, the library
-            citations are unchanged (verified against <code>HEAD</code>).
-            Known defect fixed: "a endpoint" &rarr; "an endpoint" below.
+            improved); anti-patterns still 0. Adoption score
+            <strong>~88/100</strong>, confirmed final: the design-leverage
+            wave shipped the same session (<em>WithEvaluationSink</em> as
+            <code>Dashboard.Observe</code> per ADR-0003, the cascade verdict
+            per ADR-0004, <em>federation.WithClient</em> via the hub's
+            transport knobs); the 26th capability
+            (<em>aggregate.SourceStatuses</em>) stays open on the upstream
+            v0.6 tag, tracked in TODO_LIST. Sibling audits of the other
+            dependencies: templ-components 84/100 and go-datastar+go-sse
+            86/100 (<code>docs/research/2026-10-10_*.html</code>). Citation
+            note: file:line references below reflect the audit-time tree
+            (<code>61e9d98</code>); the binaries' line numbers moved with the
+            adoption, the library citations are unchanged (verified against
+            <code>HEAD</code>). Known defect fixed: "a endpoint" &rarr; "an
+            endpoint" below.
           </p>
         </section>
 

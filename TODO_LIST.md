@@ -104,10 +104,10 @@ session close; audit evidence:
 | T12 cascade verdict capability | 🔴 `TODO` | gate D1 default: optional Healthchecker capability (Healthzer pattern), pusher fallback preserved |
 | T14 hub transport knob (federation.WithClient) | 🔴 `TODO` | TLS CA / proxy env knobs, validate-before-use |
 | T15 upstream federation readiness proposal | ✅ closed 2026-10-10 | verified (live hub + v0.5.1 source) and FILED: go-health#5; voice-checked; draft + verdict: `docs/upstream/go-health-federation-mark-shutting-down.md` |
-| T16 gates + push | 🔵 `BLOCKED` | `pre-push-checks.sh` green locally; the push itself awaits D3 authorization |
+| T16 gates + push | ✅ closed 2026-10-10 | desk gate green after fixing three pre-existing drifts it caught (CHANGELOG [0.10.2] footer, Version const 0.10.1→0.10.2, FEATURES test counts 297→314/44); pushed 61e9d98..a360285 (40 commits), CI watched |
 | T13 go-health v0.6 train (SourceStatuses hub cards) | 🔵 `BLOCKED` | needs the upstream v0.6 tag; SourceStatuses exists on master, unreleased |
-| T17 deep-dive templ-components | 🔴 `TODO` | same rubric as the go-health audit |
-| T18 deep-dive go-datastar + go-sse | 🔴 `TODO` | same rubric as the go-health audit |
+| T17 deep-dive templ-components | ✅ closed 2026-10-10 | 84/100, 1 real finding (ListNote solves the open timeline-cap TODO), 2 justified non-adoptions; `docs/research/2026-10-10_templ-components-deep-dive.html` |
+| T18 deep-dive go-datastar + go-sse | ✅ closed 2026-10-10 | 86/100, WithOnDrop blind spot (silent per-client patch loss, no metric), 3 by-design non-adoptions; `docs/research/2026-10-10_datastar-sse-deep-dive.html` |
 | T19 process recipes into AGENTS.md | 🔴 `TODO` | daemon-race amend-relabel, handshake-first, proofread greps |
 | T20 trim AGENTS.md to 377-line budget | ✅ closed 2026-10-10 | 376 lines; narratives in `docs/gotchas.md`, rules stayed; re-enables the agent-config lint rule |
 
