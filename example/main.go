@@ -19,6 +19,8 @@
 //	DEMO_PUBLIC=1                public status-page mode (WithPublicMode)
 //	DEMO_BASE_PATH=/status       mount the dashboard under a sub-path (WithBasePath)
 //	DEMO_AGGREGATE=1             serve a two-probe aggregate instead of one probe (go-health aggregate)
+//	DEMO_ANALYTICS_URL=<url>     make the analytics row a live HTTP check (checks.HTTP) instead of
+//	                             the deliberate off row (health.Off) it shows when unset
 //	DEMO_DETAILED=1              add a detailed-check source (NewWithDetailedCheck) whose self-timed
 //	                             checks make the dashboard show per-check since/age and duration
 //	DEMO_WEBHOOK=<url>           POST transitions to this receiver (WithWebhook)
@@ -48,6 +50,7 @@ import (
 	dashboard "github.com/larsartmann/go-health-dashboard"
 	"github.com/larsartmann/go-health-dashboard/pkg/version"
 	"github.com/larsartmann/go-health/aggregate"
+	"github.com/larsartmann/go-health/checks"
 	"github.com/samber/do/v2"
 )
 
@@ -160,15 +163,27 @@ type probeBundle struct {
 // constructor — plain functions, no injector services — so the probe times
 // every execution and the rendered rows show real measured durations (the
 // raw injector path reports zero).
+//
+// The row set is tuned to a pass/warn/off mix so the demo shows every
+// state honestly: battery rows from go-health's checks package (disk
+// headroom passes, memory pressure warns with the REAL heap number in the
+// error), an analytics row that is deliberately off (health.Off) until
+// DEMO_ANALYTICS_URL turns it into a live HTTP check, and the classic
+// postgres/redis/exporter trio.
 func buildSingleProbe(ctx context.Context) probeBundle {
 	redis := &flappingService{failEvery: 15 * time.Second}
 	exporter := &alwaysFailing{reason: exporterUnreachableReason}
 
-	probe := health.NewChecks(map[string]health.CheckFunc{
+	checksByName := map[string]health.CheckFunc{
 		"postgres":         new(alwaysHealthy).HealthCheck,
 		"redis":            redis.HealthCheck,
 		"metrics-exporter": exporter.HealthCheck,
-	},
+		"disk-headroom":    checks.Disk(".", 1<<30),
+		"memory-pressure":  checks.Memory(8 << 20),
+		"analytics":        analyticsCheck(),
+	}
+
+	probe := health.NewChecks(checksByName,
 		health.WithVersion(version.Version),
 		health.WithCriticalServices("postgres", "redis"),
 		health.WithRefreshInterval(2*time.Second),
@@ -183,6 +198,19 @@ func buildSingleProbe(ctx context.Context) probeBundle {
 		shutdown:         probe.Shutdown,
 		markShuttingDown: probe.MarkShuttingDown,
 		awaitReady:       probe.AwaitReady,
+	}
+}
+
+// analyticsCheck is the health.Off demo: an intentionally unconfigured
+// dependency whose row stays visible with its enable recipe. Setting
+// DEMO_ANALYTICS_URL promotes it to a live checks.HTTP battery instead.
+func analyticsCheck() health.CheckFunc {
+	if raw := os.Getenv("DEMO_ANALYTICS_URL"); raw != "" {
+		return checks.HTTP(raw, 2*time.Second)
+	}
+
+	return func(_ context.Context) error {
+		return health.Off("not configured: set DEMO_ANALYTICS_URL=<url> to enable analytics")
 	}
 }
 
