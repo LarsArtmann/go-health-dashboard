@@ -14,11 +14,11 @@
 
 ## Next Up
 
-- **Trim AGENTS.md to the 377-line linter budget** (458 lines today; excess
-  ~81). Exposed 2026-10-07 by unskipping go-structure-linter — the
-  agent-config rule is excluded in .go-structure-linter.yaml until this is
-  done; extract session detail to README/docs, keep AGENTS.md to
-  non-obvious, load-bearing facts.
+- ~~Trim AGENTS.md to the 377-line linter budget~~ ✅ closed 2026-10-10:
+  AGENTS.md is 376 lines; the incident narratives moved verbatim to
+  `docs/gotchas.md` (load-bearing rules stayed). The go-structure-linter
+  agent-config rule is re-enablable when BuildFlow pins a release with
+  project-config support.
 
 Swept 2026-09-23 (full-list execution session): every row harvested
 2026-09-18/22 was executed, verified, closed into CHANGELOG, or
@@ -109,7 +109,7 @@ session close; audit evidence:
 | T17 deep-dive templ-components | 🔴 `TODO` | same rubric as the go-health audit |
 | T18 deep-dive go-datastar + go-sse | 🔴 `TODO` | same rubric as the go-health audit |
 | T19 process recipes into AGENTS.md | 🔴 `TODO` | daemon-race amend-relabel, handshake-first, proofread greps |
-| T20 trim AGENTS.md to 377-line budget | 🔴 `TODO` | after T08+T19 land, let the trim win; re-enables the agent-config lint rule |
+| T20 trim AGENTS.md to 377-line budget | ✅ closed 2026-10-10 | 376 lines; narratives in `docs/gotchas.md`, rules stayed; re-enables the agent-config lint rule |
 
 ## Blocked (needs user decision)
 

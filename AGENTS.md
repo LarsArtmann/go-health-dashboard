@@ -173,13 +173,12 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   (1) intent commit hits "nothing to commit": verify HEAD's daemon commit
   holds your content (`git show HEAD -- <files> | rg <fresh-symbol>`), then
   `git commit --amend` carries the full intent message (never rebase a
-  daemon commit away; a split across a daemon commit + your tail commit is
-  fine — the intent message discloses it). (2) commit dies on
-  `.git/index.lock`: the daemon is mid-commit — wait 2s, re-check HEAD,
-  amend-relabel per (1). (3) Before ANY write: handshake (`git log
-  --oneline -10`, `git status`, `ls docs/status/ | tail`) — the newest
-  status file is another session's handoff. (4) Proofread greps after docs
-  edits (`rg "a endpoint|teh"` class) catch what spellcheck misses.
+  daemon commit away; a split is fine — the intent message discloses it).
+  (2) commit dies on `.git/index.lock`: daemon mid-commit — wait 2s,
+  re-check HEAD, amend-relabel per (1). (3) Before ANY write: handshake
+  (`git log --oneline -10`, `git status`, `ls docs/status/ | tail`) — the
+  newest status file is another session's handoff. (4) Proofread greps
+  after docs edits (`rg "a endpoint|teh"` class) catch what spellcheck misses.
 - **Repo scripts that exec `go` need the devShell** — `check-ui-pins.sh`, `verify-release.sh`, and any script invoking Go must run as `nix develop -c bash scripts/<x>.sh`: the ambient PATH go is 1.26.7 with `GOTOOLCHAIN=local`, which dies on go.mod's 1.27.1 floor with a misleading `go: updates to go.mod needed` (hit three times on 2026-09-22; the devShell's go_1_27 is the only correct context). Root-fix queued: scripts should self-select the right go.
 - **treefmt's goimports needs the flake's go, not nixpkgs'** — nixpkgs' gotools wrapper pins its build go (1.26.x) onto PATH; with go.mod's `1.27.1` floor, `go list` attempts a GOTOOLCHAIN download inside the NETWORK-LESS treefmt sandbox and `checks.format` fails deterministically (CI included — not a local-DNS problem, first misdiagnosed as one on 2026-09-22). Fixed by wrapping goimports with `goPkg` in `flake.nix`; any new go-invoking formatter needs the same treatment.
 - **The v0.10.1 dual-cut (2026-09-22)** — tag-commit hygiene failures + an `awk -v` regex bug in the release-draft workflow; recovered as the green-CI re-cut v0.10.1. Full story: `docs/gotchas.md`.
@@ -224,16 +223,14 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   8080/9090/3000 collide with other projects here — remap via a compose
   override with `!override` port lists (plain overrides MERGE).
 - **go-health marks non-critical failing checks `warn`, not `fail`** — only critical services produce `fail` per-check statuses (and overall fail). `setupDashboardWithFailures` yields cache/queue `warn` checks with overall `warn`; metrics tests assert accordingly.
-- **Release discipline** — (0) verify batch → commit immediately; never
-  claim unpushed state without `git fetch` + `master...origin/master`
-  (something auto-pushes under unknown conditions); release sessions start
-  with `bash scripts/pre-push-checks.sh`. (1) `nix fmt` AFTER the last
-  `templ generate` (canonical order generate → fmt). (2) Commit
-  intent-bearing changes right after each verified batch — a long gate
-  chain is one giant uncommitted window. (3) Push the TAG first, then
-  master. (4) External-state verification is a script:
-  `bash scripts/verify-release.sh <ver>`. The war stories:
-  `docs/gotchas.md`.
+- **Release discipline** — (0) verify batch → commit immediately; never claim
+  unpushed state without `git fetch` + `master...origin/master` (something
+  auto-pushes under unknown conditions); release sessions start with
+  `bash scripts/pre-push-checks.sh`. (1) `nix fmt` AFTER the last `templ
+  generate` (generate → fmt). (2) Commit intent-bearing changes right after
+  each verified batch — a long gate chain is one giant uncommitted window.
+  (3) Push the TAG first, then master. (4) External-state verification is a
+  script: `bash scripts/verify-release.sh <ver>`. War stories: `docs/gotchas.md`.
 - **erraudit blank-identifier policy** — response-writer discards are
   centralized in `writeBody` (handlers.go) with ONE reasoned
   `//nolint:erraudit`; `//nolint:erraudit // reason` is the sanctioned
