@@ -9,8 +9,8 @@ section for the rare behavior changes).
 
 | Version | Supported        |
 | ------- | ---------------- |
-| 0.9.x   | Yes              |
-| < 0.9   | No — please bump |
+| 0.10.x  | Yes              |
+| < 0.10  | No — please bump |
 
 ## Reporting a Vulnerability
 
@@ -32,3 +32,19 @@ The dashboard is a display layer over your health data. Reports involving
 the served HTML and SSE patch path (XSS/CSP), the JSON/export endpoints,
 the webhook sink, or the metrics exposition are especially welcome. Please
 do not test against deployments you do not own.
+
+## Security Practices
+
+- All changes are code-reviewed before merge
+- Automated security scanning runs in CI
+- Dependencies are kept up to date
+- Strict Content-Security-Policy on the served page (no `unsafe-inline`
+  styles, nonce-carried scripts), verified in a headless browser
+- Opt-in rate limiting on dashboard routes; kubelet probes stay exempt
+- Health responses sanitized at one choke point; fuzz targets on the wire
+  surfaces run nightly, and `govulncheck` gates every build
+- Zero runtime dependencies outside the pinned sibling UI/transport modules
+
+---
+
+_Maintained with [securitymd](https://github.com/LarsArtmann/securitymd). Last updated: 2026-10-11._
