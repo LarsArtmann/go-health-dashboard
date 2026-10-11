@@ -1,5 +1,9 @@
 # Session Status: T16 Tail — Lint Closeout, Binary Untrack, Rebase (READY TO PUSH, awaiting authorization)
 
+> **DONE 2026-10-11:** pushed (auto-push) and CI 7/7 green; superseded by
+> `docs/status/2026-10-11_18-56_ci-green-release-publish-t13-unblock-status.md`
+> (its §f items 1–7 are closed there).
+
 **Date:** 2026-10-10 13:54 CEST
 **Session span:** 13:35 – 13:54 CEST (resume session continuing the 09:50 handoff)
 **Supersedes:** `docs/status/2026-10-10_09-50_pareto-execution-and-ci-closeout-status.md` (its §f items 1–5 are CLOSED by this session; its §a/§b/§c context still stands).
