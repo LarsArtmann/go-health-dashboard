@@ -120,6 +120,7 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - **Per-check metadata is derived once per build (go-health v0.2.0)** — `buildViewModelAt` (injected clock) stamps `SinceText`/`DurationText` onto rows so HTML and SSE patches agree and golden files pin the clock instead of time-bombing; the row since-age, like the Updated stamp, only refreshes when a patch actually broadcasts. The metadata line renders for ANY status (a green "since" is as honest as a red one); public mode keeps it — timestamps and durations are non-identifying. Accepted risk (2026-09-17): the RENDERED duration is deliberately coarse (`durationDisplayStep` rounding at the second scale, µs precision only below 1ms), too fuzzy to fingerprint a deployment; raw nanos ride only the operator-owned wire surfaces (`/health` JSON, export), which are verbatim by design.
 - **samber/do lifecycle integration** — `Dashboard` implements `do.HealthcheckerWithContext` and `do.Shutdowner` (compile-time asserted). `Register(injector, probe, opts...)` stores it via `do.ProvideValue`, so consumers with an injector get `do.Shutdown`/`do.HealthCheck` cascades for free.
 - **Probe-cadence sink + opt-in cascade verdict (ADR-0003/0004, 2026-10-10)** — `Dashboard.Observe` is the `WithEvaluationHook` ingest seam (history/evidence are Dashboard-owned; trend/export serve recorded samples pre-Start), and `WithCascadeProbeVerdict` opts the do cascade into the probe's roll-up verdict (pusher-state errors keep precedence; default off so a hub stays healthy while remotes are dark).
+- **Source cards escalate, never soften (SourceStatuser, 2026-10-11)** — the optional `SourceStatuser` capability (`SourceStatuses() map[string]health.Status`, Healthzer pattern: outside `Prober` so external implementors never break) lets the dashboard fix a row-fold blind spot: a shutting-down source keeps its own all-pass checks, which folded to a green card under a red page. In GroupBySource mode the accessor's verdict may only WORSEN a card (`Rank`-compare; ties keep the row fold), probes without the capability render byte-identically, and public mode is unaffected (override runs before title masking). `aggregate.Aggregate` satisfies it (compile-time pinned); federation does not (upstream gap) — its dark-remote `reachable` fail row keeps the row fold honest for unreachables.
 
 ### Data Flow
 
@@ -279,7 +280,7 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 
 ### go-health (`github.com/larsartmann/go-health`)
 
-Provides `Probe`, `Response`, `Check`, `Status` (v0.5.1 in go.mod). The dashboard is a pure consumer — zero changes needed to go-health:
+Provides `Probe`, `Response`, `Check`, `Status` (v0.7.0 in go.mod). The dashboard is a pure consumer — zero changes needed to go-health:
 
 - `Probe.CachedResponse() Response` — reads atomic cache, overlays shutdown flag
 - `Check.Since` / `Check.DurationNanos` (since v0.2.0, additive, `omitzero` on the
@@ -341,16 +342,24 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.5.1 in go.mod). The dashboar
   one `Prober`-compatible surface for multi-service dashboards. Sources must have unique
   non-empty names; checks land namespaced as `source/check`. Sources must eagerly invoke
   their samber/do services or they silently health-check as pass (same gotcha as single probes).
+  `Aggregate.SourceStatuses()` (v0.6.0) — per-source roll-up map, shutdown reported as
+  fail per source; the dashboard consumes it through the optional `SourceStatuser`
+  capability (below).
 - `federation` sub-package (RELEASED; adopted) — `federation.New(remotes,
   opts...)` merges N remote go-health instances over HTTP into one
   `Prober`-compatible surface: merge-on-read (one parallel fetch per remote
   per read, 5s default timeout), checks namespaced `name/check`, dark
   remotes surface as `name/reachable` FAIL rows (never a silent freeze),
   `Check.Since` survives the wire, startup latches per remote on first
-  successful fetch. go.mod pins the **v0.5.1 tag** (2026-10-10): v0.5.x
+  successful fetch. go.mod pins the **v0.7.0 tag** (2026-10-11): v0.5.x
   added `StatusOff`, `checks`, `VersionHandler`, `WithInstanceID`,
-  `MarkShuttingDown` — all adopted here. Known gaps (upstream proposals):
-  no `MarkShuttingDown` (a hub cannot flip readiness 503 during drain);
+  `MarkShuttingDown` — all adopted here; v0.6.0–v0.7.0 unified the
+  merge core with aggregate (shared `internal/merge` worst-of fold) and
+  fixed federation rank ties (top-level `off` no longer flips the merged
+  roll-up out of pass/warn/fail; the fold is order-independent). Known
+  gaps (upstream proposals): no `MarkShuttingDown` (a hub cannot flip
+  readiness 503 during drain); no `SourceStatuses` (a draining remote's
+  card folds rows — only aggregate exposes the accessor);
   per-process scalars dropped by design. `cmd/health-hub` is the hub made
   runnable — env knobs are documented in that binary's package comment
   (`HEALTH_HUB_REMOTES`/`_TIMEOUT`/`_TREND`/`_METRICS`/`_PUSH_INTERVAL`/`_SSE_DRAIN`/`_ADDR`);

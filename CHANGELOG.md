@@ -17,6 +17,17 @@ forgetting.
 
 ### Added
 
+- **Truthful per-source cards (`SourceStatuser` capability).** In source
+  grouping mode a card's verdict previously folded from its rows, and a
+  merged view can be unhealthy in a way no row shows: a shutting-down
+  source keeps its own all-pass checks, rendering a green card under a red
+  page. Probes implementing the new optional `SourceStatuser` capability
+  (`SourceStatuses() map[string]health.Status` — go-health's
+  `aggregate.Aggregate` since v0.6.0) now escalate card verdicts: the
+  accessor may worsen a card, never soften one. Probes without the
+  capability render exactly as before; federation.Prober does not expose
+  the accessor yet (upstream gap), where its dark-remote `reachable` fail
+  row keeps the row fold honest. Requires go-health v0.7.0.
 - **Probe-cadence evaluation sink (`Dashboard.Observe`, ADR-0003).** The
   trend ring and evidence log previously sampled only at pusher cadence, so
   a flap that started and cleared between two push ticks was invisible (the
@@ -39,6 +50,12 @@ forgetting.
 
 ### Changed
 
+- **go-health v0.5.1 → v0.7.0.** Picks up the unified aggregate/federation
+  merge core and the federation rank-tie roll-up fix (a remote document
+  with top-level `off` no longer flips the hub roll-up out of the frozen
+  pass/warn/fail enum; the fold is order-independent). The breaking
+  `WithGETOnly` removal is a non-event here (zero usages). No exported
+  dashboard API changed.
 - **Dashboard UI revamp on templ-components v1.21.0.** The header renders
   through `display.PageHeader` (gains `flex-wrap` on narrow viewports), the
   stat cards carry icon tiles with semantic tones, the overall-status banner
