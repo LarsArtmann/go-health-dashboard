@@ -8,6 +8,7 @@
 #   4. CHANGELOG structural lint (scripts/check-changelog.sh)
 #   5. Fuzz-target registry: fuzz.yml steps vs `func Fuzz*` definitions
 #   6. templ generator pin: no bare `templ generate` / `pkgs.templ`
+#   7. golangci-lint (nix run .#lint, same as CI's Lint job)
 #
 # Run: bash scripts/pre-push-checks.sh
 # Exits non-zero on the first failure with the same wording CI prints.
@@ -110,6 +111,13 @@ fi
 if [ -n "$pkgs_templ" ]; then
 	echo "::error::unpinned nixpkgs templ attr found — the generator must come from go.mod's tool directive (go tool templ generate):"
 	echo "$pkgs_templ"
+	fail=1
+fi
+
+# 7. Lint (CI Lint-job parity): the desk gate went green three sessions
+# in a row while lint findings sat in the tree; only the explicit lint
+# run caught them. Same flake app the CI Lint job runs.
+if ! nix run .#lint; then
 	fail=1
 fi
 

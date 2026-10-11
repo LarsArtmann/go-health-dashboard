@@ -31,7 +31,7 @@ jobs:
             if gh release view "$tag" --json name,isDraft >/dev/null 2>&1; then
               echo "OK   $tag"
             else
-              echo "::error::tag ${tag} has no GitHub Release page — draft one from the tag's CHANGELOG section: gh release create ${tag} --draft --title ${tag} --notes \"<section>\""
+              echo "::error::tag ${tag} has no GitHub Release page — publish one from the tag's CHANGELOG section: gh release create ${tag} --title ${tag} --notes \"<section>\" (drafts are invisible to this check's read-only token)"
               missing=1
             fi
           done
