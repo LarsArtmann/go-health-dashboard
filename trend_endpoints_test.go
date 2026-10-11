@@ -604,7 +604,7 @@ func TestMetrics_LatencyHistogram(t *testing.T) {
 	// before the scrape renders. The invariant under test is that the
 	// histogram counts every observation, not that exactly three landed.
 	count := -1
-	for _, line := range strings.Split(body, "\n") {
+	for line := range strings.SplitSeq(body, "\n") {
 		after, ok := strings.CutPrefix(line, "dashboard_health_check_duration_seconds_count ")
 		if !ok {
 			continue
@@ -614,6 +614,7 @@ func TestMetrics_LatencyHistogram(t *testing.T) {
 			t.Fatalf("histogram count line unparsable: %q", line)
 		}
 		count = n
+
 		break
 	}
 	if count < 0 {

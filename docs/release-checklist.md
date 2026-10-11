@@ -41,10 +41,13 @@ Version history source of truth: `CHANGELOG.md` (Keep a Changelog).
 ## 4. Gates (all green before anything is pushed)
 
 Gate 0, before any edits: `bash scripts/pre-push-checks.sh` — the desk
-consolidation of the FEATURES-count, version-vs-tag, and pin-guard
-formulas. It exists so a stale count or pin is discovered AT THE DESK,
-not by CI after tagging (the v0.8.0→v0.8.1 incident: the drift guard
-that failed CI is its check #1).
+consolidation of the FEATURES-count, version-vs-tag, pin-guard, fuzz
+registry, templ-pin, and lint formulas (lint added 2026-10-11 after
+three sessions where the desk gate went green while CI's Lint job
+would have caught findings). It exists so a stale count, pin, or lint
+finding is discovered AT THE DESK, not by CI after tagging (the
+v0.8.0→v0.8.1 incident: the drift guard that failed CI is its check
+#1).
 
 Pipes are banned on gates: run `cmd > log 2>&1; rc=$?` and read `rc` —
 `nix flake check | tail; echo $?` once reported tail's exit code on a
