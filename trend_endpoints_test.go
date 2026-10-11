@@ -5,6 +5,7 @@ import (
 	"encoding/json/v2"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -592,11 +593,34 @@ func TestMetrics_LatencyHistogram(t *testing.T) {
 		`dashboard_health_check_duration_seconds_bucket{le="0.1"}`,
 		`dashboard_health_check_duration_seconds_bucket{le="+Inf"}`,
 		"dashboard_health_check_duration_seconds_sum ",
-		"dashboard_health_check_duration_seconds_count 3",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("histogram output missing %q", want)
 		}
+	}
+
+	// The count is load-sensitive: waitForTrendSamples polls at 25ms and
+	// returns on the third sample, but further pusher ticks can observe
+	// before the scrape renders. The invariant under test is that the
+	// histogram counts every observation, not that exactly three landed.
+	count := -1
+	for _, line := range strings.Split(body, "\n") {
+		after, ok := strings.CutPrefix(line, "dashboard_health_check_duration_seconds_count ")
+		if !ok {
+			continue
+		}
+		n, err := strconv.Atoi(strings.TrimSpace(after))
+		if err != nil {
+			t.Fatalf("histogram count line unparsable: %q", line)
+		}
+		count = n
+		break
+	}
+	if count < 0 {
+		t.Fatal("histogram output missing dashboard_health_check_duration_seconds_count")
+	}
+	if count < 3 {
+		t.Errorf("histogram count: want >= 3 samples by the third tick, got %d", count)
 	}
 }
 
