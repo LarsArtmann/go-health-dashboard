@@ -35,6 +35,7 @@ const prometheusContentType = "text/plain; version=0.0.4; charset=utf-8"
 //	dashboard_health_latency_ms      wall-clock time of last check batch
 //	dashboard_health_shutting_down   1 when the probe is shutting down
 //	dashboard_sse_connections        current SSE client count
+//	dashboard_sse_drops_total        cumulative per-subscriber patch drops
 //	dashboard_pusher_active          1 when the SSE pusher is running
 //
 // Name reservation: `…_check_duration_seconds*` is the histogram family;
@@ -131,6 +132,11 @@ func (d *Dashboard) renderMetrics() string {
 	b.WriteString("# HELP dashboard_sse_connections Current number of connected SSE clients.\n")
 	b.WriteString("# TYPE dashboard_sse_connections gauge\n")
 	fmt.Fprintf(&b, "dashboard_sse_connections %d\n", d.SubscriberCount())
+	b.WriteString(
+		"# HELP dashboard_sse_drops_total Cumulative SSE patches dropped because a subscriber buffer was full, counted per full subscriber per broadcast (N stalled clients missing the same patch add N).\n",
+	)
+	b.WriteString("# TYPE dashboard_sse_drops_total counter\n")
+	fmt.Fprintf(&b, "dashboard_sse_drops_total %d\n", d.DroppedPatchCount())
 
 	b.WriteString(
 		"# HELP dashboard_pusher_active Whether the SSE pusher goroutine is running (1) or not (0).\n",

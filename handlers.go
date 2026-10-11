@@ -146,6 +146,20 @@ func (d *Dashboard) SubscriberCount() int64 {
 	return 0
 }
 
+// DroppedPatchCount returns the cumulative number of SSE patches dropped
+// because a subscriber's buffer was full. The broadcaster counts per full
+// subscriber per broadcast: one patch missed by N stalled clients reports
+// N, not 1 — the metric answers "how much real-time delivery stalled",
+// which is per-client suffering, not per-message loss. Returns 0 when the
+// pusher has not been started.
+func (d *Dashboard) DroppedPatchCount() int64 {
+	if p := d.push.Load(); p != nil {
+		return p.dropTotal.Load()
+	}
+
+	return 0
+}
+
 // buildData constructs the viewModel from the probe's cached response.
 // When a NonceExtractor is configured, the nonce is read per-request;
 // otherwise the fixed construction-time Nonce is used.

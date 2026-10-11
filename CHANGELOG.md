@@ -17,6 +17,12 @@ forgetting.
 
 ### Added
 
+- **SSE drop visibility (`DroppedPatchCount` / `dashboard_sse_drops_total`).**
+  The pusher now registers go-sse's `OnDrop` hook: patches dropped because a
+  subscriber's buffer was full are counted (atomically) and exposed on the
+  metrics route. Silent per-client patch loss was previously invisible. The
+  HELP text discloses the upstream counting semantics — one patch missed by
+  N stalled clients adds N (per-subscriber suffering, not per-message loss).
 - **Truthful per-source cards (`SourceStatuser` capability).** In source
   grouping mode a card's verdict previously folded from its rows, and a
   merged view can be unhealthy in a way no row shows: a shutting-down

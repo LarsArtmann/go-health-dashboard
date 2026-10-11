@@ -48,10 +48,16 @@ type pusher struct {
 	maxLifetime   time.Duration
 	connections   atomic.Int64
 	lastBroadcast atomic.Int64
-	history       *historyBuffer
-	evidence      *evidenceLog
-	ttl           int
-	ticks         int
+	// dropTotal counts SSE patches dropped because a subscriber's buffer
+	// was full. The broadcaster fires the hook once per FULL subscriber
+	// per broadcast, so this counts (client, broadcast) pairs — N slow
+	// clients missing the same patch increment it N times. Exposed via
+	// DroppedPatchCount / dashboard_sse_drops_total.
+	dropTotal atomic.Int64
+	history   *historyBuffer
+	evidence  *evidenceLog
+	ttl       int
+	ticks     int
 
 	mu              sync.Mutex
 	lastStatus      health.Status
@@ -62,8 +68,7 @@ type pusher struct {
 // push interval. When TrendSamples is configured, the pusher also maintains
 // a ring buffer of recent status samples for the trend sparkline.
 func newPusher(d *Dashboard) *pusher {
-	return &pusher{
-		broadcaster: sse.NewBroadcaster[sse.Event](),
+	p := &pusher{
 		dashboard:   d,
 		interval:    d.cfg.PushInterval,
 		pushMode:    d.cfg.PushMode,
@@ -75,6 +80,12 @@ func newPusher(d *Dashboard) *pusher {
 		evidence:    d.evidence,
 		ttl:         d.cfg.PushOnChangeTTL,
 	}
+	p.broadcaster = sse.NewBroadcaster[sse.Event]()
+	// The hook runs under the broadcaster's read lock: an atomic add is the
+	// entire sanctioned body (fast, non-blocking, no re-entry).
+	p.broadcaster.OnDrop(func(_ sse.Event) { p.dropTotal.Add(1) })
+
+	return p
 }
 
 // start runs the push loop until ctx is cancelled, then closes the broadcaster.
