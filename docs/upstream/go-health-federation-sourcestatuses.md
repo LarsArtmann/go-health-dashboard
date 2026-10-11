@@ -19,13 +19,13 @@ can be unhealthy in a way no row shows. From `internal/merge/merge.go` at
 master (`cf1238ca252b`), the drain case folds into the roll-up only:
 
 ```go
-	if src.Response.ShuttingDown {
-		shuttingDown = true
-	}
-	...
-	if shuttingDown {
-		status = health.StatusFail
-	}
+if src.Response.ShuttingDown {
+	shuttingDown = true
+}
+...
+if shuttingDown {
+	status = health.StatusFail
+}
 ```
 
 No fail row is added for that source — its checks pass through unchanged.
@@ -49,11 +49,11 @@ roll-up: when remote `api` is draining, its card reads fail — same as the
 page — without me refolding `api/*` keys and without the wire format
 changing.
 
-|                                 | `aggregate.Aggregate` (v0.6.0+) | `federation.Prober` (master) |
-| ------------------------------- | ------------------------------- | ---------------------------- |
-| Per-source roll-up accessor     | ✅ `SourceStatuses()`           | ❌                           |
-| Shutting-down source reports    | `fail` for that source          | merged fail, no row          |
-| Dark remote surfaces as         | n/a (in-process, trusted)       | `name/reachable` fail row    |
+|                              | `aggregate.Aggregate` (v0.6.0+) | `federation.Prober` (master) |
+| ---------------------------- | ------------------------------- | ---------------------------- |
+| Per-source roll-up accessor  | ✅ `SourceStatuses()`           | ❌                           |
+| Shutting-down source reports | `fail` for that source          | merged fail, no row          |
+| Dark remote surfaces as      | n/a (in-process, trusted)       | `name/reachable` fail row    |
 
 ## Notes on shape
 

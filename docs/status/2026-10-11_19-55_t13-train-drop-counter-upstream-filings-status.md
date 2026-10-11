@@ -13,12 +13,12 @@ Date: 2026-10-11 · Branch: master == origin at `c53296a` · Tree: clean · CI: 
 
 ## CI evidence
 
-| Run | Workflow | Commit | Result |
-| --- | -------- | ------ | ------ |
-| 38160467521 | CI (4m56s, incl. browser) | `3a2c8c3` | ✅ |
-| 38161064226 | CI | `40b05e3` | ✅ |
-| 38161372437 | CI | `c53296a` | ✅ |
-| 38161387112 | Release integrity (dispatch) | — | ✅ |
+| Run         | Workflow                     | Commit    | Result |
+| ----------- | ---------------------------- | --------- | ------ |
+| 38160467521 | CI (4m56s, incl. browser)    | `3a2c8c3` | ✅     |
+| 38161064226 | CI                           | `40b05e3` | ✅     |
+| 38161372437 | CI                           | `c53296a` | ✅     |
+| 38161387112 | Release integrity (dispatch) | —         | ✅     |
 
 ## For the next session
 
