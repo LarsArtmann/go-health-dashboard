@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	dstarstatic "github.com/larsartmann/go-datastar/static"
 	health "github.com/larsartmann/go-health"
@@ -150,7 +151,14 @@ func (d *Dashboard) SubscriberCount() int64 {
 // otherwise the fixed construction-time Nonce is used.
 func (d *Dashboard) buildData(r *http.Request) viewModel {
 	resp := d.currentResponse()
-	vm := buildViewModel(resp, d.cfg.Title, d.cfg.Routes.SSE, d.cfg.Grouping)
+	vm := buildViewModelAtWithSourceStatuses(
+		resp,
+		d.cfg.Title,
+		d.cfg.Routes.SSE,
+		d.cfg.Grouping,
+		time.Now().UTC(),
+		d.sourceStatuses(),
+	)
 	applyCollapsePolicy(&vm, d.cfg.HealthyGroupCollapseThreshold)
 	applyLatencyTone(&vm, d.probe.RefreshInterval())
 

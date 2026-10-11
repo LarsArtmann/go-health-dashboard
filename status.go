@@ -233,7 +233,26 @@ func buildViewModelAt(
 	mode GroupMode,
 	now time.Time,
 ) viewModel {
+	return buildViewModelAtWithSourceStatuses(resp, title, sseURL, mode, now, nil)
+}
+
+// buildViewModelAtWithSourceStatuses is buildViewModelAt with the probe's
+// optional per-source roll-ups ([SourceStatuser]; nil when the probe lacks
+// the capability). In source grouping mode the map escalates card statuses
+// (applySourceStatuses); every other input combination renders identically
+// to buildViewModelAt.
+func buildViewModelAtWithSourceStatuses(
+	resp health.Response,
+	title, sseURL string,
+	mode GroupMode,
+	now time.Time,
+	sourceStatuses map[string]health.Status,
+) viewModel {
 	groups := groupChecksBy(mode, resp.Checks)
+
+	if mode == GroupBySource {
+		applySourceStatuses(groups, sourceStatuses)
+	}
 
 	for gi := range groups {
 		for ri := range groups[gi].Rows {
@@ -560,6 +579,32 @@ func worstGroupStatus(rows []checkRow) health.Status {
 	}
 
 	return status
+}
+
+// applySourceStatuses escalates source-group card statuses from the probe's
+// per-source roll-ups (the optional [SourceStatuser] capability). Escalation
+// only: a source can be unhealthy in a way no row shows (a shutting-down
+// source keeps its own all-pass checks), so the accessor's verdict may
+// worsen the card; it may never soften a row-derived verdict — the card must
+// not read healthier than either signal agrees to. Sources absent from the
+// map (the "Services" fallback group, a map snapshot racing a newer
+// response) keep their row fold. Grouping modes other than source have no
+// per-source cards, so callers pass an empty map there.
+func applySourceStatuses(groups []checkGroup, statuses map[string]health.Status) {
+	if len(statuses) == 0 {
+		return
+	}
+
+	for groupIdx := range groups {
+		source, ok := statuses[groups[groupIdx].Title]
+		if !ok {
+			continue
+		}
+
+		if source.Rank() < groups[groupIdx].Status.Rank() {
+			groups[groupIdx].Status = source
+		}
+	}
 }
 
 // shortDisplayName condenses a fully-qualified Go type name for table

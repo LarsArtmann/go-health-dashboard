@@ -146,11 +146,13 @@ func (p *pusher) broadcast() {
 // renderPatch renders the dashboard content to a Datastar ElementsPatch
 // and returns the resulting sse.Event. Returns ok=false if rendering fails.
 func (p *pusher) renderPatch(resp health.Response) (sse.Event, bool) {
-	vm := buildViewModel(
+	vm := buildViewModelAtWithSourceStatuses(
 		resp,
 		p.dashboard.cfg.Title,
 		p.dashboard.cfg.Routes.SSE,
 		p.dashboard.cfg.Grouping,
+		time.Now().UTC(),
+		p.dashboard.sourceStatuses(),
 	)
 	applyCollapsePolicy(&vm, p.dashboard.cfg.HealthyGroupCollapseThreshold)
 	applyLatencyTone(&vm, p.dashboard.probe.RefreshInterval())

@@ -53,6 +53,30 @@ type Healthzer interface {
 	Healthz() http.HandlerFunc
 }
 
+// SourceStatuser is the OPTIONAL probe capability of reporting per-source
+// roll-up statuses — one entry per aggregate source (or federation remote)
+// answering "is source api healthy overall?" without refolding the
+// namespaced check keys. It is deliberately NOT part of [Prober]: adding a
+// method to an exported interface breaks every external implementor (same
+// reasoning as [Healthzer]).
+//
+// Why it matters for rendering: the merged response carries only the
+// namespaced checks, and a source can be unhealthy in a way no row shows.
+// A source that is shutting down contributes its own checks unchanged —
+// all-pass rows under a merged fail — and go-health's fold reports fail
+// for exactly that source ([aggregate.Aggregate].SourceStatuses). Folding
+// rows per card (the fallback) would render a green card under a red page;
+// probes that expose the capability let the card tell the truth.
+//
+// go-health's aggregate implements this (v0.6.0+). federation does not yet
+// (upstream gap); its dark-remotes-carry-a-fail-row design keeps the row
+// fold honest for unreachable remotes, but a draining remote's card falls
+// back to the row fold until the accessor ships there.
+type SourceStatuser interface {
+	// SourceStatuses folds each source's cached view to its roll-up status.
+	SourceStatuses() map[string]health.Status
+}
+
 // Dashboard renders a browser-friendly health dashboard from a go-health
 // Probe using Datastar SSE for real-time updates.
 //
@@ -183,6 +207,17 @@ func resolvePushInterval(configured time.Duration, probe Prober) time.Duration {
 // patches, metrics labels, CSV export — valid under jsonv2 semantics.
 func (d *Dashboard) currentResponse() health.Response {
 	return health.SanitizeResponse(d.probe.CachedResponse())
+}
+
+// sourceStatuses returns the probe's per-source roll-up statuses when the
+// concrete probe implements [SourceStatuser], else nil — the nil return is
+// the renderer's signal to keep folding rows per card.
+func (d *Dashboard) sourceStatuses() map[string]health.Status {
+	if s, ok := d.probe.(SourceStatuser); ok {
+		return s.SourceStatuses()
+	}
+
+	return nil
 }
 
 // Start launches the SSE pusher goroutine that broadcasts health updates to
