@@ -92,7 +92,9 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
   reconnects), `WithRateLimit` (hand-rolled token bucket in
   `ratelimit.go`; golang.org/x/time/rate deliberately not used — zero
   runtime deps), and the pusher watchdog in `HealthCheck` (`ErrPusherStale`
-  after 3 silent intervals; report-only, never restarts).
+  after 3 silent intervals, floored at `pusherStaleFloor` (1s) so fast
+  probe-derived cadences can't false-positive under scheduler load;
+  report-only, never restarts).
 - **History samples carry timestamps** — `sample{At,Value,Status}` in the ring powers `/health/trend`, `/health/export` (JSON/CSV), the timeline card, and the `Updated` stamp; transitions derived on demand.
 - **Pusher-down errors are a sentinel family** — `ErrPusherNotStarted`
   and `ErrPusherShutDown` both wrap `ErrPusherNotActive`; `errors.Is`
@@ -141,6 +143,7 @@ layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
 - Test helpers: `setupDashboard(t, opts...)` creates a real probe with mock services, starts both probe and dashboard.
 - Services use `do.HealthcheckerWithContext` interface, registered via `do.ProvideNamed`.
 - SSE tested with short-timeout context (handler blocks for streaming). Verifies `text/event-stream` content-type and `datastar-patch-elements` event type. Never request `/health/sse` through a plain `httptest.ResponseRecorder` without a timeout — the streaming handler blocks forever and the package hits the 10-minute `go test` timeout.
+- Wall-clock test margins must survive `-race` + full-package parallel load: the watchdog only fires after `max(3×push interval, 1s)` and the rate-limit refill test uses a 1s window with a 1.3s refill sleep. Don't tighten these back to sub-100ms budgets — two flakes on 2026-10-11 (selfmonitor `warn`, rate-limit 200-instead-of-429).
 - Change detection tested via `TestFingerprintChecks_Deterministic` and `TestFingerprintChecks_DetectsChanges`.
 - Trend rendering tests poll with `waitForBody` (25ms interval, 3s deadline) instead of fixed sleeps; SSE disconnect tests poll `SubscriberCount()` the same way. Patches are asserted CSP-clean (no `style=`) via `TestSSE_PatchContentHasNoInlineStyles` (PushAlways for a multi-patch stream).
 - Fuzz: every target in `fuzz_test.go` and `cmd/health-hub/fuzz_test.go` (see
