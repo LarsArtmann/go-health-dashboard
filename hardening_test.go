@@ -58,7 +58,7 @@ func TestRateLimit_ProbesExempt(t *testing.T) {
 func TestRateLimit_RefillsOverTime(t *testing.T) {
 	t.Parallel()
 
-	s := setupDashboard(t, dashboard.WithRateLimit(1, 150*time.Millisecond))
+	s := setupDashboard(t, dashboard.WithRateLimit(1, time.Second))
 	defer s.cleanup()
 
 	if w := doRequest(t, s.mux, "/health"); w.Code != http.StatusOK {
@@ -69,7 +69,7 @@ func TestRateLimit_RefillsOverTime(t *testing.T) {
 		t.Fatalf("request 2: want 429, got %d", w.Code)
 	}
 
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(1300 * time.Millisecond)
 
 	if w := doRequest(t, s.mux, "/health"); w.Code != http.StatusOK {
 		t.Fatalf("request 3 after refill: want 200, got %d", w.Code)

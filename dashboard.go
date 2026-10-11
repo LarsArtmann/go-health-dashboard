@@ -272,10 +272,16 @@ var ErrPusherNotStarted = fmt.Errorf("%w: Start has not been called", ErrPusherN
 var ErrPusherShutDown = fmt.Errorf("%w: Shutdown has been called", ErrPusherNotActive)
 
 // ErrPusherStale is returned by HealthCheck when the pusher goroutine has
-// not completed a broadcast tick recently (more than three push intervals).
+// not completed a broadcast tick recently (more than three push intervals,
+// but never less than pusherStaleFloor — resolvePushInterval inherits fast
+// probe refresh intervals, and three sub-100ms intervals is shorter than a
+// single slow tick under scheduler load, which would report healthy pushers
+// stale).
 // The watchdog is report-only: a wedged pusher is surfaced to container
 // health checks, not restarted, so operators see the underlying problem.
 var ErrPusherStale = errors.New("dashboard: SSE pusher stopped ticking")
+
+const pusherStaleFloor = time.Second
 
 // HealthCheck reports whether the dashboard's real-time update mechanism is
 // healthy. Returns ErrPusherNotStarted when Start has never been called and
@@ -300,7 +306,7 @@ func (d *Dashboard) HealthCheck(_ context.Context) error {
 	if last := push.lastBroadcast.Load(); last != 0 && push.interval > 0 {
 		const stalenessFactor = 3
 
-		staleAfter := stalenessFactor * push.interval
+		staleAfter := max(stalenessFactor*push.interval, pusherStaleFloor)
 
 		if elapsed := time.Since(time.Unix(0, last)); elapsed > staleAfter {
 			//nolint:gohumanize // watchdog diagnostic needs millisecond precision; humanize.RelTime would coarsen it
