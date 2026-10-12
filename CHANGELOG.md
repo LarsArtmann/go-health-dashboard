@@ -17,6 +17,12 @@ forgetting.
 
 ### Added
 
+- Nothing yet.
+
+## [0.11.0] - 2026-10-12
+
+### Added
+
 - **SSE drop visibility (`DroppedPatchCount` / `dashboard_sse_drops_total`).**
   The pusher now registers go-sse's `OnDrop` hook: patches dropped because a
   subscriber's buffer was full are counted (atomically) and exposed on the
@@ -111,6 +117,17 @@ forgetting.
 
 ### Fixed
 
+- **Watchdog false-positive on fast probes (`ErrPusherStale`).**
+  `resolvePushInterval` inherits the probe's refresh interval as the push
+  cadence, so a 20ms probe made the staleness bound 3×20ms=60ms — under
+  scheduler load (race detector, CPU contention) a single slow tick exceeded
+  it and `HealthCheck` reported a healthy pusher stale, surfacing as a
+  spurious `warn` self-monitoring row (and, with `WithCascadeProbeVerdict`,
+  in the `do.HealthCheck` cascade). The staleness bound is now
+  `max(3×push interval, 1s)` (`pusherStaleFloor`): wedged-pusher detection
+  is unchanged in practice (≤ ~1s for fast cadences, 3×interval otherwise).
+  Found via a `-race` test-race failure (`TestSelfMonitoring`); the
+  rate-limit refill test margins were widened in the same motion.
 - **Public-mode SSE patches leaked real names and errors.**
   `anonymizeViewModel` ran only on the initial HTML render; every SSE
   broadcast re-renders `dashboardContent` from the raw response, so a
@@ -1140,6 +1157,7 @@ did not exist at `01277d3`.*
   (`status.go:215`)
 
 [Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.9.0...HEAD
+[0.11.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.10.2...v0.11.0
 [0.10.2]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.9.0...v0.10.0
