@@ -56,7 +56,7 @@ else
 fi
 
 if [ -n "$local_commit" ]; then
-	remote_peeled=$(git ls-remote origin "refs/tags/$TAG" "refs/tags/$TAG^{}" | awk '{print $1}' | sort -u | tail -1)
+	remote_peeled=$(git ls-remote origin "refs/tags/$TAG" "refs/tags/$TAG^{}" | awk '$2 ~ /\^\{\}$/ {peeled=$1} $2 !~ /\^\{\}$/ {plain=$1} END {if (peeled != "") print peeled; else print plain}')
 	if [ "$remote_peeled" = "$local_commit" ]; then
 		ok "origin $TAG -> $remote_peeled"
 	else

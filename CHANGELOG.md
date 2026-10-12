@@ -15,6 +15,14 @@ forgetting.
 
 ## [Unreleased]
 
+### Fixed
+
+- `scripts/verify-release.sh` section 1 picked the remote tag sha with a
+  `sort -u | tail -1` heuristic, which only worked when the peeled commit
+  sha happened to sort above the annotated tag-object sha (v0.11.0's didn't
+  — the release was correct, the checker lied). The peeled `^{}` line is now
+  preferred explicitly, falling back to the plain ref for lightweight tags.
+
 ### Added
 
 - Nothing yet.
