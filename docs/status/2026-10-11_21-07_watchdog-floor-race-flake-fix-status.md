@@ -159,3 +159,11 @@
 ---
 
 _Point-in-time snapshot — goes stale. Section (f) is HARVEST input for TODO_LIST.md/ROADMAP.md; items 1–15 first. Written per status-report skill; format is `.md` per explicit user instruction (skill default is HTML — override flagged in the closing message)._
+
+---
+
+## Postscript — section (g) answers (2026-10-12 12:32 CEST, session resumed)
+
+1. **Release cadence:** "ship now" → v0.10.3 release executed immediately after this report (watchdog floor + docs).
+2. **BuildFlow binary:** "the currently installed one should be fine" → leave `5aaf336` alone despite the freshness warning; no rebuild.
+3. **Clock API:** "do what makes the most sense" → decision: **no public `WithClock`** for now (YAGNI — no consumer needs it; the landed margins plus the f-6 canary cover the class); revisit an internal seam only if the canary catches further timing flakes. Decision recorded here; promoted to an ADR if the seam is ever built.
