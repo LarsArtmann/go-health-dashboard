@@ -306,7 +306,7 @@ func (d *Dashboard) HealthCheck(_ context.Context) error {
 	if last := push.lastBroadcast.Load(); last != 0 && push.interval > 0 {
 		const stalenessFactor = 3
 
-		staleAfter := max(stalenessFactor*push.interval, pusherStaleFloor)
+		staleAfter := stalenessFactor * push.interval
 
 		if elapsed := time.Since(time.Unix(0, last)); elapsed > staleAfter {
 			//nolint:gohumanize // watchdog diagnostic needs millisecond precision; humanize.RelTime would coarsen it

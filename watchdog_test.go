@@ -57,6 +57,43 @@ func TestHealthCheck_WatchdogReportsStalePusher(t *testing.T) {
 	}
 }
 
+func TestHealthCheck_WatchdogFloorProtectsFastPushers(t *testing.T) {
+	t.Parallel()
+
+	injector := do.New()
+	do.ProvideNamed(injector, "svc", func(_ do.Injector) (nopService, error) {
+		return nopService{}, nil
+	})
+	do.MustInvokeNamed[nopService](injector, "svc")
+
+	probe := health.New(injector, health.WithRefreshInterval(20*time.Millisecond))
+	dash := New(probe, WithPushInterval(20*time.Millisecond))
+
+	// Hand-wire a never-started pusher so lastBroadcast stays exactly where
+	// the test puts it: a running push loop would overwrite a backdated
+	// stamp within one tick and could mask a missing floor under load.
+	push := newPusher(dash)
+	push.lastBroadcast.Store(time.Now().Add(-700 * time.Millisecond).UnixNano())
+	dash.push.Store(push)
+
+	ctx := t.Context()
+
+	// 700ms is far beyond 3×20ms but inside pusherStaleFloor (1s): the
+	// published v0.11.0 behavior keeps fast probes healthy here. Deleting
+	// the floor re-arms the 60ms bound and fails this assertion.
+	if err := dash.HealthCheck(ctx); err != nil {
+		t.Fatalf("HealthCheck 700ms after last broadcast at 20ms interval: want nil (pusherStaleFloor must apply), got %v", err)
+	}
+
+	// The floor bounds detection, it does not disable it: well past the
+	// floor, a silent fast pusher still reports stale.
+	push.lastBroadcast.Store(time.Now().Add(-2 * time.Second).UnixNano())
+
+	if err := dash.HealthCheck(ctx); !errors.Is(err, ErrPusherStale) {
+		t.Fatalf("HealthCheck 2s after last broadcast at 20ms interval: want ErrPusherStale, got %v", err)
+	}
+}
+
 func TestHealthCheck_WatchdogToleratesFirstTick(t *testing.T) {
 	t.Parallel()
 
