@@ -69,7 +69,10 @@ plus the standard per-file suites.
 ### Key Design Decisions
 
 Recorded ADRs: `docs/adr/0001-dashboard-file-split.md` (options/handlers/history
-layout) and `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels).
+layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
+`docs/adr/0003-evaluation-sink.md` (probe-cadence `Observe` seam),
+`docs/adr/0004-cascade-verdict.md` (`WithCascadeProbeVerdict`), and
+`docs/adr/0005-watchdog-staleness-floor.md` (`pusherStaleFloor`, 1s).
 
 - **Prober interface on the consumer side** — `dashboard.New` takes a narrow `Prober`
   interface (`CachedResponse`, `RefreshInterval`, the three handler getters), not

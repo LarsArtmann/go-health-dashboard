@@ -22,10 +22,26 @@ forgetting.
   sha happened to sort above the annotated tag-object sha (v0.11.0's didn't
   — the release was correct, the checker lied). The peeled `^{}` line is now
   preferred explicitly, falling back to the plain ref for lightweight tags.
+- **Torn HTML pages + `superfluous response.WriteHeader` noise when the
+  HTML render failed mid-stream.** The `/health` handler streamed the page
+  straight to the client, so a render failure after the implicit 200 was
+  sent left browsers with a truncated page followed by a mid-stream 500 —
+  and net/http logged a superfluous second header write. The page now
+  renders into a buffer first: clients get the full page or a clean 500,
+  never torn HTML. Pinned by
+  `TestHandler_FailingConnectionWritesHeaderOnce`.
+- **FEATURES.md claimed the watchdog fires "after 3 silent intervals"** —
+  true only for cadences above ~333ms; since v0.11.0 the bound is
+  `max(3× push interval, 1s floor)`. Wording corrected.
 
 ### Added
 
-- Nothing yet.
+- **Watchdog staleness floor is now pinned by a regression test**
+  (`TestHealthCheck_WatchdogFloorProtectsFastPushers`): a hand-wired
+  never-started 20ms pusher must stay healthy at a 700ms-old last broadcast
+  and report `ErrPusherStale` at 2s — deleting `pusherStaleFloor` fails the
+  first assertion with the exact pre-fix message. Rationale recorded in
+  ADR-0005 (`docs/adr/0005-watchdog-staleness-floor.md`).
 
 ## [0.11.0] - 2026-10-12
 
