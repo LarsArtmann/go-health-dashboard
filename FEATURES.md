@@ -66,7 +66,7 @@
 | SubscriberCount() observability                       | 🟢 `FULLY_FUNCTIONAL` | `handlers.go — SubscriberCount()` — public accessor for active SSE connection count, tested                                                                        |
 | Shutdown drain (`WithShutdownDrain`)                  | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` — rejects new connections, waits for subscribers before closing broadcaster; `hardening_test.go`                                                    |
 | Connection lifetime cap (`WithMaxConnectionLifetime`) | 🟢 `FULLY_FUNCTIONAL` | `pusher.go` — server closes stream past cap; browser reconnects                                                                                                    |
-| Pusher staleness watchdog                             | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` — `HealthCheck` returns `ErrPusherStale` after 3 silent intervals; report-only                                                                      |
+| Pusher staleness watchdog                             | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` — `HealthCheck` returns `ErrPusherStale` after `max(3× push interval, 1s floor)` so fast probes are not false-flagged; report-only                  |
 | Webhook push (`WithWebhook`)                          | 🟢 `FULLY_FUNCTIONAL` | `webhook.go` — change-only JSON transitions + initial announce, independent of PushMode; 10s timeout, bounded in-flight, silent best-effort; `integration_test.go` |
 | Webhook auth headers + public-mode masking            | 🟢 `FULLY_FUNCTIONAL` | `options.go` `WithWebhookHeaders` + `webhook.go` — canonical Go headers, `check-N` masking and error stripping in public mode; `integration_test.go`               |
 
