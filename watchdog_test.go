@@ -82,7 +82,10 @@ func TestHealthCheck_WatchdogFloorProtectsFastPushers(t *testing.T) {
 	// published v0.11.0 behavior keeps fast probes healthy here. Deleting
 	// the floor re-arms the 60ms bound and fails this assertion.
 	if err := dash.HealthCheck(ctx); err != nil {
-		t.Fatalf("HealthCheck 700ms after last broadcast at 20ms interval: want nil (pusherStaleFloor must apply), got %v", err)
+		t.Fatalf(
+			"HealthCheck 700ms after last broadcast at 20ms interval: want nil (pusherStaleFloor must apply), got %v",
+			err,
+		)
 	}
 
 	// The floor bounds detection, it does not disable it: well past the
@@ -90,7 +93,10 @@ func TestHealthCheck_WatchdogFloorProtectsFastPushers(t *testing.T) {
 	push.lastBroadcast.Store(time.Now().Add(-2 * time.Second).UnixNano())
 
 	if err := dash.HealthCheck(ctx); !errors.Is(err, ErrPusherStale) {
-		t.Fatalf("HealthCheck 2s after last broadcast at 20ms interval: want ErrPusherStale, got %v", err)
+		t.Fatalf(
+			"HealthCheck 2s after last broadcast at 20ms interval: want ErrPusherStale, got %v",
+			err,
+		)
 	}
 }
 
