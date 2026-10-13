@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"bytes"
 	"encoding/json/v2"
 	"net/http"
 	"strconv"
@@ -32,11 +33,18 @@ func (d *Dashboard) Handler() http.HandlerFunc {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-cache")
 
-		if err := View(data).Render(r.Context(), w); err != nil {
+		// Render into a buffer before touching the wire: a mid-stream render
+		// failure used to leave clients with torn HTML plus a superfluous
+		// second WriteHeader (500 after the implicit 200 was already sent).
+		// Buffered, the response is all-or-nothing: full page or clean 500.
+		var buf bytes.Buffer
+		if err := View(data).Render(r.Context(), &buf); err != nil {
 			http.Error(w, "dashboard: failed to render page", http.StatusInternalServerError)
 
 			return
 		}
+
+		writeBody(w, buf.Bytes())
 	}
 }
 

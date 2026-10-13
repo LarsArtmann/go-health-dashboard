@@ -2,6 +2,7 @@ package dashboard_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -178,6 +179,51 @@ func TestHandler_RendersHTMLDashboard(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, "Health Dashboard") {
 		t.Error("HTML response should contain the dashboard title")
+	}
+}
+
+// failingBodyWriter mimics a client that disconnects the moment the
+// response starts: every body write errors. The implicit status-line write
+// is counted exactly like an explicit WriteHeader so the test can pin that
+// the handler never attempts a second header write on a broken connection.
+type failingBodyWriter struct {
+	header       http.Header
+	headerWrites int
+}
+
+func (f *failingBodyWriter) Header() http.Header { return f.header }
+
+func (f *failingBodyWriter) Write(_ []byte) (int, error) {
+	f.headerWrites++
+
+	return 0, errors.New("client went away")
+}
+
+func (f *failingBodyWriter) WriteHeader(_ int) {
+	f.headerWrites++
+}
+
+func TestHandler_FailingConnectionWritesHeaderOnce(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := &failingBodyWriter{header: http.Header{}}
+
+	r, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "/health", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.dash.Handler().ServeHTTP(w, r)
+
+	// The HTML render is buffered, so a dead connection sees exactly one
+	// status-line write (the implicit 200 carried by the single body
+	// write). A second write would be the superfluous-WriteHeader class:
+	// streaming the render and then 500ing mid-page when it fails.
+	if w.headerWrites != 1 {
+		t.Fatalf("header writes on a failing connection: want 1, got %d", w.headerWrites)
 	}
 }
 
