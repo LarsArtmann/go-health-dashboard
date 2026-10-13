@@ -38,7 +38,7 @@ status.go        — Status mapping (health.Status → BadgeType, FeedbackType, 
 routes.go        — Routes struct (Dashboard, SSE, Favicon, Liveness, Readiness, Startup, Metrics), DefaultRoutes()
 dashboard.go     — Dashboard struct, Version const, Prober interface, New(), resolvePushInterval, Start(), Shutdown(), error sentinels (ErrPusherNotActive/NotStarted/ShutDown/Stale), HealthCheck()
 options.go       — Config, Option type, all With* option functions, default constants
-handlers.go      — Handler() (HTML/JSON content negotiation), wantsJSON, serveJSON, SSEHandler(), SubscriberCount(), buildData, RegisterRoutes(mux), wrap()
+handlers.go      — Handler() (HTML/JSON content negotiation; HTML render is buffered and written once — full page or clean 500, never torn HTML), wantsJSON, serveJSON, SSEHandler(), SubscriberCount(), buildData, RegisterRoutes(mux), wrap()
 history.go       — sample, historyBuffer ring buffer, statusTransition, populateHistory (trend values + timeline + Updated stamp)
 evidence.go      — evidenceLog/evidenceSummary: per-check non-pass observations, truth-strip + badge-tooltip text builders, populateEvidence
 di.go            — Register(injector, probe, opts...) for samber/do container integration
@@ -97,7 +97,11 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   runtime deps), and the pusher watchdog in `HealthCheck` (`ErrPusherStale`
   after 3 silent intervals, floored at `pusherStaleFloor` (1s) so fast
   probe-derived cadences can't false-positive under scheduler load;
-  report-only, never restarts).
+  report-only, never restarts). The floor is pinned by
+  `TestHealthCheck_WatchdogFloorProtectsFastPushers` (hand-wired
+  never-started pusher, so no live loop races the backdated stamp;
+  mutation-checked: deleting the floor fails with "stale after 60ms") and
+  its rationale is ADR-0005.
 - **History samples carry timestamps** — `sample{At,Value,Status}` in the ring powers `/health/trend`, `/health/export` (JSON/CSV), the timeline card, and the `Updated` stamp; transitions derived on demand.
 - **Pusher-down errors are a sentinel family** — `ErrPusherNotStarted`
   and `ErrPusherShutDown` both wrap `ErrPusherNotActive`; `errors.Is`
@@ -177,6 +181,7 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
 - **gopls stdversion warnings dismissed** — gopls flags `json.Unmarshal requires go1.27` identically with AND without `GOEXPERIMENT=jsonv2` (gopls v0.23.0); `json.Unmarshal` is legitimate on go1.26 under the experiment. Dismissed via `analyses.stdversion: false` in `.vscode/settings.json` (which also sets the gopls env). Trust `nix run .#lint` over editor squiggles; re-check on gopls upgrade (ROADMAP).
 - **GOWORK=off in devShell** — The parent `~/projects/go.work` includes all sibling repos. The flake.nix sets `GOWORK=off` to prevent workspace interference.
 - **Gates race the auto-daemon** — a `nix fmt` dirty-tree check (or any diff-based gate) can false-fail when the daemon commits the fmt output between the diff and the status call. Gates must retry once before trusting a failure; and never run Go tooling (erraudit, go list, tests) while a buildflow run is active — its steps mutate go.mod and `*_templ.go` mid-flight.
+- **Mutation checks race the daemon too (2026-10-13)** — verify-before-trusting applies to "does my test discriminate" runs: `git diff` captured empty and `git restore` restored an already-committed fix, so the "mutation" silently tested the fixed code. In daemon environments, mutation checks must probe the working tree directly (e.g. `rg` the mutated line) or mutate via sed + `git restore` from a HEAD known to hold the fix, never via a captured patch file.
 - **Daemon-race recovery recipes (2026-10-10, used 5× in one session)** —
   (1) intent commit hits "nothing to commit": verify HEAD's daemon commit
   holds your content (`git show HEAD -- <files> | rg <fresh-symbol>`), then
@@ -232,6 +237,7 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   8080/9090/3000 collide with other projects here — remap via a compose
   override with `!override` port lists (plain overrides MERGE).
 - **go-health marks non-critical failing checks `warn`, not `fail`** — only critical services produce `fail` per-check statuses (and overall fail). `setupDashboardWithFailures` yields cache/queue `warn` checks with overall `warn`; metrics tests assert accordingly.
+- **Tag-protection is wildcard-wide** — ruleset `protect-release-tags` (id 23637848) matches `refs/tags/v*`, so every future v-tag (v0.11.*, v1.x) is protected without ruleset edits; `set-tag-protection.sh --check` verifies desired state.
 - **Release discipline** — (0) verify batch → commit immediately; never claim
   unpushed state without `git fetch` + `master...origin/master` (something
   auto-pushes under unknown conditions); release sessions start with

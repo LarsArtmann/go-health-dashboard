@@ -209,6 +209,32 @@ Raw ideas:
   docs (why the filter box persists choices but collapse does not on
   source cards — FEATURES UX rationale)
 
+### 7. Harvested 2026-10-13 (watchdog-floor + v0.11.0-release reports)
+
+ROADMAP-fuel items from the §f lists of the 2026-10-11 and 2026-10-12
+status reports (items 16–50, deduplicated against the themes above; bounded
+siblings live in TODO_LIST.md "Harvested 2026-10-13"). Ideas already listed
+in themes 1–6 were not re-added (rate-limit headers, watchdog gauges).
+
+Raw ideas:
+
+- Per-client/per-IP rate limiting option (the token bucket is global today)
+- Rate-limit observability: 429 counter + Retry-After histogram in the
+  metrics exposition
+- `dashboard_sse_subscribers` gauge (SubscriberCount exists as API, not as
+  a metric)
+- Introspection endpoint: resolved push interval, staleAfter,
+  last-broadcast age (staleness is only visible via HealthCheck today)
+- Example server: fast-cadence demo mode exercising the watchdog floor
+  end-to-end (ties into the demo-truth work of the 2026-10-10 leverage plan)
+- Bisect-wall skip-list spot-check automation (071c251..HEAD vs daemon
+  hygiene), replacing the manual audit
+- `docs/status/` archive rotation policy (4+ reports per release day is
+  normal; rotation rules would keep the dir scannable)
+- docs-health VERIFY sweep: prune AGENTS.md gotchas that no longer
+  reproduce (stale-binary traps, resolved BuildFlow divergences)
+- gopls stdversion dismissal re-check (tracks the gopls upgrade queue)
+
 ## v1.0 Criteria
 
 v1.0 is a commitment, not a milestone to reach by version-number
