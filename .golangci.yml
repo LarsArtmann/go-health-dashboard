@@ -1,7 +1,7 @@
 version: "2"
 run:
   timeout: 5m
-  go: 1.26.5
+  go: "1.27"
   build-tags:
     - goexperiment.arenas
     - goexperiment.goroutineleakprofile
@@ -70,6 +70,7 @@ linters:
     - intrange
     - iotamixing
     - ireturn
+    - lll
     - loggercheck
     - maintidx
     - makezero
@@ -148,9 +149,17 @@ linters:
     ginkgolinter:
       forbid-focus-container: true
       forbid-spec-pollution: true
+    gocognit:
+      min-complexity: 25
+    goconst:
+      ignore-tests: true
+      min-len: 4
+      min-occurrences: 5
     gocritic:
       disabled-checks:
         - ifElseChain
+    gocyclo:
+      min-complexity: 20
     gomoddirectives:
       replace-local: true
     gosec:
@@ -172,12 +181,25 @@ linters:
         - "1"
         - "2"
         - "100"
+    nestif:
+      min-complexity: 6
     revive:
       rules:
         - disabled: true
           name: exported
         - disabled: true
           name: package-comments
+    tagalign:
+      align: false
+      order:
+        - binding
+        - json
+        - yaml
+        - xml
+        - toml
+        - validate
+        - mapstructure
+      sort: true
     tagliatelle:
       case:
         rules:
@@ -239,6 +261,15 @@ linters:
           - testpackage
           - wsl_v5
           - unparam
+          - exhaustruct_v5
+          - funlen
+          - cyclop
+          - forcetypeassert
+          - gosec
+          - wrapcheck
+          - ireturn
+          - recvcheck
+          - exhaustive
       - path: _test\.go
         text: unused
         linters:
@@ -254,7 +285,7 @@ linters:
       - path: \.go$
         linters:
           - contextcheck
-      - text: "package has more than one godoc"
+      - text: package has more than one godoc
         linters:
           - godoclint
     paths:
