@@ -2,7 +2,6 @@ package dashboard_test
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -202,25 +201,10 @@ func TestPublicMode_ShortDisplayNameAlsoAnonymized(t *testing.T) {
 		health.WithRefreshInterval(100*time.Millisecond),
 	)
 
-	dash := dashboard.New(probe, dashboard.WithPublicMode())
+	s := startDashboardFixture(t, probe, dashboard.WithPublicMode())
+	defer s.cleanup()
 
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-
-	defer func() {
-		dash.Shutdown()
-		probe.Shutdown()
-	}()
-
-	w := doRequest(t, mux, "/health")
+	w := doRequest(t, s.mux, "/health")
 	body := w.Body.String()
 
 	if strings.Contains(body, longName) {
@@ -253,25 +237,10 @@ func TestDisplayName_ReflectsShortAndRawNames(t *testing.T) {
 		health.WithRefreshInterval(100*time.Millisecond),
 	)
 
-	dash := dashboard.New(probe, dashboard.WithHealthyGroupExpanded())
+	s := startDashboardFixture(t, probe, dashboard.WithHealthyGroupExpanded())
+	defer s.cleanup()
 
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-
-	defer func() {
-		dash.Shutdown()
-		probe.Shutdown()
-	}()
-
-	w := doRequest(t, mux, "/health")
+	w := doRequest(t, s.mux, "/health")
 	body := w.Body.String()
 
 	if !strings.Contains(body, `title="`+longName+`"`) {
@@ -303,25 +272,10 @@ func TestGroupCountBadges_RenderInCardTitles(t *testing.T) {
 		health.WithRefreshInterval(100*time.Millisecond),
 	)
 
-	dash := dashboard.New(probe, dashboard.WithHealthyGroupExpanded())
+	s := startDashboardFixture(t, probe, dashboard.WithHealthyGroupExpanded())
+	defer s.cleanup()
 
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-
-	defer func() {
-		dash.Shutdown()
-		probe.Shutdown()
-	}()
-
-	w := doRequest(t, mux, "/health")
+	w := doRequest(t, s.mux, "/health")
 	body := w.Body.String()
 
 	if !strings.Contains(body, `aria-label="1 service"`) {
@@ -453,25 +407,10 @@ func TestLongErrors_ExpandViaDetails(t *testing.T) {
 		health.WithRefreshInterval(100*time.Millisecond),
 	)
 
-	dash := dashboard.New(probe, dashboard.WithHealthyGroupExpanded())
+	s := startDashboardFixture(t, probe, dashboard.WithHealthyGroupExpanded())
+	defer s.cleanup()
 
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-
-	defer func() {
-		dash.Shutdown()
-		probe.Shutdown()
-	}()
-
-	w := doRequest(t, mux, "/health")
+	w := doRequest(t, s.mux, "/health")
 	body := w.Body.String()
 
 	if !strings.Contains(body, "<details") {

@@ -64,7 +64,11 @@ type probeSetup struct {
 // returns the fixture whose cleanup shuts the dashboard down before the
 // probe. Every setupDashboard* helper shares this contract so the
 // start/shutdown order lives in exactly one place.
-func startDashboardFixture(t *testing.T, probe *health.Probe, opts ...dashboard.Option) *probeSetup {
+func startDashboardFixture(
+	t *testing.T,
+	probe *health.Probe,
+	opts ...dashboard.Option,
+) *probeSetup {
 	t.Helper()
 
 	dash := dashboard.New(probe, opts...)
