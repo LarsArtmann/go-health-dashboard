@@ -251,7 +251,7 @@ func TestBadgeEvidenceTitle(t *testing.T) {
 	}
 }
 
-func TestBadgeForStatus_CarriesTitle(t *testing.T) {
+func TestBadgeForStatus_UnprovenMarkerAndShape(t *testing.T) {
 	t.Parallel()
 
 	observedAt := time.Now()
@@ -261,15 +261,20 @@ func TestBadgeForStatus_CarriesTitle(t *testing.T) {
 		lastNonPassBy: map[string]time.Time{"db": observedAt},
 	}
 
-	props := badgeForStatus(checkRow{Name: "cache", Status: health.StatusPass}, sum)
+	unproven := badgeForStatus(checkRow{Name: "cache", Status: health.StatusPass}, sum)
 
-	title, ok := props.Attrs["title"].(string)
-	if !ok || !strings.Contains(title, "unproven") {
-		t.Fatalf("badge title = %v, want an unproven disclosure", props.Attrs["title"])
+	if !strings.Contains(unproven.Class, "outline-dashed") {
+		t.Fatalf("unproven badge class = %q, want the dashed provisional outline", unproven.Class)
 	}
 
-	if props.Text != string(health.StatusPass) || props.Type != display.BadgeSuccess {
-		t.Errorf("badge = %q/%v, want pass/Success", props.Text, props.Type)
+	if unproven.Text != string(health.StatusPass) || unproven.Type != display.BadgeSuccess {
+		t.Errorf("badge = %q/%v, want pass/Success", unproven.Text, unproven.Type)
+	}
+
+	proven := badgeForStatus(checkRow{Name: "db", Status: health.StatusPass}, sum)
+
+	if strings.Contains(proven.Class, "outline-dashed") {
+		t.Errorf("proven badge class = %q, must not carry the provisional outline", proven.Class)
 	}
 }
 
@@ -464,7 +469,7 @@ func TestRender_EvidenceDisclosureTouchAndKeyboard(t *testing.T) {
 
 	plainHTML := renderToString(t, dashboardContent(plainVM))
 
-	if strings.Contains(plainHTML, `tabindex="0"`) ||
+	if strings.Contains(plainHTML, `role="tooltip"`) ||
 		strings.Contains(plainHTML, "outline-dashed") {
 		t.Error("without an evidence window badges must render plain, no disclosures")
 	}

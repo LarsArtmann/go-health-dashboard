@@ -4,7 +4,7 @@ go 1.27
 
 require (
 	github.com/a-h/templ v0.3.1070
-	github.com/chromedp/cdproto v0.158.2
+	github.com/chromedp/cdproto v0.0.0-20260922220944-a19bff23514f
 	github.com/chromedp/chromedp v0.16.0
 	github.com/larsartmann/go-datastar v0.6.2
 	github.com/larsartmann/go-datastar/static v0.6.1
@@ -25,6 +25,7 @@ require (
 	github.com/a-h/parse v0.0.0-20250122154542-74294addb73e // indirect
 	github.com/andybalholm/brotli v1.2.6 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
+	github.com/chromedp/sysutil v1.1.0 // indirect
 	github.com/cli/browser v1.3.0 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
