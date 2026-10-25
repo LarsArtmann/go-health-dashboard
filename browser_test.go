@@ -927,7 +927,11 @@ func browserStaticHandlers(t *testing.T, s *probeSetup) {
 // browserStaticHandlers, for tests that register them on a bare mux.
 func browserStaticCSS(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/css")
-	_, _ = w.Write([]byte("body { margin: 0; }"))
+	// [hidden] mirrors preflight's rule: the connection pill (and any
+	// data-class:hidden element) toggles visibility via the hidden
+	// attribute, and without this rule all three pill states render at
+	// once in the harness (real deployments load full Tailwind).
+	_, _ = w.Write([]byte("body { margin: 0; }\n[hidden] { display: none !important; }"))
 }
 
 func browserStaticJS(w http.ResponseWriter, _ *http.Request) {
