@@ -9,6 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/a-h/templ"
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/display"
 	"github.com/larsartmann/templ-components/feedback"
@@ -697,6 +698,16 @@ func hasProblems(vm viewModel) bool {
 	}
 
 	return false
+}
+
+// filterEmptyAttrs builds the attribute set for the filter no-match
+// EmptyState: the data-filter-empty marker and the data-class:hidden
+// expression that reveals it while a query is active and nothing matches.
+func filterEmptyAttrs(vm viewModel) templ.Attributes {
+	return templ.Attributes{
+		"data-filter-empty": "",
+		"data-class:hidden": filterEmptyExpr(vm),
+	}
 }
 
 // filterHaystack returns the lowercase search text a row is matched against

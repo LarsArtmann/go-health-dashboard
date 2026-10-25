@@ -375,7 +375,8 @@ func TestFilter_RenderedOnlyWithEmbeddedSDK(t *testing.T) {
 			t.Error("rows should carry filter haystack attributes")
 		}
 
-		if !strings.Contains(body, "No services match your filter.") {
+		if !strings.Contains(body, "No services match") ||
+			!strings.Contains(body, "data-filter-empty") {
 			t.Error("empty-result hint should render alongside the filter")
 		}
 	})
