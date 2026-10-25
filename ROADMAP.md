@@ -179,7 +179,7 @@ Raw ideas:
 ### 6. Dashboard UI/UX polish (post-2026-10-09 revamp follow-ups)
 
 Low-impact or design-heavy ideas surfaced by the UI-revamp status report
-(`docs/status/2026-10-09_16-20_ui-ux-revamp-v1210-adoption-status.md` §f);
+(`docs/status/archived/2026-10-09_16-20_ui-ux-revamp-v1210-adoption-status.md` §f);
 bounded high-signal siblings live in TODO_LIST.md.
 
 Raw ideas:
@@ -242,6 +242,10 @@ Raw ideas:
 - docs-health VERIFY sweep: prune AGENTS.md gotchas that no longer
   reproduce (stale-binary traps, resolved BuildFlow divergences)
 - gopls stdversion dismissal re-check (tracks the gopls upgrade queue)
+- Cross-process browser-test file-lock (a fleet-level candidate):
+  `browserSerial` guards one process; two concurrent sessions launching
+  Chrome cross-process produced a 600s harness hang (2026-10-25) — a
+  file-lock around serialized browser suites would delete the class
 
 ## v1.0 Criteria
 

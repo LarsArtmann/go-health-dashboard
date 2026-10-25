@@ -31,14 +31,14 @@
 
 1. **Root cause remediation** — nothing; `/run/current-system/sw/bin/templ` is still v0.3.1020. It lives in the NixOS system config, outside this repo; I cannot bump it from here. Until bumped, **every bare `templ generate` will (a) fail on view.templ and (b) silently regenerate the other files with stale output** — exactly what happened on the recurrence. Blocker: external config access. Effort: S once the config repo is known.
 2. **Editor templ LSP** — still stale (same v0.3.1020 class): the phantom `view.templ:168` error persists in project diagnostics. No `.vscode/settings.json` repoint attempted. Effort: S–M (depends on extension, see question g3).
-3. **Post-change validation** — build ✓ vet ✓, but the full test suite was never run after the fmt churn touched two test files. Effort: S (one command, ~minutes incl. browser suite in devShell).
+~~3. **Post-change validation** — build ✓ vet ✓, but the full test suite was never run after the fmt churn touched two test files. Effort: S (one command, ~minutes incl. browser suite in devShell).~~ satisfied — full test/lint/flake battery green on the restored tree by the 14:19 session (its report a6)
 
 ## c) NOT STARTED
 
 1. **Stamp guard script** — assert every `*_templ.go` `// templ: version:` equals go.mod's tool pin; wire into `scripts/pre-push-checks.sh` + CI (precedent: `check-ui-pins.sh`). Priority: HIGH — today's regression was invisible to every existing gate.
 2. **devShell `templ` wrapper** — shadow the stale binary inside `nix develop` with a proxy to `go tool templ`. Priority: HIGH — makes the sanctioned invocation the lazy one.
 3. **NixOS config templ bump** — the actual root fix. Priority: CRITICAL, external.
-4. **Full gates** — `nix run .#test`, `nix run .#lint`, `nix flake check` on the restored tree. Priority: MEDIUM.
+~~4. **Full gates** — `nix run .#test`, `nix run .#lint`, `nix flake check` on the restored tree. Priority: MEDIUM.~~ satisfied — same session: nix run .#test, .#lint, nix flake check all green (14-19 a6)
 5. **docs/gotchas.md miss #3** — AGENTS.md was extended; `docs/gotchas.md` ("history of the two misses") was not. Priority: LOW-MEDIUM.
 
 ## d) TOTALLY FUCKED UP
