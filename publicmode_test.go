@@ -274,13 +274,19 @@ func TestPublicMode_DifferentialHTMLVsJSON(t *testing.T) {
 	jsonBody := jsonRec.Body.String()
 	for _, required := range []string{`"cache"`, `"queue"`, "connection refused"} {
 		if !strings.Contains(jsonBody, required) {
-			t.Errorf("JSON surface dropped %q — public mode must keep the machine contract verbatim", required)
+			t.Errorf(
+				"JSON surface dropped %q — public mode must keep the machine contract verbatim",
+				required,
+			)
 		}
 	}
 
 	for _, masked := range []string{`"check-1"`, `"check-2"`} {
 		if strings.Contains(jsonBody, masked) {
-			t.Errorf("JSON surface picked up masked name %q — masking leaked into the machine contract", masked)
+			t.Errorf(
+				"JSON surface picked up masked name %q — masking leaked into the machine contract",
+				masked,
+			)
 		}
 	}
 }

@@ -39,6 +39,9 @@ jobs:
       - name: Fuzz Prometheus label escaping
         run: go test -run '^$' -fuzz FuzzEscapeLabelValue -fuzztime 60s .
 
+      - name: Fuzz rate limiter token bucket
+        run: go test -run '^$' -fuzz FuzzRateLimiterAllow -fuzztime 60s .
+
       - name: Fuzz change-detection fingerprint
         run: go test -run '^$' -fuzz FuzzFingerprintChecks -fuzztime 60s .
 

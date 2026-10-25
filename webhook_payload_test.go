@@ -289,7 +289,11 @@ func TestWebhook_BoundedInFlightVsSlowReceiver(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	if got := peak.Load(); got > webhookMaxInFlight {
-		t.Fatalf("bound exceeded after settle window: %d concurrent, limit %d", got, webhookMaxInFlight)
+		t.Fatalf(
+			"bound exceeded after settle window: %d concurrent, limit %d",
+			got,
+			webhookMaxInFlight,
+		)
 	}
 
 	if got := handled.Load(); got > webhookMaxInFlight {

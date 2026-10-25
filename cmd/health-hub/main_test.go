@@ -423,10 +423,9 @@ func TestResolvedPushInterval(t *testing.T) {
 // hub end to end (the per-knob parsers have their own tables; this proves
 // configFromEnv assembles them): defaults when only remotes are set, and
 // every knob honored — timeout, push interval, drain window, TLS CA path,
-// proxy — with trimmed values.
+// proxy — with trimmed values. Not parallel: t.Setenv forbids it, and env
+// isolation matters more here than scheduling freedom.
 func TestConfigFromEnv_HappyPaths(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name string
 		env  map[string]string
@@ -435,63 +434,19 @@ func TestConfigFromEnv_HappyPaths(t *testing.T) {
 		{
 			name: "only remotes: library defaults everywhere",
 			env:  map[string]string{"HEALTH_HUB_REMOTES": "cv=http://127.0.0.1:8098/health"},
-			want: func(t *testing.T, cfg hubConfig) {
-				t.Helper()
-
-				if len(cfg.remotes) != 1 || cfg.remotes[0].Name != "cv" {
-					t.Errorf("remotes = %+v", cfg.remotes)
-				}
-
-				if cfg.fetchExpiry != defaultFetchExpiry {
-					t.Errorf("fetchExpiry = %s, want default %s", cfg.fetchExpiry, defaultFetchExpiry)
-				}
-
-				if cfg.pushInterval != 0 || cfg.sseDrain != 0 {
-					t.Errorf("push=%s drain=%s, want zero (library defaults)", cfg.pushInterval, cfg.sseDrain)
-				}
-
-				if cfg.tlsCAPath != "" || cfg.httpProxy != "" {
-					t.Errorf("tlsCA=%q proxy=%q, want empty", cfg.tlsCAPath, cfg.httpProxy)
-				}
-			},
+			want: wantConfigDefaults,
 		},
 		{
 			name: "every knob set",
 			env: map[string]string{
-				"HEALTH_HUB_REMOTES":        "cv=http://127.0.0.1:8098/health,forgejo=http://forgejo.home.lan:3000/health",
-				"HEALTH_HUB_TIMEOUT":        "3s",
-				"HEALTH_HUB_PUSH_INTERVAL":  "10s",
-				"HEALTH_HUB_SSE_DRAIN":      "2s",
-				"HEALTH_HUB_CLIENT_TLS_CA":  " /etc/ssl/corp-ca.pem ",
-				"HEALTH_HUB_HTTP_PROXY":     " http://proxy.lan:3128 ",
+				"HEALTH_HUB_REMOTES":       "cv=http://127.0.0.1:8098/health,forgejo=http://forgejo.home.lan:3000/health",
+				"HEALTH_HUB_TIMEOUT":       "3s",
+				"HEALTH_HUB_PUSH_INTERVAL": "10s",
+				"HEALTH_HUB_SSE_DRAIN":     "2s",
+				"HEALTH_HUB_CLIENT_TLS_CA": " /etc/ssl/corp-ca.pem ",
+				"HEALTH_HUB_HTTP_PROXY":    " http://proxy.lan:3128 ",
 			},
-			want: func(t *testing.T, cfg hubConfig) {
-				t.Helper()
-
-				if len(cfg.remotes) != 2 {
-					t.Fatalf("remotes = %+v, want 2", cfg.remotes)
-				}
-
-				if cfg.fetchExpiry != 3*time.Second {
-					t.Errorf("fetchExpiry = %s, want 3s", cfg.fetchExpiry)
-				}
-
-				if cfg.pushInterval != 10*time.Second {
-					t.Errorf("pushInterval = %s, want 10s", cfg.pushInterval)
-				}
-
-				if cfg.sseDrain != 2*time.Second {
-					t.Errorf("sseDrain = %s, want 2s", cfg.sseDrain)
-				}
-
-				if cfg.tlsCAPath != "/etc/ssl/corp-ca.pem" {
-					t.Errorf("tlsCAPath = %q, want trimmed path", cfg.tlsCAPath)
-				}
-
-				if cfg.httpProxy != "http://proxy.lan:3128" {
-					t.Errorf("httpProxy = %q, want trimmed URL", cfg.httpProxy)
-				}
-			},
+			want: wantConfigEveryKnob,
 		},
 		{
 			name: "empty optional knobs read as unset",
@@ -503,21 +458,12 @@ func TestConfigFromEnv_HappyPaths(t *testing.T) {
 				"HEALTH_HUB_CLIENT_TLS_CA": "",
 				"HEALTH_HUB_HTTP_PROXY":    "",
 			},
-			want: func(t *testing.T, cfg hubConfig) {
-				t.Helper()
-
-				if cfg.fetchExpiry != defaultFetchExpiry || cfg.pushInterval != 0 || cfg.sseDrain != 0 ||
-					cfg.tlsCAPath != "" || cfg.httpProxy != "" {
-					t.Errorf("empty knobs did not fall back to defaults: %+v", cfg)
-				}
-			},
+			want: wantConfigDefaults,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Not parallel: t.Setenv forbids it, and env isolation per
-			// subtest matters more here than scheduling freedom.
 			for key, value := range tt.env {
 				t.Setenv(key, value)
 			}
@@ -529,5 +475,57 @@ func TestConfigFromEnv_HappyPaths(t *testing.T) {
 
 			tt.want(t, cfg)
 		})
+	}
+}
+
+// wantConfigDefaults asserts the library-default shape: one remote, the
+// default fetch timeout, no push/drain override, no TLS/proxy override.
+func wantConfigDefaults(t *testing.T, cfg hubConfig) {
+	t.Helper()
+
+	if len(cfg.remotes) != 1 || cfg.remotes[0].Name != "cv" && cfg.remotes[0].Name != "db" {
+		t.Errorf("remotes = %+v", cfg.remotes)
+	}
+
+	if cfg.fetchExpiry != defaultFetchExpiry {
+		t.Errorf("fetchExpiry = %s, want default %s", cfg.fetchExpiry, defaultFetchExpiry)
+	}
+
+	if cfg.pushInterval != 0 || cfg.sseDrain != 0 {
+		t.Errorf("push=%s drain=%s, want zero (library defaults)", cfg.pushInterval, cfg.sseDrain)
+	}
+
+	if cfg.tlsCAPath != "" || cfg.httpProxy != "" {
+		t.Errorf("tlsCA=%q proxy=%q, want empty", cfg.tlsCAPath, cfg.httpProxy)
+	}
+}
+
+// wantConfigEveryKnob asserts the fully-populated shape, including value
+// trimming on the free-form path/URL knobs.
+func wantConfigEveryKnob(t *testing.T, cfg hubConfig) {
+	t.Helper()
+
+	if len(cfg.remotes) != 2 {
+		t.Fatalf("remotes = %+v, want 2", cfg.remotes)
+	}
+
+	if cfg.fetchExpiry != 3*time.Second {
+		t.Errorf("fetchExpiry = %s, want 3s", cfg.fetchExpiry)
+	}
+
+	if cfg.pushInterval != 10*time.Second {
+		t.Errorf("pushInterval = %s, want 10s", cfg.pushInterval)
+	}
+
+	if cfg.sseDrain != 2*time.Second {
+		t.Errorf("sseDrain = %s, want 2s", cfg.sseDrain)
+	}
+
+	if cfg.tlsCAPath != "/etc/ssl/corp-ca.pem" {
+		t.Errorf("tlsCAPath = %q, want trimmed path", cfg.tlsCAPath)
+	}
+
+	if cfg.httpProxy != "http://proxy.lan:3128" {
+		t.Errorf("httpProxy = %q, want trimmed URL", cfg.httpProxy)
 	}
 }

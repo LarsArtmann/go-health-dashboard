@@ -195,6 +195,27 @@ func FuzzEscapeLabelValue(f *testing.F) {
 		if restored := unescapeLabelValue(escaped); restored != value {
 			t.Errorf("round-trip lost data: %q -> %q -> %q", value, escaped, restored)
 		}
+
+		// Label-termination safety: inside label="..." no unescaped quote
+		// or backslash may survive, or the value could close the label
+		// early and inject follow-up exposition syntax.
+		for i := 0; i < len(escaped); {
+			switch escaped[i] {
+			case '\\':
+				i += 2 // the escaped byte is consumed
+			case '"':
+				t.Errorf(
+					"escaped value contains an unescaped quote at %d: %q -> %q",
+					i,
+					value,
+					escaped,
+				)
+
+				return
+			default:
+				i++
+			}
+		}
 	})
 }
 

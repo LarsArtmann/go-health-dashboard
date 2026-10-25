@@ -709,7 +709,12 @@ func TestExportHandler_CSVFormulaInjectionNeutralized(t *testing.T) {
 	}
 
 	if len(rows) != len(adversarial)+1 {
-		t.Fatalf("parsed %d CSV rows, want %d (header + %d samples)", len(rows), len(adversarial)+1, len(adversarial))
+		t.Fatalf(
+			"parsed %d CSV rows, want %d (header + %d samples)",
+			len(rows),
+			len(adversarial)+1,
+			len(adversarial),
+		)
 	}
 
 	for i, status := range adversarial {

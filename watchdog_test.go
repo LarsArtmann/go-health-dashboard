@@ -163,12 +163,37 @@ func TestResolvePushInterval(t *testing.T) {
 		probe      time.Duration
 		want       time.Duration
 	}{
-		{name: "configured wins over probe", configured: 5 * time.Second, probe: 30 * time.Second, want: 5 * time.Second},
-		{name: "configured wins over zero probe", configured: 5 * time.Second, probe: 0, want: 5 * time.Second},
-		{name: "probe fills unset configured", configured: 0, probe: 750 * time.Millisecond, want: 750 * time.Millisecond},
+		{
+			name:       "configured wins over probe",
+			configured: 5 * time.Second,
+			probe:      30 * time.Second,
+			want:       5 * time.Second,
+		},
+		{
+			name:       "configured wins over zero probe",
+			configured: 5 * time.Second,
+			probe:      0,
+			want:       5 * time.Second,
+		},
+		{
+			name:       "probe fills unset configured",
+			configured: 0,
+			probe:      750 * time.Millisecond,
+			want:       750 * time.Millisecond,
+		},
 		{name: "default fills live-mode probe", configured: 0, probe: 0, want: defaultPushInterval},
-		{name: "negative configured is ignored like zero", configured: -time.Second, probe: time.Second, want: time.Second},
-		{name: "negative probe is ignored like zero", configured: 0, probe: -time.Second, want: defaultPushInterval},
+		{
+			name:       "negative configured is ignored like zero",
+			configured: -time.Second,
+			probe:      time.Second,
+			want:       time.Second,
+		},
+		{
+			name:       "negative probe is ignored like zero",
+			configured: 0,
+			probe:      -time.Second,
+			want:       defaultPushInterval,
+		},
 	}
 
 	for _, tt := range tests {
@@ -182,8 +207,12 @@ func TestResolvePushInterval(t *testing.T) {
 			}
 
 			if got <= 0 {
-				t.Errorf("resolvePushInterval(%s, probe=%s) = %s: every branch must resolve positive",
-					tt.configured, tt.probe, got)
+				t.Errorf(
+					"resolvePushInterval(%s, probe=%s) = %s: every branch must resolve positive",
+					tt.configured,
+					tt.probe,
+					got,
+				)
 			}
 		})
 	}

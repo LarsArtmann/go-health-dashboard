@@ -67,13 +67,13 @@ func TestRateLimiter_ClampsInvalidConfig(t *testing.T) {
 		maxRequests int
 		window      time.Duration
 	}{
-		"zero requests":    {maxRequests: 0, window: time.Second},
+		"zero requests": {maxRequests: 0, window: time.Second},
 		"negative requests": {
 			maxRequests: -5,
 			window:      time.Second,
 		},
-		"zero window":      {maxRequests: 5, window: 0},
-		"negative window":  {maxRequests: 5, window: -time.Second},
+		"zero window":     {maxRequests: 5, window: 0},
+		"negative window": {maxRequests: 5, window: -time.Second},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
