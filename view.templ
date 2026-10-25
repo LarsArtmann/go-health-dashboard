@@ -424,7 +424,7 @@ templ serviceNameCell(row checkRow) {
 // so hover never flickers, and hidden until the parent group hovers or
 // receives focus. Class-driven display toggling keeps the render output free
 // of style attributes (CSP) and script-free (SSE patch purity).
-const disclosureTooltipClass = "pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-64 -translate-x-1/2 rounded-md bg-gray-900 px-2.5 py-1.5 text-left text-xs leading-snug text-gray-50 shadow-lg group-hover:block group-focus-within:block dark:bg-gray-700 dark:text-gray-100"
+const disclosureTooltipClass = "pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-gray-900 px-2.5 py-1.5 text-left text-xs leading-snug text-gray-50 shadow-lg group-hover:block group-focus-within:block dark:bg-gray-700 dark:text-gray-100"
 
 // disclosureFocusClass styles the focusable half of a disclosure: cursor-help
 // signals there is more, and the focus-visible ring mirrors the theme

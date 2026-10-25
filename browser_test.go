@@ -1479,6 +1479,182 @@ func TestBrowser_FilterInteract(t *testing.T) {
 	assertNoBrowserErrors(t, errLog)
 }
 
+// TestBrowser_StatusFilterChips proves the status filter chips end to end on
+// the real SDK: the failure fixture renders one pass row and two warn rows;
+// Problems keeps the two warn rows, Pass keeps the one pass row, All restores
+// all three; aria-pressed follows the active chip; and the no-match
+// EmptyState stays hidden at load, appears for a query that matches nothing,
+// and hides again once cleared (the hidden-expression polarity fix).
+func TestBrowser_StatusFilterChips(t *testing.T) {
+	t.Parallel()
+
+	const nonce = "browser-status-chips-nonce"
+
+	s := setupDashboardWithFailures(t,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithEmbeddedDatastarSDK(),
+		dashboard.WithHealthyGroupExpanded(),
+	)
+	defer s.cleanup()
+
+	session := startBrowserSession(t, s, nonce)
+	ctx, errLog := session.ctx, session.errLog
+
+	waitForSubscriber(t, s.dash)
+	time.Sleep(250 * time.Millisecond) // let the initial patch settle
+
+	visibleRows := `(function () {
+		return [...document.querySelectorAll("tr[data-filter-row]")].filter(function (tr) {
+			return !tr.classList.contains("hidden");
+		}).length + "";
+	})()`
+
+	hintHidden := `(function () {
+		var el = document.querySelector("[data-filter-empty]");
+		return el ? el.classList.contains("hidden") + "" : "missing";
+	})()`
+
+	var visible, hint string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(visibleRows, &visible)); err != nil {
+		t.Fatalf("evaluate visible rows: %v", err)
+	}
+
+	if visible != "3" {
+		t.Fatalf("all 3 rows must start visible (1 pass, 2 warn), got %s", visible)
+	}
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(hintHidden, &hint)); err != nil {
+		t.Fatalf("evaluate hint: %v", err)
+	}
+
+	if hint != "true" {
+		t.Fatalf("no-match hint must start hidden, got hidden=%s", hint)
+	}
+
+	if err := chromedp.Run(ctx,
+		chromedp.Click("#status-filter-problems", chromedp.ByQuery),
+	); err != nil {
+		t.Fatalf("click problems chip: %v", err)
+	}
+
+	waitForJS(t, ctx, visibleRows+` === "2"`, visibleRows, nil)
+
+	var problemsPressed, allPressed string
+
+	if err := chromedp.Run(ctx,
+		chromedp.Evaluate(
+			`document.getElementById("status-filter-problems").getAttribute("aria-pressed")`,
+			&problemsPressed,
+		),
+		chromedp.Evaluate(
+			`document.getElementById("status-filter-all").getAttribute("aria-pressed")`,
+			&allPressed,
+		),
+	); err != nil {
+		t.Fatalf("evaluate aria-pressed: %v", err)
+	}
+
+	if problemsPressed != "true" || allPressed != "false" {
+		t.Errorf(
+			"aria-pressed after Problems click: problems=%s all=%s, want true/false",
+			problemsPressed, allPressed,
+		)
+	}
+
+	if err := chromedp.Run(ctx,
+		chromedp.Click("#status-filter-pass", chromedp.ByQuery),
+	); err != nil {
+		t.Fatalf("click pass chip: %v", err)
+	}
+
+	waitForJS(t, ctx, visibleRows+` === "1"`, visibleRows, nil)
+
+	if err := chromedp.Run(ctx,
+		chromedp.Click("#status-filter-all", chromedp.ByQuery),
+	); err != nil {
+		t.Fatalf("click all chip: %v", err)
+	}
+
+	waitForJS(t, ctx, visibleRows+` === "3"`, visibleRows, nil)
+
+	if err := chromedp.Run(ctx,
+		chromedp.SetValue(`#health-filter`, "zzz-no-such-service", chromedp.ByQuery),
+	); err != nil {
+		t.Fatalf("type non-matching query: %v", err)
+	}
+
+	waitForJS(t, ctx, hintHidden+` === "false"`, hintHidden, nil)
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+		var el = document.getElementById("health-filter");
+		el.value = "";
+		el.dispatchEvent(new Event("input", { bubbles: true }));
+	})()`, nil)); err != nil {
+		t.Fatalf("clear filter: %v", err)
+	}
+
+	waitForJS(t, ctx, hintHidden+` === "true"`, hintHidden, nil)
+
+	assertNoBrowserErrors(t, errLog)
+}
+
+// TestBrowser_EvidenceDisclosureFocus proves the touch/keyboard evidence
+// disclosure: the pass badge's disclosure span is focusable, carries the
+// tooltip in a role="tooltip" element toggled by group-focus-within, and the
+// sr-only copy holds the same text for screen readers. The class contract is
+// asserted (the browser harness serves no Tailwind stylesheet, so the visual
+// flip itself is Tailwind's documented group-focus-within behavior, pinned
+// by the screenshot captures that render real CSS).
+func TestBrowser_EvidenceDisclosureFocus(t *testing.T) {
+	t.Parallel()
+
+	const nonce = "browser-evidence-focus-nonce"
+
+	s := setupDashboardWithFailures(t,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithEmbeddedDatastarSDK(),
+		dashboard.WithHealthyGroupExpanded(),
+	)
+	defer s.cleanup()
+
+	session := startBrowserSession(t, s, nonce)
+	ctx, errLog := session.ctx, session.errLog
+
+	waitForSubscriber(t, s.dash)
+	time.Sleep(250 * time.Millisecond)
+
+	var focusState string
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+		var badge = document.querySelector('tr td span[tabindex="0"]');
+		if (!badge) { return "no-disclosure"; }
+		badge.focus();
+		var tip = badge.querySelector('[role="tooltip"]');
+		var sr = badge.querySelector(".sr-only");
+		if (!tip || !sr) { return "no-tooltip-or-sr"; }
+		return JSON.stringify({
+			focused: document.activeElement === badge,
+			tipCarriesFlip: tip.className.indexOf("group-focus-within:block") !== -1,
+			tipStartsHidden: tip.className.indexOf("hidden") !== -1,
+			srMatchesTip: sr.textContent === tip.textContent,
+			srIsUnproven: sr.textContent.indexOf("unproven") !== -1
+		});
+	})()`, &focusState)); err != nil {
+		t.Fatalf("evaluate disclosure focus: %v", err)
+	}
+
+	if focusState != `{"focused":true,"tipCarriesFlip":true,"tipStartsHidden":true,"srMatchesTip":true,"srIsUnproven":true}` {
+		t.Errorf("disclosure focus state = %s, want all contracts true", focusState)
+	}
+
+	assertNoBrowserErrors(t, errLog)
+}
+
 // TestBrowser_ConnectionPill proves the pill reflects the SSE stream
 // lifecycle: Live while the stream is up, a degraded state when the stream
 // cannot be reached, and Live again after the stream recovers.
