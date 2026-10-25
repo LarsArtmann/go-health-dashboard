@@ -116,16 +116,27 @@ check_pin github.com/larsartmann/go-datastar/static "$expected_go_datastar_stati
 # Version pins alone cannot see a content swap inside a module-cache
 # anomaly; the embedded datastar.js bytes are pinned here too.
 
-if go list -m github.com/larsartmann/go-health >/dev/null 2>&1; then
-	modcache=$(go env GOMODCACHE)
-else
-	modcache=$(nix develop -c go env GOMODCACHE)
-fi
+go_run() {
+	if go list -m github.com/larsartmann/go-health >/dev/null 2>&1; then
+		go "$@"
+	else
+		nix develop -c go "$@"
+	fi
+}
+
+modcache=$(go_run env GOMODCACHE)
 
 bundle="$modcache/github.com/larsartmann/go-datastar/static@$expected_go_datastar_static/datastar.js"
 
 if [ ! -f "$bundle" ]; then
-	echo "::error::SDK bundle not found at $bundle — run 'go mod download' first"
+	# Cold module cache (fresh CI runner, clean checkout): fetch the pinned
+	# module instead of failing — the guard must be order-independent where
+	# it runs (before any build step populates the cache).
+	go_run mod download github.com/larsartmann/go-datastar/static
+fi
+
+if [ ! -f "$bundle" ]; then
+	echo "::error::SDK bundle not found at $bundle even after 'go mod download github.com/larsartmann/go-datastar/static'"
 	fail=1
 else
 	actual_sha=$(sha256sum "$bundle" | cut -d' ' -f1)
