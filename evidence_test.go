@@ -453,7 +453,10 @@ func TestRender_EvidenceDisclosureTouchAndKeyboard(t *testing.T) {
 	}
 
 	if got := strings.Count(html, "outline-dashed"); got != 1 {
-		t.Errorf("exactly the unproven green carries the provisional outline, got %d occurrences", got)
+		t.Errorf(
+			"exactly the unproven green carries the provisional outline, got %d occurrences",
+			got,
+		)
 	}
 
 	plainVM := buildViewModel(respWithChecks(map[string]health.Status{"db": health.StatusPass}),
@@ -461,7 +464,8 @@ func TestRender_EvidenceDisclosureTouchAndKeyboard(t *testing.T) {
 
 	plainHTML := renderToString(t, dashboardContent(plainVM))
 
-	if strings.Contains(plainHTML, `tabindex="0"`) || strings.Contains(plainHTML, "outline-dashed") {
+	if strings.Contains(plainHTML, `tabindex="0"`) ||
+		strings.Contains(plainHTML, "outline-dashed") {
 		t.Error("without an evidence window badges must render plain, no disclosures")
 	}
 }

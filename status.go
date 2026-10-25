@@ -809,7 +809,8 @@ func badgeForStatus(row checkRow, evidence evidenceSummary) display.BadgeProps {
 		Type: mapStatusToBadge(row.Status),
 	}
 
-	if row.Status == health.StatusPass && !evidence.Since.IsZero() && !evidence.everNonPass(row.Name) {
+	if row.Status == health.StatusPass && !evidence.Since.IsZero() &&
+		!evidence.everNonPass(row.Name) {
 		props.Class = unprovenBadgeClass
 	}
 
