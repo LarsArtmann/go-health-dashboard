@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dustin/go-humanize/english"
 	health "github.com/larsartmann/go-health"
 )
 
@@ -185,21 +186,12 @@ func evidenceSummaryText(s evidenceSummary) string {
 
 	unproven := s.Total - s.Proven
 
-	if unproven == 1 {
-		return fmt.Sprintf(
-			"Failure evidence: %d of %d checks have deviated from pass at least once since %s; the other 1 green row is unproven.",
-			s.Proven,
-			s.Total,
-			since,
-		)
-	}
-
 	return fmt.Sprintf(
-		"Failure evidence: %d of %d checks have deviated from pass at least once since %s; the other %d green rows are unproven.",
+		"Failure evidence: %d of %d checks have deviated from pass at least once since %s; the other %s.",
 		s.Proven,
 		s.Total,
 		since,
-		unproven,
+		english.Plural(unproven, "green row is unproven", "green rows are unproven"),
 	)
 }
 

@@ -246,7 +246,10 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
 - **Tag-protection is wildcard-wide** — ruleset `protect-release-tags` (id 23637848) matches `refs/tags/v*`, so every future v-tag (v0.11.*, v1.x) is protected without ruleset edits; `set-tag-protection.sh --check` verifies desired state.
 - **Release discipline** — (0) verify batch → commit immediately; never claim
   unpushed state without `git fetch` + `master...origin/master` (something
-  auto-pushes under unknown conditions); release sessions start with
+  auto-pushes under unknown conditions); BEFORE pushing, confirm remote CI
+  state + the latest master run conclusion (`gh run list`) — the 11-day red
+  window (2026-10-14→25) and the `c0991da` red push both happened with
+  all-local-green trees; release sessions start with
   `bash scripts/pre-push-checks.sh`. (1) `nix fmt` AFTER the last `templ
   generate` (generate → fmt). (2) Commit intent-bearing changes right after
   each verified batch — a long gate chain is one giant uncommitted window.
