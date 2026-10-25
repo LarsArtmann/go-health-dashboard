@@ -110,10 +110,17 @@ func TestSelfMonitoring_RegisteredDashboardAppearsInOwnTable(t *testing.T) {
 
 		if time.Now().After(deadline) {
 			if name == "" {
-				t.Fatalf("registered Dashboard did not appear in its own health table within 5s; checks: %v", row.Checks)
+				t.Fatalf(
+					"registered Dashboard did not appear in its own health table within 5s; checks: %v",
+					row.Checks,
+				)
 			}
 
-			t.Fatalf("self-reported dashboard status never reached pass within 5s: %q (error %q)", check.Status, check.Error)
+			t.Fatalf(
+				"self-reported dashboard status never reached pass within 5s: %q (error %q)",
+				check.Status,
+				check.Error,
+			)
 		}
 
 		time.Sleep(20 * time.Millisecond)

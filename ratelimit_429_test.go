@@ -17,7 +17,10 @@ import (
 func TestRateLimit_429JSONBody(t *testing.T) {
 	t.Parallel()
 
-	s := setupDashboard(t, dashboard.WithRateLimit(1, 2*time.Second))
+	// Hour window: both 429s below must be budget facts, not races
+	// against a 2s refill under -race parallel load (same class as the
+	// 2026-10-11 flake this file's siblings were hardened against).
+	s := setupDashboard(t, dashboard.WithRateLimit(1, time.Hour))
 	defer s.cleanup()
 
 	if w := doRequest(t, s.mux, "/health"); w.Code != http.StatusOK {
