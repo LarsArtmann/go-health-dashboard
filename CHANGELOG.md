@@ -46,6 +46,24 @@ forgetting.
   sha happened to sort above the annotated tag-object sha (v0.11.0's didn't
   — the release was correct, the checker lied). The peeled `^{}` line is now
   preferred explicitly, falling back to the plain ref for lightweight tags.
+- **CI was red for 11 days (2026-10-14 → 2026-10-25) on two stacked causes,
+  both fixed.** (1) The 10-15 auto-daemon sweep moved templ-components
+  v1.21.0 → v1.23.0 while the pin guard still expected v1.21.0 (guard
+  updated 2026-10-25 with the re-audit). (2) The guard's SDK-bundle hash
+  check failed on every runner's cold module cache with "run
+  `go mod download` first" instead of downloading — the guard now
+  self-heals by downloading the `go-datastar/static` module on a missing
+  bundle and fails only if it is still absent (verified warm, cold-cache
+  simulated, and green in CI on `e8eeefa`).
+- **The `health-hub` flake package carried only `meta.mainProgram`**, which
+  the fleet flake-meta-checker rejects (error-severity gate exit 69). The
+  package now carries a full meta block (description, homepage, license,
+  maintainers, platforms, mainProgram) and all 11 flake apps get a
+  `meta.description` via a shared `mkApp` helper.
+- **SECURITY.md's response-time wording was invisible to the securitymd
+  validator** ("acknowledgement within 3 business days" matches none of its
+  accepted phrasings). Reworded to "initial response within 3 business
+  days" — commitment unchanged, wording now machine-recognized.
 - **Torn HTML pages + `superfluous response.WriteHeader` noise when the
   HTML render failed mid-stream.** The `/health` handler streamed the page
   straight to the client, so a render failure after the implicit 200 was

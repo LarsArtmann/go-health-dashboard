@@ -268,7 +268,7 @@ inflation. It happens when ALL of the following hold:
 | # | Criterion            | State                                                                                                                                                                                                                                                                                                                                                                                      | Remaining gap                                  |
 | - | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
 | 1 | API freeze           | ❌ NOT MET — the option surface is still growing additively (`DefaultPushInterval` export, 2026-09-23); the branching-flow phantom-type/bool-flag redesign is explicitly DECLINED while it demands public-API churn (AGENTS.md branching-flow row), but no full release cycle with zero breaking changes has been observed, and fingerprint-format stability is still an open 0.x question | time + the fingerprint decision                |
-| 2 | Consumer signal      | ❌ NOT MET — CV still pins v0.6.1 (Blocked row); no second production consumer known                                                                                                                                                                                                                                                                                                       | CV bump + one more consumer                    |
+| 2 | Consumer signal      | ❌ NOT MET — CV still pins v0.10.2 (consumer sweep 2026-10-25; previously v0.6.1 at the 09-23 sweep) and 7 sibling repos adopted v0.11.0 at the 2026-10-25 sweep, but "a full release cycle without hotfixes" is still unobserved for any of them                                                                                                                                                             | one full quiet cycle on a sibling + the CV bump |
 | 3 | Compatibility policy | 🟡 PARTIAL — CHANGELOG carries Compatibility sections per behavior change (v0.7.0 precedent); SECURITY.md exists with the PVR caveat (PVR still disabled — Blocked row); the explicit support-policy statement (latest minor line, deprecation process) is not yet written down                                                                                                            | write the policy section; PVR                  |
 | 4 | Contract hardening   | ✅ LARGELY MET — `/health` JSON pinned by byte-stability tests and the never-extend freeze, webhook payload wire-pinned including both `shutting_down` branches (2026-09-23), export shape golden-locked, metric names documented in `docs/metrics.md` with deterministic sorted output                                                                                                    | none material; keep golden updates intentional |
 
@@ -335,6 +335,19 @@ These require user decisions and cannot be resolved by reading code:
   waits for the UI batch (reactive latency card ✓, timeline truncation
   notice ✓, touch tooltips story open — TODO_LIST) instead of shipping the
   revamp alone. Push/tag authorization still required at cut time.
+  (SHIPPED AS DECIDED: v0.11.0 cut 2026-10-12; touch tooltips landed
+  2026-10-25 and feed the NEXT batch decision.)
+- **v0.12.0 cadence — OPEN (raised 2026-10-25).** `[Unreleased]` holds a
+  full minor's worth (UI batch: disclosures, chips, tone chips, latency
+  budget; CSV formula-injection hardening; the hardening test train; the
+  CI/gates batch). Tree + CI 7/7 + FOD all green at `e8eeefa`. Cut now,
+  or hold for the chromedp v0.21 decision and/or the CV rollout so they
+  ride the same release?
+- **Templ toolchain layering — OPEN (raised 2026-10-25).** The system
+  templ (v0.3.1020) is stale vs the go.mod pin (v0.3.1070): the NixOS
+  config bump is the root fix (external act); in-repo belt-and-suspenders
+  (stamp guard + devShell wrapper) may be redundant after it — how much
+  layering is wanted? TODO_LIST carries the in-repo rows either way.
 
 ## Design Spikes (v0.3.x cycle, not implemented)
 
