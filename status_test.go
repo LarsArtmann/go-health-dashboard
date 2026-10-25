@@ -1086,6 +1086,55 @@ func TestTimelineEntryMappers_OffIsNeutral(t *testing.T) {
 	}
 }
 
+// TestTimelineEntryMappers_DegradedAndRecovered pins the other two branches
+// of the timeline trio directly (the off branch has its own test above):
+// a transition away from pass is the warning story, a recovery the success
+// one — badge tone, direction glyph, and glyph color must agree per entry.
+func TestTimelineEntryMappers_DegradedAndRecovered(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		entry       TimelineEntry
+		wantBadge   display.BadgeType
+		wantIcon    icons.Name
+		wantIconCls string
+	}{
+		{
+			name:        "degraded transition is the warning story",
+			entry:       TimelineEntry{At: "12:00:00", Status: string(health.StatusWarn), Degraded: true},
+			wantBadge:   display.BadgeWarning,
+			wantIcon:    icons.ArrowDown,
+			wantIconCls: "h-4 w-4 text-amber-700 dark:text-amber-400",
+		},
+		{
+			name:        "recovery is the success story",
+			entry:       TimelineEntry{At: "12:01:00", Status: string(health.StatusPass), Degraded: false},
+			wantBadge:   display.BadgeSuccess,
+			wantIcon:    icons.ArrowTrendingUp,
+			wantIconCls: "h-4 w-4 text-green-700 dark:text-green-400",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := timelineBadgeType(tt.entry); got != tt.wantBadge {
+				t.Errorf("badge = %v, want %v", got, tt.wantBadge)
+			}
+
+			if got := timelineTrendIcon(tt.entry); got != tt.wantIcon {
+				t.Errorf("glyph = %v, want %v", got, tt.wantIcon)
+			}
+
+			if got := timelineTrendIconClass(tt.entry); got != tt.wantIconCls {
+				t.Errorf("glyph class = %q, want %q", got, tt.wantIconCls)
+			}
+		})
+	}
+}
+
 // TestStatusValue_PinsEveryStatus pins the exhaustive health.Status switch
 // in statusValue: the linter demands an explicit case for every status, so
 // adding one (or re-ranking an existing one) must be a deliberate, tested
