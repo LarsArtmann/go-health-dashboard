@@ -278,7 +278,7 @@ templ dashboardContent(data viewModel) {
 						BaseProps:    utils.BaseProps{ID: "group-problems"},
 						Title:        group.Title,
 						Padding:      display.CardPaddingNone,
-						HeaderAction: groupCountBadge(len(group.Rows)),
+						HeaderAction: groupCountBadge(group),
 					}) {
 						@groupTable(group, data.Evidence)
 					}
@@ -286,7 +286,7 @@ templ dashboardContent(data viewModel) {
 					@display.Card(display.CardProps{
 						Title:        group.Title,
 						Padding:      display.CardPaddingNone,
-						HeaderAction: groupCountBadge(len(group.Rows)),
+						HeaderAction: groupCountBadge(group),
 					}) {
 						@groupTable(group, data.Evidence)
 					}
@@ -362,10 +362,12 @@ templ groupRows(group checkGroup, ev evidenceSummary) {
 	}
 }
 
-// groupCountBadge renders the row count shown in a group card's header.
-templ groupCountBadge(count int) {
-	<span class={ "ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium tabular-nums", "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" } aria-label={ fmt.Sprintf("%d service%s", count, pluralS(count)) }>
-		{ strconv.Itoa(count) }
+// groupCountBadge renders the row count shown in a group card's header,
+// tone-matched to the group's verdict (groupCountTone) so a warn or fail
+// card's count reads as part of the severity signal.
+templ groupCountBadge(group checkGroup) {
+	<span class={ "ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium tabular-nums", groupCountTone(group.Status) } aria-label={ fmt.Sprintf("%d service%s", len(group.Rows), pluralS(len(group.Rows))) }>
+		{ strconv.Itoa(len(group.Rows)) }
 	</span>
 }
 

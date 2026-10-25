@@ -33,6 +33,30 @@ func mapStatusToBadge(s health.Status) display.BadgeType {
 	}
 }
 
+// groupCountTone colors a group card's row-count chip by the group's
+// verdict: warn and fail escalate to the badge palette (the count joins the
+// severity signal, e.g. a red "3" on a failing source card), while pass and
+// off stay neutral gray so only problems carry color. The pairs mirror
+// upstream's BadgeWarning/BadgeError fills, which the page's WCAG decisions
+// already accept for badges (TestRender_ContrastSafeStatusColors).
+func groupCountTone(s health.Status) string {
+	switch s {
+	case health.StatusFail:
+		return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+	case health.StatusWarn:
+		return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+	case health.StatusPass:
+		return countToneNeutral
+	case health.StatusOff:
+		return countToneNeutral
+	default:
+		return countToneNeutral
+	}
+}
+
+// countToneNeutral is the gray pass-tier chip: no verdict, no color.
+const countToneNeutral = "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+
 // mapStatusToFeedback converts a go-health Status to the corresponding
 // templ-components FeedbackType for the overall status banner. Off is
 // unreachable here — the roll-up never reports off (go-health v0.5.1:
