@@ -151,6 +151,11 @@ type viewModel struct {
 	InstanceID string
 	Uptime     string
 	LatencyMs  int64
+	// RefreshIntervalText is the probe's refresh cadence in display form
+	// ("5s"), empty when the probe reports none. It contextualizes the
+	// latency number: the batch must fit inside this budget, which is the
+	// judgment applyLatencyTone grades and latencyTooltipText explains.
+	RefreshIntervalText string
 	// LatencyTone grades the batch latency against the probe's refresh
 	// cadence (applyLatencyTone): neutral within half the interval, warn
 	// past half, critical past the whole interval. Derived at build time so
@@ -396,9 +401,28 @@ func latencyToneFor(latency, refresh time.Duration) latencyTone {
 
 // applyLatencyTone stamps vm.LatencyTone from the probe's refresh cadence.
 // Both render paths (initial HTML and SSE patches) call it next to
-// applyCollapsePolicy, so a patch always re-derives the same judgment.
+// applyCollapsePolicy, so a patch always re-derives the same judgment. The
+// cadence's display form is stamped alongside (RefreshIntervalText) so the
+// latency card can disclose the budget the tone grades against.
 func applyLatencyTone(vm *viewModel, refreshInterval time.Duration) {
 	vm.LatencyTone = latencyToneFor(time.Duration(vm.LatencyMs)*time.Millisecond, refreshInterval)
+	if refreshInterval > 0 {
+		vm.RefreshIntervalText = formatCheckDuration(refreshInterval.Nanoseconds())
+	}
+}
+
+// latencyTooltipText explains the Check Latency card: what the number
+// measures, and (when the probe reports a cadence) the refresh budget the
+// value is graded against, so an amber 3s carries its own yardstick.
+func latencyTooltipText(vm viewModel) string {
+	if vm.RefreshIntervalText == "" {
+		return "Duration of the most recent probe batch across all services"
+	}
+
+	return fmt.Sprintf(
+		"Duration of the most recent probe batch across all services; the probe refreshes every %s, and the value turns amber past half that budget",
+		vm.RefreshIntervalText,
+	)
 }
 
 // latencyValueClass maps the latency tone onto the value-text color. All

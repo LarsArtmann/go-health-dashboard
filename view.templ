@@ -6,6 +6,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	templ "github.com/a-h/templ"
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/datastar"
 	"github.com/larsartmann/templ-components/display"
@@ -294,14 +295,18 @@ templ dashboardContent(data viewModel) {
 			}
 		}
 		if data.DatastarSrc != "" && data.HasDatastarRuntime && len(data.Groups) > 0 {
-			<p
-				class="hidden text-sm text-gray-500 dark:text-gray-400"
-				role="status"
-				data-filter-empty
-				data-class:hidden={ filterEmptyExpr(data) }
-			>
-				No services match your filter.
-			</p>
+			@display.EmptyState(display.EmptyStateProps{
+				BaseProps: utils.BaseProps{
+					Class: "hidden",
+					Attrs: templ.Attributes{
+						"data-filter-empty":   "",
+						"data-class:hidden": filterEmptyExpr(data),
+					},
+				},
+				Icon:        icons.Search,
+				Title:       "No services match",
+				Description: "Adjust or clear the filter to see all services again.",
+			})
 		}
 	</div>
 }
@@ -551,7 +556,7 @@ templ timelineNote(shown, total int) {
 templ latencyStatCard(data viewModel) {
 	<div
 		class={ utils.Class("bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xs print:shadow-none print:border-0 print:bg-transparent p-5") }
-		title="Duration of the most recent probe batch across all services, refreshed every probe interval"
+		title={ latencyTooltipText(data) }
 	>
 		<div class="flex items-center gap-4">
 			<div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/30">

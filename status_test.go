@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -879,6 +880,58 @@ func TestApplyLatencyTone(t *testing.T) {
 
 	if vm.LatencyTone != latencyToneWarn {
 		t.Errorf("1500ms against a 2s interval = %v, want warn", vm.LatencyTone)
+	}
+
+	if vm.RefreshIntervalText != "2s" {
+		t.Errorf(
+			"RefreshIntervalText = %q, want the cadence in display form",
+			vm.RefreshIntervalText,
+		)
+	}
+
+	cadenceless := viewModel{LatencyMs: 1500}
+	applyLatencyTone(&cadenceless, 0)
+
+	if cadenceless.RefreshIntervalText != "" {
+		t.Errorf("no cadence must render no budget text, got %q", cadenceless.RefreshIntervalText)
+	}
+}
+
+func TestLatencyTooltipText(t *testing.T) {
+	t.Parallel()
+
+	if got := latencyTooltipText(viewModel{}); got !=
+		"Duration of the most recent probe batch across all services" {
+		t.Errorf("cadence-less tooltip = %q, want the plain measurement story", got)
+	}
+
+	got := latencyTooltipText(viewModel{RefreshIntervalText: "5s"})
+
+	if !strings.Contains(got, "refreshes every 5s") || !strings.Contains(got, "half that budget") {
+		t.Errorf("tooltip with cadence = %q, want the budget context", got)
+	}
+}
+
+func TestGroupCountTone(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		status health.Status
+		want   string
+	}{
+		{health.StatusFail, "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"},
+		{
+			health.StatusWarn,
+			"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+		},
+		{health.StatusPass, countToneNeutral},
+		{health.StatusOff, countToneNeutral},
+	}
+
+	for _, tt := range tests {
+		if got := groupCountTone(tt.status); got != tt.want {
+			t.Errorf("groupCountTone(%s) = %q, want %q", tt.status, got, tt.want)
+		}
 	}
 }
 
