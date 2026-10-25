@@ -781,7 +781,9 @@ func statusChipPressedExpr(value string) string {
 func rowFilterExpr(row checkRow) string {
 	status := jsStringLiteral(string(row.Status))
 
-	return "($query !== '' && !" + jsStringLiteral(filterHaystack(row)) + ".includes($query.toLowerCase()))" +
+	return "($query !== '' && !" + jsStringLiteral(
+		filterHaystack(row),
+	) + ".includes($query.toLowerCase()))" +
 		" || ($" + statusFilterSignal + " === '" + statusFilterProblems + "' && " + status + " !== 'warn' && " + status + " !== 'fail')" +
 		" || ($" + statusFilterSignal + " === '" + statusFilterPass + "' && " + status + " !== 'pass')"
 }

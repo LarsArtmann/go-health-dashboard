@@ -935,6 +935,119 @@ func TestGroupCountTone(t *testing.T) {
 	}
 }
 
+func TestRowFilterExpr(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		status  health.Status
+		wantSub string
+	}{
+		{
+			name:   "pass row hides under problems and misses",
+			status: health.StatusPass,
+			wantSub: `($statusFilter === 'problems' && "pass" !== 'warn' && "pass" !== 'fail')` +
+				` || ($statusFilter === 'pass' && "pass" !== 'pass')`,
+		},
+		{
+			name:    "warn row hides under pass filter",
+			status:  health.StatusWarn,
+			wantSub: `($statusFilter === 'pass' && "warn" !== 'pass')`,
+		},
+		{
+			name:   "off row hides under both filters",
+			status: health.StatusOff,
+			wantSub: `($statusFilter === 'problems' && "off" !== 'warn' && "off" !== 'fail')` +
+				` || ($statusFilter === 'pass' && "off" !== 'pass')`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			expr := rowFilterExpr(checkRow{Name: "db", Display: "db", Status: tt.status})
+
+			if !strings.Contains(expr, tt.wantSub) {
+				t.Errorf(
+					"rowFilterExpr(%s) = %q, want it to contain %q",
+					tt.status,
+					expr,
+					tt.wantSub,
+				)
+			}
+
+			if !strings.Contains(expr, "$query !== ''") {
+				t.Errorf("rowFilterExpr must keep the text-query term, got %q", expr)
+			}
+		})
+	}
+}
+
+func TestFilterEmptyExpr(t *testing.T) {
+	t.Parallel()
+
+	vm := buildViewModel(respWithChecks(map[string]health.Status{
+		"db":    health.StatusPass,
+		"cache": health.StatusWarn,
+	}), "Test", "/health/sse", GroupBySeverity)
+
+	expr := filterEmptyExpr(vm)
+
+	if strings.Contains(expr, "statusFilter") {
+		t.Errorf(
+			"expr = %q, status-filter miss clauses must be absent when both populations exist",
+			expr,
+		)
+	}
+
+	if !strings.HasPrefix(expr, "!($query !== undefined && $query !== '' && !") {
+		t.Errorf("expr = %q, want the undefined-safe text-miss negation up front", expr)
+	}
+
+	passOnly := buildViewModel(respWithChecks(map[string]health.Status{"db": health.StatusPass}),
+		"Test", "/health/sse", GroupBySeverity)
+
+	passExpr := filterEmptyExpr(passOnly)
+
+	if !strings.Contains(passExpr, "($statusFilter === 'problems')") {
+		t.Errorf("expr = %q, want the problems-filter miss clause when no problems exist", passExpr)
+	}
+
+	if strings.Contains(passExpr, "($statusFilter === 'pass')") {
+		t.Errorf("expr = %q, pass-filter miss clause must be absent when pass rows exist", passExpr)
+	}
+}
+
+func TestStatusChipExprs(t *testing.T) {
+	t.Parallel()
+
+	if got := isStatusFilterExpr(statusFilterAll); got !=
+		"$statusFilter !== 'problems' && $statusFilter !== 'pass'" {
+		t.Errorf("all-match expr = %q, want undefined-safe default matching", got)
+	}
+
+	if got := isStatusFilterExpr(statusFilterProblems); got != "$statusFilter === 'problems'" {
+		t.Errorf("problems-match expr = %q", got)
+	}
+
+	pressed := statusChipPressedExpr(statusFilterAll)
+
+	if !strings.Contains(pressed, "? 'true' : 'false'") {
+		t.Errorf(
+			"pressed expr = %q, want string-valued ternary (attr plugin writes bools as empty values)",
+			pressed,
+		)
+	}
+
+	classExpr := statusChipClassExpr(statusFilterProblems)
+
+	if !strings.Contains(classExpr, statusChipActiveClass) ||
+		!strings.Contains(classExpr, statusChipIdleClass) {
+		t.Errorf("class expr = %q, want both visual states keyed", classExpr)
+	}
+}
+
 func TestLatencyValueClass(t *testing.T) {
 	t.Parallel()
 

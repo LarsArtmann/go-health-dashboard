@@ -224,16 +224,29 @@ templ dashboardContent(data viewModel) {
 		</p>
 	}
 	if data.DatastarSrc != "" && data.HasDatastarRuntime {
-		<div class="mt-6">
-			<label class="sr-only" for="health-filter">Filter services</label>
-			<input
-				id="health-filter"
-				type="search"
-				autocomplete="off"
-				placeholder="Filter services…"
-				data-bind="query"
-				class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-			/>
+		<div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+			<div class="min-w-0 flex-1">
+				<label class="sr-only" for="health-filter">Filter services</label>
+				<input
+					id="health-filter"
+					type="search"
+					autocomplete="off"
+					placeholder="Filter services…"
+					data-bind="query"
+					class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+				/>
+			</div>
+			if len(data.Groups) > 0 {
+				<div
+					class="flex shrink-0 items-center gap-1 self-start rounded-lg border border-gray-300 bg-white p-0.5 dark:border-gray-600 dark:bg-gray-800"
+					role="group"
+					aria-label="Filter by status"
+				>
+					@statusFilterChip("All", statusFilterAll)
+					@statusFilterChip("Problems", statusFilterProblems)
+					@statusFilterChip("Pass", statusFilterPass)
+				</div>
+			}
 		</div>
 	}
 	if len(data.History) >= 2 || len(data.Timeline) > 0 {
@@ -344,7 +357,7 @@ templ groupRows(group checkGroup, ev evidenceSummary) {
 	for _, row := range group.Rows {
 		<tr
 			data-filter-row={ filterHaystack(row) }
-			data-class:hidden={ "$query !== '' && !" + jsStringLiteral(filterHaystack(row)) + ".includes($query.toLowerCase())" }
+			data-class:hidden={ rowFilterExpr(row) }
 			class="max-sm:[&:not(.hidden)]:block max-sm:border-b max-sm:border-gray-200 max-sm:last:border-b-0 dark:max-sm:border-gray-700"
 		>
 			<td class="px-4 py-3 text-gray-700 dark:text-gray-300">
@@ -361,6 +374,26 @@ templ groupRows(group checkGroup, ev evidenceSummary) {
 			</td>
 		</tr>
 	}
+}
+
+// statusFilterChip renders one status filter segment. Clicking writes the
+// chip's value into the statusFilter signal (data-on-click), which every
+// row's hide expression (rowFilterExpr) and the chips' own active styling
+// (data-class object) react to, and data-attr keeps aria-pressed truthful.
+// All wiring is declarative data-* markup: CSP-safe, no per-element script,
+// and SSE patches re-carry it unchanged; the signal itself lives client-side
+// and survives patch merges.
+templ statusFilterChip(label, value string) {
+	<button
+		type="button"
+		id={ "status-filter-" + value }
+		class={ statusFilterChipBaseClass }
+		data-on-click={ "$" + statusFilterSignal + " = '" + value + "'" }
+		data-class={ statusChipClassExpr(value) }
+		data-attr:aria-pressed={ statusChipPressedExpr(value) }
+	>
+		{ label }
+	</button>
 }
 
 // groupCountBadge renders the row count shown in a group card's header,
