@@ -25,6 +25,7 @@ import (
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
 	"github.com/larsartmann/go-health/aggregate"
+	healthfederation "github.com/larsartmann/go-health/federation"
 	"github.com/samber/do/v2"
 )
 
@@ -2254,6 +2255,191 @@ func TestBrowser_RetryReconnectAfterLifetimeClose(t *testing.T) {
 
 	if s.dash.SubscriberCount() < 1 {
 		t.Error("reconnected stream did not stay open (patches not resuming)")
+	}
+
+	assertNoBrowserErrors(t, errLog)
+}
+
+// startRemoteHealthServer builds and starts one remote go-health instance
+// for federation tests: a real probe with one healthy check per name, its
+// readiness document served at /health — the endpoint shape federation
+// fetches. Returns the remote's health URL.
+func startRemoteHealthServer(t *testing.T, names ...string) string {
+	t.Helper()
+
+	injector := do.New()
+
+	for _, name := range names {
+		provideHealthy(injector, name)
+		invoke[*healthyService](t, injector, name)
+	}
+
+	probe := health.New(injector, health.WithRefreshInterval(100*time.Millisecond))
+	if err := probe.Start(context.Background()); err != nil {
+		t.Fatalf("remote probe start: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", probe.ReadinessHandler())
+
+	server := httptest.NewServer(mux)
+
+	t.Cleanup(func() {
+		server.Close()
+		probe.Shutdown()
+	})
+
+	return server.URL + "/health"
+}
+
+// TestBrowser_FederationHubTwoRemotes pins the health-hub wiring end to
+// end: two remote go-health instances served over real HTTP, merged by
+// federation, rendered by one source-grouped dashboard — the exact surface
+// cmd/health-hub serves (its run() mounts WithGrouping(GroupBySource)).
+// Per-remote cards must come up through the reworked markup with
+// namespaced rows intact, so a hub markup regression fails here, not in
+// production.
+func TestBrowser_FederationHubTwoRemotes(t *testing.T) {
+	t.Parallel()
+
+	const nonce = "browser-hub-nonce"
+
+	cvURL := startRemoteHealthServer(t, "postgres")
+	forgejoURL := startRemoteHealthServer(t, "mysql", "mirror")
+
+	fed, err := healthfederation.New(
+		[]healthfederation.Remote{
+			{Name: "cv", URL: cvURL},
+			{Name: "forgejo", URL: forgejoURL},
+		},
+		healthfederation.WithTimeout(2*time.Second),
+	)
+	if err != nil {
+		t.Fatalf("federation.New: %v", err)
+	}
+
+	s := setupDashboardWithProber(t, fed,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithGrouping(dashboard.GroupBySource),
+	)
+	defer s.cleanup()
+
+	session := startBrowserSession(t, s, nonce)
+	ctx, errLog := session.ctx, session.errLog
+
+	waitForSubscriber(t, s.dash)
+	time.Sleep(250 * time.Millisecond) // let the initial patch settle
+
+	// Per-remote rows: namespaced keys must render verbatim — the remote
+	// name is the grouping axis, the load-bearing part of the key.
+	waitForBodyText(t, ctx, "cv/postgres")
+	waitForBodyText(t, ctx, "forgejo/mysql")
+	waitForBodyText(t, ctx, "forgejo/mirror")
+
+	// One source card per remote, each summarizing only its own checks.
+	waitForBodyText(t, ctx, "cv \u00b7 1 \u00b7 all pass")
+	waitForBodyText(t, ctx, "forgejo \u00b7 2 \u00b7 all pass")
+
+	// Exactly two source sections carry the summaries — no third group
+	// (a severity-mode leak would fold everything into one card).
+	const sourceCards = `[...document.querySelectorAll("h3")]` +
+		`.filter(h => h.textContent.includes("all pass")).length + ""`
+
+	var cards string
+	waitForJS(t, ctx, sourceCards+` === "2"`, sourceCards, &cards)
+
+	if cards != "2" {
+		t.Fatalf("federation page should render 2 source cards, got %s", cards)
+	}
+
+	assertNoBrowserErrors(t, errLog)
+}
+
+// TestBrowser_AccessibilityDegraded runs the axe audit on the degraded
+// fixture (warn rows, alert banner, error cells) in both themes.
+// TestBrowser_Accessibility covers the default fixture only; the degraded
+// markup (banner + failure badges + error text) is the surface operators
+// stare at during incidents, so it earns its own audit.
+func TestBrowser_AccessibilityDegraded(t *testing.T) {
+	t.Parallel()
+
+	axeBytes := fetchAxeCore(t)
+
+	const nonce = "browser-a11y-degraded-nonce"
+
+	s := setupDashboardWithFailures(t,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+	)
+	defer s.cleanup()
+
+	s.mux.HandleFunc("/static/axe.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
+		_, _ = w.Write(axeBytes)
+	})
+
+	session := startBrowserSession(t, s, "")
+	ctx, errLog := session.ctx, session.errLog
+
+	waitForSubscriber(t, s.dash)
+
+	// The fixture must actually BE degraded before auditing it.
+	waitForBodyText(t, ctx, "connection refused")
+
+	if axeBytes == nil {
+		assertNoBrowserErrors(t, errLog)
+		return
+	}
+
+	inject := `(function () {
+		if (window.axe) { return; }
+		var s = document.createElement("script");
+		s.src = "/static/axe.js";
+		document.head.appendChild(s);
+	})()`
+
+	if err := chromedp.Run(ctx, chromedp.Evaluate(inject, nil)); err != nil {
+		t.Fatalf("axe inject: %v", err)
+	}
+
+	waitForJS(t, ctx, `window.axe !== undefined`, `typeof window.axe`, nil)
+
+	// Same skip-link exclusion as the default-fixture audit: the link is
+	// sr-only until keyboard focus and the harness serves no real Tailwind
+	// stylesheet, so axe cannot compute meaningful contrast for it.
+	start := `axe.run(
+		{ include: [document], exclude: [["a[href='#main-content']"]] },
+		{ resultTypes: ["violations"] }
+	).then(function (r) {
+		window.__axeViolations = JSON.stringify(r.violations.filter(function (v) {
+			return v.impact === "serious" || v.impact === "critical";
+		}).map(function (v) { return v.id + ":" + v.impact + ":" + v.nodes.length + ":" + v.nodes.map(function (n) { return n.html; }).join(" | ").slice(0, 300); }));
+	}).catch(function (e) {
+		window.__axeViolations = "AXE_ERROR: " + e;
+	})`
+
+	if audit := runAxeAudit(t, ctx, start); audit != "[]" {
+		t.Errorf("axe-core found serious/critical violations on the degraded fixture: %s", audit)
+	}
+
+	var darkClass string
+
+	if err := chromedp.Run(ctx,
+		chromedp.Click(`[data-theme-toggle]`, chromedp.ByQuery),
+		chromedp.Evaluate(`document.documentElement.classList.contains("dark") + ""`, &darkClass),
+	); err != nil {
+		t.Fatalf("dark toggle: %v", err)
+	}
+
+	if darkClass != "true" {
+		t.Fatalf("theme toggle did not apply the dark class (got %q)", darkClass)
+	}
+
+	if audit := runAxeAudit(t, ctx, start); audit != "[]" {
+		t.Errorf("axe-core found serious/critical violations on the degraded fixture in dark mode: %s", audit)
 	}
 
 	assertNoBrowserErrors(t, errLog)
