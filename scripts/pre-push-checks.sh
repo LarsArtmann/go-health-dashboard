@@ -10,6 +10,7 @@
 #   6. templ generator pin: no bare `templ generate` / `pkgs.templ`
 #   7. SECURITY.md freshness: supported-versions row vs latest tag
 #   8. golangci-lint (nix run .#lint, same as CI's Lint job)
+#   9. art-dupl accepted-clone baseline (reports/dupl/, go-etag gate pattern)
 #
 # Run: bash scripts/pre-push-checks.sh
 # Exits non-zero on the first failure with the same wording CI prints.
@@ -139,6 +140,31 @@ fi
 # run caught them. Same flake app the CI Lint job runs.
 if ! nix run .#lint; then
 	fail=1
+fi
+
+# 9. art-dupl accepted-clone baseline (go-etag gate pattern, 2026-10-25):
+# production-code duplication is pinned at exactly the accepted group count
+# in reports/dupl/. Test scaffolding is excluded (--ignore-tests) because
+# per-test isolation is the documented non-fix — gating it would fight the
+# policy. New production clones must be extracted or the baseline updated
+# deliberately, with rationale, in the same change.
+if command -v art-dupl >/dev/null 2>&1; then
+	dupl_out=$(mktemp)
+	GOEXPERIMENT=jsonv2 art-dupl --type-aware --sort total-tokens -t 5 --ignore-tests . >"$dupl_out" 2>&1 || {
+		cat "$dupl_out"
+		echo "::error::art-dupl run failed"
+		rm -f "$dupl_out"
+		fail=1
+	}
+	shown=$(grep -oE '[0-9]+ shown' "$dupl_out" | awk '{ print $1 }')
+	rm -f "$dupl_out"
+	echo "art-dupl production clones: ${shown:-0} shown (baseline: 1)"
+	if [ "${shown:-0}" != "1" ]; then
+		echo "::error::art-dupl shows ${shown:-0} production clone groups (baseline: 1 accepted - see reports/dupl/2026-10-25_art-dupl-baseline.txt). Extract the new duplication or update the accepted baseline deliberately, with rationale, in the same change"
+		fail=1
+	fi
+else
+	echo "art-dupl not on PATH — skipping clone-baseline gate (install it or run via the devShell)"
 fi
 
 if [ "$fail" -ne 0 ]; then
