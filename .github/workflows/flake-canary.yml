@@ -1,0 +1,56 @@
+name: Nightly Flake Canary
+
+# The agreed guardrail for the timing-flake class (2026-10-12 decision,
+# after the no-WithClock call): race + shuffled + repeated runs of the
+# full package surface timing flakes that a single ordered run hides.
+# Two flakes on 2026-10-11 (selfmonitor, rate-limit) surfaced only under
+# -race parallel load; this job makes that load routine instead of
+# incidental.
+
+on:
+  schedule:
+    - cron: "30 4 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GOEXPERIMENT: jsonv2
+
+permissions:
+  contents: read
+
+jobs:
+  canary:
+    name: go test -race -shuffle=on -count=5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      - name: Install Chrome
+        run: |
+          wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo dpkg -i /tmp/chrome.deb || sudo apt-get -f install -y
+
+      - name: Generate templ files
+        run: go tool templ generate ./...
+
+      # -timeout raised from the 10m default: five race-instrumented runs
+      # of the browser suite need headroom; a hung test still fails the
+      # job long before the 30m cap.
+      - name: Flake canary (race, shuffled, 5 runs)
+        env:
+          GO_HEALTH_DASHBOARD_CHROME: /usr/bin/google-chrome-stable
+        run: go test -race -shuffle=on -count=5 -timeout 30m -v . 2>&1 | tee /tmp/canary.log
+
+      - name: Report shuffle seed on failure
+        if: failure()
+        run: |
+          grep -m1 -E '^-shuffle=[0-9]+' /tmp/canary.log || \
+            grep -m1 'shuffle' /tmp/canary.log || true
