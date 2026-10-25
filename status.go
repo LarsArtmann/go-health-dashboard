@@ -710,6 +710,82 @@ func filterEmptyAttrs(vm viewModel) templ.Attributes {
 	}
 }
 
+// statusFilterSignal is the Datastar signal the status chips write and every
+// row's hide expression reads. It is deliberately never initialized: an
+// undefined value compares false against both chip values, which is exactly
+// the "All" default.
+const statusFilterSignal = "statusFilter"
+
+// The writable states of the status filter chips. "problems" keeps warn and
+// fail rows, "pass" keeps pass rows; off is neither and hides under both
+// (an unconfigured dependency is not a problem, nor a green).
+const (
+	statusFilterAll      = "all"
+	statusFilterProblems = "problems"
+	statusFilterPass     = "pass"
+)
+
+// The chip's two visual states: an inverted (dark on light, light on dark)
+// active pill and a quiet idle label. Pairwise classes so the Datastar
+// class plugin can swap the whole set on signal changes.
+const (
+	statusChipActiveClass = "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900"
+	statusChipIdleClass   = "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+)
+
+// statusFilterChipBaseClass is the chip skeleton shared by both states.
+const statusFilterChipBaseClass = "rounded-md px-3 py-1.5 text-xs font-medium transition-colors motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-500"
+
+// isStatusFilterExpr returns the truthy-when-active expression for a chip
+// value. "all" is the default state, so it matches whenever the signal holds
+// neither other value (undefined included).
+func isStatusFilterExpr(value string) string {
+	switch value {
+	case statusFilterProblems, statusFilterPass:
+		return "$" + statusFilterSignal + " === '" + value + "'"
+	default:
+		return "$" + statusFilterSignal + " !== '" + statusFilterProblems + "' && $" +
+			statusFilterSignal + " !== '" + statusFilterPass + "'"
+	}
+}
+
+// notStatusFilterExpr is the negation of isStatusFilterExpr.
+func notStatusFilterExpr(value string) string {
+	switch value {
+	case statusFilterProblems, statusFilterPass:
+		return "$" + statusFilterSignal + " !== '" + value + "'"
+	default:
+		return "$" + statusFilterSignal + " === '" + statusFilterProblems + "' || $" +
+			statusFilterSignal + " === '" + statusFilterPass + "'"
+	}
+}
+
+// statusChipClassExpr builds the data-class object for a chip: the active
+// classes keyed to the match expression, the idle classes to its negation,
+// so the class plugin swaps the pair as the signal changes.
+func statusChipClassExpr(value string) string {
+	return "{'" + statusChipActiveClass + "': " + isStatusFilterExpr(value) +
+		", '" + statusChipIdleClass + "': " + notStatusFilterExpr(value) + "}"
+}
+
+// statusChipPressedExpr keeps the chip's aria-pressed in sync. The values
+// must be strings: the attr plugin writes boolean true as an empty attribute
+// value, which is not a valid aria-pressed.
+func statusChipPressedExpr(value string) string {
+	return isStatusFilterExpr(value) + " ? 'true' : 'false'"
+}
+
+// rowFilterExpr builds the data-class:hidden expression for one row: hidden
+// while the text query misses its haystack, or while the status filter
+// excludes its status.
+func rowFilterExpr(row checkRow) string {
+	status := jsStringLiteral(string(row.Status))
+
+	return "($query !== '' && !" + jsStringLiteral(filterHaystack(row)) + ".includes($query.toLowerCase()))" +
+		" || ($" + statusFilterSignal + " === '" + statusFilterProblems + "' && " + status + " !== 'warn' && " + status + " !== 'fail')" +
+		" || ($" + statusFilterSignal + " === '" + statusFilterPass + "' && " + status + " !== 'pass')"
+}
+
 // filterHaystack returns the lowercase search text a row is matched against
 // by the client-side filter: short display name plus raw check key.
 func filterHaystack(row checkRow) string {
@@ -731,19 +807,50 @@ func jsStringLiteral(s string) string {
 }
 
 // filterEmptyExpr builds the data-class-hidden expression for the
-// "no services match" hint: visible only while a query is active and no
-// row anywhere on the page matches it.
+// "no services match" hint. The hidden class stays applied while NO
+// miss-condition holds: a miss is an active text query that matches no row
+// haystack, or an active status filter that no row satisfies (the existence
+// terms are server-side facts baked as absent clauses). Undefined-safe on
+// both signals: before the input's bind initializes $query (undefined), the
+// text-miss clause is false, so the hint stays hidden. The expression also
+// keeps the hint hidden after a typed query is cleared (the previous
+// inverted logic revealed it there and hid it on actual misses).
 func filterEmptyExpr(vm viewModel) string {
 	all := &strings.Builder{}
+	hasProblems, hasPass := false, false
 
 	for _, group := range vm.Groups {
 		for _, row := range group.Rows {
 			all.WriteString(filterHaystack(row))
 			all.WriteString("\n")
+
+			switch row.Status {
+			case health.StatusWarn, health.StatusFail:
+				hasProblems = true
+			case health.StatusPass:
+				hasPass = true
+			case health.StatusOff:
+				// outside both filter populations
+			default:
+				// unknown statuses are grouped healthy but prove neither population
+			}
 		}
 	}
 
-	return "$query !== '' || !" + jsStringLiteral(all.String()) + ".includes($query)"
+	textMiss := "$query !== undefined && $query !== '' && !" +
+		jsStringLiteral(all.String()) + ".includes($query.toLowerCase())"
+
+	expr := "!(" + textMiss + ")"
+
+	if !hasProblems {
+		expr += " && !($" + statusFilterSignal + " === '" + statusFilterProblems + "')"
+	}
+
+	if !hasPass {
+		expr += " && !($" + statusFilterSignal + " === '" + statusFilterPass + "')"
+	}
+
+	return expr
 }
 
 // errorSummaryMax bounds the error text shown before the details expansion.

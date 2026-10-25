@@ -68,7 +68,10 @@ func TestAggregateSSE_ServesInitialStateStream(t *testing.T) {
 		t.Fatalf("Content-Type: want text/event-stream, got %q", ct)
 	}
 
-	firstChunkBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	// The window must cover the full initial patch: evidence disclosures
+	// (~600 bytes per pass row, measured 2026-10-25) ride every patch by
+	// design, so a healthy aggregate of several sources exceeds 4KB.
+	firstChunkBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 16384))
 	firstChunk := string(firstChunkBytes)
 
 	if !strings.Contains(firstChunk, "datastar-patch-elements") {
