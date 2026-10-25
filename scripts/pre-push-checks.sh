@@ -156,9 +156,9 @@ if command -v art-dupl >/dev/null 2>&1; then
 		rm -f "$dupl_out"
 		fail=1
 	}
-	shown=$(grep -oE '[0-9]+ shown' "$dupl_out" | awk '{ print $1 }')
+	shown=$(grep -cE '^found [0-9]+ clones:' "$dupl_out" || true)
 	rm -f "$dupl_out"
-	echo "art-dupl production clones: ${shown:-0} shown (baseline: 1)"
+	echo "art-dupl production clones: ${shown:-0} groups (baseline: 1)"
 	if [ "${shown:-0}" != "1" ]; then
 		echo "::error::art-dupl shows ${shown:-0} production clone groups (baseline: 1 accepted - see reports/dupl/2026-10-25_art-dupl-baseline.txt). Extract the new duplication or update the accepted baseline deliberately, with rationale, in the same change"
 		fail=1
