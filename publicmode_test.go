@@ -232,3 +232,55 @@ func TestPublicMode_PatchesStayAnonymized(t *testing.T) {
 		return true
 	}, 3*time.Second)
 }
+
+// TestPublicMode_DifferentialHTMLVsJSON asserts the anonymization contract
+// differentially, on ONE dashboard instance serving ONE response: the
+// negotiated HTML surface is masked (real names and errors absent) while
+// the negotiated JSON surface of the very same endpoint stays byte-verbatim
+// (real names present) — public mode anonymizes presentation only, and the
+// machine contract must not drift just because a human surface was masked.
+// Per-surface tests pin each side alone; this pins that the two never
+// converge (a masked JSON would break scrapers; a verbatim HTML would leak).
+func TestPublicMode_DifferentialHTMLVsJSON(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboardWithFailures(t,
+		dashboard.WithPublicMode(),
+		dashboard.WithMetrics(true),
+	)
+	defer s.cleanup()
+
+	htmlBody := doRequest(t, s.mux, "/health").Body.String()
+	for _, secret := range []string{"cache", "queue", "connection refused"} {
+		if strings.Contains(htmlBody, secret) {
+			t.Errorf("HTML surface leaked %q in public mode", secret)
+		}
+	}
+
+	if !strings.Contains(htmlBody, "check-") {
+		t.Error("HTML surface lost its masked check-N labels")
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	req.Header.Set("Accept", "application/json")
+
+	jsonRec := httptest.NewRecorder()
+	s.mux.ServeHTTP(jsonRec, req)
+
+	if code := jsonRec.Code; code != http.StatusOK && code != http.StatusServiceUnavailable {
+		t.Fatalf("JSON surface status = %d", code)
+	}
+
+	jsonBody := jsonRec.Body.String()
+	for _, required := range []string{`"cache"`, `"queue"`, "connection refused"} {
+		if !strings.Contains(jsonBody, required) {
+			t.Errorf("JSON surface dropped %q — public mode must keep the machine contract verbatim", required)
+		}
+	}
+
+	for _, masked := range []string{`"check-1"`, `"check-2"`} {
+		if strings.Contains(jsonBody, masked) {
+			t.Errorf("JSON surface picked up masked name %q — masking leaked into the machine contract", masked)
+		}
+	}
+}

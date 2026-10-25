@@ -519,6 +519,7 @@ func TestEvidenceLog_CapsAtMaxEvidenceChecks(t *testing.T) {
 
 	postCap := respWithChecks(map[string]health.Status{
 		"post-cap-warn": health.StatusWarn,
+		"pre-cap-warn":  health.StatusWarn, // existing entries must keep updating past the cap
 	})
 
 	log.observe(postCap, observedAt.Add(time.Minute))
