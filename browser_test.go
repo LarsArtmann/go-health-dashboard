@@ -932,7 +932,15 @@ func browserStaticCSS(w http.ResponseWriter, _ *http.Request) {
 	// data-class:hidden element) toggles visibility via the hidden
 	// attribute, and without this rule all three pill states render at
 	// once in the harness (real deployments load full Tailwind).
-	_, _ = w.Write([]byte("body { margin: 0; }\n[hidden] { display: none !important; }"))
+	// The body backgrounds mirror production Tailwind (white canvas,
+	// gray-900 under the dark class): without them every background is
+	// transparent and axe-core evaluates contrast against white even in
+	// dark color-scheme mode, flagging UA-default link colors that pass
+	// against the real dark canvas (found by the degraded-fixture audit,
+	// 2026-10-25).
+	_, _ = w.Write([]byte("body { margin: 0; background-color: #ffffff; }\n" +
+		"html.dark body { background-color: #111827; }\n" +
+		"[hidden] { display: none !important; }"))
 }
 
 func browserStaticJS(w http.ResponseWriter, _ *http.Request) {
