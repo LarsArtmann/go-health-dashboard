@@ -303,7 +303,9 @@ func (d *Dashboard) HealthCheck(_ context.Context) error {
 		return ErrPusherNotStarted
 	}
 
-	if last := push.lastBroadcast.Load(); last != 0 && push.interval > 0 {
+	// resolvePushInterval (called in New) guarantees a positive interval,
+	// so a non-zero last-broadcast stamp is all the watchdog needs.
+	if last := push.lastBroadcast.Load(); last != 0 {
 		const stalenessFactor = 3
 
 		staleAfter := max(stalenessFactor*push.interval, pusherStaleFloor)

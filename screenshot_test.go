@@ -205,7 +205,6 @@ func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
 		t.Fatalf("screenshot: %v", err)
 	}
 
-	//nolint:gosec // output path is the operator-provided environment variable
 	if err := os.WriteFile(out, png, 0o600); err != nil {
 		t.Fatalf("write screenshot: %v", err)
 	}
@@ -327,7 +326,6 @@ func TestCaptureREADME_ScreenshotDegraded(t *testing.T) {
 
 	out := os.Getenv("SCREENSHOT_OUTPUT_DEGRADED")
 
-	//nolint:gosec // output path is the operator-provided environment variable
 	if err := os.WriteFile(out, png, 0o600); err != nil {
 		t.Fatalf("write screenshot: %v", err)
 	}

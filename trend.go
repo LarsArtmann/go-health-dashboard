@@ -1,6 +1,8 @@
 package dashboard
 
 import (
+	"bytes"
+	"encoding/csv"
 	"encoding/json/v2"
 	"net/http"
 	"strconv"
@@ -186,20 +188,26 @@ func (d *Dashboard) ExportHandler() http.HandlerFunc {
 			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 			w.Header().Set("Cache-Control", "no-cache")
 
-			var b strings.Builder
+			// encoding/csv provides RFC-4180 quoting (commas, quotes, and
+			// newlines in adversarial status strings cannot break columns)
+			// and writeCSVRow's discards are safe because bytes.Buffer
+			// writes cannot fail — the document stays one writeBody call.
+			var b bytes.Buffer
 
-			b.WriteString("timestamp,value,status\n")
+			cw := csv.NewWriter(&b)
+
+			writeCSVRow(cw, "timestamp", "value", "status")
 
 			for _, s := range samples {
-				b.WriteString(s.At.UTC().Format(time.RFC3339))
-				b.WriteByte(',')
-				b.WriteString(strconv.FormatFloat(s.Value, 'g', -1, 64))
-				b.WriteByte(',')
-				b.WriteString(s.Status)
-				b.WriteByte('\n')
+				writeCSVRow(cw,
+					s.At.UTC().Format(time.RFC3339),
+					strconv.FormatFloat(s.Value, 'g', -1, 64),
+					exportCSVField(s.Status),
+				)
 			}
 
-			writeBody(w, []byte(b.String()))
+			cw.Flush()
+			writeBody(w, b.Bytes())
 		case "json":
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Cache-Control", "no-cache")
