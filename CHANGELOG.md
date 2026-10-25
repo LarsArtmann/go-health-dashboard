@@ -13,6 +13,22 @@ sit sandwiched between two released sections — at tag time it ships into the
 cut or its contents wait for the next one; decide explicitly, never by
 forgetting.
 
+## [Unreleased]
+
+## [0.12.1] - 2026-10-25
+
+Re-cut of v0.12.0 with a green tag commit: the v0.12.0 tag's commit
+failed CI's CHANGELOG structural lint (no standing `[Unreleased]`
+section remained above the cut and the `[0.12.0]` footer link
+definition was missing — the same failure class v0.10.1 re-cut for).
+No code changes; consumers on v0.12.0 do not need to move.
+
+### Fixed
+
+- CHANGELOG structure: restored the standing `[Unreleased]` section
+  above the cut and added the missing `[0.12.0]` footer compare-link
+  definition (plus the stale `[Unreleased]` base, two releases behind).
+
 ## [0.12.0] - 2026-10-25
 
 The UI-batch + hardening-train release: a more honest and more accessible
@@ -1287,7 +1303,9 @@ did not exist at `01277d3`.*
   Replaced by `fingerprintChecks` which sorts keys before concatenating
   (`status.go:215`)
 
-[Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.12.0...v0.12.1
+[0.12.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.10.2...v0.11.0
 [0.10.2]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.10.0...v0.10.1
