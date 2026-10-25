@@ -405,7 +405,7 @@ func TestCaptureREADME_ScreenshotGrouped(t *testing.T) {
 
 	deadline := time.Now().Add(15 * time.Second)
 
-	for s.dash.SubscriberCount() == 0 {
+	for dash.SubscriberCount() == 0 {
 		if time.Now().After(deadline) {
 			t.Fatal("SSE never connected during screenshot capture")
 		}
