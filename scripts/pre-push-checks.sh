@@ -8,7 +8,8 @@
 #   4. CHANGELOG structural lint (scripts/check-changelog.sh)
 #   5. Fuzz-target registry: fuzz.yml steps vs `func Fuzz*` definitions
 #   6. templ generator pin: no bare `templ generate` / `pkgs.templ`
-#   7. golangci-lint (nix run .#lint, same as CI's Lint job)
+#   7. SECURITY.md freshness: supported-versions row vs latest tag
+#   8. golangci-lint (nix run .#lint, same as CI's Lint job)
 #
 # Run: bash scripts/pre-push-checks.sh
 # Exits non-zero on the first failure with the same wording CI prints.
@@ -114,7 +115,26 @@ if [ -n "$pkgs_templ" ]; then
 	fail=1
 fi
 
-# 7. Lint (CI Lint-job parity): the desk gate went green three sessions
+# 7. SECURITY.md freshness: the supported-versions row must cover the
+#    latest tag's minor line, and the footer "Last updated" date must not
+#    predate the release (rows rot every release — caught 0.10.x-stale
+#    against v0.11.0 on 2026-10-25).
+security_row=$(grep -oE '^\| [0-9]+\.[0-9]+\.x' SECURITY.md | head -1 | grep -oE '[0-9]+\.[0-9]+')
+security_date=$(grep -oE 'Last updated: [0-9]{4}-[0-9]{2}-[0-9]{2}' SECURITY.md | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
+latest_minor=$(echo "$latest_tag" | cut -d. -f1-2)
+tag_date=$(git log -1 --format=%cs "v${latest_tag}" 2>/dev/null || echo "")
+
+echo "SECURITY.md row ${security_row}.x (footer ${security_date}); latest tag v${latest_tag} (${tag_date})"
+if [ "$security_row" != "$latest_minor" ]; then
+	echo "::error::SECURITY.md supported-versions row (${security_row}.x) does not cover the latest release (v${latest_tag}) — update the row in the same change as the tag"
+	fail=1
+fi
+if [ -n "$tag_date" ] && [ -n "$security_date" ] && [ "$security_date" \< "$tag_date" ]; then
+	echo "::error::SECURITY.md footer predates the latest release (${security_date} < ${tag_date}) — refresh it in the same change as the tag"
+	fail=1
+fi
+
+# 8. Lint (CI Lint-job parity): the desk gate went green three sessions
 # in a row while lint findings sat in the tree; only the explicit lint
 # run caught them. Same flake app the CI Lint job runs.
 if ! nix run .#lint; then

@@ -72,6 +72,13 @@ expected_templ_components_icons="v1.23.0"
 expected_go_datastar="v0.6.2"
 expected_go_datastar_static="v0.6.1"
 
+# The exact bytes of the pinned SDK bundle (go-datastar/static datastar.js).
+# Upstream pins the same sha in its own checksum_test.go; this is the
+# consumer-side belt-and-suspenders: even a same-version module-cache
+# anomaly cannot swap the bundle silently. Size is the coarse canary.
+expected_sdk_sha256="5d6b7794a50a83d82da962aec5e382f5ae83ac7afbc751f903f7a9c6bd433c65"
+expected_sdk_bytes="33538"
+
 cd "$(dirname "$0")/.."
 
 # Self-select the right go: the ambient PATH go may predate go.mod's
@@ -104,5 +111,58 @@ check_pin github.com/larsartmann/templ-components/utils "$expected_templ_compone
 check_pin github.com/larsartmann/templ-components/icons "$expected_templ_components_icons"
 check_pin github.com/larsartmann/go-datastar "$expected_go_datastar"
 check_pin github.com/larsartmann/go-datastar/static "$expected_go_datastar_static"
+
+# --- SDK bundle content drift (2026-10-25) ------------------------------
+# Version pins alone cannot see a content swap inside a module-cache
+# anomaly; the embedded datastar.js bytes are pinned here too.
+
+if go list -m github.com/larsartmann/go-health >/dev/null 2>&1; then
+	modcache=$(go env GOMODCACHE)
+else
+	modcache=$(nix develop -c go env GOMODCACHE)
+fi
+
+bundle="$modcache/github.com/larsartmann/go-datastar/static@$expected_go_datastar_static/datastar.js"
+
+if [ ! -f "$bundle" ]; then
+	echo "::error::SDK bundle not found at $bundle — run 'go mod download' first"
+	fail=1
+else
+	actual_sha=$(sha256sum "$bundle" | cut -d' ' -f1)
+	if [ "$actual_sha" != "$expected_sdk_sha256" ]; then
+		echo "::error::SDK bundle sha256 $actual_sha != pinned $expected_sdk_sha256 — the embedded Datastar SDK changed bytes; a dedicated change must re-run the browser suite and update this pin"
+		fail=1
+	else
+		echo "OK  SDK bundle sha256 $actual_sha"
+	fi
+
+	actual_bytes=$(wc -c <"$bundle" | tr -d ' ')
+	if [ "$actual_bytes" != "$expected_sdk_bytes" ]; then
+		echo "::error::SDK bundle size $actual_bytes bytes, pinned $expected_sdk_bytes — bundle-size drift (see sha error above if present)"
+		fail=1
+	else
+		echo "OK  SDK bundle size $actual_bytes bytes"
+	fi
+fi
+
+# --- RecommendedCSP <-> SDK sync (2026-10-25) ---------------------------
+# csp.go's policy must keep shipping 'unsafe-eval' while the pinned SDK
+# compiles data-* expressions with the Function constructor. If a future
+# SDK drops the requirement, removing the directive is a dedicated change
+# that updates this guard together with the pin comment above.
+
+if ! grep -q "'unsafe-eval'" csp.go; then
+	echo "::error::csp.go no longer ships 'unsafe-eval' — the pinned Datastar SDK ($expected_go_datastar) requires it (Function-constructor expression compiler); CSP and SDK pin have drifted"
+	fail=1
+else
+	echo "OK  csp.go 'unsafe-eval' present (required by pinned SDK $expected_go_datastar)"
+fi
+
+if ! grep -q "Datastar SDK" csp.go; then
+	echo "::error::csp.go lost the comment explaining WHY 'unsafe-eval' is required — restore the rationale; the CSP↔SDK sync check depends on it"
+	fail=1
+else
+	echo "OK  csp.go unsafe-eval rationale comment present"
+fi
 
 exit "$fail"

@@ -28,7 +28,18 @@ if [ $# -ne 1 ]; then
 fi
 
 TAG="v${1#v}"
-MODULE=$(go list -m)
+
+# Self-select the right go: the ambient PATH go may predate go.mod's
+# floor and die on a misleading "go: updates to go.mod needed" (AGENTS.md
+# "Repo scripts that exec go need the devShell"). Probe with a cheap
+# module load; fall back to the devShell's go. Usage: "${GO[@]} build ..."
+if go list -m github.com/larsartmann/go-health >/dev/null 2>&1; then
+	GO=(go)
+else
+	GO=(nix develop -c go)
+fi
+
+MODULE=$("${GO[@]}" list -m)
 fail=0
 step() {
 	echo
@@ -69,7 +80,7 @@ fi
 # so a passing download here IS the sumdb check.
 step "2. Proxy serves $TAG; Origin.Hash == tag commit; sumdb verified (fresh cache)"
 if [ -n "$local_commit" ]; then
-	dl_json=$(GOWORK=off GOFLAGS='' GOMODCACHE="$TMP/gomodcache" go mod download -json "$MODULE@$TAG")
+	dl_json=$(GOWORK=off GOFLAGS='' GOMODCACHE="$TMP/gomodcache" "${GO[@]}" mod download -json "$MODULE@$TAG")
 	proxy_info=$(echo "$dl_json" | sed -n 's/^[[:space:]]*"Info": "\(.*\)",/\1/p')
 	proxy_hash=$(grep -o '"Hash":"[^"]*"' "$proxy_info" | head -1 | cut -d'"' -f4)
 	proxy_ref=$(grep -o '"Ref":"[^"]*"' "$proxy_info" | head -1 | cut -d'"' -f4)
@@ -97,10 +108,10 @@ if [ -n "$local_commit" ]; then
 	(
 		cd "$consumer"
 		export GOWORK=off GOFLAGS='' GOEXPERIMENT=jsonv2 GOMODCACHE="$TMP/gomodcache2"
-		go mod init consumer >/dev/null 2>&1
+		"${GO[@]}" mod init consumer >/dev/null 2>&1
 		printf 'package main\n\nimport (\n\t"fmt"\n\n\t"github.com/larsartmann/go-health-dashboard"\n)\n\nfunc main() { fmt.Println(dashboard.Version) }\n' >main.go
-		go mod tidy >/dev/null
-		got=$(go run .)
+		"${GO[@]}" mod tidy >/dev/null
+		got=$("${GO[@]}" run .)
 		if [ "$got" = "${TAG#v}" ]; then
 			ok "consumer run printed $got"
 		else

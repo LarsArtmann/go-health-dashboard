@@ -9,8 +9,8 @@ section for the rare behavior changes).
 
 | Version | Supported        |
 | ------- | ---------------- |
-| 0.10.x  | Yes              |
-| < 0.10  | No — please bump |
+| 0.11.x  | Yes              |
+| < 0.11  | No — please bump |
 
 ## Reporting a Vulnerability
 
@@ -47,4 +47,4 @@ do not test against deployments you do not own.
 
 ---
 
-_Maintained with [securitymd](https://github.com/LarsArtmann/securitymd). Last updated: 2026-10-11._
+_Maintained with [securitymd](https://github.com/LarsArtmann/securitymd). Last updated: 2026-10-25._
