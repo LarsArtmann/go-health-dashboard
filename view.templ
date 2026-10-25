@@ -6,7 +6,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	templ "github.com/a-h/templ"
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/datastar"
 	"github.com/larsartmann/templ-components/display"
@@ -298,10 +297,7 @@ templ dashboardContent(data viewModel) {
 			@display.EmptyState(display.EmptyStateProps{
 				BaseProps: utils.BaseProps{
 					Class: "hidden",
-					Attrs: templ.Attributes{
-						"data-filter-empty":   "",
-						"data-class:hidden": filterEmptyExpr(data),
-					},
+					Attrs: filterEmptyAttrs(data),
 				},
 				Icon:        icons.Search,
 				Title:       "No services match",
