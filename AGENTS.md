@@ -254,7 +254,15 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   generate` (generate → fmt). (2) Commit intent-bearing changes right after
   each verified batch — a long gate chain is one giant uncommitted window.
   (3) Push the TAG first, then master. (4) External-state verification is a
-  script: `bash scripts/verify-release.sh <ver>`. War stories: `docs/gotchas.md`.
+  script: `bash scripts/verify-release.sh <ver>`. (5) Re-run gate 0 AFTER the
+  release edits too, before tagging — the changelog structural lint reads the
+  EDITED file; a pre-edit-only gate 0 cannot catch the cut's own drift
+  (v0.12.0's tag went red on exactly that; re-cut as v0.12.1, v0.10.1
+  precedent). (6) The release-draft workflow has NEVER produced a draft for
+  any tag: `gh api --jq '.draft'` masks the 404 exit code (jq succeeds on the
+  error JSON, prints null), the case statement falls through silently, and
+  the run goes green — create pages with `gh release create` until the
+  workflow is fixed (TODO_LIST row). War stories: `docs/gotchas.md`.
 - **erraudit blank-identifier policy** — response-writer discards are
   centralized in `writeBody` (handlers.go) with ONE reasoned
   `//nolint:erraudit`; `//nolint:erraudit // reason` is the sanctioned

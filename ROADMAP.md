@@ -341,12 +341,11 @@ These require user decisions and cannot be resolved by reading code:
   revamp alone. Push/tag authorization still required at cut time.
   (SHIPPED AS DECIDED: v0.11.0 cut 2026-10-12; touch tooltips landed
   2026-10-25 and feed the NEXT batch decision.)
-- **v0.12.0 cadence — OPEN (raised 2026-10-25).** `[Unreleased]` holds a
-  full minor's worth (UI batch: disclosures, chips, tone chips, latency
-  budget; CSV formula-injection hardening; the hardening test train; the
-  CI/gates batch). Tree + CI 7/7 + FOD all green at `e8eeefa`. Cut now,
-  or hold for the chromedp v0.21 decision and/or the CV rollout so they
-  ride the same release?
+- **v0.12.0 cadence — DECIDED: CUT (2026-10-25).** Shipped same day as
+  v0.12.1 (green-CI re-cut; the v0.12.0 tag's commit red on the CHANGELOG
+  structural lint — missing standing `[Unreleased]` + footer link —
+  disclosed on its release page). chromedp v0.21 and the CV rollout
+  deliberately ride a later release.
 - **Templ toolchain layering — OPEN (raised 2026-10-25).** The system
   templ (v0.3.1020) is stale vs the go.mod pin (v0.3.1070): the NixOS
   config bump is the root fix (external act); in-repo belt-and-suspenders
