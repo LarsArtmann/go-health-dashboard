@@ -17,6 +17,19 @@ forgetting.
 
 ### Fixed
 
+- **The client-side filter's "no services match" hint was inverted**: the
+  hidden-class expression kept the hint hidden exactly when nothing matched
+  the query and revealed it once a typed query was cleared. The expression
+  is now an undefined-safe miss-negation (and gains status-filter miss
+  clauses), pinned by `TestFilterEmptyExpr` and browser-verified end to end
+  in `TestBrowser_StatusFilterChips`.
+- **The package's test build was broken at HEAD**: an auto-daemon go.mod
+  bump (`93d13fd`) moved chromedp v0.16.0 → v0.21.0 (a generics API
+  rework: `Run[T]`, `Do`, `remote.NewAllocator`, `ListenTarget` removed)
+  without migrating the ~100 browser/screenshot test call sites. go.mod
+  pins chromedp v0.16.0 + its matching cdproto again until the migration
+  happens deliberately; the incident and the probe-methodology lessons
+  are recorded in `docs/gotchas.md`.
 - `scripts/verify-release.sh` section 1 picked the remote tag sha with a
   `sort -u | tail -1` heuristic, which only worked when the peeled commit
   sha happened to sort above the annotated tag-object sha (v0.11.0's didn't
@@ -36,6 +49,33 @@ forgetting.
 
 ### Added
 
+- **Touch/keyboard-accessible evidence disclosures (2026-10-25 UI batch).**
+  Native `title` tooltips never reach touch users, so the unproven/proven
+  green story now rides CSS-only tooltips: a focusable disclosure span
+  reveals the same text on hover, keyboard focus, and tap
+  (`group-focus-within`), with an sr-only copy for screen readers and the
+  visual badge+tip aria-hidden. Unproven greens additionally wear a dashed
+  provisional outline, visible at a glance without any hover. The truth
+  strip's explanation got the same treatment behind an information glyph.
+  Class-only markup: CSP-clean and SSE-patch-pure. Browser-pinned by
+  `TestBrowser_EvidenceDisclosureFocus`.
+- **Status filter chips (All / Problems / Pass).** A segmented control
+  next to the filter box narrows the page to warn+fail rows or pass rows
+  in one click. Wiring is fully declarative: `data-on:click` writes the
+  `statusFilter` signal (the colon grammar is mandatory on the pinned
+  Datastar v1.0.3 bundle), every row's hide expression and the chips'
+  active styling react to it, and `data-attr` keeps `aria-pressed`
+  truthful. Off rows hide under both filters (not a problem, not a green).
+  The no-match EmptyState covers status-filter misses too. Browser-pinned
+  by `TestBrowser_StatusFilterChips`.
+- **Severity-toned group count chips.** Warn-group cards carry an amber
+  row count, fail groups a red one (mirroring the badge palette); pass and
+  off stay neutral gray, so only problems carry color.
+- **The Check Latency tooltip now discloses its budget**: when the probe
+  reports a refresh interval the tooltip states it and the amber line
+  ("past half that budget"), so an amber number carries its own yardstick.
+- **The no-match filter hint renders as a proper `EmptyState`** (search
+  icon, title, description) instead of a bare gray line.
 - **Watchdog staleness floor is now pinned by a regression test**
   (`TestHealthCheck_WatchdogFloorProtectsFastPushers`): a hand-wired
   never-started 20ms pusher must stay healthy at a 700ms-old last broadcast
