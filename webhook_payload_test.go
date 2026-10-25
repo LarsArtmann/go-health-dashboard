@@ -270,7 +270,7 @@ func TestWebhook_BoundedInFlightVsSlowReceiver(t *testing.T) {
 	// 40 distinct transitions against a stuck receiver: the first
 	// webhookMaxInFlight deliveries occupy the server, the rest must be
 	// dropped at the gate instead of piling up.
-	for i := 0; i < 40; i++ {
+	for i := range 40 {
 		notifier.fireOnChange(health.Response{
 			Status: health.StatusWarn,
 			Checks: map[string]health.Check{

@@ -9,8 +9,8 @@ your new files currently carry 9 lint findings (details below).
 ## What this session landed (all verified green when committed)
 
 - Lint cleanups: `streamLoadClients` gocognit refactor (`streamOneClient`
-  + `sseLoadStats`), 6 dead `//nolint:gosec` directives stripped (gosec is
-  path-excluded for `_test.go` — see `docs/gotchas.md` new section).
+  - `sseLoadStats`), 6 dead `//nolint:gosec` directives stripped (gosec is
+    path-excluded for `_test.go` — see `docs/gotchas.md` new section).
 - FEATURES.md: test counts 331/46 (+13), status-chips/toned-badges/
   disclosure/latency-tooltip rows, UI pin row v1.23.0/v0.6.2/v0.6.1.
 - AGENTS.md: pin v1.23.0 + ninth-sweep audit note, `data-on:click` colon

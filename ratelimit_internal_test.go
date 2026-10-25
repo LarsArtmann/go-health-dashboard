@@ -17,7 +17,7 @@ func TestRateLimiter_RefillAndCeiling(t *testing.T) {
 	limiter := newRateLimiter(3, 2*time.Second)
 
 	// Drain the burst.
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if !limiter.Allow() {
 			t.Fatalf("initial burst request %d denied", i+1)
 		}
@@ -32,7 +32,7 @@ func TestRateLimiter_RefillAndCeiling(t *testing.T) {
 	limiter.last = limiter.last.Add(-2 * time.Second)
 	limiter.mu.Unlock()
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if !limiter.Allow() {
 			t.Fatalf("refilled request %d denied", i+1)
 		}
@@ -111,7 +111,7 @@ func TestRateLimiter_ConcurrentAllowIsRaceSafe(t *testing.T) {
 
 	done := make(chan struct{}, goroutines)
 
-	for i := 0; i < goroutines; i++ {
+	for range goroutines {
 		go func() {
 			<-start
 
@@ -125,7 +125,7 @@ func TestRateLimiter_ConcurrentAllowIsRaceSafe(t *testing.T) {
 
 	close(start)
 
-	for i := 0; i < goroutines; i++ {
+	for range goroutines {
 		<-done
 	}
 

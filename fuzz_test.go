@@ -755,7 +755,7 @@ func FuzzRateLimiterAllow(f *testing.F) {
 
 		limiter := newRateLimiter(burst, time.Hour)
 
-		for i := 0; i < burst; i++ {
+		for i := range burst {
 			if !limiter.Allow() {
 				t.Fatalf("burst request %d/%d denied — tokens evaporated", i+1, burst)
 			}

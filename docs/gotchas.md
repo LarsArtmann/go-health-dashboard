@@ -250,15 +250,16 @@ port lists (plain overrides MERGE and still bind the taken port).
 ## chromedp daemon bump breaks the test build (2026-10-15 → 2026-10-25)
 
 The 2026-10-15 daemon churn (commit `93d13fd`) swept chromedp to v0.21.0
-+ a floating cdproto pseudoversion. chromedp v0.21 is a breaking API
-generation (`chromedp.Run` returns two values, `Evaluate` went generic,
-`NewRemoteAllocator` moved) — the whole test build failed, not a single
-test. Recovery (2026-10-25): restore chromedp v0.16.0 + cdproto
-`v0.0.0-20260922220944-a19bff23514f` in go.mod/go.sum, then `go mod
+
+- a floating cdproto pseudoversion. chromedp v0.21 is a breaking API
+  generation (`chromedp.Run` returns two values, `Evaluate` went generic,
+  `NewRemoteAllocator` moved) — the whole test build failed, not a single
+  test. Recovery (2026-10-25): restore chromedp v0.16.0 + cdproto
+  `v0.0.0-20260922220944-a19bff23514f` in go.mod/go.sum, then `go mod
 tidy`. gopls keeps reporting v0.21-style diagnostics afterward (stale
-module cache view) — trust the nix gates, not the editor squiggles. The
-v0.21 migration stays a deliberate backlog item (TODO_LIST), not
-something to ride in on a daemon sweep.
+  module cache view) — trust the nix gates, not the editor squiggles. The
+  v0.21 migration stays a deliberate backlog item (TODO_LIST), not
+  something to ride in on a daemon sweep.
 
 ## Probing the vendored Datastar bundle: ES module + colon grammar
 

@@ -26,6 +26,7 @@ batch, amend-relabeled daemon carrier), `9998c6f` (measurement-code batch).
 ## a) FULLY DONE (verified this session)
 
 ### Unblocked the red suite
+
 1. **`TestBrowser_StatusFilterChips` red → GREEN** — a daemon commit after the
    07:39 report had already re-wired the chips to the colon-keyed
    `data-on:click` grammar (the templ comment documents the empirical probe).
@@ -33,6 +34,7 @@ batch, amend-relabeled daemon carrier), `9998c6f` (measurement-code batch).
    `TestBrowser_EvidenceDisclosureFocus` (1.76s). Full-suite baseline green.
 
 ### Rows verified as ALREADY DONE (closed with evidence, no code needed)
+
 2. T10 (ADR-0003 evaluation-sink), T11 (Observe + WithEvaluationHook wiring +
    `evaluation_sink_test.go`), T12 (ADR-0004 + `WithCascadeProbeVerdict`),
    T14 (hub transport knobs: `HEALTH_HUB_CLIENT_TLS_CA` + `HEALTH_HUB_HTTP_PROXY`
@@ -42,9 +44,10 @@ batch, amend-relabeled daemon carrier), `9998c6f` (measurement-code batch).
 4. UI-revamp "touch story for evidence tooltips": P1 disclosures landed by the
    morning/parallel sessions; browser-verified green this session.
 5. UI-revamp "transitive-only helper coverage": `TestTimelineEntryMappers_OffIsNeutral`
-   + grouped-VM `TestAlertSummary` cases already exist in status_test.go.
+   - grouped-VM `TestAlertSummary` cases already exist in status_test.go.
 
 ### Hardening/test batch (commit `edf5717`)
+
 6. **CSV export formula-injection hardening + test** (trend.go): `exportCSVField`
    neutralizes `= + - @ \t \r` starters with a leading quote, RFC-4180 quoting
    moved to `encoding/csv`; `TestExportHandler_CSVFormulaInjectionNeutralized`
@@ -75,6 +78,7 @@ batch, amend-relabeled daemon carrier), `9998c6f` (measurement-code batch).
     (no raw `"`/`\` survives inside `label="..."`).
 
 ### Timing-flake sweep (commit `5a48289` + part of `9998c6f`)
+
 17. `TestRateLimit_ExceedsBudget` + `TestRateLimit_429JSONBody`: refill windows
     1s/2s → 1h — the 429s are now budget facts, killing the 2026-10-11
     "200-instead-of-429" race class.
@@ -85,6 +89,7 @@ batch, amend-relabeled daemon carrier), `9998c6f` (measurement-code batch).
     alone); poll loops audited sound.
 
 ### Scripts batch (commits `5034088`/`b516431`)
+
 20. **check-ui-pins.sh extended**: pinned SDK-bundle sha256 (`5d6b7794…`,
     cross-checked against upstream's own checksum test) + byte size, and
     CSP↔SDK sync checks (`'unsafe-eval'` presence + rationale comment while the
@@ -98,12 +103,14 @@ batch, amend-relabeled daemon carrier), `9998c6f` (measurement-code batch).
     README captures (light/dark/degradable subsets, loud failure on missing PNGs).
 
 ### CI batch (commit `6153cf1`)
+
 24. **.github/workflows/flake-canary.yml** (new): nightly
     `go test -race -shuffle=on -count=5` full package (Chrome installed, seed
     surfaced on failure) — the agreed post-no-WithClock guardrail. Local
     count=2 sanity run green.
 
 ### Docs batch (commit `5e50837`; parallel-session overlap credited)
+
 25. **ADR-0006** (`docs/adr/0006-statcard-tone-system.md`): two-family stat-card
     tone decision with the measured WCAG ratios and the page-wide green-tile ban.
 26. **release-checklist**: §7 pre-tag verifier expectations (v0.11.0 d-4
@@ -122,6 +129,7 @@ batch, amend-relabeled daemon carrier), `9998c6f` (measurement-code batch).
     consume nothing, `Retry-After ≈ ceil(window/budget)` when empty.
 
 ### Measurement batch — numbers CAPTURED (commit `9998c6f` for the code)
+
 30. **`TestSelfMonitoring` restructured**: poll-until-pass instead of the 80ms
     sleep — the poll EXPOSED that the row legitimately ARRIVES as warn
     ("Start has not been called") before dash.Start lands in the probe cache;
@@ -142,6 +150,7 @@ batch, amend-relabeled daemon carrier), `9998c6f` (measurement-code batch).
     max 16.3 ms — PASS, healthy.
 
 ### External checks
+
 36. **pkg.go.dev spot-check for v0.11.0**: ✅ rendered (Oct 12, 2026), Latest,
     full symbol diff shown (Observe, DroppedPatchCount, SourceStatuser,
     WithCascadeProbeVerdict…).
@@ -236,6 +245,7 @@ batch, amend-relabeled daemon carrier), `9998c6f` (measurement-code batch).
 ## f) Up to 50 things we should get done next (order = value density)
 
 **Finish the session's own tail (highest value, mostly minutes):**
+
 1. Diagnose the nsfw-classifier baseline FAIL (which package, pre-existing?),
    then bump to v0.11.0 (additive per pkg.go.dev diff) + `go mod vendor` +
    test + commit (go-ecosystem-upgrade protocol, already loaded).
@@ -263,27 +273,27 @@ batch, amend-relabeled daemon carrier), `9998c6f` (measurement-code batch).
 **Browser-evidence debt:**
 11. Hub e2e vs the reworked UI with 2 real remotes (f36).
 12. Axe audit on the degraded variant + dark re-run evidence for the new
-    badge/timeline/chips markup (f22/f38).
+badge/timeline/chips markup (f22/f38).
 13. GroupBySource page screenshot + README section (f17); consider extending
-    capture-screenshots.sh with a `grouped` target.
+capture-screenshots.sh with a `grouped` target.
 14. Re-verify the three README screenshots show the NEW tooltips/chips UI
-    (recaptured by the parallel session at 10:14 — eyeball pass still owed).
+(recaptured by the parallel session at 10:14 — eyeball pass still owed).
 
 **Release train:**
 15. Decision: cut v0.12.0 with the UI batch + this hardening train (question
-    g-2) — then release-checklist §1-8 with the NEW pre-tag verifier section.
+g-2) — then release-checklist §1-8 with the NEW pre-tag verifier section.
 16. SECURITY.md freshness automation proved itself — mirror the row+date
-    check into the release-draft workflow so CI catches it too.
+check into the release-draft workflow so CI catches it too.
 17. Post-release: `verify-release.sh vX` + pkg.go.dev spot-check (now routine).
 
 **Consumer/fleet follow-ups:**
 18. CV/cv v0.10.2 → v0.11.0 (BLOCKED row — needs the deploy/rollout decision).
 19. chromedp v0.16 → v0.21 migration as a deliberate dedicated task (or a
-    fleet-policy row; the daemon-bump class will hit other repos).
+fleet-policy row; the daemon-bump class will hit other repos).
 20. Fleet script audit for the d-4 `sort | tail -1` sha anti-pattern
-    (2026-10-12 f-47 — one instance found, siblings unverified).
+(2026-10-12 f-47 — one instance found, siblings unverified).
 21. Upstream filing authorization batch: templ gofumpt output, erraudit
-    nolint-audit, StatCard green-tone contrast (drafts verified+ready).
+nolint-audit, StatCard green-tone contrast (drafts verified+ready).
 
 **Quality backlog carried from the f-lists (not yet routed):**
 22. Pusher-staleness observability: last-broadcast-age gauge (f-18).
@@ -291,9 +301,9 @@ batch, amend-relabeled daemon carrier), `9998c6f` (measurement-code batch).
 24. `dashboard_sse_subscribers` gauge (f-20).
 25. Introspection: resolved push interval, staleAfter, last-broadcast age (f-21).
 26. Example server: fast-cadence demo mode exercising the watchdog floor (f-24
-    of the 10-11 report).
+of the 10-11 report).
 27. Post-release API watch: triage feedback on Observe/SourceStatuser/
-    DroppedPatchCount (f-48).
+DroppedPatchCount (f-48).
 28. Fleet lint-pin policy + own-repo filing banner (standing BLOCKED §g row).
 29. Evidence strip machine contract + persistence (standing BLOCKED row).
 30. Compose-stack CI policy: at least the build-only job the e2e argues for.

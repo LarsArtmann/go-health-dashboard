@@ -133,6 +133,7 @@
 ## F) Next up to 50 things (order = value density)
 
 **Unblock P5 (pick ONE path):**
+
 1. Read the pinned bundle's `on` plugin registration semantics in
    go-datastar source (not minified) — `~/projects/go-datastar` — and find
    the sanctioned event attribute grammar + assignment expression form.
@@ -152,25 +153,25 @@
 8. `nix flake check`.
 9. Full serialized browser suite (`nix develop -c go test -run TestBrowser`).
 10. Re-capture README screenshots (new tooltips/chips markup) —
-    `SCREENSHOT_OUTPUT=docs/screenshot.png` etc (f42 wrapper would help).
+`SCREENSHOT_OUTPUT=docs/screenshot.png` etc (f42 wrapper would help).
 11. Re-run `BenchmarkHandler_HTMLRendering`, record delta vs v0.10.2 (f12).
 12. Measure SSE patch payload old-vs-new precisely → `docs/research/` (f11;
-    my ~600 B/row figure is a spot measurement, not a benchmark).
+my ~600 B/row figure is a spot measurement, not a benchmark).
 
 **Docs batch (P8):**
 13. CHANGELOG `[Unreleased]` entries for P1-P4 (+ the polarity bug fix).
 14. FEATURES.md: touch disclosures, chips (if kept), tone chips, latency
-    budget tooltip; update test-count drift guard numbers.
+budget tooltip; update test-count drift guard numbers.
 15. TODO_LIST harvest: close touch-tooltips row (done), close f23 row
-    (covered by TestBrowser_KeyboardLinks:1843-1876), close f11 row with
-    the measurement, update f10/f17/f9 rows as still-open.
+(covered by TestBrowser_KeyboardLinks:1843-1876), close f11 row with
+the measurement, update f10/f17/f9 rows as still-open.
 16. AGENTS.md: templ-components pin text v1.21.0 → v1.23.0 (go.mod truth).
 17. `docs/gotchas.md`: the chromedp daemon-bump incident + the
-    "probe the SDK grammar before shipping data-on-*" lesson (companion to
-    the existing colon-keyed gotcha).
+"probe the SDK grammar before shipping data-on-*" lesson (companion to
+the existing colon-keyed gotcha).
 18. AGENTS.md testing-patterns note: `go test .` in the devShell INCLUDES
-    browser tests (Chrome env is set) — "unit green" claims need `-run`
-    scoping or a browser-suite pass.
+browser tests (Chrome env is set) — "unit green" claims need `-run`
+scoping or a browser-suite pass.
 19. ROADMAP theme 6: record sticky-header SKIP rationale (overflow wrapper).
 20. README prose audit against the new UI (f9).
 21. Harness `[hidden]` CSS fix (f10) + recapture.
@@ -178,7 +179,7 @@
 
 **Carried queue (unchanged, high-value):**
 23. chromedp v0.21 migration as a deliberate task (or a fleet policy row:
-    other repos will hit the same daemon bump).
+other repos will hit the same daemon bump).
 24. Table-driven test for `resolvePushInterval` (zero coverage).
 25. Fuzz target for `rateLimiter.Allow` + fuzz.yml registry in SAME change.
 26. Evidence `maxEvidenceChecks` overflow test.
@@ -190,24 +191,24 @@
 32. Metrics label escaping property test vs fuzz corpus.
 33. health-hub `HEALTH_HUB_*` env table tests.
 34. `WithOnDrop`-adjacent: `Dashboard.HealthCheck` dead-condition check
-    (`push.interval > 0`).
+(`push.interval > 0`).
 35. `check-ui-pins.sh` extension: RecommendedCSP↔SDK-version sync.
 36. LOADTEST re-run post-floor.
 37. `BenchmarkHealthCheck` + small-quality batch (2026-10-11 f-21–f-26).
 38. Consumer sweep: bump CV to v0.11.0 (Blocked row).
 39. deploy/ stack bump to v0.11.0 + boot-verify (Blocked).
 40. Release: cut v0.12.0 with this UI batch once green (cadence decision
-    pending touch-tooltips → this batch).
+pending touch-tooltips → this batch).
 41. Upstream: StatCard green-tone contrast filing (Blocked, verification
-    can start).
+can start).
 42. Upstream: templ-components ListNote custom message (filed #37).
 43. Upstream: go-health#6 federation SourceStatuses (open).
 44. ADR-0003 stat-card tone-system note (two-family rule, now also applies
-    to count chips).
+to count chips).
 45. Em-dash copy decision (Blocked row) — my new copy avoided them; old
-    strings still carry them.
+strings still carry them.
 46. `docs/status/2026-10-09` follow-ups still open: axe degraded-fixture
-    run, dark re-run evidence (f22/f38).
+run, dark re-run evidence (f22/f38).
 47. Screenshot one-command capture wrapper script (f42).
 48. gopls stdversion re-check on upgrade (ROADMAP).
 49. Deprecate `WithNonce` in favor of `WithNonceExtractor` (ROADMAP).
