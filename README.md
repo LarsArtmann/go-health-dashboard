@@ -10,7 +10,7 @@ powered by [Datastar](https://data-star.dev) SSE. Drops into your mux with one
 call and gives you a live status page with green/yellow/red badges, severity
 grouping, and sub-second updates.
 
-![Health dashboard screenshot showing status banner, trend sparkline, and severity-grouped service tables](docs/screenshot.png)
+![Health dashboard screenshot showing status banner, stat cards, trend sparkline, filter chips, and severity-grouped service tables](docs/screenshot.png)
 
 ## What It Does
 
@@ -178,7 +178,8 @@ The page is organized for triage: **failures first, green last**.
   anything is failing, a **Jump to problems** link scrolls to the first
   non-healthy group.
 - **Service tables** — grouped by severity (critical failures, non-critical
-  issues, healthy). Card titles carry row-count badges. Long check names are
+  issues, healthy). Card titles carry severity-toned row-count badges
+  (amber for warn counts, red for fail). Long check names are
   shortened (`*github.com/org/repo/internal/.../handlers.Handlers` reads as
   `handlers.Handlers`); the full key is in the table cell and on hover.
 - **Per-check metadata** — rows answer "how long has it been like this?" and
@@ -191,7 +192,9 @@ The page is organized for triage: **failures first, green last**.
   patch re-applies the default state; `WithPersistCollapse` lets each
   browser keep its choice.
 - **Filter** (self-hosted SDK setups) — type to narrow rows by short or raw
-  name, case-insensitive.
+  name, case-insensitive, and use the **All / Problems / Pass** chips to
+  narrow by status. A no-match renders an explicit empty-state hint instead
+  of a bare blank table.
 - **Connection pill** — live / reconnecting / offline, driven by the SSE
   stream's real lifecycle. The stream self-heals across server restarts.
 - **Header links** — Export CSV/JSON, trend history, and Prometheus metrics,
@@ -203,8 +206,10 @@ The page is organized for triage: **failures first, green last**.
   that just survived a real failure. The strip under the Updated stamp
   reports how many checks have ever deviated from pass since the dashboard
   started ("6 of 60" — or an explicit warning when the answer is zero), and
-  hovering a `pass` badge tells you whether that green is backed by an
-  observed failure or is unproven. Evidence resets on restart.
+  each `pass` badge discloses on hover OR keyboard/touch focus whether that
+  green is backed by an observed failure (proven greens cite their last
+  non-pass; unproven ones wear a dashed outline). Evidence resets on
+  restart.
 
 ## Protecting the Dashboard
 
