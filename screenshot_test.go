@@ -137,30 +137,15 @@ func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
 		health.WithHealthRecorder(timedScreenshotRecorder{}),
 	)
 
-	dash := dashboard.New(probe,
+	s := startDashboardFixture(t, probe,
 		dashboard.WithTitle("Production Cluster"),
 		dashboard.WithPushInterval(100*time.Millisecond),
 		dashboard.WithPushMode(dashboard.PushAlways),
 		dashboard.WithTrend(40),
 	)
+	defer s.cleanup()
 
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-
-	defer func() {
-		dash.Shutdown()
-		probe.Shutdown()
-	}()
-
-	server := httptest.NewServer(mux)
+	server := httptest.NewServer(s.mux)
 	defer server.Close()
 
 	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
@@ -187,7 +172,7 @@ func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
 
 	deadline := time.Now().Add(15 * time.Second)
 
-	for dash.SubscriberCount() == 0 {
+	for s.dash.SubscriberCount() == 0 {
 		if time.Now().After(deadline) {
 			t.Fatal("SSE never connected during screenshot capture")
 		}
@@ -258,30 +243,15 @@ func TestCaptureREADME_ScreenshotDegraded(t *testing.T) {
 		health.WithHealthRecorder(timedScreenshotRecorder{}),
 	)
 
-	dash := dashboard.New(probe,
+	s := startDashboardFixture(t, probe,
 		dashboard.WithTitle("Production Cluster"),
 		dashboard.WithPushInterval(100*time.Millisecond),
 		dashboard.WithPushMode(dashboard.PushAlways),
 		dashboard.WithTrend(40),
 	)
+	defer s.cleanup()
 
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-
-	defer func() {
-		dash.Shutdown()
-		probe.Shutdown()
-	}()
-
-	server := httptest.NewServer(mux)
+	server := httptest.NewServer(s.mux)
 	defer server.Close()
 
 	wsURL, stopChrome := startHeadlessChrome(t, chromePath)
@@ -306,7 +276,7 @@ func TestCaptureREADME_ScreenshotDegraded(t *testing.T) {
 
 	deadline := time.Now().Add(15 * time.Second)
 
-	for dash.SubscriberCount() == 0 {
+	for s.dash.SubscriberCount() == 0 {
 		if time.Now().After(deadline) {
 			t.Fatal("SSE never connected during screenshot capture")
 		}
@@ -435,7 +405,7 @@ func TestCaptureREADME_ScreenshotGrouped(t *testing.T) {
 
 	deadline := time.Now().Add(15 * time.Second)
 
-	for dash.SubscriberCount() == 0 {
+	for s.dash.SubscriberCount() == 0 {
 		if time.Now().After(deadline) {
 			t.Fatal("SSE never connected during screenshot capture")
 		}

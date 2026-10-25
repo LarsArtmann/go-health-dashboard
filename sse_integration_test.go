@@ -774,26 +774,13 @@ func TestWithRetryInterval_EventsCarryRetry(t *testing.T) {
 		health.WithRefreshInterval(50*time.Millisecond),
 	)
 
-	dash := dashboard.New(probe,
+	s := startDashboardFixture(t, probe,
 		dashboard.WithPushInterval(50*time.Millisecond),
 		dashboard.WithRetryInterval(2*time.Second),
 	)
+	defer s.cleanup()
 
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
-	if err := probe.Start(ctx); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-	if err := dash.Start(ctx); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-	defer func() { dash.Shutdown(); probe.Shutdown() }()
-
-	server := httptest.NewServer(mux)
+	server := httptest.NewServer(s.mux)
 	defer server.Close()
 
 	resp, stream := connectSSE(t, server)
@@ -865,27 +852,14 @@ func TestSSE_PatchesContainNoInlineScripts(t *testing.T) {
 		health.WithRefreshInterval(50*time.Millisecond),
 	)
 
-	dash := dashboard.New(probe,
+	s := startDashboardFixture(t, probe,
 		dashboard.WithPushInterval(50*time.Millisecond),
 		dashboard.WithPushMode(dashboard.PushAlways),
 		dashboard.WithNonce("test-nonce-abc"),
 	)
+	defer s.cleanup()
 
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
-	if err := probe.Start(ctx); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-	if err := dash.Start(ctx); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-	defer func() { dash.Shutdown(); probe.Shutdown() }()
-
-	server := httptest.NewServer(mux)
+	server := httptest.NewServer(s.mux)
 	defer server.Close()
 
 	resp, stream := connectSSE(t, server)

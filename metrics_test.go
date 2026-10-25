@@ -131,25 +131,10 @@ func TestMetrics_EscapesLabelValues(t *testing.T) {
 
 	probe := health.New(injector, health.WithRefreshInterval(100*time.Millisecond))
 
-	dash := dashboard.New(probe, dashboard.WithMetrics(true))
+	s := startDashboardFixture(t, probe, dashboard.WithMetrics(true))
+	defer s.cleanup()
 
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-
-	defer func() {
-		dash.Shutdown()
-		probe.Shutdown()
-	}()
-
-	w := doRequest(t, mux, "/health/metrics")
+	w := doRequest(t, s.mux, "/health/metrics")
 	body := w.Body.String()
 
 	want := "dashboard_health_check{check=\"back\\\\slash\\\"quote\\nnewline\",status=\"pass\"} 1"

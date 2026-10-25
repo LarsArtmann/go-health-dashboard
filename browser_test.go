@@ -474,32 +474,21 @@ func TestBrowser_LiveSSEPatch(t *testing.T) {
 		health.WithVersion("2.1.0"),
 		health.WithRefreshInterval(100*time.Millisecond),
 	)
-	dash := dashboard.New(probe,
+
+	s := startDashboardFixture(t, probe,
 		dashboard.WithNonce(nonce),
 		dashboard.WithCSSPath("/static/app.css"),
 		dashboard.WithDatastarSrc("/static/datastar.js"),
 	)
+	defer s.cleanup()
 
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
+	s.mux.HandleFunc("/static/app.css", browserStaticCSS)
+	s.mux.HandleFunc("/static/datastar.js", browserStaticJS)
 
-	mux.HandleFunc("/static/app.css", browserStaticCSS)
-	mux.HandleFunc("/static/datastar.js", browserStaticJS)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-	defer probe.Shutdown()
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-	defer dash.Shutdown()
-
-	session := startBrowserSessionOn(t, dash, mux, nonce)
+	session := startBrowserSessionOn(t, s.dash, s.mux, nonce)
 	ctx, errLog := session.ctx, session.errLog
 
-	waitForSubscriber(t, dash)
+	waitForSubscriber(t, s.dash)
 
 	waitForBodyText(t, ctx, "All Systems Operational")
 
