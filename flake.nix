@@ -40,7 +40,7 @@
           goPkg = pkgs.go_1_27;
 
           mkApp =
-            name: runtimeInputs: text:
+            name: description: runtimeInputs: text:
             let
               script = pkgs.writeShellApplication {
                 inherit name runtimeInputs text;
@@ -49,6 +49,7 @@
             {
               type = "app";
               program = lib.getExe script;
+              meta.description = description;
             };
         in
         {
@@ -109,7 +110,12 @@
 
               vendorHash = "sha256-0Ko7CAVVWuYCMaXm7FGSApnCJ8VHqXUSyyU+PMIpmN4=";
 
-              meta.mainProgram = "health-hub";
+              meta = {
+                description = "Federation hub serving a real-time health dashboard over N remote go-health instances";
+                homepage = "https://github.com/larsartmann/go-health-dashboard";
+                license = lib.licenses.mit;
+                mainProgram = "health-hub";
+              };
             };
 
             default = health-hub;
@@ -143,58 +149,60 @@
           };
 
           apps = {
-            generate = mkApp "generate" [ goPkg ] ''
+            generate = mkApp "generate" "Regenerate templ output and tidy go.mod" [ goPkg ] ''
               go tool templ generate
               go mod tidy
             '';
 
-            test = mkApp "test" [ goPkg ] ''
+            test = mkApp "test" "Regenerate templ output and run the full test suite" [ goPkg ] ''
               go tool templ generate
               GOEXPERIMENT=jsonv2 go test ./... -count=1 "$@"
             '';
 
-            test-race = mkApp "test-race" [ goPkg ] ''
+            test-race = mkApp "test-race" "Run the test suite under the race detector" [ goPkg ] ''
               go tool templ generate
               GOEXPERIMENT=jsonv2 go test ./... -race -count=1 "$@"
             '';
 
-            build = mkApp "build" [ goPkg ] ''
+            build = mkApp "build" "Regenerate templ output and compile all packages" [ goPkg ] ''
               go tool templ generate
               GOEXPERIMENT=jsonv2 go build ./...
             '';
 
-            vet = mkApp "vet" [ goPkg ] ''
+            vet = mkApp "vet" "Run go vet over all packages" [ goPkg ] ''
               GOEXPERIMENT=jsonv2 go vet ./...
             '';
 
-            lint = mkApp "lint" [ goPkg pkgs.golangci-lint ] ''
+            lint = mkApp "lint" "Run golangci-lint over all packages" [ goPkg pkgs.golangci-lint ] ''
               GOEXPERIMENT=jsonv2 golangci-lint run ./...
             '';
 
-            coverage = mkApp "coverage" [ goPkg ] ''
+            coverage = mkApp "coverage" "Run the library test suite with a coverage report" [ goPkg ] ''
               # Scoped to the library package like CI's coverage floor; the
               # example carries no tests and would dilute the percentage.
               GOEXPERIMENT=jsonv2 go test . -coverprofile=coverage.out -covermode=atomic "$@"
               go tool cover -func=coverage.out
             '';
 
-            vulncheck = mkApp "vulncheck" [ goPkg pkgs.govulncheck ] ''
+            vulncheck = mkApp "vulncheck" "Run govulncheck over all packages" [ goPkg pkgs.govulncheck ] ''
               GOEXPERIMENT=jsonv2 govulncheck ./...
             '';
 
-            security = mkApp "security" [ goPkg pkgs.gosec ] ''
+            security = mkApp "security" "Run gosec over all packages" [ goPkg pkgs.gosec ] ''
               GOEXPERIMENT=jsonv2 gosec ./...
             '';
 
-            example = mkApp "example" [ goPkg ] ''
+            example = mkApp "example" "Run the example demo server" [ goPkg ] ''
               go tool templ generate
               GOEXPERIMENT=jsonv2 go run ./example "$@"
             '';
 
-            clean = mkApp "clean" [ goPkg pkgs.trash-cli ] ''
-              trash-put coverage.out 2>/dev/null || true
-              go clean -testcache
-            '';
+            clean =
+              mkApp "clean" "Remove coverage output and clear the Go test cache" [ goPkg pkgs.trash-cli ]
+                ''
+                  trash-put coverage.out 2>/dev/null || true
+                  go clean -testcache
+                '';
           };
         };
     };
