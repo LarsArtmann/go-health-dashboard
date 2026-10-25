@@ -1,18 +1,18 @@
 # Research — measurement sweep: render cost, SSE payload, watchdog floor, Chrome latency, load (2026-10-25)
 
-|             |                                                                                                                                                                                                                     |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Date**    | 2026-10-25                                                                                                                                                                                                          |
-| **Method**  | In-repo `go test -bench` / env-guarded load harness runs in the flake devShell (go 1.27.x, `GOEXPERIMENT=jsonv2`, `GOWORK=off`), on the v0.11.0 tree; throwaway helper binaries (`cmd/measure-patch`) used for payload capture and then trashed |
+|             |                                                                                                                                                                                                                                                                                                     |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Date**    | 2026-10-25                                                                                                                                                                                                                                                                                          |
+| **Method**  | In-repo `go test -bench` / env-guarded load harness runs in the flake devShell (go 1.27.x, `GOEXPERIMENT=jsonv2`, `GOWORK=off`), on the v0.11.0 tree; throwaway helper binaries (`cmd/measure-patch`) used for payload capture and then trashed                                                     |
 | **Context** | TODO rows f-11/f-12 (SSE payload + render delta vs v0.10.2 after the icon-glyph markup rework), the S-sized quality batch (BenchmarkHealthCheck, Chrome-latency re-measure), and the LOADTEST evidence-era re-run. Closes the "record the numbers in `docs/research/`" remainder of the payload row |
 
 ## Render cost (`go test -bench`, this tree vs the 2026-09 baselines)
 
-| Benchmark                          | 2026-09 baseline | 2026-10-25 (v0.11.0 tree) | Reading                                                                                                     |
-| ---------------------------------- | ---------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `BenchmarkHandler_HTMLRendering`   | 40.4 µs/op       | 44.0–54.9 µs/op           | +9–36% — the icon-tile stat cards, filter chips, evidence strip, and disclosure badges all render per page   |
-| Full HTML page (View render)       | —                | 74.3–118 µs/op            | includes layout shell + SDK script tag                                                                      |
-| Dashboard + `WithTrend`            | —                | 120–131 µs/op             | trend ring copy + sparkline markup                                                                          |
+| Benchmark                          | 2026-09 baseline | 2026-10-25 (v0.11.0 tree)          | Reading                                                                                                      |
+| ---------------------------------- | ---------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `BenchmarkHandler_HTMLRendering`   | 40.4 µs/op       | 44.0–54.9 µs/op                    | +9–36% — the icon-tile stat cards, filter chips, evidence strip, and disclosure badges all render per page   |
+| Full HTML page (View render)       | —                | 74.3–118 µs/op                     | includes layout shell + SDK script tag                                                                       |
+| Dashboard + `WithTrend`            | —                | 120–131 µs/op                      | trend ring copy + sparkline markup                                                                           |
 | `BenchmarkHealthCheck` (lifecycle) | —                | **68.10 ns/op, 66 B/op, 0 allocs** | steady-state `HealthCheck` is a pointer load + two bool reads; the watchdog re-baseline made this measurable |
 
 The HTML delta is page-render cost only, once per page load; the per-tick SSE
@@ -64,12 +64,12 @@ the JSON scrape path both hold sub-10 ms p95 under aggregate fan-in.
 
 ## Consumer sweep (v0.11.0 adoption state, verified 2026-10-25)
 
-| Consumer          | Pin      | State                                                                                                                              |
-| ----------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| DiscordSync, company-master-data, file-and-image-renamer, go-taskqueue, library-policy, timesheets, webphone | v0.11.0 | already current (no action)                                                                                                         |
-| nsfw-classifier   | v0.10.2  | **bumped to v0.11.0** (`e102344e`, rides go-health v0.7.0). Baseline has two pre-existing ONNX real-model failures (`internal/face`, `internal/skin`) that do NOT import the dashboard — unrelated, recorded, not fixed here |
-| dnsblockd         | v0.10.1  | **BLOCKED upstream** — their lockstep gate needs go-datastar root/static exact-match pins; upstream tagged root v0.6.2 but never `static/v0.6.2` (verified via `git ls-remote` 2026-10-25: newest static tag is v0.6.1). Unblock is an owner act (push the tag or decide sub-train tolerance), tracked as dnsblockd T331 |
-| CV                | v0.10.2  | BLOCKED row in our TODO_LIST — user's deploy call, not bumped                                                                      |
+| Consumer                                                                                                     | Pin     | State                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| DiscordSync, company-master-data, file-and-image-renamer, go-taskqueue, library-policy, timesheets, webphone | v0.11.0 | already current (no action)                                                                                                                                                                                                                                                                                              |
+| nsfw-classifier                                                                                              | v0.10.2 | **bumped to v0.11.0** (`e102344e`, rides go-health v0.7.0). Baseline has two pre-existing ONNX real-model failures (`internal/face`, `internal/skin`) that do NOT import the dashboard — unrelated, recorded, not fixed here                                                                                             |
+| dnsblockd                                                                                                    | v0.10.1 | **BLOCKED upstream** — their lockstep gate needs go-datastar root/static exact-match pins; upstream tagged root v0.6.2 but never `static/v0.6.2` (verified via `git ls-remote` 2026-10-25: newest static tag is v0.6.1). Unblock is an owner act (push the tag or decide sub-train tolerance), tracked as dnsblockd T331 |
+| CV                                                                                                           | v0.10.2 | BLOCKED row in our TODO_LIST — user's deploy call, not bumped                                                                                                                                                                                                                                                            |
 
 pkg.go.dev: v0.11.0 rendered and marked Latest (spot-check closed 2026-10-25).
 
