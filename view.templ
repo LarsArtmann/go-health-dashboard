@@ -377,18 +377,22 @@ templ groupRows(group checkGroup, ev evidenceSummary) {
 }
 
 // statusFilterChip renders one status filter segment. Clicking writes the
-// chip's value into the statusFilter signal (data-on-click), which every
-// row's hide expression (rowFilterExpr) and the chips' own active styling
+// chip's value into the statusFilter signal, which every row's hide
+// expression (rowFilterExpr) and the chips' own active styling
 // (data-class object) react to, and data-attr keeps aria-pressed truthful.
-// All wiring is declarative data-* markup: CSP-safe, no per-element script,
-// and SSE patches re-carry it unchanged; the signal itself lives client-side
-// and survives patch merges.
+// The event attribute MUST be the colon-keyed data-on:click — the pinned
+// Datastar v1.0.3 bundle splits plugin keys on ':' only and silently
+// ignores the hyphen form (empirically proven: a static module-loaded probe
+// page wired data-on:click and signal assignment end to end while
+// data-on-click never fired). All wiring is declarative data-* markup:
+// CSP-safe, no per-element script, and SSE patches re-carry it unchanged;
+// the signal itself lives client-side and survives patch merges.
 templ statusFilterChip(label, value string) {
 	<button
 		type="button"
 		id={ "status-filter-" + value }
 		class={ statusFilterChipBaseClass }
-		data-on-click={ "$" + statusFilterSignal + " = '" + value + "'" }
+		data-on:click={ "$" + statusFilterSignal + " = '" + value + "'" }
 		data-class={ statusChipClassExpr(value) }
 		data-attr:aria-pressed={ statusChipPressedExpr(value) }
 	>
