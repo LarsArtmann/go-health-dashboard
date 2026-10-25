@@ -35,7 +35,7 @@ func findChrome(t *testing.T) string {
 	t.Helper()
 
 	if p := os.Getenv("GO_HEALTH_DASHBOARD_CHROME"); p != "" {
-		if _, err := os.Stat(p); err == nil { //nolint:gosec // operator-provided test binary path
+		if _, err := os.Stat(p); err == nil {
 			return p
 		}
 
@@ -112,7 +112,6 @@ func startHeadlessChrome(t *testing.T, chromePath string) (string, func()) {
 		t.Fatalf("chrome profile dir: %v", err)
 	}
 
-	//nolint:gosec // chromePath comes from the operator's env or PATH, test-only
 	cmd := exec.Command(chromePath,
 		"--headless",
 		"--no-sandbox",

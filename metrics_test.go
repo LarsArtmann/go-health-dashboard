@@ -362,7 +362,6 @@ func TestMetrics_PromtoolCheckWhenAvailable(t *testing.T) {
 
 	w := doRequest(t, s.mux, "/health/metrics")
 
-	//nolint:gosec // path resolved via exec.LookPath, not user input
 	cmd := exec.Command(promtool, "check", "metrics")
 	cmd.Stdin = strings.NewReader(w.Body.String())
 

@@ -150,6 +150,75 @@ func buildLoadAggregate(t *testing.T, sourceCount, checksPerSrc int) *aggregate.
 	return agg
 }
 
+// sseLoadStats accumulates the shared tallies of the load-test SSE
+// clients: the total observed events and the latency of the first one.
+type sseLoadStats struct {
+	mu             sync.Mutex
+	totalEvents    int
+	firstEvent     time.Duration
+	firstEventOnce sync.Once
+	streamStart    time.Time
+}
+
+// recordEvent counts one observed SSE event and captures the first-event
+// latency exactly once.
+func (s *sseLoadStats) recordEvent() {
+	s.mu.Lock()
+	s.totalEvents++
+	s.mu.Unlock()
+
+	s.firstEventOnce.Do(func() { s.firstEvent = time.Since(s.streamStart) })
+}
+
+// streamOneClient reads a single SSE connection until ctx expires and
+// tallies observed events into stats. Errors after context cancellation
+// are the expected shutdown path and stay silent.
+func streamOneClient(
+	t *testing.T,
+	ctx context.Context,
+	baseURL string,
+	client *http.Client,
+	clientIndex int,
+	stats *sseLoadStats,
+) {
+	t.Helper()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/health/sse", nil)
+	if err != nil {
+		t.Errorf("sse request: %v", err)
+
+		return
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		if ctx.Err() == nil {
+			t.Errorf("sse connect %d: %v", clientIndex, err)
+		}
+
+		return
+	}
+
+	defer resp.Body.Close()
+
+	var buf [streamBufferSize]byte
+
+	for ctx.Err() == nil {
+		n, err := resp.Body.Read(buf[:])
+		if n > 0 && strings.Contains(string(buf[:n]), "event:") {
+			stats.recordEvent()
+		}
+
+		if err != nil {
+			if ctx.Err() == nil {
+				t.Errorf("sse read %d: %v", clientIndex, err)
+			}
+
+			return
+		}
+	}
+}
+
 // streamLoadClients opens clientCount SSE readers until ctx expires and
 // returns their waitgroup plus the total event count and time of the
 // first event.
@@ -162,60 +231,17 @@ func streamLoadClients(
 ) (*sync.WaitGroup, *int, *time.Duration) {
 	t.Helper()
 
-	var (
-		eventsMu       sync.Mutex
-		totalEvents    int
-		firstEvent     time.Duration
-		firstEventOnce sync.Once
-		streamWG       sync.WaitGroup
-	)
+	stats := &sseLoadStats{streamStart: time.Now()}
 
-	streamStart := time.Now()
+	var streamWG sync.WaitGroup
 
 	for clientIndex := range clientCount {
 		streamWG.Go(func() {
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/health/sse", nil)
-			if err != nil {
-				t.Errorf("sse request: %v", err)
-
-				return
-			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				if ctx.Err() == nil {
-					t.Errorf("sse connect %d: %v", clientIndex, err)
-				}
-
-				return
-			}
-
-			defer resp.Body.Close()
-
-			var buf [streamBufferSize]byte
-
-			for ctx.Err() == nil {
-				n, err := resp.Body.Read(buf[:])
-				if n > 0 && strings.Contains(string(buf[:n]), "event:") {
-					eventsMu.Lock()
-					totalEvents++
-					eventsMu.Unlock()
-
-					firstEventOnce.Do(func() { firstEvent = time.Since(streamStart) })
-				}
-
-				if err != nil {
-					if ctx.Err() == nil {
-						t.Errorf("sse read %d: %v", clientIndex, err)
-					}
-
-					return
-				}
-			}
+			streamOneClient(t, ctx, baseURL, client, clientIndex, stats)
 		})
 	}
 
-	return &streamWG, &totalEvents, &firstEvent
+	return &streamWG, &stats.totalEvents, &stats.firstEvent
 }
 
 // runLoadScrapes hammers /health and /health/metrics from scrapeWorkers

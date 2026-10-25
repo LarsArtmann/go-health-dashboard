@@ -67,7 +67,6 @@ func (r timedScreenshotRecorder) RecordHealthCheckWithContext(
 func normalizeScreenshotPerms(t *testing.T, out string) {
 	t.Helper()
 
-	//nolint:gosec // out is the operator-provided env path; 0644 matches the docs convention
 	if err := os.Chmod(out, screenshotFileMode); err != nil {
 		t.Fatalf("chmod screenshot: %v", err)
 	}
