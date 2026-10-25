@@ -30,28 +30,7 @@ func setupDashboardWithHealthyServices(t *testing.T, n int, opts ...dashboard.Op
 		health.WithRefreshInterval(100*time.Millisecond),
 	)
 
-	dash := dashboard.New(probe, opts...)
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-
-	return &probeSetup{
-		probe: probe,
-		dash:  dash,
-		mux:   mux,
-		cleanup: func() {
-			dash.Shutdown()
-			probe.Shutdown()
-		},
-	}
+	return startDashboardFixture(t, probe, opts...)
 }
 
 // detailsOpenTag returns the first <details ...> opening tag in body.

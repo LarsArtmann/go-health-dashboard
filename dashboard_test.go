@@ -59,6 +59,37 @@ type probeSetup struct {
 	cleanup func()
 }
 
+// startDashboardFixture wires a built probe into a dashboard, registers the
+// dashboard's routes on a fresh mux, starts both against t.Context(), and
+// returns the fixture whose cleanup shuts the dashboard down before the
+// probe. Every setupDashboard* helper shares this contract so the
+// start/shutdown order lives in exactly one place.
+func startDashboardFixture(t *testing.T, probe *health.Probe, opts ...dashboard.Option) *probeSetup {
+	t.Helper()
+
+	dash := dashboard.New(probe, opts...)
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	if err := probe.Start(t.Context()); err != nil {
+		t.Fatalf("probe.Start: %v", err)
+	}
+	if err := dash.Start(t.Context()); err != nil {
+		t.Fatalf("dash.Start: %v", err)
+	}
+
+	return &probeSetup{
+		probe: probe,
+		dash:  dash,
+		mux:   mux,
+		cleanup: func() {
+			dash.Shutdown()
+			probe.Shutdown()
+		},
+	}
+}
+
 func setupDashboard(t *testing.T, opts ...dashboard.Option) *probeSetup {
 	t.Helper()
 
@@ -74,28 +105,7 @@ func setupDashboard(t *testing.T, opts ...dashboard.Option) *probeSetup {
 		health.WithRefreshInterval(100*time.Millisecond),
 	)
 
-	dash := dashboard.New(probe, opts...)
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-
-	return &probeSetup{
-		probe: probe,
-		dash:  dash,
-		mux:   mux,
-		cleanup: func() {
-			dash.Shutdown()
-			probe.Shutdown()
-		},
-	}
+	return startDashboardFixture(t, probe, opts...)
 }
 
 func setupDashboardWithFailures(t *testing.T, opts ...dashboard.Option) *probeSetup {
@@ -115,28 +125,7 @@ func setupDashboardWithFailures(t *testing.T, opts ...dashboard.Option) *probeSe
 		health.WithRefreshInterval(100*time.Millisecond),
 	)
 
-	dash := dashboard.New(probe, opts...)
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-
-	return &probeSetup{
-		probe: probe,
-		dash:  dash,
-		mux:   mux,
-		cleanup: func() {
-			dash.Shutdown()
-			probe.Shutdown()
-		},
-	}
+	return startDashboardFixture(t, probe, opts...)
 }
 
 func doRequest(
@@ -540,23 +529,10 @@ func TestContentNegotiation_JSONCriticalFailReturns503(t *testing.T) {
 		health.WithRefreshInterval(100*time.Millisecond),
 	)
 
-	dash := dashboard.New(probe)
+	s := startDashboardFixture(t, probe)
+	defer s.cleanup()
 
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-	defer func() {
-		dash.Shutdown()
-		probe.Shutdown()
-	}()
-
-	w := doRequestWithAccept(t, mux, "/health", "application/json")
+	w := doRequestWithAccept(t, s.mux, "/health", "application/json")
 
 	if w.Code != http.StatusServiceUnavailable {
 		t.Errorf("critical failure JSON status: want 503, got %d", w.Code)
@@ -702,30 +678,17 @@ func TestWithRoutes_CustomPaths(t *testing.T) {
 	}
 
 	probe := health.New(injector, health.WithCriticalServices("db"))
-	dash := dashboard.New(probe, dashboard.WithRoutes(customRoutes))
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-	defer func() {
-		dash.Shutdown()
-		probe.Shutdown()
-	}()
+	s := startDashboardFixture(t, probe, dashboard.WithRoutes(customRoutes))
+	defer s.cleanup()
 
 	// Custom dashboard route should work
-	w := doRequest(t, mux, "/status")
+	w := doRequest(t, s.mux, "/status")
 	if w.Code != http.StatusOK {
 		t.Errorf("custom dashboard route: want 200, got %d", w.Code)
 	}
 
 	// Default route should NOT be registered
-	w2 := doRequest(t, mux, "/health")
+	w2 := doRequest(t, s.mux, "/health")
 	if w2.Code != http.StatusNotFound {
 		t.Errorf("default route should not exist: want 404, got %d", w2.Code)
 	}

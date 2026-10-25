@@ -569,28 +569,7 @@ func setupDashboardWithOffCheck(t *testing.T, opts ...dashboard.Option) *probeSe
 		health.WithRefreshInterval(100*time.Millisecond),
 	)
 
-	dash := dashboard.New(probe, opts...)
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-
-	return &probeSetup{
-		probe: probe,
-		dash:  dash,
-		mux:   mux,
-		cleanup: func() {
-			dash.Shutdown()
-			probe.Shutdown()
-		},
-	}
+	return startDashboardFixture(t, probe, opts...)
 }
 
 // TestBrowser_OffRowContract pins the off contract in a real browser: the

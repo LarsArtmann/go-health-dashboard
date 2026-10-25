@@ -36,31 +36,10 @@ func setupTrendDashboard(t *testing.T, opts ...dashboard.Option) (*probeSetup, *
 		health.WithRefreshInterval(50*time.Millisecond),
 	)
 
-	dash := dashboard.New(probe, append([]dashboard.Option{
+	s := startDashboardFixture(t, probe, append([]dashboard.Option{
 		dashboard.WithPushInterval(30 * time.Millisecond),
 		dashboard.WithTrend(200),
 	}, opts...)...)
-
-	mux := http.NewServeMux()
-	dash.RegisterRoutes(mux)
-
-	if err := probe.Start(t.Context()); err != nil {
-		t.Fatalf("probe.Start: %v", err)
-	}
-
-	if err := dash.Start(t.Context()); err != nil {
-		t.Fatalf("dash.Start: %v", err)
-	}
-
-	s := &probeSetup{
-		probe: probe,
-		dash:  dash,
-		mux:   mux,
-		cleanup: func() {
-			dash.Shutdown()
-			probe.Shutdown()
-		},
-	}
 
 	return s, svc
 }
