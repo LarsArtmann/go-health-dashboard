@@ -186,16 +186,24 @@ Raw ideas:
 
 - Browser-level half/half grid assertion at desktop width (the branching is
   unit- and golden-pinned; a rendered-width assertion would close the loop)
-- Sticky table header for long healthy groups
+- Sticky table header for long healthy groups — SKIPPED 2026-10-25:
+  upstream `Table` wraps tables in `overflow-x-auto`, and `StickyHeader`
+  needs a height-constrained scroll wrapper for `thead` sticking — adopting
+  it would mean unwrapping the horizontal-scroll safety. Revisit only if
+  upstream offers a sticky variant compatible with the overflow wrapper
 - Print-style verification pass over the new cards (`print:` classes)
 - Dark-mode aggregate screenshot for the federation docs
 - `datastar.PolledRegion` evaluation for a future non-SSE fallback mode
-- `EmptyState` for the no-match filter hint (currently text-only)
+- ~~`EmptyState` for the no-match filter hint (currently text-only)~~
+  SHIPPED 2026-10-25 (`filterEmptyAttrs`, Search icon)
 - Status-badge transition animation (motion-reduce safe, CSP-safe)
-- Tone for group count badges (amber count on warn groups)
+- ~~Tone for group count badges (amber count on warn groups)~~ SHIPPED
+  2026-10-25 (`groupCountTone`: amber on warn counts, red on fail,
+  neutral otherwise)
 - `datastar.SSEErrorHandling` as an opt-in complement to the connection pill
-- Probe `RefreshInterval` surfaced in the latency tooltip (context for the
-  number)
+- ~~Probe `RefreshInterval` surfaced in the latency tooltip (context for the
+  number)~~ SHIPPED 2026-10-25 (`latencyTooltipText` names the interval and
+  the amber/red thresholds)
 - Document the icons-module adoption pattern in the templ-components
   consumer notes (fleet-wide guidance)
 - Verify BuildFlow cannot sweep icons/datastar/utils to divergent versions;

@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -487,4 +488,72 @@ func renderToString(t *testing.T, c templ.Component) string {
 	}
 
 	return builder.String()
+}
+
+// TestEvidenceLog_CapsAtMaxEvidenceChecks pins the truncation path: past
+// maxEvidenceChecks distinct names, NEW names stop accruing evidence (they
+// honestly report unproven instead of growing memory without bound) while
+// EXISTING entries keep updating — the cap drops additions, never the
+// accumulated record.
+func TestEvidenceLog_CapsAtMaxEvidenceChecks(t *testing.T) {
+	t.Parallel()
+
+	log := newEvidenceLog()
+
+	observedAt := time.Date(2026, 10, 25, 8, 0, 0, 0, time.UTC)
+
+	log.observe(respWithChecks(map[string]health.Status{
+		"pre-cap-warn": health.StatusWarn,
+	}), observedAt)
+
+	// Fill the map to exactly the cap with direct entries (the pusher
+	// path is the same map; filling via observe would take 10k responses).
+	log.mu.Lock()
+	for i := len(log.checks); i < maxEvidenceChecks; i++ {
+		log.checks[fmt.Sprintf("filler/%d", i)] = &checkEvidence{
+			NonPassCount: 1,
+			LastNonPass:  observedAt,
+		}
+	}
+	log.mu.Unlock()
+
+	postCap := respWithChecks(map[string]health.Status{
+		"post-cap-warn": health.StatusWarn,
+	})
+
+	log.observe(postCap, observedAt.Add(time.Minute))
+
+	log.mu.Lock()
+	defer log.mu.Unlock()
+
+	if got := len(log.checks); got != maxEvidenceChecks {
+		t.Fatalf("evidence map grew past the cap: %d entries, cap %d", got, maxEvidenceChecks)
+	}
+
+	if _, ok := log.checks["post-cap-warn"]; ok {
+		t.Error("a NEW check name accreted evidence past the cap")
+	}
+
+	// Pre-cap names keep their accumulated record and keep updating.
+	entry, ok := log.checks["pre-cap-warn"]
+	if !ok {
+		t.Fatal("pre-cap entry lost from the evidence map")
+	}
+
+	if entry.NonPassCount != 2 {
+		t.Errorf("pre-cap entry stopped updating after the cap: count = %d, want 2", entry.NonPassCount)
+	}
+
+	if !entry.LastNonPass.Equal(observedAt.Add(time.Minute)) {
+		t.Errorf("pre-cap entry last-non-pass = %v, want %v",
+			entry.LastNonPass, observedAt.Add(time.Minute))
+	}
+
+	// A NEW pass-only response for the capped-out name still reports
+	// unproven: the summary intersects with the current response, and an
+	// absent entry is an honest "never deviated".
+	summary := log.snapshot()
+	if summary.everNonPass("post-cap-warn") {
+		t.Error("capped-out name reports itself proven without ever accruing evidence")
+	}
 }

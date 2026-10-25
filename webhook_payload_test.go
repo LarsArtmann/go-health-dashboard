@@ -301,17 +301,17 @@ func TestWebhook_BoundedInFlightVsSlowReceiver(t *testing.T) {
 
 	waitFor(t, webhookTimeout, func() bool { return inHandler.Load() == 0 })
 
-	// The bound must recover: a fresh transition after the drain delivers.
+	// The bound must recover: a fresh transition after the drain reaches
+	// the receiver (entry-side counter — handled only ticks on return, so
+	// waiting on it here would deadlock against the release below).
 	release = make(chan struct{})
-
-	delivered := handled.Load()
 
 	notifier.fireOnChange(health.Response{
 		Status: health.StatusFail,
 		Checks: map[string]health.Check{"svc/post-drain": {Status: health.StatusFail}},
 	})
 
-	waitFor(t, 3*time.Second, func() bool { return handled.Load() > delivered })
+	waitFor(t, 3*time.Second, func() bool { return inHandler.Load() == 1 })
 
 	close(release)
 

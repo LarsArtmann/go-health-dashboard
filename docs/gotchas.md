@@ -84,9 +84,12 @@ post-bump commit).
 The 2026-09-10 v1.16.0 audit retired the axe `definition-list`/`dlitem`
 tolerance in `TestBrowser_Accessibility` after upstream templ-components#6
 was fixed; the audit now fails on any serious/critical violation, both
-themes. Undocumented sweeps have landed eight times (v1.19.2→v1.21.0 rode
+themes. Undocumented sweeps have landed nine times (v1.19.2→v1.21.0 rode
 the 2026-10-08 fleet sweep, daemon commit `54cdc59`; adopted deliberately
-2026-10-09). Script-emitting upstream components (CopyButton, Tooltip) are
+2026-10-09; v1.21.0→v1.23.0 rode the 2026-10-15 daemon churn, commit
+`93d13fd`, re-audited 2026-10-25 with the full 19-test browser suite
+green before the guard pins moved). Script-emitting upstream components
+(CopyButton, Tooltip) are
 vetted for nonce/CSP compatibility before adoption: per-element inline
 scripts and unconditional `nonce=""` attributes clash with the
 per-request-nonce and SSE-patch paths here. Upstream StatCard icon tiles
@@ -243,3 +246,48 @@ provisioned alert example takes `relativeTimeRange` as integer SECONDS,
 not duration strings; host ports 8080/9090/3000 collide with other
 projects on this machine — remap via a compose override with `!override`
 port lists (plain overrides MERGE and still bind the taken port).
+
+## chromedp daemon bump breaks the test build (2026-10-15 → 2026-10-25)
+
+The 2026-10-15 daemon churn (commit `93d13fd`) swept chromedp to v0.21.0
++ a floating cdproto pseudoversion. chromedp v0.21 is a breaking API
+generation (`chromedp.Run` returns two values, `Evaluate` went generic,
+`NewRemoteAllocator` moved) — the whole test build failed, not a single
+test. Recovery (2026-10-25): restore chromedp v0.16.0 + cdproto
+`v0.0.0-20260922220944-a19bff23514f` in go.mod/go.sum, then `go mod
+tidy`. gopls keeps reporting v0.21-style diagnostics afterward (stale
+module cache view) — trust the nix gates, not the editor squiggles. The
+v0.21 migration stays a deliberate backlog item (TODO_LIST), not
+something to ride in on a daemon sweep.
+
+## Probing the vendored Datastar bundle: ES module + colon grammar
+
+Two traps cost a session its chips feature (2026-10-25):
+
+1. The vendored SDK (`go-datastar/static`, v1.0.x bundle) is an ES
+   MODULE. A classic `<script src=...>` throws `Unexpected token
+   'export'` and the script never runs — probe pages must use
+   `type="module"`. The dashboard's own `SDKScript` does this correctly;
+   custom static probe pages must also register `/static/datastar.js`
+   themselves (the browser-test `browserStaticJS` handler) or they 404
+   the bundle and every Datastar attribute silently does nothing.
+2. Plugin keys split on `:` only: `data-on:click` works,
+   `data-on-click` is silently ignored (no console error). Same rule as
+   `data-bind`/`data-class:hidden`. Signal assignment `$signal = 'v'`
+   compiles to a proxy write and reactive attributes follow — verified
+   against the bundle before trusting any generated-markup claim.
+
+Methodology lesson: prove the grammar on a MINIMAL module-loaded static
+page first; a failing full-stack browser test cannot distinguish
+"grammar wrong" from "harness artifact".
+
+## nolint directives for path-excluded linters are dead weight
+
+`.golangci.yml` excludes gosec from ALL `_test.go` files, so any
+`//nolint:gosec` directive in a test file suppresses nothing and
+nolintlint flags it the moment the runner notices (6 directives, legacy
+from before the exclusion rule, stripped 2026-10-25; also one gocognit
+28 in `loadtest_test.go` fixed by extracting `streamOneClient`). Rule of
+thumb: a nolint directive whose linter is excluded by a path rule is
+dead by construction — check the exclusions section before adding a
+directive anywhere, and expect strip-and-rerun to be the proof.
