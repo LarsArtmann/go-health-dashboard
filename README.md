@@ -346,6 +346,15 @@ go build -o health-hub ./cmd/health-hub
 Remote URLs are never logged verbatim (userinfo is redacted), and every
 misconfiguration fails fast with the offending entry named.
 
+The hub renders one card per remote (source-grouped mode):
+
+![Federation hub dashboard with one card per remote: a healthy api source and a worker source with a failing queue check](docs/screenshot-grouped.png)
+
+Grouped screenshot captured by `screenshot_test.go`
+(`SCREENSHOT_OUTPUT_GROUPED=docs/screenshot-grouped.png`, or
+`bash scripts/capture-screenshots.sh grouped`). The same view is available
+in-process with `dashboard.WithGrouping(dashboard.GroupBySource)`.
+
 ## How Real-Time Works
 
 The dashboard uses [Datastar](https://data-star.dev) for real-time DOM updates:
