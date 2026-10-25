@@ -185,8 +185,9 @@ templ dashboardContent(data viewModel) {
 		}
 	</p>
 	if !data.Evidence.Since.IsZero() && data.Evidence.Total > 0 {
-		<p class="mt-1 text-xs text-gray-500 dark:text-gray-400" title={ evidenceTooltip }>
-			{ evidenceSummaryText(data.Evidence) }
+		<p class="mt-1 flex flex-wrap items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+			<span>{ evidenceSummaryText(data.Evidence) }</span>
+			@infoDisclosure(evidenceTooltip)
 		</p>
 	}
 	if data.ExportURL != "" || data.TrendURL != "" || data.MetricsURL != "" {
@@ -351,7 +352,7 @@ templ groupRows(group checkGroup, ev evidenceSummary) {
 			</td>
 			<td class="px-4 py-3 text-gray-700 dark:text-gray-300">
 				<span class="mb-0.5 block text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:hidden">Status</span>
-				@display.Badge(badgeForStatus(row, ev))
+				@statusBadge(row, ev)
 			</td>
 			<td class="px-4 py-3 text-gray-700 dark:text-gray-300">
 				<span class="mb-0.5 block text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 sm:hidden">Details</span>
@@ -380,6 +381,61 @@ func pluralS(count int) string {
 // with the raw check key recoverable via the title attribute.
 templ serviceNameCell(row checkRow) {
 	<span class="font-medium text-gray-900 dark:text-gray-100" title={ row.Name }>{ row.displayName() }</span>
+}
+
+// disclosureTooltipClass styles the CSS-only disclosure tooltip shared by the
+// evidence affordances: dark surface, high-contrast text, pointer-events-none
+// so hover never flickers, and hidden until the parent group hovers or
+// receives focus. Class-driven display toggling keeps the render output free
+// of style attributes (CSP) and script-free (SSE patch purity).
+const disclosureTooltipClass = "pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-64 -translate-x-1/2 rounded-md bg-gray-900 px-2.5 py-1.5 text-left text-xs leading-snug text-gray-50 shadow-lg group-hover:block group-focus-within:block dark:bg-gray-700 dark:text-gray-100"
+
+// disclosureFocusClass styles the focusable half of a disclosure: cursor-help
+// signals there is more, and the focus-visible ring mirrors the theme
+// toggle's WCAG-locked pattern so keyboard users see where they are.
+const disclosureFocusClass = "group relative inline-flex cursor-help rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-500"
+
+// statusBadge renders a row's status badge with its evidence disclosure.
+// Native title tooltips never reach touch users, so the evidence story rides
+// a focusable CSS-only tooltip instead: hover, keyboard focus, and a tap all
+// reveal the same text (a tap focuses the span; focus-within keeps the tip
+// open until the next tap elsewhere). The tooltip text also rides an
+// sr-only copy so screen readers announce it without pointer hover, while
+// the visual badge and tip are aria-hidden (the sr-only text is the
+// accessible name). Everything is class-only markup: CSP-clean, and SSE
+// patches carry it unchanged (TestSSE_PatchesContainNoInlineScripts).
+// Rows without an evidence window (pusher never started) render a plain
+// badge; unproven greens keep the dashed provisional outline from
+// badgeForStatus as the glance-level signal.
+templ statusBadge(row checkRow, ev evidenceSummary) {
+	{{
+		title := badgeEvidenceTitle(row, ev)
+	}}
+	if title == "" {
+		@display.Badge(badgeForStatus(row, ev))
+	} else {
+		<span tabindex="0" class={ disclosureFocusClass }>
+			<span class="sr-only">{ title }</span>
+			<span aria-hidden="true" class="contents">
+				@display.Badge(badgeForStatus(row, ev))
+				<span role="tooltip" class={ disclosureTooltipClass }>{ title }</span>
+			</span>
+		</span>
+	}
+}
+
+// infoDisclosure renders the compact information affordance appended to the
+// evidence strip: an information glyph that reveals its text on hover,
+// keyboard focus, or tap (same mechanics as statusBadge). Screen readers get
+// the text through the sr-only copy instead of the glyph.
+templ infoDisclosure(text string) {
+	<span tabindex="0" class={ disclosureFocusClass }>
+		<span class="sr-only">{ text }</span>
+		<span aria-hidden="true" class="inline-flex items-center">
+			@icons.Icon(icons.Information, "h-3.5 w-3.5")
+			<span role="tooltip" class={ disclosureTooltipClass }>{ text }</span>
+		</span>
+	</span>
 }
 
 // rowDetailsCell renders the Details column: the error text (long errors

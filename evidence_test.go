@@ -286,25 +286,23 @@ func TestBadgeForStatus_ProvenTooltipCitesProbeSince(t *testing.T) {
 		lastNonPassBy: map[string]time.Time{"db": observedAt},
 	}
 
-	withSince := badgeForStatus(checkRow{
+	withSince := badgeEvidenceTitle(checkRow{
 		Name:   "db",
 		Status: health.StatusPass,
 		Since:  time.Date(2026, 9, 10, 11, 30, 0, 0, time.UTC),
 	}, sum)
 
-	title, ok := withSince.Attrs["title"].(string)
-	if !ok || !strings.Contains(title, "The probe reports this state since 11:30:00 UTC") {
+	if !strings.Contains(withSince, "The probe reports this state since 11:30:00 UTC") {
 		t.Fatalf(
-			"proven badge title = %v, want the probe-side since citation",
-			withSince.Attrs["title"],
+			"proven badge disclosure = %q, want the probe-side since citation",
+			withSince,
 		)
 	}
 
-	withoutSince := badgeForStatus(checkRow{Name: "db", Status: health.StatusPass}, sum)
+	withoutSince := badgeEvidenceTitle(checkRow{Name: "db", Status: health.StatusPass}, sum)
 
-	title, ok = withoutSince.Attrs["title"].(string)
-	if !ok || strings.Contains(title, "probe reports") {
-		t.Fatalf("tooltip without probe-side Since must not cite it, got %q", title)
+	if strings.Contains(withoutSince, "probe reports") {
+		t.Fatalf("disclosure without probe-side Since must not cite it, got %q", withoutSince)
 	}
 }
 
@@ -413,6 +411,58 @@ func TestRender_EvidenceStrip(t *testing.T) {
 
 	if strings.Contains(zeroHTML, "Failure evidence") {
 		t.Errorf("unpopulated viewModel must not render the strip:\n%s", zeroHTML)
+	}
+}
+
+// TestRender_EvidenceDisclosureTouchAndKeyboard pins the disclosure story for
+// the evidence affordances: native title tooltips never reach touch users, so
+// the per-row evidence must render as a focusable span whose tooltip text
+// rides both an sr-only copy (screen readers) and a role="tooltip" visual,
+// while unproven greens carry the dashed provisional outline and proven
+// greens do not. Without an evidence window everything renders plain.
+func TestRender_EvidenceDisclosureTouchAndKeyboard(t *testing.T) {
+	t.Parallel()
+
+	observedAt := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
+
+	vm := buildViewModel(respWithChecks(map[string]health.Status{
+		"db":     health.StatusPass,
+		"backup": health.StatusPass,
+		"cache":  health.StatusWarn,
+	}), "Test", "/health/sse", GroupBySeverity)
+
+	vm.Evidence = evidenceSummary{
+		Since:         observedAt.Add(-time.Hour),
+		Total:         3,
+		Proven:        2,
+		lastNonPassBy: map[string]time.Time{"cache": observedAt, "backup": observedAt},
+	}
+
+	html := renderToString(t, dashboardContent(vm))
+
+	if !strings.Contains(html, `tabindex="0"`) {
+		t.Error("pass badges must render a focusable disclosure for touch and keyboard users")
+	}
+
+	if !strings.Contains(html, `role="tooltip"`) {
+		t.Error("the evidence disclosure must render a CSS-only tooltip")
+	}
+
+	if !strings.Contains(html, "sr-only") {
+		t.Error("the tooltip text needs an sr-only copy for screen readers")
+	}
+
+	if got := strings.Count(html, "outline-dashed"); got != 1 {
+		t.Errorf("exactly the unproven green carries the provisional outline, got %d occurrences", got)
+	}
+
+	plainVM := buildViewModel(respWithChecks(map[string]health.Status{"db": health.StatusPass}),
+		"Test", "/health/sse", GroupBySeverity)
+
+	plainHTML := renderToString(t, dashboardContent(plainVM))
+
+	if strings.Contains(plainHTML, `tabindex="0"`) || strings.Contains(plainHTML, "outline-dashed") {
+		t.Error("without an evidence window badges must render plain, no disclosures")
 	}
 }
 

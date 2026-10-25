@@ -9,7 +9,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	templ "github.com/a-h/templ"
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/display"
 	"github.com/larsartmann/templ-components/feedback"
@@ -792,22 +791,26 @@ func sortByName(rows []checkRow) {
 	})
 }
 
+// unprovenBadgeClass marks a pass badge whose check has never been observed
+// deviating: a dashed provisional outline that reads at a glance as "green,
+// but not yet backed by evidence". Class-only markup survives SSE patches and
+// needs no stylesheet or script (CSP-safe); proven greens keep the solid
+// badge. The full story rides the focusable disclosure (see statusBadge).
+const unprovenBadgeClass = "outline-1 outline-dashed outline-offset-1 outline-green-700/60 dark:outline-green-400/60"
+
 // badgeForStatus creates a display.BadgeProps for the given row's status.
-// Pass badges carry the observational evidence as a native title tooltip:
-// unproven greens disclose that no deviation was ever seen, proven greens
-// cite their last non-pass and — when the probe reports a state-entry
-// time — pair it with the probe-side Check.Since stamp
-// (see badgeEvidenceTitle).
+// The observational evidence disclosure (badgeEvidenceTitle) renders through
+// the statusBadge wrapper as a focusable, touch-reachable tooltip; rows
+// outside the evidence window (no pusher observations) render a plain badge.
+// Unproven greens additionally carry the dashed provisional outline.
 func badgeForStatus(row checkRow, evidence evidenceSummary) display.BadgeProps {
 	props := display.BadgeProps{
 		Text: string(row.Status),
 		Type: mapStatusToBadge(row.Status),
 	}
 
-	if title := badgeEvidenceTitle(row, evidence); title != "" {
-		props.Attrs = templ.Attributes{
-			"title": title,
-		}
+	if row.Status == health.StatusPass && !evidence.Since.IsZero() && !evidence.everNonPass(row.Name) {
+		props.Class = unprovenBadgeClass
 	}
 
 	return props
