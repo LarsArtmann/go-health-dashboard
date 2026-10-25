@@ -8,8 +8,9 @@ Version history source of truth: `CHANGELOG.md` (Keep a Changelog).
 
 - [ ] `git fetch && git status` — clean tree, synced with `origin/master`.
 - [ ] Dependency pins intact: `scripts/check-ui-pins.sh` exits 0
-      (currently templ-components v1.18.0 + v1.18.0/datastar +
-      v1.18.0/utils + go-datastar v0.5.0).
+      (pins live in that script — currently the templ-components v1.23.0
+      family + go-datastar v0.6.2/static v0.6.1 + the SDK bundle sha;
+      don't restate versions here, they rot).
       Any movement must be a dedicated, audited change with a green
       browser suite — never a silent sweep.
 - [ ] Fuzz registry in sync: every `func Fuzz…` in `fuzz_test.go` has a
@@ -82,16 +83,30 @@ verified batch immediately — a multi-minute edit→commit window loses the
 release commit's message to a `chore: auto-commit` heuristic (v0.7.0's
 `ebf52d0` wears that scar permanently; it happened again 2026-09-10).
 
+Daemon-intent recovery (condensed; full recipes in AGENTS.md "Daemon-race
+recovery recipes"):
+
+- BEFORE writing: handshake (`git log --oneline -10`, `git status`,
+  `ls docs/status/ | tail`) — the newest status file may be another
+  session's handoff.
+- Intent commit lost to a daemon sweep: verify HEAD's daemon commit
+  holds your content (`git show HEAD -- <files> | rg <fresh-symbol>`),
+  then `git commit --amend` carries the full intent message. A split
+  across several daemon commits is fine — the intent message discloses
+  it. NEVER rebase daemon commits away.
+- `.git/index.lock` during a commit: the daemon was mid-commit — wait
+  2s, re-check HEAD, amend-relabel again.
+
 - [ ] `nix fmt`, then commit `chore(release): vX.Y.Z — <theme>` with a
       body naming the user-visible changes.
 - [ ] Annotated tag: `git tag -a vX.Y.Z -m "<notes>"` (signed tags
       encouraged: `git config tag.gpgSign true` once, then plain
       `git tag -a` produces signed tags).
 - [ ] Screenshots refreshed when the render changed:
-      `SCREENSHOT_OUTPUT=docs/screenshot.png nix develop -c go test -run 'TestCaptureREADME_Screenshot$'`
-      and the dark variant with `SCREENSHOT_OUTPUT_DARK` — then EYEBALL
-      both PNGs before pushing (v0.8.0 was eyeballed only post-push; it
-      happened to be fine).
+      `bash scripts/capture-screenshots.sh` (one command, all three;
+      light/dark/degraded subsets via argument) — then EYEBALL the PNGs
+      before pushing (v0.8.0 was eyeballed only post-push; it happened
+      to be fine).
 - [ ] Push order: TAG FIRST (`git push origin vX.Y.Z`), then master.
       The master CI run's `fetch-depth: 0` checkout then sees the tag and
       the version-guard job cannot lose a fetch race (validated on the
@@ -131,7 +146,26 @@ v0.6.0): 0.x releases are FULL releases marked Latest — no `--prerelease`
 flag for pre-1.0 tags. Consumers pin versions; semver 0.x already signals
 instability.
 
-## 7. Close the loop
+## 7. Pre-tag verifier expectations (d-4 addendum, 2026-10-12)
+
+Before creating the tag, re-read `scripts/verify-release.sh` against the
+tag you are ABOUT to create — the v0.11.0 cut found the verifier comparing
+tag-object and peeled-commit shas through an order-dependent
+`sort -u | tail -1` (fixed in `5d71768`): v0.10.2 passed by luck.
+
+- [ ] Tag convention check: annotated (`git tag -a`), signed preferred —
+      the verifier peels `refs/tags/vX^{}` and compares structurally; a
+      lightweight tag or a moved tag behaves differently downstream
+      (proxy Origin.Hash).
+- [ ] Verifier expectations: every check in verify-release.sh must be
+      expected-green for the tag type you cut (proxy hash, sumdb,
+      consumer run, CI-on-commit, release state). If any check's
+      mechanics are unclear for your tag, STOP and read the script —
+      never assume it generalizes.
+- Anti-pattern ban in gate scripts: no `sort | tail -1` on heterogeneous
+  shas — structural parsing (`^{}` peeling) only.
+
+## 8. Close the loop
 
 - [ ] Update `TODO_LIST.md` release rows to `DONE` with the tag/commit
       and verification evidence.

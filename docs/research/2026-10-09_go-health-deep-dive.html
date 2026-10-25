@@ -893,8 +893,23 @@
           <div class="meta">
             <span class="tag amber">Pinned: v0.5.1</span>
             <span class="tag">Latest tag: v0.5.1</span>
-            <span class="tag teal">Adoption score: 78/100</span>
+            <span class="tag teal">Adoption score: 78/100 (at v0.5.1)</span>
           </div>
+          <p style="margin-top:0.75rem;font-size:0.85rem;color:#9ca3af">
+            <strong>Re-check addendum 2026-10-25 (T09 quality pass):</strong>
+            typo fixed, all internal anchors resolve, no empty sections,
+            and the file:line citations were spot-checked — the two that
+            moved (dashboard.go:171-173 sanitizer choke point, handlers.go
+            Healthz registration) match the audit-time-tree disclaimer
+            above; the cited symbols exist in HEAD. Since the audit, the
+            2026-10-10 pareto plan adopted the major findings: go-health
+            is now pinned at v0.7.0 (SourceStatuser escalation, federation
+            hub via cmd/health-hub, checks battery, MarkShuttingDown drain
+            safety, /version + WithInstanceID, startup latch gating) —
+            the 78/100 adoption score is a snapshot of v0.5.1-era truth,
+            not the current tree; a full re-audit would score materially
+            higher but was not re-run (bounded pass).
+          </p>
         </header>
 
         <!-- Scorecard -->

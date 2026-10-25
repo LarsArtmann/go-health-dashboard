@@ -154,7 +154,12 @@ dash := dashboard.New(probe,
 `WithRateLimit` configures **a single shared token bucket** across all
 dashboard-owned routes (dashboard HTML, SSE, favicon, metrics, trend,
 export) — not one bucket per route. Kubernetes probe endpoints are never
-limited.
+limited. The bucket refills **continuously** (not per-window): bursts up
+to the full budget are admitted immediately, then requests pass one at a
+time as tokens accrue at budget/window per second — a denied request
+consumes nothing. `Retry-After` reports the whole seconds until the next
+token (≈ `window/budget` when the bucket is empty: 1s at 100/min, 2s at
+30/min).
 
 **Probe-cadence observation (ADR-0003):** wire go-health's evaluation hook
 into `Dashboard.Observe` where the probe is built, and trend + evidence
