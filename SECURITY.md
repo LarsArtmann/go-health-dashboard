@@ -9,8 +9,8 @@ section for the rare behavior changes).
 
 | Version | Supported        |
 | ------- | ---------------- |
-| 0.11.x  | Yes              |
-| < 0.11  | No — please bump |
+| 0.12.x  | Yes              |
+| < 0.12  | No — please bump |
 
 ## Reporting a Vulnerability
 

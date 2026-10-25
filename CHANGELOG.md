@@ -13,7 +13,14 @@ sit sandwiched between two released sections — at tag time it ships into the
 cut or its contents wait for the next one; decide explicitly, never by
 forgetting.
 
-## [Unreleased]
+## [0.12.0] - 2026-10-25
+
+The UI-batch + hardening-train release: a more honest and more accessible
+dashboard (touch/keyboard evidence disclosures, status filter chips,
+severity-toned group count chips, latency budget tooltip), two
+security/robustness fixes (CSV formula injection neutralized, torn-HTML
+render eliminated), the root causes of an 11-day red-CI streak fixed with
+new gates, and a fixture dedup that shrank the test surface by 235 lines.
 
 ### Fixed
 
