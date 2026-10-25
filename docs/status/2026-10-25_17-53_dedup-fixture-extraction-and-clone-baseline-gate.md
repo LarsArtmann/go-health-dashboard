@@ -1,13 +1,13 @@
 # Status + Brutal Self-Review — Dedup pass: 18 fixture tails → `startDashboardFixture` + pinned clone-baseline gate (2026-10-25, 17:53)
 
-| | |
-| --- | --- |
-| **Session** | Triggered by user directive READ/UNDERSTAND/RESEARCH/REFLECT, execute-and-verify stepwise, "deduplciate!" — the `deduplicate-code` skill ran art-dupl, every clone group was judged, harmful duplication was extracted, and acceptance was turned into an enforced gate |
-| **Window** | ~16:15–17:55 CET (single session; auto-commit daemon active throughout) |
-| **Start state** | Clean Go tree at `b895cc6` (docs-only reorg staged by a prior session); CI 7/7 green per the 14:19 session handoff; art-dupl 0.9.0-1b165cd at `/run/current-system/sw/bin/` |
-| **End state** | All work daemon-committed (10 heuristic commits); tree holds only this report + AGENTS/docs memory edits; **full test suite green (incl. 21 serialized browser tests), race suite green, `go vet` clean, golangci-lint 0 issues, pre-push checks 9/9 green** |
-| **Net code delta** | **−235 lines** (122 insertions / 357 deletions) across 8 test files + the gate script |
-| **Format note** | HTML is the status-report skill's canonical format; the user explicitly demanded `.md` at this path — honored as a one-off override, not propagated into the skill |
+|                    |                                                                                                                                                                                                                                                                         |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Session**        | Triggered by user directive READ/UNDERSTAND/RESEARCH/REFLECT, execute-and-verify stepwise, "deduplciate!" — the `deduplicate-code` skill ran art-dupl, every clone group was judged, harmful duplication was extracted, and acceptance was turned into an enforced gate |
+| **Window**         | ~16:15–17:55 CET (single session; auto-commit daemon active throughout)                                                                                                                                                                                                 |
+| **Start state**    | Clean Go tree at `b895cc6` (docs-only reorg staged by a prior session); CI 7/7 green per the 14:19 session handoff; art-dupl 0.9.0-1b165cd at `/run/current-system/sw/bin/`                                                                                             |
+| **End state**      | All work daemon-committed (10 heuristic commits); tree holds only this report + AGENTS/docs memory edits; **full test suite green (incl. 21 serialized browser tests), race suite green, `go vet` clean, golangci-lint 0 issues, pre-push checks 9/9 green**            |
+| **Net code delta** | **−235 lines** (122 insertions / 357 deletions) across 8 test files + the gate script                                                                                                                                                                                   |
+| **Format note**    | HTML is the status-report skill's canonical format; the user explicitly demanded `.md` at this path — honored as a one-off override, not propagated into the skill                                                                                                      |
 
 ---
 
@@ -17,7 +17,7 @@
 
 1. **I wrote wrong numbers into durable memory docs.** AGENTS.md and docs/gotchas.md said "16 hand-rolled fixture tails across 7 files" — the real count, verified by `rg -c "startDashboardFixture(t,"` at report time, is **18 sites across 8 files**. My final chat message repeated "16". Caught ~30 minutes later while writing THIS report; corrected in both docs before publishing it. One grep at extraction time would have prevented it. Lesson: counts in memory files come from `rg -c`, never from the session's sense of accomplishment.
 2. **I never ran `nix flake check` or `nix build .#health-hub` this session.** The templ LSP re-rawed `view_templ.go`/`page_scripts_templ.go` mid-session (known gotcha) and I restored the canonical shape via `go tool templ generate` → `nix fmt` — but the flake packaging path consuming those files was never exercised locally. Justification (the machine's nix-build steps fail on proxy DNS per gotchas, CI owns flake builds) is real, but "justified skip" and "forgot" look identical in the handoff unless written down. This is the write-down.
-3. **I re-derived an already-written policy.** The 2026-09-23 dedup session had already reserved test-scaffolding as a documented non-fix ("per-test isolation preferred") and left a triage bucket note. I didn't read that status file at handshake; I rediscovered the policy mid-analysis by grepping gotchas. The AGENTS.md handshake recipe (`ls docs/status/ | tail`) exists precisely for this and I ran it — but only looked at the newest file, not for prior sessions *on the same topic*.
+3. **I re-derived an already-written policy.** The 2026-09-23 dedup session had already reserved test-scaffolding as a documented non-fix ("per-test isolation preferred") and left a triage bucket note. I didn't read that status file at handshake; I rediscovered the policy mid-analysis by grepping gotchas. The AGENTS.md handshake recipe (`ls docs/status/ | tail`) exists precisely for this and I ran it — but only looked at the newest file, not for prior sessions _on the same topic_.
 4. **I left an asymmetry undocumented.** `TestMetrics_PrometheusParserConformance` builds a probe, registers routes, and starts ONLY the probe — never the dashboard. I classified it "not convertible, accept" (correct — the metrics endpoint needs no pusher) but wrote no comment at the site. The next dedup auditor will re-derive the same judgment from zero.
 5. **Redundant verification spend.** The full 21-test browser suite ran to completion twice (once via `nix run .#test`, once explicitly to prove no skips). The second run was justified once (skip- paranoia); the first run's 5s root-package time was actually plausible given ~155ms Chrome launches. Harmless, but it was luck, not budgeting.
 
@@ -29,7 +29,7 @@
 
 ### What could you have done better?
 
-1. **I hand-rolled a text parser for the gate when the tool ships machine output.** art-dupl has `--plumbing` and `--json` flags I never inspected; instead I grepped human-readable text, whose wording *provably varies by flag combination* ("Detected N groups, X shown" vs "Found total N"), and the first version of my gate silently killed the whole pre-push script via `grep` no-match under `set -euo pipefail`. Caught by running the gate (exit 1, zero output), fixed by counting `^found N clones:` markers with `|| true` — but the correct move was checking the machine-readable interface first.
+1. **I hand-rolled a text parser for the gate when the tool ships machine output.** art-dupl has `--plumbing` and `--json` flags I never inspected; instead I grepped human-readable text, whose wording _provably varies by flag combination_ ("Detected N groups, X shown" vs "Found total N"), and the first version of my gate silently killed the whole pre-push script via `grep` no-match under `set -euo pipefail`. Caught by running the gate (exit 1, zero output), fixed by counting `^found N clones:` markers with `|| true` — but the correct move was checking the machine-readable interface first.
 2. **`replace_all` without counting occurrences first.** My screenshot_test.go replacement hit a third `for dash.SubscriberCount() == 0` line in a test I had deliberately NOT converted (the multi-probe aggregate test). `go vet` caught the undefined `s` within a minute and a line-scoped `sed` fixed it, but the edit tool literally asks for uniqueness and I chose force over verification.
 3. **I batched conversions before verifying any.** The first full-suite run landed after only 6 of 18 conversions; green there proved the helper, not the migration. Safe in the event, but the honest sequence is convert-one → verify → convert-the-rest, and I only did it by accident of timing.
 4. **Numbers from memory, not from the tree** (see forget #1). This is the same failure class the repo already has a name for: unverified claims encoded into durable surfaces.
@@ -98,7 +98,7 @@ Nothing at disaster level. The three genuine defects of the session, all caught 
 
 ## f) Up to 50 things we should get done next
 
-*Provenance tags: [S] observed in this session, [C] carried context from AGENTS/TODO_LIST/prior-session handoffs. Sorted by impact within groups; most are small by design — a brainstorm, not a commitment list (HARVEST applies routing rigor).*
+_Provenance tags: [S] observed in this session, [C] carried context from AGENTS/TODO_LIST/prior-session handoffs. Sorted by impact within groups; most are small by design — a brainstorm, not a commitment list (HARVEST applies routing rigor)._
 
 **Gate & tooling hardening**
 
@@ -182,4 +182,4 @@ Nothing at disaster level. The three genuine defects of the session, all caught 
 
 ---
 
-*WAITING FOR INSTRUCTIONS.* — Report written per your explicit `.md` path demand (status-report skill's canonical format is styled HTML; overridden once, flagged here). Per harness rules I did not commit: the auto-commit daemon will pick this file up.
+_WAITING FOR INSTRUCTIONS._ — Report written per your explicit `.md` path demand (status-report skill's canonical format is styled HTML; overridden once, flagged here). Per harness rules I did not commit: the auto-commit daemon will pick this file up.
