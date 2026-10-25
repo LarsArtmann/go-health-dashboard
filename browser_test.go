@@ -2399,6 +2399,7 @@ func TestBrowser_AccessibilityDegraded(t *testing.T) {
 
 	if axeBytes == nil {
 		assertNoBrowserErrors(t, errLog)
+
 		return
 	}
 
