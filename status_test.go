@@ -1085,3 +1085,30 @@ func TestTimelineEntryMappers_OffIsNeutral(t *testing.T) {
 		t.Errorf("off glyph class = %q, want %q", got, wantClass)
 	}
 }
+
+// TestStatusValue_PinsEveryStatus pins the exhaustive health.Status switch
+// in statusValue: the linter demands an explicit case for every status, so
+// adding one (or re-ranking an existing one) must be a deliberate, tested
+// change. Off deliberately plots at the pass value — it is visibility, not
+// a verdict — and unknown statuses plot as fail: the trend line dips on
+// anything that is not provably healthy.
+func TestStatusValue_PinsEveryStatus(t *testing.T) {
+	t.Parallel()
+
+	pins := map[health.Status]float64{
+		health.StatusPass: 1,
+		health.StatusOff:  1,
+		health.StatusWarn: 0.5,
+		health.StatusFail: 0,
+	}
+
+	for status, want := range pins {
+		if got := statusValue(status); got != want {
+			t.Errorf("statusValue(%s) = %v, want %v", status, got, want)
+		}
+	}
+
+	if got := statusValue(health.Status("quantum")); got != trendFailValue {
+		t.Errorf("statusValue(unknown) = %v, want trendFailValue (%v)", got, trendFailValue)
+	}
+}

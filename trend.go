@@ -245,3 +245,30 @@ func (d *Dashboard) ExportHandler() http.HandlerFunc {
 		}
 	}
 }
+
+// csvFormulaStarters are the leading bytes that turn a spreadsheet cell
+// into a formula (the OWASP CSV-injection class: =, +, -, @, tab, CR).
+// Export CSV is operator-consumed — analysts open it in Excel or Sheets —
+// so an adversarial status string surfacing through a hostile or buggy
+// prober must not execute there.
+const csvFormulaStarters = "=+-@\t\r"
+
+// exportCSVField neutralizes one CSV field against formula injection: a
+// formula-starter first byte gets a leading single quote (the displayed
+// value is unchanged, the formula is dead). RFC-4180 quoting for commas,
+// quotes, and newlines is owned by the csv.Writer in ExportHandler.
+func exportCSVField(field string) string {
+	if field != "" && strings.ContainsRune(csvFormulaStarters, rune(field[0])) {
+		return "'" + field
+	}
+
+	return field
+}
+
+// writeCSVRow appends one CSV record. The discard is provably safe: the
+// writer wraps a bytes.Buffer, whose writes cannot fail.
+//
+//nolint:erraudit // bytes.Buffer-backed csv.Writer writes cannot fail
+func writeCSVRow(w *csv.Writer, fields ...string) {
+	_ = w.Write(fields)
+}

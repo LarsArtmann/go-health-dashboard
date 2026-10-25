@@ -219,3 +219,113 @@ func assertWebhookCheckEntries(
 		}
 	}
 }
+
+// TestWebhook_BoundedInFlightVsSlowReceiver pins the bounded-delivery
+// claim against a receiver that accepts requests but never answers: a
+// flapping status must never put more than webhookMaxInFlight deliveries
+// on the wire at once, excess transitions are dropped (not queued), and
+// the bound releases once the receiver answers again — no permanent
+// starvation.
+func TestWebhook_BoundedInFlightVsSlowReceiver(t *testing.T) {
+	t.Parallel()
+
+	var (
+		release   = make(chan struct{})
+		inHandler atomic.Int64
+		peak      atomic.Int64
+		handled   atomic.Int64
+	)
+
+	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		current := inHandler.Add(1)
+
+		for {
+			observed := peak.Load()
+			if current <= observed || peak.CompareAndSwap(observed, current) {
+				break
+			}
+		}
+
+		defer inHandler.Add(-1)
+		defer handled.Add(1)
+
+		// Bounded hang: release unblocks on schedule; the timer keeps a
+		// failing test from deadlocking server teardown for the full
+		// webhookTimeout.
+		select {
+		case <-release:
+		case <-time.After(webhookTimeout + time.Second):
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer slow.Close()
+
+	notifier := newWebhookNotifier(Config{WebhookURL: slow.URL})
+
+	// 40 distinct transitions against a stuck receiver: the first
+	// webhookMaxInFlight deliveries occupy the server, the rest must be
+	// dropped at the gate instead of piling up.
+	for i := 0; i < 40; i++ {
+		notifier.fireOnChange(health.Response{
+			Status: health.StatusWarn,
+			Checks: map[string]health.Check{
+				fmt.Sprintf("svc/%d", i): {Status: health.StatusWarn},
+			},
+		})
+	}
+
+	waitFor(t, 3*time.Second, func() bool { return inHandler.Load() >= 1 })
+
+	if got := peak.Load(); got > webhookMaxInFlight {
+		t.Fatalf("slow receiver saw %d concurrent deliveries, bound is %d", got, webhookMaxInFlight)
+	}
+
+	// Give any would-be ninth delivery a window to (wrongly) arrive.
+	time.Sleep(50 * time.Millisecond)
+
+	if got := peak.Load(); got > webhookMaxInFlight {
+		t.Fatalf("bound exceeded after settle window: %d concurrent, limit %d", got, webhookMaxInFlight)
+	}
+
+	if got := handled.Load(); got > webhookMaxInFlight {
+		t.Fatalf("stuck receiver handled %d deliveries, bound is %d", got, webhookMaxInFlight)
+	}
+
+	// Release the receiver and let the bounded set drain.
+	close(release)
+
+	waitFor(t, webhookTimeout, func() bool { return inHandler.Load() == 0 })
+
+	// The bound must recover: a fresh transition after the drain delivers.
+	release = make(chan struct{})
+
+	delivered := handled.Load()
+
+	notifier.fireOnChange(health.Response{
+		Status: health.StatusFail,
+		Checks: map[string]health.Check{"svc/post-drain": {Status: health.StatusFail}},
+	})
+
+	waitFor(t, 3*time.Second, func() bool { return handled.Load() > delivered })
+
+	close(release)
+
+	waitFor(t, webhookTimeout, func() bool { return inHandler.Load() == 0 })
+}
+
+// waitFor polls cond until it holds or the deadline expires, failing the
+// test with the message-free verdict "condition never became true".
+func waitFor(t *testing.T, timeout time.Duration, cond func() bool) {
+	t.Helper()
+
+	deadline := time.Now().Add(timeout)
+
+	for !cond() && time.Now().Before(deadline) {
+		time.Sleep(5 * time.Millisecond)
+	}
+
+	if !cond() {
+		t.Fatal("condition never became true before the deadline")
+	}
+}

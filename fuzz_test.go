@@ -711,3 +711,41 @@ func FuzzEvidenceSummaryText(f *testing.F) {
 		}
 	})
 }
+
+// FuzzRateLimiterAllow exercises the hand-rolled token bucket with
+// adversarial capacities. The window is pinned to one hour so real-time
+// refill between calls is negligible (≤ 4096 * µs / 3.6e9 < 1 token),
+// making the invariants deterministic:
+//
+//   - the configured burst is granted in one immediate run — tokens only
+//     accrue, never evaporate, so draining can never be denied early;
+//   - the request after the burst is denied — the bucket is empty;
+//   - retryAfter on a denial is never negative — a negative hint would
+//     invite an immediate retry loop instead of backing off.
+func FuzzRateLimiterAllow(f *testing.F) {
+	for _, burst := range []int{1, 2, 3, 7, 64, 255, 4096} {
+		f.Add(burst)
+	}
+
+	f.Fuzz(func(t *testing.T, burst int) {
+		if burst < 1 || burst > 4096 {
+			t.Skip("out of pinned range")
+		}
+
+		limiter := newRateLimiter(burst, time.Hour)
+
+		for i := 0; i < burst; i++ {
+			if !limiter.Allow() {
+				t.Fatalf("burst request %d/%d denied — tokens evaporated", i+1, burst)
+			}
+		}
+
+		if limiter.Allow() {
+			t.Fatalf("bucket granted %d+1 immediate requests — burst bound broken", burst)
+		}
+
+		if hint := limiter.retryAfter(); hint < 0 {
+			t.Fatalf("retryAfter after a denial = %d, want >= 0", hint)
+		}
+	})
+}

@@ -45,6 +45,17 @@
 #   - templ-components/icons joined as a DIRECT dependency (timeline trend
 #     glyphs, stat-card icons) at the same v1.21.0 — pinned from here on.
 #
+# Re-audited 2026-10-25 on templ-components v1.23.0 + go-datastar v0.6.2:
+#   - the v1.21.0 → v1.23.0 climb rode the 2026-10-15 daemon churn (commit
+#     93d13fd, ninth unguarded occurrence — the same commit series that
+#     broke the chromedp test build); discovered red-guarded during the
+#     2026-10-25 UI batch closeout.
+#   - the full browser suite (19 tests: CSP, live SSE patch, axe both
+#     themes, keyboard incl. links + new controls, pill, collapse, filter,
+#     chips, evidence disclosure, metrics, mobile, off-row, retry) ran
+#     green under strict CSP on the bumped set before these pins were
+#     updated in the same change.
+#
 # CEREMONY RULE: if you bump any of these dependencies, update the pins
 # in this file IN THE SAME CHANGE and re-run the browser suite. A bump
 # without its guard update leaves CI red for every subsequent commit.
@@ -54,10 +65,10 @@
 # change that updates these pins and re-runs the browser suite.
 set -euo pipefail
 
-expected_templ_components="v1.21.0"
-expected_templ_components_datastar="v1.21.0"
-expected_templ_components_utils="v1.21.0"
-expected_templ_components_icons="v1.21.0"
+expected_templ_components="v1.23.0"
+expected_templ_components_datastar="v1.23.0"
+expected_templ_components_utils="v1.23.0"
+expected_templ_components_icons="v1.23.0"
 expected_go_datastar="v0.6.2"
 expected_go_datastar_static="v0.6.1"
 

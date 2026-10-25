@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 	"time"
 
@@ -123,5 +124,67 @@ func TestHealthCheck_WatchdogToleratesFirstTick(t *testing.T) {
 	// there is no evidence yet, and a just-started dashboard would flake.
 	if err := dash.HealthCheck(ctx); err != nil {
 		t.Fatalf("HealthCheck immediately after Start: want nil, got %v", err)
+	}
+}
+
+// intervalStubProber is the minimal Prober for resolvePushInterval: only
+// RefreshInterval matters, and the table sets it per case.
+type intervalStubProber struct {
+	interval time.Duration
+}
+
+func (p intervalStubProber) CachedResponse() health.Response { return health.Response{} }
+
+func (p intervalStubProber) RefreshInterval() time.Duration { return p.interval }
+
+func (p intervalStubProber) LivenessHandler() http.HandlerFunc {
+	return func(http.ResponseWriter, *http.Request) {}
+}
+
+func (p intervalStubProber) ReadinessHandler() http.HandlerFunc {
+	return func(http.ResponseWriter, *http.Request) {}
+}
+
+func (p intervalStubProber) StartupHandler() http.HandlerFunc {
+	return func(http.ResponseWriter, *http.Request) {}
+}
+
+// TestResolvePushInterval pins the three-branch precedence (configured
+// beats probe beats default) AND the positivity guarantee HealthCheck
+// relies on: every branch outcome must be > 0, because New stores the
+// resolved interval on the config the pusher copies, and the watchdog's
+// staleness math multiplies by it.
+func TestResolvePushInterval(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		configured time.Duration
+		probe      time.Duration
+		want       time.Duration
+	}{
+		{name: "configured wins over probe", configured: 5 * time.Second, probe: 30 * time.Second, want: 5 * time.Second},
+		{name: "configured wins over zero probe", configured: 5 * time.Second, probe: 0, want: 5 * time.Second},
+		{name: "probe fills unset configured", configured: 0, probe: 750 * time.Millisecond, want: 750 * time.Millisecond},
+		{name: "default fills live-mode probe", configured: 0, probe: 0, want: defaultPushInterval},
+		{name: "negative configured is ignored like zero", configured: -time.Second, probe: time.Second, want: time.Second},
+		{name: "negative probe is ignored like zero", configured: 0, probe: -time.Second, want: defaultPushInterval},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := resolvePushInterval(tt.configured, intervalStubProber{interval: tt.probe})
+			if got != tt.want {
+				t.Errorf("resolvePushInterval(%s, probe=%s) = %s, want %s",
+					tt.configured, tt.probe, got, tt.want)
+			}
+
+			if got <= 0 {
+				t.Errorf("resolvePushInterval(%s, probe=%s) = %s: every branch must resolve positive",
+					tt.configured, tt.probe, got)
+			}
+		})
 	}
 }
