@@ -1,11 +1,11 @@
 # Full Status + Brutal Self-Review — v0.12.1 release session, templ-drift triage, draft-workflow bug (2026-10-25, 18:54)
 
-| | |
-| --- | --- |
-| **Session** | User: "Time for a new release?" → full cut authorized, then "Now you are the only agent" mid-session (inherited the departed dedup session's in-flight state), then this retro demanded |
-| **Window** | ~17:20–18:54 CET (single session; auto-commit daemon active throughout; 3 foreign buildflows loading the machine) |
-| **Start state** | Master `67b0df3` CI-green; daemon then swept a parallel session's 8-file fixture refactor + RAW templ output; CI Hygiene red on `5025001` before I made any edit |
-| **End state** | **v0.12.1 shipped**: signed tag `ef1bf57`, CI 7/7, verify-release 6/6, pages live (v0.12.1 Latest + v0.12.0 disclosure), gate 0 9/9 final, master `2c6898b` green, docs synced (TODO_LIST / AGENTS / ROADMAP / status report) |
+|                 |                                                                                                                                                                                                                               |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Session**     | User: "Time for a new release?" → full cut authorized, then "Now you are the only agent" mid-session (inherited the departed dedup session's in-flight state), then this retro demanded                                       |
+| **Window**      | ~17:20–18:54 CET (single session; auto-commit daemon active throughout; 3 foreign buildflows loading the machine)                                                                                                             |
+| **Start state** | Master `67b0df3` CI-green; daemon then swept a parallel session's 8-file fixture refactor + RAW templ output; CI Hygiene red on `5025001` before I made any edit                                                              |
+| **End state**   | **v0.12.1 shipped**: signed tag `ef1bf57`, CI 7/7, verify-release 6/6, pages live (v0.12.1 Latest + v0.12.0 disclosure), gate 0 9/9 final, master `2c6898b` green, docs synced (TODO_LIST / AGENTS / ROADMAP / status report) |
 
 ---
 

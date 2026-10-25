@@ -1,11 +1,11 @@
 # Status — v0.12.1 release cut (green-CI re-cut of v0.12.0) + templ-drift triage (2026-10-25, 18:48)
 
-| | |
-| --- | --- |
-| **Session** | User: "Time for a new release?" → cut authorized. Mid-session the parallel dedup session ended and this became the only agent ("Now you are the only agent"), inheriting its in-flight state |
-| **Window** | ~17:20–18:48 CET (single session; auto-commit daemon active throughout) |
-| **Start state** | Master `67b0df3` (TODO_LIST rebuild) CI-green; daemon then swept a parallel session's test-fixture refactor + RAW templ output; CI Hygiene red on `5025001` |
-| **End state** | **v0.12.1 shipped end-to-end**: tag `ef1bf57` (signed) on origin; CI 7/7 green on the release commit; verify-release.sh 6/6 (proxy hash == tag commit, sumdb, clean consumer prints `0.12.1`); pages live (v0.12.1 Latest, v0.12.0 disclosure); final pre-push gate 9/9; master `e7cb45f` green |
+|                 |                                                                                                                                                                                                                                                                                                 |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Session**     | User: "Time for a new release?" → cut authorized. Mid-session the parallel dedup session ended and this became the only agent ("Now you are the only agent"), inheriting its in-flight state                                                                                                    |
+| **Window**      | ~17:20–18:48 CET (single session; auto-commit daemon active throughout)                                                                                                                                                                                                                         |
+| **Start state** | Master `67b0df3` (TODO_LIST rebuild) CI-green; daemon then swept a parallel session's test-fixture refactor + RAW templ output; CI Hygiene red on `5025001`                                                                                                                                     |
+| **End state**   | **v0.12.1 shipped end-to-end**: tag `ef1bf57` (signed) on origin; CI 7/7 green on the release commit; verify-release.sh 6/6 (proxy hash == tag commit, sumdb, clean consumer prints `0.12.1`); pages live (v0.12.1 Latest, v0.12.0 disclosure); final pre-push gate 9/9; master `e7cb45f` green |
 
 ---
 
