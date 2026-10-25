@@ -323,3 +323,31 @@ DroppedPatchCount (f-48).
    (templ-components: gofumpt output + StatCard contrast; erraudit:
    nolint-audit NEEDED verdict). Filing is a remote action under your
    identity — authorize filing all three, some, or none?
+
+## Addendum 2026-10-25 (afternoon session): list COMPLETE except §g questions
+
+All remaining §a/§f work landed and verified; `bash scripts/pre-push-checks.sh`
+8/8 green at `5ceb5f2`. Dispositions:
+
+- **nsfw-classifier**: baseline FAIL diagnosed (pre-existing ONNX real-model
+  failures in internal/face + internal/skin — neither imports the dashboard);
+  bumped to v0.11.0 anyway (delivering layer green), commit `e102344e`.
+- **dnsblockd**: BLOCKED UPSTREAM — go-datastar root v0.6.2 has no
+  `static/v0.6.2` tag (ls-remote verified), which their exact-match lockstep
+  gate cannot land; unblock is an owner act (push tag or decide sub-train
+  tolerance). Evidence: research notes §Consumer sweep.
+- **Research notes written**: `docs/research/2026-10-25_research-notes.md`
+  (render delta 44.0–54.9µs, SSE payload floor/per-row, Chrome 85.45ms,
+  LOADTEST, consumer table).
+- **Lint**: 2 varnamelen findings fixed (`872b555`), 0 issues after.
+- **Browser evidence**: federation hub e2e with 2 real remotes, degraded-fixture
+  axe audit in both themes (found + fixed a harness transparent-background
+  artifact; production colors verified conformant), GroupBySource screenshot +
+  README section (`48a8c11`).
+- **TODO_LIST harvest**: 32 rows closed with evidence; deploy boot-verify
+  BLOCKED (no container runtime on this host — dashboard builds from source,
+  nothing to bump), daemon-commit relabel BLOCKED (all three pushed), CV row
+  untouched (§g-1). Helper-coverage row implemented (timeline mappers +
+  grouped alertSummary, `38a2c5a`).
+- **CHANGELOG/FEATURES**: `[Unreleased]` entries + counts (346/47 + 14) updated.
+- §g questions 1–3 remain OPEN and unanswered — no action taken on any.
