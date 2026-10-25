@@ -22,7 +22,7 @@ if private vulnerability reporting is enabled on the repository.
 Please include: a description, reproduction steps or a proof of concept,
 affected versions, and your assessment of severity and impact.
 
-You will get an acknowledgement within 3 business days. Findings are
+You will get an initial response within 3 business days. Findings are
 coordinated-disclosed: a fix and a CHANGELOG entry land first, and details
 are published within 90 days of the report.
 

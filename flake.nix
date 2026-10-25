@@ -114,6 +114,13 @@
                 description = "Federation hub serving a real-time health dashboard over N remote go-health instances";
                 homepage = "https://github.com/larsartmann/go-health-dashboard";
                 license = lib.licenses.mit;
+                maintainers = [
+                  {
+                    name = "Lars Artmann";
+                    github = "larsartmann";
+                  }
+                ];
+                platforms = lib.platforms.unix;
                 mainProgram = "health-hub";
               };
             };
