@@ -174,6 +174,38 @@ anyway (the latency histogram buckets are sized
 All three report without gating — don't "fix" them into dependency
 additions or API churn.
 
+## art-dupl clone baseline gate (2026-10-25)
+
+The second dedup audit (2026-09-23 browser-rig was the first) turned
+clone acceptance into an enforced count, following the go-etag
+`pre-release-check.sh` pattern:
+
+- **Gate**: `pre-push-checks.sh` check 9 runs
+  `art-dupl --type-aware --sort total-tokens -t 5 --ignore-tests .` and
+  requires EXACTLY 1 production clone group. The accepted group is the
+  `mapStatusToBadge` (status.go) / `timelineBadgeType` (view.templ)
+  `display.BadgeType` return-type annotation pair — different business
+  rules (live status vs timeline transition semantics) behind a 2-token
+  type shape; merging them would need a flag parameter. Full rationale +
+  calibration: `reports/dupl/2026-10-25_art-dupl-baseline.txt`.
+- **What was extracted**: 18 hand-rolled `probe → dashboard.New → mux →
+  RegisterRoutes → Start ×2 → cleanup` fixture tails across 8 files
+  collapsed into `startDashboardFixture` (dashboard_test.go). One of the
+  eighteen (`setupAllFailing`, evidence_integration_test.go) had already
+  drifted — its cleanup forgot `probe.Shutdown()` — which is exactly the
+  must-change-in-N-places failure class the gate exists for.
+- **Parser trap**: art-dupl's trailing summary changes wording between
+  flag combinations ("Detected 53 clone groups, 2 shown (…)" without
+  `--ignore-tests` vs "Found total 1 clone groups." with it) — and under
+  `set -euo pipefail`, `shown=$(grep -oE '[0-9]+ shown' …)` exiting 1 on
+  a no-match silently killed the entire pre-push script with no message.
+  The gate counts `^found [0-9]+ clones:` markers instead, with `|| true`.
+- **Scale reference**: full-suite scan (tests included) sits at 53
+  groups, all documented-acceptable test scaffolding (`t.Parallel()`,
+  `defer s.cleanup()`, per-test mux/probe builds) — do not chase that
+  number to zero; `--ignore-tests` keeps the gate on production code
+  only, where per-test isolation does not apply.
+
 ## templ-generate is skip-gated: it races nix source snapshots
 
 The step re-raws `view_templ.go`/`page_scripts_templ.go` mid-run (templ

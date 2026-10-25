@@ -148,7 +148,7 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
 ## Testing Patterns
 
 - Standard `testing.T` + table-driven tests with `t.Parallel()`. No ginkgo/testify.
-- Test helpers: `setupDashboard(t, opts...)` creates a real probe with mock services, starts both probe and dashboard.
+- Test helpers: `setupDashboard(t, opts...)` creates a real probe with mock services, starts both probe and dashboard. Every setup helper ends in `startDashboardFixture(t, probe, opts...)` (dashboard_test.go) — the ONE place that wires probe → dashboard → mux, starts both against `t.Context()`, and owns the cleanup order (dashboard first, then probe). New fixtures must call it, not re-inline the start/shutdown contract; the 2026-10-25 dedup pass collapsed 16 hand-rolled copies (one of which forgot `probe.Shutdown()` in its cleanup) into the helper.
 - Services use `do.HealthcheckerWithContext` interface, registered via `do.ProvideNamed`.
 - SSE tested with short-timeout context (handler blocks for streaming). Verifies `text/event-stream` content-type and `datastar-patch-elements` event type. Never request `/health/sse` through a plain `httptest.ResponseRecorder` without a timeout — the streaming handler blocks forever and the package hits the 10-minute `go test` timeout.
 - Wall-clock test margins must survive `-race` + full-package parallel load: the watchdog only fires after `max(3×push interval, 1s)` and the rate-limit refill test uses a 1s window with a 1.3s refill sleep. Don't tighten these back to sub-100ms budgets — two flakes on 2026-10-11 (selfmonitor `warn`, rate-limit 200-instead-of-429).
@@ -279,6 +279,22 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   breaks nolintlint), jscpd's test-scaffolding flags (per-test isolation
   preferred). All report without gating — don't "fix" them into dependency
   additions or API churn. Full resolution state: `docs/gotchas.md`.
+- **art-dupl clone baseline is a pinned pre-push gate (2026-10-25)** —
+  `scripts/pre-push-checks.sh` check 9 runs
+  `art-dupl --type-aware --sort total-tokens -t 5 --ignore-tests .` and
+  fails unless EXACTLY 1 production clone group is shown (the accepted
+  `mapStatusToBadge`/`timelineBadgeType` `display.BadgeType` annotation
+  pair — different business rules, same return type; rationale in
+  `reports/dupl/2026-10-25_art-dupl-baseline.txt`). `--ignore-tests` is
+  deliberate: the ~50 test-scaffolding groups are the documented non-fix
+  above, and gating them would red every new test. Gate parser counts
+  `^found N clones:` markers — art-dupl's trailing summary line changes
+  wording between flag combinations ("Detected X, N shown" vs "Found
+  total N") and under pipefail a no-match grep silently kills the whole
+  script. The 2026-10-25 dedup pass: 18 hand-rolled probe→dash→Start→
+  cleanup fixture tails → `startDashboardFixture` helper; full-suite
+  groups 57 → 53; the evidence-fixture cleanup that forgot
+  `probe.Shutdown()` was fixed by the unification.
 - **templ-generate is skip-gated: it races nix source snapshots** — the
   step re-raws `*_templ.go` mid-run and BuildFlow lets nix-evaluating steps
   snapshot during the raw window, poisoning the treefmt check
