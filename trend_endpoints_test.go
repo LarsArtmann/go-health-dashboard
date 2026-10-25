@@ -2,6 +2,7 @@ package dashboard_test
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json/v2"
 	"net/http"
 	"net/http/httptest"
@@ -646,5 +647,85 @@ func TestHTML_RefreshTimestampAndTimeline(t *testing.T) {
 
 	if !strings.Contains(body, "Status Changes") {
 		t.Error("dashboard HTML missing status-change timeline")
+	}
+}
+
+// TestExportHandler_CSVFormulaInjectionNeutralized pins the CSV-export
+// spreadsheet-safety contract: status strings a hostile or buggy prober
+// can inject (=HYPERLINK, +cmd, @SUM, leading -, embedded commas) must
+// arrive in the operator's spreadsheet as inert text — formula starters
+// get a leading single quote, and RFC-4180 quoting keeps commas and
+// newlines from breaking columns. Samples are ingested through the public
+// Observe seam with the pusher never started, so the test is goroutine-
+// and clock-free.
+func TestExportHandler_CSVFormulaInjectionNeutralized(t *testing.T) {
+	t.Parallel()
+
+	adversarial := []health.Status{
+		"=HYPERLINK(\"http://evil.example\",\"click\")",
+		"+cmd|' /C calc'!A0",
+		"-2+3+cmd|' /C calc'!A0",
+		"@SUM(1+1)*cmd|' /C calc'!A0",
+		"\ttab-led formula",
+		"=sum(1,1)",        // formula starter AND commas
+		"pass,with,commas", // no formula, but quoting is load-bearing
+	}
+
+	probe := newStubProber(health.Response{Status: health.StatusPass})
+	dash := dashboard.New(probe, dashboard.WithTrend(len(adversarial)))
+
+	for _, status := range adversarial {
+		dash.Observe(health.Response{Status: status})
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/health/export?format=csv", nil)
+	dash.ExportHandler()(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("export status = %d, body %.200s", w.Code, w.Body.String())
+	}
+
+	raw := w.Body.String()
+
+	for _, line := range strings.Split(strings.TrimSuffix(raw, "\n"), "\n")[1:] {
+		status := strings.SplitN(line, ",", 2)
+		if len(status) < 2 {
+			continue
+		}
+
+		// A quoted field starts with `"`, an inert formula cell with `'`.
+		if strings.HasPrefix(status[1], "=") || strings.HasPrefix(status[1], "+") ||
+			strings.HasPrefix(status[1], "@") {
+			t.Errorf("CSV row carries an un-neutralized formula starter: %q", line)
+		}
+	}
+
+	// Parse back with encoding/csv: the neutralized cell reads back as the
+	// quoted original, and the comma-laden status survives as ONE field.
+	rows, err := csv.NewReader(strings.NewReader(raw)).ReadAll()
+	if err != nil {
+		t.Fatalf("export CSV no longer parses: %v\n%.400s", err, raw)
+	}
+
+	if len(rows) != len(adversarial)+1 {
+		t.Fatalf("parsed %d CSV rows, want %d (header + %d samples)", len(rows), len(adversarial)+1, len(adversarial))
+	}
+
+	for i, status := range adversarial {
+		got := rows[i+1][2]
+
+		want := string(status)
+		if want != "" && strings.ContainsRune("=+-@\t\r", rune(want[0])) {
+			want = "'" + want
+		}
+
+		if got != want {
+			t.Errorf("row %d status cell = %q, want %q", i+1, got, want)
+		}
+	}
+
+	if got := rows[len(rows)-1][2]; got != string(adversarial[len(adversarial)-1]) {
+		t.Errorf("comma-laden status mangled: got %q", got)
 	}
 }

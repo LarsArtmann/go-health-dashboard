@@ -524,36 +524,34 @@ func TestEvidenceLog_CapsAtMaxEvidenceChecks(t *testing.T) {
 	log.observe(postCap, observedAt.Add(time.Minute))
 
 	log.mu.Lock()
-	defer log.mu.Unlock()
-
-	if got := len(log.checks); got != maxEvidenceChecks {
-		t.Fatalf("evidence map grew past the cap: %d entries, cap %d", got, maxEvidenceChecks)
-	}
-
-	if _, ok := log.checks["post-cap-warn"]; ok {
-		t.Error("a NEW check name accreted evidence past the cap")
-	}
+	cappedLen := len(log.checks)
+	_, postCapPresent := log.checks["post-cap-warn"]
 
 	// Pre-cap names keep their accumulated record and keep updating.
 	entry, ok := log.checks["pre-cap-warn"]
+	if ok {
+		ok = entry.NonPassCount == 2 &&
+			entry.LastNonPass.Equal(observedAt.Add(time.Minute))
+	}
+
+	log.mu.Unlock()
+
+	if cappedLen != maxEvidenceChecks {
+		t.Fatalf("evidence map grew past the cap: %d entries, cap %d", cappedLen, maxEvidenceChecks)
+	}
+
+	if postCapPresent {
+		t.Error("a NEW check name accreted evidence past the cap")
+	}
+
 	if !ok {
-		t.Fatal("pre-cap entry lost from the evidence map")
+		t.Fatal("pre-cap entry stopped updating after the cap (want count 2 with the later stamp)")
 	}
 
-	if entry.NonPassCount != 2 {
-		t.Errorf("pre-cap entry stopped updating after the cap: count = %d, want 2", entry.NonPassCount)
-	}
-
-	if !entry.LastNonPass.Equal(observedAt.Add(time.Minute)) {
-		t.Errorf("pre-cap entry last-non-pass = %v, want %v",
-			entry.LastNonPass, observedAt.Add(time.Minute))
-	}
-
-	// A NEW pass-only response for the capped-out name still reports
-	// unproven: the summary intersects with the current response, and an
-	// absent entry is an honest "never deviated".
-	summary := log.snapshot()
-	if summary.everNonPass("post-cap-warn") {
+	// A capped-out name still reports unproven: the summary intersects
+	// with the current response, and an absent entry is an honest "never
+	// deviated". snapshot takes the lock itself, so call it unlocked.
+	if summary := log.snapshot(); summary.everNonPass("post-cap-warn") {
 		t.Error("capped-out name reports itself proven without ever accruing evidence")
 	}
 }
