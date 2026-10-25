@@ -1124,15 +1124,23 @@ func TestTimelineEntryMappers_DegradedAndRecovered(t *testing.T) {
 		wantIconCls string
 	}{
 		{
-			name:        "degraded transition is the warning story",
-			entry:       TimelineEntry{At: "12:00:00", Status: string(health.StatusWarn), Degraded: true},
+			name: "degraded transition is the warning story",
+			entry: TimelineEntry{
+				At:       "12:00:00",
+				Status:   string(health.StatusWarn),
+				Degraded: true,
+			},
 			wantBadge:   display.BadgeWarning,
 			wantIcon:    icons.ArrowDown,
 			wantIconCls: "h-4 w-4 text-amber-700 dark:text-amber-400",
 		},
 		{
-			name:        "recovery is the success story",
-			entry:       TimelineEntry{At: "12:01:00", Status: string(health.StatusPass), Degraded: false},
+			name: "recovery is the success story",
+			entry: TimelineEntry{
+				At:       "12:01:00",
+				Status:   string(health.StatusPass),
+				Degraded: false,
+			},
 			wantBadge:   display.BadgeSuccess,
 			wantIcon:    icons.ArrowTrendingUp,
 			wantIconCls: "h-4 w-4 text-green-700 dark:text-green-400",

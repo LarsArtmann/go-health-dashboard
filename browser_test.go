@@ -2448,7 +2448,10 @@ func TestBrowser_AccessibilityDegraded(t *testing.T) {
 	}
 
 	if audit := runAxeAudit(t, ctx, start); audit != "[]" {
-		t.Errorf("axe-core found serious/critical violations on the degraded fixture in dark mode: %s", audit)
+		t.Errorf(
+			"axe-core found serious/critical violations on the degraded fixture in dark mode: %s",
+			audit,
+		)
 	}
 
 	assertNoBrowserErrors(t, errLog)
