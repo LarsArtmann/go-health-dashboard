@@ -194,19 +194,19 @@ func (d *Dashboard) ExportHandler() http.HandlerFunc {
 			// writes cannot fail — the document stays one writeBody call.
 			var b bytes.Buffer
 
-			cw := csv.NewWriter(&b)
+			csvWriter := csv.NewWriter(&b)
 
-			writeCSVRow(cw, "timestamp", "value", "status")
+			writeCSVRow(csvWriter, "timestamp", "value", "status")
 
 			for _, s := range samples {
-				writeCSVRow(cw,
+				writeCSVRow(csvWriter,
 					s.At.UTC().Format(time.RFC3339),
 					strconv.FormatFloat(s.Value, 'g', -1, 64),
 					exportCSVField(s.Status),
 				)
 			}
 
-			cw.Flush()
+			csvWriter.Flush()
 			writeBody(w, b.Bytes())
 		case "json":
 			w.Header().Set("Content-Type", "application/json")

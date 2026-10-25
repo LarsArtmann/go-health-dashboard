@@ -63,7 +63,7 @@ func TestRateLimiter_RefillAndCeiling(t *testing.T) {
 func TestRateLimiter_ClampsInvalidConfig(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]struct {
+	for name, testCase := range map[string]struct {
 		maxRequests int
 		window      time.Duration
 	}{
@@ -78,7 +78,7 @@ func TestRateLimiter_ClampsInvalidConfig(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			limiter := newRateLimiter(tc.maxRequests, tc.window)
+			limiter := newRateLimiter(testCase.maxRequests, testCase.window)
 
 			if limiter.max < 1 || limiter.refill <= 0 {
 				t.Fatalf(
