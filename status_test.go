@@ -312,6 +312,29 @@ func TestAlertSummary(t *testing.T) {
 			}},
 			want: "1 of 2 services reporting issues.",
 		},
+		{
+			name: "source-grouped view models count across sources",
+			vm: viewModel{Groups: []checkGroup{
+				{Title: "api", Status: health.StatusPass, Rows: []checkRow{
+					{Name: "api/postgres", Status: health.StatusPass},
+					{Name: "api/gateway", Status: health.StatusPass},
+				}},
+				{Title: "worker", Status: health.StatusWarn, Rows: []checkRow{
+					{Name: "worker/queue", Status: health.StatusWarn},
+				}},
+			}},
+			want: "1 of 3 services reporting issues.",
+		},
+		{
+			name: "source-grouped off rows stay outside the population",
+			vm: viewModel{Groups: []checkGroup{
+				{Title: "api", Status: health.StatusPass, Rows: []checkRow{
+					{Name: "api/postgres", Status: health.StatusPass},
+					{Name: "api/analytics", Status: health.StatusOff},
+				}},
+			}},
+			want: "0 of 1 services reporting pass.",
+		},
 	}
 
 	for _, tt := range tests {

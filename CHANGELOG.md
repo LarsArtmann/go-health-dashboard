@@ -17,6 +17,17 @@ forgetting.
 
 ### Fixed
 
+- **CSV export was spreadsheet-formula-injectable.** `/health/export?format=csv`
+  wrote fields with bare `fmt`-style concatenation — a check or status string
+  like `=HYPERLINK(...)` or `+cmd|...` would execute when an operator opened
+  the export in Excel/LibreOffice. The export now writes through stdlib
+  `encoding/csv` (RFC-4180 quoting) and prefixes `'` onto any field starting
+  with `= + - @` or whitespace; normal rows stay byte-identical. Pinned by
+  `TestExportHandler_CSVFormulaInjectionNeutralized`.
+- `HealthCheck` carried a dead `push.interval > 0` guard —
+  `resolvePushInterval` already guarantees a positive interval (configured >
+  probe > 2s default, now pinned by `TestResolvePushInterval`); the redundant
+  condition was removed with an explanatory comment.
 - **The client-side filter's "no services match" hint was inverted**: the
   hidden-class expression kept the hint hidden exactly when nothing matched
   the query and revealed it once a typed query was cleared. The expression
@@ -49,6 +60,37 @@ forgetting.
 
 ### Added
 
+- **Hardening + evidence test batch (2026-10-25).** Direct coverage for
+  previously transitive-only or untested claims: `TestRateLimiter_Refill…`
+  trio + `FuzzRateLimiterAllow` (fuzz.yml registry updated in the same
+  change), `TestWebhook_BoundedInFlightVsSlowReceiver`,
+  `TestEvidenceLog_CapsAtMaxEvidenceChecks`,
+  `TestPublicMode_DifferentialHTMLVsJSON`, `TestStatusValue_PinsEveryStatus`,
+  `TestConfigFromEnv_HappyPaths` (health-hub env parsing),
+  `TestTimelineEntryMappers_DegradedAndRecovered` + source-grouped
+  `TestAlertSummary` cases, and `BenchmarkHealthCheck` (68 ns/op, 0 allocs
+  steady-state).
+- **Browser evidence batch.** `TestBrowser_FederationHubTwoRemotes` pins the
+  health-hub surface end to end (two remotes over real HTTP, federation,
+  source-grouped cards); `TestBrowser_AccessibilityDegraded` runs the axe
+  audit on the degraded fixture in both themes (the default fixture never
+  renders the jump-to-problems link — that markup was unaudited); the
+  browser-harness CSS now mirrors production canvases (white / gray-900
+  dark) so axe measures real colors instead of UA defaults on transparent
+  backgrounds; `TestCaptureREADME_ScreenshotGrouped` +
+  `capture-screenshots.sh grouped` capture the source-grouped page
+  (`docs/screenshot-grouped.png`) with a Federation Hub README section.
+- **CI + gates.** Nightly flake canary (`flake-canary.yml`:
+  `go test -race -shuffle=on -count=5` with Chrome); `pre-push-checks.sh`
+  check 7 keeps SECURITY.md's supported-versions row and footer date fresh
+  against the latest tag; `check-ui-pins.sh` pins the vendored Datastar SDK
+  bundle sha256+bytes and greps CSP↔SDK sync (`'unsafe-eval'` rationale);
+  `verify-release.sh` self-selects the devShell Go.
+- **Docs.** ADR-0006 (stat-card two-family tone system, WCAG ratios, green
+  tile ban); release-checklist §7 (verifier expectations, peeled-sha rule);
+  `docs/research/2026-10-25_research-notes.md` (render cost vs the v0.10.2
+  baseline, SSE patch payload floor/per-row costs, Chrome launch latency,
+  LOADTEST numbers, and the v0.11.0 consumer-adoption sweep).
 - **Touch/keyboard-accessible evidence disclosures (2026-10-25 UI batch).**
   Native `title` tooltips never reach touch users, so the unproven/proven
   green story now rides CSS-only tooltips: a focusable disclosure span
