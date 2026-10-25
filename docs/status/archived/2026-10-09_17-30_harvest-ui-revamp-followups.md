@@ -1,6 +1,5 @@
 # HARVEST Ledger — UI-Revamp Status Report → TODO_LIST / ROADMAP
 
-
 **ARCHIVED 2026-10-25 (docs-health):** every disposition below landed — the
 TODO_LIST rows this ledger minted were executed or consciously closed in the
 2026-10-25 closeout; ROADMAP routes stand. Ledger kept verbatim as provenance.
@@ -12,6 +11,7 @@ TODO_LIST rows this ledger minted were executed or consciously closed in the
 ## Ledger
 
 <!-- check-rows:ledger --> routing ledger: every row below carries its disposition;
+
 fully consumed by TODO_LIST (closed 2026-10-25) and ROADMAP themes 5-7.
 
 Dispositions: `new row` (TODO_LIST harvest table), `existing row`, `merged`, `declined`, `done in code`, `routed to ROADMAP`.

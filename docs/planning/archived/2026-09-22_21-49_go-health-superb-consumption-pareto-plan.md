@@ -37,16 +37,16 @@ the true "20%": 90 of 163 total points (55%) for ~35% of the effort.
 
 Backlog (sorted by priority = impact × ease; points out of 73):
 
-| #  | Task                                                                                                                                                                                                                                             | Impact | Ease | Pts | Cum. % |
-| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ | ---- | --- | ------ |
-~~| T1 | **Go-directive guard** (script + CI) — the fleet normalize step downgraded `go 1.27.1→1.27` **twice today** and breaks every module load against go-health v0.4.0's floor. Recurring until the fleet fixes normalize.                            | 5      | 5    | 25  | 34%    |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T2 | **Docs closeout**: close the superseded `Re-pin go-health v0.3.0` BLOCKED row in TODO_LIST, add the audit rows, CHANGELOG `[Unreleased]` entries for the wire fixes                                                                              | 3      | 5    | 15  | 55%    |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T3 | **Federation batch, unblocked by v0.4.0**: audit existing coverage (integration/fuzz/hub tests already exist), add the missing pieces (compile-time `Prober` assertion, evidence × `name/reachable` observation test, decide on nix example app) | 3      | 3    | 9   | 67%    |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T4 | **`Status.Rank()` adoption, behavior-locked**: `numericHealthStatus` derives from `Rank()`; `worstGroupStatus` keeps its stricter unknown→warn with a citation comment; `statusValue` documents the inverted plot scale. NO behavior change.     | 2      | 4    | 8   | 78%    |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T5 | **`Response.InstanceID` in group cards** (+ public-mode masking, goldens, browser) — disambiguates replicas on the federation hub                                                                                                                | 3      | 2    | 6   | 87%    |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T6 | **Trend endpoint future-proof `Deterministic`** (slices-only today; one option + test so a future map field can't silently regress)                                                                                                              | 1      | 5    | 5   | 93%    |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T7 | **`Healthz()` passthrough** via OPTIONAL interface assertion (never widen `Prober` — that would break external implementors)                                                                                                                     | 1      | 3    | 3   | 96%    |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T8 | **Example → `NewChecks`** (v0.3.0 constructor; duration_ns then flows through the rendered duration line)                                                                                                                                        | 1      | 2    | 2   | 100%   |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
+| #  | Task | Impact                                                                                                                                                                                                                                           | Ease | Pts | Cum. % |
+| -- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---- | --- | ------ |
+| ~~ | T1   | **Go-directive guard** (script + CI) — the fleet normalize step downgraded `go 1.27.1→1.27` **twice today** and breaks every module load against go-health v0.4.0's floor. Recurring until the fleet fixes normalize.                            | 5    | 5   | 25     |
+| ~~ | T2   | **Docs closeout**: close the superseded `Re-pin go-health v0.3.0` BLOCKED row in TODO_LIST, add the audit rows, CHANGELOG `[Unreleased]` entries for the wire fixes                                                                              | 3    | 5   | 15     |
+| ~~ | T3   | **Federation batch, unblocked by v0.4.0**: audit existing coverage (integration/fuzz/hub tests already exist), add the missing pieces (compile-time `Prober` assertion, evidence × `name/reachable` observation test, decide on nix example app) | 3    | 3   | 9      |
+| ~~ | T4   | **`Status.Rank()` adoption, behavior-locked**: `numericHealthStatus` derives from `Rank()`; `worstGroupStatus` keeps its stricter unknown→warn with a citation comment; `statusValue` documents the inverted plot scale. NO behavior change.     | 2    | 4   | 8      |
+| ~~ | T5   | **`Response.InstanceID` in group cards** (+ public-mode masking, goldens, browser) — disambiguates replicas on the federation hub                                                                                                                | 3    | 2   | 6      |
+| ~~ | T6   | **Trend endpoint future-proof `Deterministic`** (slices-only today; one option + test so a future map field can't silently regress)                                                                                                              | 1    | 5   | 5      |
+| ~~ | T7   | **`Healthz()` passthrough** via OPTIONAL interface assertion (never widen `Prober` — that would break external implementors)                                                                                                                     | 1    | 3   | 3      |
+| ~~ | T8   | **Example → `NewChecks`** (v0.3.0 constructor; duration_ns then flows through the rendered duration line)                                                                                                                                        | 1    | 2   | 2      |
 
 ### The Pareto answer
 
@@ -60,35 +60,35 @@ Backlog (sorted by priority = impact × ease; points out of 73):
 **Verschlimmbesser guardrails (read before executing):**
 
 ~~1. T4 must NOT change behavior. Unknown statuses: grouping→warn, metrics→-1,~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-   trend→0 stay EXACTLY as they are (each is a deliberate local decision; do
-   NOT merge the four sites into one helper). Tests pin current outputs first.
+trend→0 stay EXACTLY as they are (each is a deliberate local decision; do
+NOT merge the four sites into one helper). Tests pin current outputs first.
 ~~2. T7 must NOT add a method to the `Prober` interface — that breaks external~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-   implementors. Use an optional interface type assertion.
+implementors. Use an optional interface type assertion.
 ~~3. T5 changes rendered HTML → golden files WILL drift. Review the diff~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-   by eye, run the browser suite, mask under public mode (instance IDs are
-   semi-identifying).
+by eye, run the browser suite, mask under public mode (instance IDs are
+semi-identifying).
 ~~4. NEVER let the fleet normalize downgrade reach master un-restored again:~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-   after ANY buildflow run, `git diff go.mod` and restore `go 1.27.1` + commit
-   atomically (the `sed`+`git add`+`git commit` in ONE tool call pattern that
-   worked in `c22ac0b`).
+after ANY buildflow run, `git diff go.mod` and restore `go 1.27.1` + commit
+atomically (the `sed`+`git add`+`git commit` in ONE tool call pattern that
+worked in `c22ac0b`).
 ~~5. Never run Go tooling while a buildflow run is active (torn go.mod/templ~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-   state); check `pgrep -fa buildflow` first.
+state); check `pgrep -fa buildflow` first.
 
 ---
 
 ## 3. Level-1 plan (30–100 min tasks, all of them)
 
-| #  | Task (30–100 min)                                                                                                    | Files / surface                                                                            | Est    | Pts |
-| -- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------ | --- |
-~~| T1 | Go-directive guard: `scripts/check-go-directive.sh` (modeled on `check-ui-pins.sh`), CI wiring, AGENTS.md cross-link | `scripts/`, `.github/workflows/ci.yml`, `AGENTS.md`                                        | 60 min | 25  |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T2 | Docs closeout: TODO_LIST row surgery + CHANGELOG `[Unreleased]` wire-fix entries + AGENTS.md status-line touch       | `TODO_LIST.md`, `CHANGELOG.md`, `AGENTS.md`                                                | 45 min | 15  |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T3 | Federation batch audit + missing pieces (assertion, evidence × `name/reachable` test, example-app decision)          | root tests, `evidence_integration_test.go`, maybe `flake.nix`                              | 90 min | 9   |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T4 | `Status.Rank()` adoption, behavior-locked, four sites                                                                | `status.go`, `metrics.go`, `history.go` + their tests                                      | 60 min | 8   |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T5 | `InstanceID` surfacing: viewModel → templ → masking → goldens → browser                                              | `status.go`, `view.templ`, `view_templ.go` (gen), `publicmode_test.go`, `testdata/golden/` | 90 min | 6   |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T6 | Trend `Deterministic` future-proof + test                                                                            | `trend.go`, `trend_endpoints_test.go`                                                      | 30 min | 5   |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T7 | `Healthz()` passthrough (optional interface) + tests                                                                 | `routes.go`, `handlers.go`, new test                                                       | 45 min | 3   |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T8 | Example → `NewChecks` + verify `duration_ns` reaches the rendered line                                               | `example/main.go`                                                                          | 30 min | 2   |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-~~| T9 | Final gate chain (`nix run .#test`, `lint`, `fmt`, pin+directive guards) + push                                      | —                                                                                          | 30 min | —   |~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
+| #  | Task (30–100 min) | Files / surface                                                                                                      | Est                                                                                        | Pts    |
+| -- | ----------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------ |
+| ~~ | T1                | Go-directive guard: `scripts/check-go-directive.sh` (modeled on `check-ui-pins.sh`), CI wiring, AGENTS.md cross-link | `scripts/`, `.github/workflows/ci.yml`, `AGENTS.md`                                        | 60 min |
+| ~~ | T2                | Docs closeout: TODO_LIST row surgery + CHANGELOG `[Unreleased]` wire-fix entries + AGENTS.md status-line touch       | `TODO_LIST.md`, `CHANGELOG.md`, `AGENTS.md`                                                | 45 min |
+| ~~ | T3                | Federation batch audit + missing pieces (assertion, evidence × `name/reachable` test, example-app decision)          | root tests, `evidence_integration_test.go`, maybe `flake.nix`                              | 90 min |
+| ~~ | T4                | `Status.Rank()` adoption, behavior-locked, four sites                                                                | `status.go`, `metrics.go`, `history.go` + their tests                                      | 60 min |
+| ~~ | T5                | `InstanceID` surfacing: viewModel → templ → masking → goldens → browser                                              | `status.go`, `view.templ`, `view_templ.go` (gen), `publicmode_test.go`, `testdata/golden/` | 90 min |
+| ~~ | T6                | Trend `Deterministic` future-proof + test                                                                            | `trend.go`, `trend_endpoints_test.go`                                                      | 30 min |
+| ~~ | T7                | `Healthz()` passthrough (optional interface) + tests                                                                 | `routes.go`, `handlers.go`, new test                                                       | 45 min |
+| ~~ | T8                | Example → `NewChecks` + verify `duration_ns` reaches the rendered line                                               | `example/main.go`                                                                          | 30 min |
+| ~~ | T9                | Final gate chain (`nix run .#test`, `lint`, `fmt`, pin+directive guards) + push                                      | —                                                                                          | 30 min |
 
 **Total: ~7.5 h / 73 pts.**
 

@@ -177,38 +177,38 @@ Nothing irreversible — every mistake was caught and fixed in-session,
 and the final state I verified was green. Honest list:
 
 ~~1. **First bisect audit run was methodologically wrong**: I ran 374~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-   builds with the ambient go 1.26.7 while go.mod's floor is 1.27.1 —
-   the exact gotcha I had FIXED in `check-ui-pins.sh` earlier the same
-   session. Result: 97 false "broken" commits and ~20 wasted minutes.
-   Redone with the pinned toolchain before any of it entered a document.
+builds with the ambient go 1.26.7 while go.mod's floor is 1.27.1 —
+the exact gotcha I had FIXED in `check-ui-pins.sh` earlier the same
+session. Result: 97 false "broken" commits and ~20 wasted minutes.
+Redone with the pinned toolchain before any of it entered a document.
 ~~2. **FEATURES count off-by-one** after M103: I bumped 294→295 forgetting~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-   the webhook test (+1) from the same session; the drift guard caught
-   it (296 actual); fixed in a follow-up commit. Then the M91 test made
-   it 297/42 — caught only because I recounted before rewriting
-   TODO_LIST.
+the webhook test (+1) from the same session; the drift guard caught
+it (296 actual); fixed in a follow-up commit. Then the M91 test made
+it 297/42 — caught only because I recounted before rewriting
+TODO_LIST.
 ~~3. **Lint debt left in-tree for hours**: `browser_latency_test.go`~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-   shipped with paralleltest/gci/golines findings and full lint only ran
-   in the FINAL gate chain — three findings sat in history for ~10
-   commits. `nix fmt` was also skipped after individual test-file edits
-   (canonical generate→fmt order only honored at the end).
+shipped with paralleltest/gci/golines findings and full lint only ran
+in the FINAL gate chain — three findings sat in history for ~10
+commits. `nix fmt` was also skipped after individual test-file edits
+(canonical generate→fmt order only honored at the end).
 ~~4. **My gate false-positived on itself** (pkgs.templ self-scan matched~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-   the gate's own comments/error message) — took two fix rounds; and the
-   devShell MOTD polluted `nix develop -c` stdout, which I only noticed
-   because the UI-pin check printed garbled versions.
+the gate's own comments/error message) — took two fix rounds; and the
+devShell MOTD polluted `nix develop -c` stdout, which I only noticed
+because the UI-pin check printed garbled versions.
 ~~5. **set-tag-protection.sh first draft**: used `gh api --slurp --jq`~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-   (unsupported combination), then compared jq outputs with different
-   key ordering (live vs desired could never match). Two iterations
-   before `--check` went green against the live ruleset.
+(unsupported combination), then compared jq outputs with different
+key ordering (live vs desired could never match). Two iterations
+before `--check` went green against the live ruleset.
 ~~6. **The alert example shipped a schema error** (`from: 5m` vs `from:~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
    300`) — my first activation attempt failed provisioning. Caught by
-   exactly the live verification the row demanded, but it's still a
-   fabricated-schema bug in a first draft.
+exactly the live verification the row demanded, but it's still a
+fabricated-schema bug in a first draft.
 ~~7. **Intent commits lost to the daemon ~6 times** despite knowing the~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-   rule before starting. The same-chain discipline was applied only from
-   mid-session onward.
+rule before starting. The same-chain discipline was applied only from
+mid-session onward.
 ~~8. **Package mistake in the M91 test** (`package dashboard` vs~~ resolved — executed in the 2026-09/10 cycles (see CHANGELOG)
-   `dashboard_test` — the rig lives in the external test package);
-   compiler caught it immediately.
+`dashboard_test` — the rig lives in the external test package);
+compiler caught it immediately.
 
 ## e) WHAT WE SHOULD IMPROVE (brutal self-review)
 
@@ -263,73 +263,73 @@ and the final state I verified was green. Honest list:
 
 ## f) NEXT — up to 50 things to get done (sorted by impact)
 
-| #  | Task                                                                                                                                                        | Impact |
-| -- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-~~| 1  | Verify the tip AFTER the parallel session finishes: `nix run .#build` + `.#test` + `.#lint` on `HEAD`                                                       | High   |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 2  | Push the 35 commits (needs your go-ahead) and confirm CI green on the tip — esp. the shellcheck job and the new gates                                       | High   |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 3  | File the templ gofumpt issue (draft ready, voice-checked, `docs/upstream/`) — external repo, needs authorization                                            | High   |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 4  | File the erraudit nolint-audit issues (./... no-op + NEEDED-mismatch) on larsartmann/erraudit — own repo, needs authorization                               | High   |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 5  | Strip-test the remaining three `//nolint:erraudit` directives (handlers/pusher/webhook) the same way as status.go                                           | High   |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 6  | Run `nix run .#vulncheck` + `nix run .#coverage` over the final tree (new tests unmeasured)                                                                 | High   |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 7  | Answer the commit-policy question (g1, asked two sessions running): harness rule vs AGENTS commit-at-first-green — 6 more intent messages lost this session | High   |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 8  | Compose-stack CI policy decision (g3 below): the e2e boot caught a real Dockerfile break — argues for at least a build-only job                             | High   |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 9  | HARVEST the 09-23 dedup session's section f into TODO_LIST/ROADMAP (their list is still entombed)                                                           | High   |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 10 | Kill their known split-brain: `startByteStableScrapeTarget` poll loop vs `waitForTrendSamples`                                                              | High   |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 11 | Investigate the open dependabot PR behind "Configured Graph Update: go_modules #1588885104"                                                                 | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 12 | Cut v0.11.0 when you want the hub cadence knob + deploy stack released (`[Unreleased]` is loaded)                                                           | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 13 | Fleet-replicate `set-tag-protection.sh` to sibling repos (it was built for this)                                                                            | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 14 | Fleet-replicate the fuzz-registry + templ-pin pre-push checks + shellcheck CI job                                                                           | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 15 | Re-verify the mobile metadata line against THIS session's render after the parallel session's SSE changes                                                   | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 16 | Extend the dark-contrast measurement to light mode + badge colors mechanically (script it, don't hand-compute)                                              | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 17 | Add the M91 latency numbers as a soft regression assert (e.g. avg < 2s) so a Chrome/launcher regression fails loudly                                        | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 18 | Parameterize the load-test doc baseline into a small table the harness can diff against                                                                     | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 19 | Alert example: add a second rule draft for `dashboard_pusher_active < 1` (stale-page detection)                                                             | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 20 | Grafana: consider provisioning a "degraded view" panel set from `dashboard_health_status` banding                                                           | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 21 | Digest-pin the Dockerfile base bump policy note into dependabot config review (does dependabot update `repo:tag@sha256` pins correctly?)                    | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 22 | Measure the full verify-dep-bump.sh wall time and record it (operators plan around it)                                                                      | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 23 | erraudit upstream: propose the strip-and-rerun mode as a built-in (`nolint-audit --verify`) so the NEEDED mismatch class dies                               | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 24 | templ upstream: check whether master already formats output (pin is v0.3.1020; the issue draft should cite the pinned version explicitly)                   | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 25 | Add a session-start "verify tip before claiming green" step to the release checklist (this session's d7 class)                                              | Med    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 26 | Document the `!override` compose port trick in the fleet lessons file (cross-project reusable)                                                              | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 27 | Record a `references/lessons.md` entry: "pin the toolchain in bulk loops; ambient go lies after a floor bump"                                               | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 28 | Their f4: extract shared inline-JS consts (`detailsState`, `visibleRows`) in browser_test.go                                                                | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 29 | Their f5: unify the five bespoke poll loops behind one deadline-parameterized primitive                                                                     | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 30 | Their f6: replace 250ms settle sleeps with a deterministic initial-patch wait                                                                               | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 31 | Their f8: split `browser_test.go` (session helpers → own file, ADR-0001 pattern)                                                                            | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 32 | Their f9: guard the duplicate-route class (`mustHandle` helper that fatals on re-registration)                                                              | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 33 | Re-run art-dupl at `-t 3` after this session's additions (browser_latency_test.go may have introduced near-duplicates with screenshot_test.go)              | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 34 | Give `TestMeasureChromeLaunchLatency` a stable machine-tag (skip on CI) so nobody runs it in a shared runner by accident                                    | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 35 | Compose: add a `docker compose config` lint to CI hygiene (catches YAML drift without Docker)                                                               | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 36 | Compose: prometheus + grafana data-volume mounts for longer local observation windows (opt-in profile)                                                      | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 37 | Grafana dashboard JSON: pin panel datasources explicitly (uid "prometheus") instead of inheriting                                                           | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 38 | deploy/README: add a "what good looks like" annotated screenshot section (panel-by-panel expected values)                                                   | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 39 | docs/metrics.md: add the hub's federation card (`name/reachable`) to the cardinality table with an example                                                  | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 40 | ROADMAP: write the explicit support-policy section (criterion 3's named gap)                                                                                | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 41 | CHANGELOG audit: extend the method to v0.9.0–v0.10.1 (verified only through 0.8.1 + spot checks)                                                            | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 42 | Bisect audit: scriptify the pinned-toolchain method into `scripts/` so the next extension is one command                                                    | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 43 | pre-push-checks: add check 7 — FEATURES count includes cmd/health-hub test files (currently only root files are guarded)                                    | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 44 | Consider `LOADTEST_EVIDENCE=1` knob to toggle evidence explicitly (currently always-on; the knob would make the old-vs-new comparison one-flag)             | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 45 | Release-check workflow: also verify the Release notes match the tag's CHANGELOG section (draft-drift class from v0.10.x)                                    | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 46 | set-tag-protection: add a CI drift job running `--check` nightly (the script exists; nothing schedules it)                                                  | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 47 | AGENTS: fold the "verify tip before claiming green" rule into the parallel-session handshake bullet                                                         | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 48 | Sweep ROADMAP Open Questions for rows this session made stale (evidence contract wording references HTML-only "today")                                      | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 49 | Consider exporting the demo stack's prometheus scrape config as a library example (consumers copy-paste from deploy/)                                       | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
-~~| 50 | Reserved: triage bucket — revisit when fleet tooling changes (BuildFlow DAG ordering, go-structure-linter pin)                                              | Low    |~~ routed — swept in the 2026-09-23 full-list execution; dispositions in CHANGELOG and TODO_LIST (closed 2026-10-25)
+| #  | Task | Impact                                                                                                                                                      |
+| -- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~ | 1    | Verify the tip AFTER the parallel session finishes: `nix run .#build` + `.#test` + `.#lint` on `HEAD`                                                       |
+| ~~ | 2    | Push the 35 commits (needs your go-ahead) and confirm CI green on the tip — esp. the shellcheck job and the new gates                                       |
+| ~~ | 3    | File the templ gofumpt issue (draft ready, voice-checked, `docs/upstream/`) — external repo, needs authorization                                            |
+| ~~ | 4    | File the erraudit nolint-audit issues (./... no-op + NEEDED-mismatch) on larsartmann/erraudit — own repo, needs authorization                               |
+| ~~ | 5    | Strip-test the remaining three `//nolint:erraudit` directives (handlers/pusher/webhook) the same way as status.go                                           |
+| ~~ | 6    | Run `nix run .#vulncheck` + `nix run .#coverage` over the final tree (new tests unmeasured)                                                                 |
+| ~~ | 7    | Answer the commit-policy question (g1, asked two sessions running): harness rule vs AGENTS commit-at-first-green — 6 more intent messages lost this session |
+| ~~ | 8    | Compose-stack CI policy decision (g3 below): the e2e boot caught a real Dockerfile break — argues for at least a build-only job                             |
+| ~~ | 9    | HARVEST the 09-23 dedup session's section f into TODO_LIST/ROADMAP (their list is still entombed)                                                           |
+| ~~ | 10   | Kill their known split-brain: `startByteStableScrapeTarget` poll loop vs `waitForTrendSamples`                                                              |
+| ~~ | 11   | Investigate the open dependabot PR behind "Configured Graph Update: go_modules #1588885104"                                                                 |
+| ~~ | 12   | Cut v0.11.0 when you want the hub cadence knob + deploy stack released (`[Unreleased]` is loaded)                                                           |
+| ~~ | 13   | Fleet-replicate `set-tag-protection.sh` to sibling repos (it was built for this)                                                                            |
+| ~~ | 14   | Fleet-replicate the fuzz-registry + templ-pin pre-push checks + shellcheck CI job                                                                           |
+| ~~ | 15   | Re-verify the mobile metadata line against THIS session's render after the parallel session's SSE changes                                                   |
+| ~~ | 16   | Extend the dark-contrast measurement to light mode + badge colors mechanically (script it, don't hand-compute)                                              |
+| ~~ | 17   | Add the M91 latency numbers as a soft regression assert (e.g. avg < 2s) so a Chrome/launcher regression fails loudly                                        |
+| ~~ | 18   | Parameterize the load-test doc baseline into a small table the harness can diff against                                                                     |
+| ~~ | 19   | Alert example: add a second rule draft for `dashboard_pusher_active < 1` (stale-page detection)                                                             |
+| ~~ | 20   | Grafana: consider provisioning a "degraded view" panel set from `dashboard_health_status` banding                                                           |
+| ~~ | 21   | Digest-pin the Dockerfile base bump policy note into dependabot config review (does dependabot update `repo:tag@sha256` pins correctly?)                    |
+| ~~ | 22   | Measure the full verify-dep-bump.sh wall time and record it (operators plan around it)                                                                      |
+| ~~ | 23   | erraudit upstream: propose the strip-and-rerun mode as a built-in (`nolint-audit --verify`) so the NEEDED mismatch class dies                               |
+| ~~ | 24   | templ upstream: check whether master already formats output (pin is v0.3.1020; the issue draft should cite the pinned version explicitly)                   |
+| ~~ | 25   | Add a session-start "verify tip before claiming green" step to the release checklist (this session's d7 class)                                              |
+| ~~ | 26   | Document the `!override` compose port trick in the fleet lessons file (cross-project reusable)                                                              |
+| ~~ | 27   | Record a `references/lessons.md` entry: "pin the toolchain in bulk loops; ambient go lies after a floor bump"                                               |
+| ~~ | 28   | Their f4: extract shared inline-JS consts (`detailsState`, `visibleRows`) in browser_test.go                                                                |
+| ~~ | 29   | Their f5: unify the five bespoke poll loops behind one deadline-parameterized primitive                                                                     |
+| ~~ | 30   | Their f6: replace 250ms settle sleeps with a deterministic initial-patch wait                                                                               |
+| ~~ | 31   | Their f8: split `browser_test.go` (session helpers → own file, ADR-0001 pattern)                                                                            |
+| ~~ | 32   | Their f9: guard the duplicate-route class (`mustHandle` helper that fatals on re-registration)                                                              |
+| ~~ | 33   | Re-run art-dupl at `-t 3` after this session's additions (browser_latency_test.go may have introduced near-duplicates with screenshot_test.go)              |
+| ~~ | 34   | Give `TestMeasureChromeLaunchLatency` a stable machine-tag (skip on CI) so nobody runs it in a shared runner by accident                                    |
+| ~~ | 35   | Compose: add a `docker compose config` lint to CI hygiene (catches YAML drift without Docker)                                                               |
+| ~~ | 36   | Compose: prometheus + grafana data-volume mounts for longer local observation windows (opt-in profile)                                                      |
+| ~~ | 37   | Grafana dashboard JSON: pin panel datasources explicitly (uid "prometheus") instead of inheriting                                                           |
+| ~~ | 38   | deploy/README: add a "what good looks like" annotated screenshot section (panel-by-panel expected values)                                                   |
+| ~~ | 39   | docs/metrics.md: add the hub's federation card (`name/reachable`) to the cardinality table with an example                                                  |
+| ~~ | 40   | ROADMAP: write the explicit support-policy section (criterion 3's named gap)                                                                                |
+| ~~ | 41   | CHANGELOG audit: extend the method to v0.9.0–v0.10.1 (verified only through 0.8.1 + spot checks)                                                            |
+| ~~ | 42   | Bisect audit: scriptify the pinned-toolchain method into `scripts/` so the next extension is one command                                                    |
+| ~~ | 43   | pre-push-checks: add check 7 — FEATURES count includes cmd/health-hub test files (currently only root files are guarded)                                    |
+| ~~ | 44   | Consider `LOADTEST_EVIDENCE=1` knob to toggle evidence explicitly (currently always-on; the knob would make the old-vs-new comparison one-flag)             |
+| ~~ | 45   | Release-check workflow: also verify the Release notes match the tag's CHANGELOG section (draft-drift class from v0.10.x)                                    |
+| ~~ | 46   | set-tag-protection: add a CI drift job running `--check` nightly (the script exists; nothing schedules it)                                                  |
+| ~~ | 47   | AGENTS: fold the "verify tip before claiming green" rule into the parallel-session handshake bullet                                                         |
+| ~~ | 48   | Sweep ROADMAP Open Questions for rows this session made stale (evidence contract wording references HTML-only "today")                                      |
+| ~~ | 49   | Consider exporting the demo stack's prometheus scrape config as a library example (consumers copy-paste from deploy/)                                       |
+| ~~ | 50   | Reserved: triage bucket — revisit when fleet tooling changes (BuildFlow DAG ordering, go-structure-linter pin)                                              |
 
 ## g) Questions I can NOT figure out myself
 
 ~~1. **Commit authority conflict (asked two sessions running, still~~ routed — standing TODO_LIST BLOCKED row or a later decision record (ROADMAP/AGENTS)
-   unanswered):** AGENTS.md mandates commit-at-first-green; my harness
-   forbids committing without your explicit say; the daemon ate six
-   intent messages this session either way. Which wins — should I
-   always commit at the first green gate in the same tool call?
+unanswered):** AGENTS.md mandates commit-at-first-green; my harness
+forbids committing without your explicit say; the daemon ate six
+intent messages this session either way. Which wins — should I
+always commit at the first green gate in the same tool call?
 ~~2. **Filing + push authorization:** may I (a) file the templ issue on~~ routed — standing TODO_LIST BLOCKED row or a later decision record (ROADMAP/AGENTS)
-   a-h/templ and the two erraudit issues on your own tracker as drafted,
-   and (b) push the 35 commits so CI runs on the tip?
+a-h/templ and the two erraudit issues on your own tracker as drafted,
+and (b) push the 35 commits so CI runs on the tip?
 ~~3. **Compose-stack CI policy:** the first manual e2e boot caught a real~~ routed — standing TODO_LIST BLOCKED row or a later decision record (ROADMAP/AGENTS)
-   Dockerfile break — does that change your earlier "manual-only demo"
-   lean toward at least a build-only CI job (config-validate +
-   Dockerfile build, no containers), or does manual-only stand?
+Dockerfile break — does that change your earlier "manual-only demo"
+lean toward at least a build-only CI job (config-validate +
+Dockerfile build, no containers), or does manual-only stand?
 
 ---
 

@@ -19,115 +19,115 @@ fixed, one still live: "a endpoint"), and a skipped pre-write handshake.
 ## a) FULLY DONE
 
 ~~1. **Full API enumeration of go-health at the pin.** `go doc -all` for all four~~ done this session — evidence cited in the line
-   packages (root: 806 lines; aggregate; federation; checks) under the devShell
-   against go.mod's v0.5.1 — the exact audited version, not training data.
+packages (root: 806 lines; aggregate; federation; checks) under the devShell
+against go.mod's v0.5.1 — the exact audited version, not training data.
 ~~2. **Version currency.** Pin v0.5.1 == newest upstream tag. Unreleased v0.6 train~~ done this session — evidence cited in the line
-   identified from CHANGELOG + source: `aggregate.SourceStatuses()`
-   (aggregate.go:170-177), `aggregate.New` error-joining, never-started
-   grace-window fix. Three commits of unpushed upstream work correctly excluded
-   from "available" claims.
+identified from CHANGELOG + source: `aggregate.SourceStatuses()`
+(aggregate.go:170-177), `aggregate.New` error-joining, never-started
+grace-window fix. Three commits of unpushed upstream work correctly excluded
+from "available" claims.
 ~~3. **Consumer-side usage inventory.** 90 go-health import sites; alias-safe symbol~~ done this session — evidence cited in the line
-   counts (`health.*`, `aggregate.*`, `healthfederation.*`, `checks.*` = **zero**);
-   config audits of `example/main.go` and `cmd/health-hub/main.go` (options set,
-   shutdown order, env knobs).
+counts (`health.*`, `aggregate.*`, `healthfederation.*`, `checks.*` = **zero**);
+config audits of `example/main.go` and `cmd/health-hub/main.go` (options set,
+shutdown order, env knobs).
 ~~4. **26-capability gap analysis, every claim cited.** 15 fully leveraged, 6~~ done this session — evidence cited in the line
-   partial, 5 missed, 0 misused. Verified highlights: `SanitizeResponse` at the
-   single choke point (dashboard.go:171-173); `Healthzer` capability forwarding
-   with a pinned capability matrix (handlers.go:249-256, dashboard_test.go:1132,
-   federation_test.go:195); `Status.Rank()` in trend+metrics (status.go:399,
-   metrics.go:203); all four probe constructors exercised somewhere in-repo.
+partial, 5 missed, 0 misused. Verified highlights: `SanitizeResponse` at the
+single choke point (dashboard.go:171-173); `Healthzer` capability forwarding
+with a pinned capability matrix (handlers.go:249-256, dashboard_test.go:1132,
+federation_test.go:195); `Status.Rank()` in trend+metrics (status.go:399,
+metrics.go:203); all four probe constructors exercised somewhere in-repo.
 ~~5. **Ten graded finding cards** with before/after code: evaluation hook,~~ done this session — evidence cited in the line
-   two-phase drain, cascade verdict, checks batteries, `health.Off` producer,
-   `VersionHandler`, `Routes.Healthz` config, `SourceStatuses`, `federation.WithClient`,
-   `AwaitReady`.
+two-phase drain, cascade verdict, checks batteries, `health.Off` producer,
+`VersionHandler`, `Routes.Healthz` config, `SourceStatuses`, `federation.WithClient`,
+`AwaitReady`.
 ~~6. **Scoring + Pareto.** 78/100 adoption; priorities table (impact × ease, 20 → 3).~~ done this session — evidence cited in the line
 ~~7. **HTML report written and verified.** Zero template placeholders left; tag~~ done this session — evidence cited in the line
-   balance exact (40/40 spans, all other pairs clean); all 7 nav anchors resolve;
-   headless-Chromium render confirmed for hero/scorecard/summary; parse check
-   clean (the two "errors" were self-closing `<meta/>` parser artifacts).
+balance exact (40/40 spans, all other pairs clean); all 7 nav anchors resolve;
+headless-Chromium render confirmed for hero/scorecard/summary; parse check
+clean (the two "errors" were self-closing `<meta/>` parser artifacts).
 ~~8. **Committed with intent message** `38f8c76` after daemon-race recovery (see d1).~~ done this session — evidence cited in the line
-   Not pushed — master ahead 5, push needs authorization.
+Not pushed — master ahead 5, push needs authorization.
 
 ## b) PARTIALLY DONE
 
 ~~1. **Visual verification of the report.** Only hero/scorecard/summary confirmed in~~ closed by later sessions (2026-10-11..25) — the residue rode the harvest chain into TODO_LIST
-   a real browser. Findings/currency/appendix verified by parse + grep only: the
-   anchor-fragment screenshot silently rendered the page top (headless
-   `--screenshot` does not scroll to fragments), and the full-page capture hit the
-   200 KB view limit; the crop retry failed because `nix develop` ran from /tmp
-   (no flake there).
+a real browser. Findings/currency/appendix verified by parse + grep only: the
+anchor-fragment screenshot silently rendered the page top (headless
+`--screenshot` does not scroll to fragments), and the full-page capture hit the
+200 KB view limit; the crop retry failed because `nix develop` ran from /tmp
+(no flake there).
 ~~2. **AGENTS.md currency.** Noticed dependency-notes staleness vs. reality —~~ closed by later sessions (2026-10-11..25) — the residue rode the harvest chain into TODO_LIST
-   "v0.2.0 in go.mod", "go.mod pins the v0.4.0 tag", "federation (unreleased;
-   v0.3.0 vehicle)" while the pin is v0.5.1 and federation shipped in v0.3.0 —
-   NOT fixed (session ended into the status request; user constrained research).
+"v0.2.0 in go.mod", "go.mod pins the v0.4.0 tag", "federation (unreleased;
+v0.3.0 vehicle)" while the pin is v0.5.1 and federation shipped in v0.3.0 —
+NOT fixed (session ended into the status request; user constrained research).
 ~~3. **Findings → TODO_LIST harvest.** The report's priorities are entombed in a~~ closed by later sessions (2026-10-11..25) — the residue rode the harvest chain into TODO_LIST
-   timestamped HTML; TODO_LIST.md was not updated (status-report skill: (f) is
-   HARVEST input — pending instructions).
+timestamped HTML; TODO_LIST.md was not updated (status-report skill: (f) is
+HARVEST input — pending instructions).
 ~~4. **Some render claims verified only to viewModel level.** `Uptime`/`Version`~~ closed by later sessions (2026-10-11..25) — the residue rode the harvest chain into TODO_LIST
-   shown to land in the viewModel (status.go:261-262) but not traced into
-   view.templ display; the "fully surfaced" strength phrasing is slightly ahead
-   of the evidence.
+shown to land in the viewModel (status.go:261-262) but not traced into
+view.templ display; the "fully surfaced" strength phrasing is slightly ahead
+of the evidence.
 ~~5. **Proofread.** One grammar defect shipped ("not on a endpoint",~~ closed by later sessions (2026-10-11..25) — the residue rode the harvest chain into TODO_LIST
-   finding-version h3). Everything else passed a mechanical grep pass only.
+finding-version h3). Everything else passed a mechanical grep pass only.
 ~~6. **Phase 6 (cross-skill references)** handled implicitly inside the report, no~~ closed by later sessions (2026-10-11..25) — the residue rode the harvest chain into TODO_LIST
-   dedicated follow-up actions created.
+dedicated follow-up actions created.
 
 ## c) NOT STARTED
 
 ~~1. **All ten prioritized opportunities** — this was an audit by request; no~~ closed or routed — 2026-10-13 HARVEST → TODO_LIST; executed or consciously closed in the 2026-10-25 closeout
-   production code was changed (the repo diff is docs-only).
+production code was changed (the repo diff is docs-only).
 ~~2. TODO_LIST.md / FEATURES.md updates from the findings.~~ closed or routed — 2026-10-13 HARVEST → TODO_LIST; executed or consciously closed in the 2026-10-25 closeout
 ~~3. Upstream federation.Healthz proposal (would require verify-before-filing gate).~~ closed or routed — 2026-10-13 HARVEST → TODO_LIST; executed or consciously closed in the 2026-10-25 closeout
 ~~4. Push to origin / green-CI confirmation on the release-style commit chain.~~ closed or routed — 2026-10-13 HARVEST → TODO_LIST; executed or consciously closed in the 2026-10-25 closeout
 ~~5. Same deep-dive for the other three UI/SSE dependencies~~ closed or routed — 2026-10-13 HARVEST → TODO_LIST; executed or consciously closed in the 2026-10-25 closeout
-   (templ-components, go-datastar, go-sse).
+(templ-components, go-datastar, go-sse).
 
 ## d) TOTALLY FUCKED UP
 
 ~~1. **The daemon commit race — the documented failure mode, again.** The daemon~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
-   swept the report file twice mid-write: `537de6f` captured the raw 57-line
-   template (a garbage intermediate, immutable history) and `86c06ed` captured the
-   final 534-line content with a heuristic message. My explicit `git add` +
-   `git commit` chain arrived seconds late ("nothing to commit, working tree
-   clean"). AGENTS.md release discipline §0/§2 documents exactly this; I still
-   lost the intent message. Recovery: amend-relabel of HEAD → `38f8c76` (same
-   diff, real message). The amend itself raced the daemon — had a newer daemon
-   commit landed first, I would have relabeled the WRONG commit. Worked this
-   time; not a safe default.
+swept the report file twice mid-write: `537de6f` captured the raw 57-line
+template (a garbage intermediate, immutable history) and `86c06ed` captured the
+final 534-line content with a heuristic message. My explicit `git add` +
+`git commit` chain arrived seconds late ("nothing to commit, working tree
+clean"). AGENTS.md release discipline §0/§2 documents exactly this; I still
+lost the intent message. Recovery: amend-relabel of HEAD → `38f8c76` (same
+diff, real message). The amend itself raced the daemon — had a newer daemon
+commit landed first, I would have relabeled the WRONG commit. Worked this
+time; not a safe default.
 ~~2. **Two HTML defects introduced in the big findings multiedit:** a stray `>`~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
-   splitting "nothing" across a tag boundary and a broken `</n>` close tag.
-   Self-caught next tool call and fixed — but they prove the multiedit was not
-   proofread before submission.
+splitting "nothing" across a tag boundary and a broken `</n>` close tag.
+Self-caught next tool call and fixed — but they prove the multiedit was not
+proofread before submission.
 ~~3. **"a endpoint" typo is live in the committed report.** Shipped because the~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
-   final proofread was mechanical (placeholder/balance greps), not a read.
+final proofread was mechanical (placeholder/balance greps), not a read.
 ~~4. **Pre-write handshake skipped.** AGENTS.md's two-session protocol (git log +~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
-   docs/status tail + git status BEFORE any write) ran only before the COMMIT,
-   not before the first write. Low harm this time (new file), wrong discipline.
+docs/status tail + git status BEFORE any write) ran only before the COMMIT,
+not before the first write. Low harm this time (new file), wrong discipline.
 
 ## e) WHAT WE SHOULD IMPROVE
 
 ~~1. **Commit intent in the same chain as the first successful write** of a new~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
-   artifact — write → verify → commit, before any next step. Never let a
-   verified artifact sit uncommitted across tool calls.
+artifact — write → verify → commit, before any next step. Never let a
+verified artifact sit uncommitted across tool calls.
 ~~2. **Proofread generated HTML as text, not just structure:** grep for~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
-   `\ba [aeiou]`, stray `>` artifacts, `</[a-z]{1,2}>` oddities, before
-   declaring done.
+`\ba [aeiou]`, stray `>` artifacts, `</[a-z]{1,2}>` oddities, before
+declaring done.
 ~~3. **Visual-verify every section:** one devShell call from the repo dir (never~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
-   /tmp), full-page render, downscale + crop inside that call, view all crops.
-   Anchor fragments don't scroll in headless screenshots — scroll with JS or crop.
+/tmp), full-page render, downscale + crop inside that call, view all crops.
+Anchor fragments don't scroll in headless screenshots — scroll with JS or crop.
 ~~4. **Handshake before the first write, always** — not just before commits.~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
 ~~5. **Fix noticed doc staleness on sight** (AGENTS.md go-health notes) or ticket it~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
-   immediately; "noticed but not fixed" is how the three-times-burned go-floor
-   gotcha class happened.
+immediately; "noticed but not fixed" is how the three-times-burned go-floor
+gotcha class happened.
 ~~6. **Fix the scoring rubric before writing cards.** The 26-row denominator was~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
-   constructed while writing; it held together, but the method should be pinned
-   first.
+constructed while writing; it held together, but the method should be pinned
+first.
 ~~7. **Keep strength claims at verified strength** ("demoed" vs "exercised in~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
-   tests" are different claims; NewWithHealthCheck is tests-only).
+tests" are different claims; NewWithHealthCheck is tests-only).
 ~~8. **Recovery recipe worth standardizing:** when the daemon eats an intent~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
-   commit, amend-relabel only if `git log -1 --format=%H` confirms HEAD is still
-   the daemon commit carrying your content; otherwise commit an empty-ish
-   follow-up note instead of racing.
+commit, amend-relabel only if `git log -1 --format=%H` confirms HEAD is still
+the daemon commit carrying your content; otherwise commit an empty-ish
+follow-up note instead of racing.
 
 ## f) UP TO 50 THINGS TO GET DONE NEXT
 
@@ -188,16 +188,16 @@ _(40 items — within the "up to 50" budget; items 1-15 are the audit's actionab
 ## g) QUESTIONS I CANNOT FIGURE OUT MYSELF
 
 ~~1. **Cascade semantics (gates item 11):** Should the dashboard forward the~~ routed — standing TODO_LIST BLOCKED row or ROADMAP Open Question
-   probe's roll-up verdict into the samber/do `do.HealthCheck` cascade
-   (optional `Healthchecker` capability), or must the cascade stay
-   pusher-scoped because federation fail-over staging wants "surface alive"
-   and "fleet healthy" as separate signals?
+probe's roll-up verdict into the samber/do `do.HealthCheck` cascade
+(optional `Healthchecker` capability), or must the cascade stay
+pusher-scoped because federation fail-over staging wants "surface alive"
+and "fleet healthy" as separate signals?
 ~~2. **API scope (gates items 7-8):** Should `WithEvaluationSink` land as a~~ routed — standing TODO_LIST BLOCKED row or ROADMAP Open Question
-   dashboard library API now, or stay a documented consumer-side pattern until
-   go-health v0.6 ships (hook maturity + `SourceStatuses` train)?
+dashboard library API now, or stay a documented consumer-side pattern until
+go-health v0.6 ships (hook maturity + `SourceStatuses` train)?
 ~~3. **Authorization:** May I push master (5 commits, CI currently blind), and/or~~ routed — standing TODO_LIST BLOCKED row or ROADMAP Open Question
-   start the verify-before-filing gate for the upstream federation.Healthz
-   proposal?
+start the verify-before-filing gate for the upstream federation.Healthz
+proposal?
 
 ---
 

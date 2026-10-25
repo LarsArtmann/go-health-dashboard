@@ -1,12 +1,12 @@
 # Status + Brutal Self-Review — BuildFlow error-gate closeout and the 11-day red CI nobody saw (2026-10-25, 14:19)
 
-| | |
-| --- | --- |
-| **Session** | Triggered by the user pasting a `buildflow --fix --build-mode=full` output that exited 69 (one error-severity finding) with the directive READ/UNDERSTAND/RESEARCH/REFLECT, execute-and-verify stepwise, "keep going until everything works" |
-| **Window** | ~13:41–14:19 CET (single session, no concurrent sessions observed after the 13:38 templ-skew report) |
-| **Start state** | Clean tree at `e9f687d`; master ahead of origin (auto-push had synced earlier); CI failing on every run of the day |
-| **End state** | Clean tree at `e8eeefa`, pushed; **CI 7/7 jobs green**; every local gate green; BuildFlow gate findings (error + the fixable warnings) at zero |
-| **Commits** | `c0991da` fix(flake+security): clear BuildFlow error gate with full flake meta (amend-relabel onto daemon commit `25b31de`/`31ca567` carriers) · `e8eeefa` fix(ci): pin guard downloads the SDK module on a cold cache |
+|                 |                                                                                                                                                                                                                                              |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Session**     | Triggered by the user pasting a `buildflow --fix --build-mode=full` output that exited 69 (one error-severity finding) with the directive READ/UNDERSTAND/RESEARCH/REFLECT, execute-and-verify stepwise, "keep going until everything works" |
+| **Window**      | ~13:41–14:19 CET (single session, no concurrent sessions observed after the 13:38 templ-skew report)                                                                                                                                         |
+| **Start state** | Clean tree at `e9f687d`; master ahead of origin (auto-push had synced earlier); CI failing on every run of the day                                                                                                                           |
+| **End state**   | Clean tree at `e8eeefa`, pushed; **CI 7/7 jobs green**; every local gate green; BuildFlow gate findings (error + the fixable warnings) at zero                                                                                               |
+| **Commits**     | `c0991da` fix(flake+security): clear BuildFlow error gate with full flake meta (amend-relabel onto daemon commit `25b31de`/`31ca567` carriers) · `e8eeefa` fix(ci): pin guard downloads the SDK module on a cold cache                       |
 
 ---
 
@@ -70,7 +70,7 @@
 
 ## d) TOTALLY FUCKED UP
 
-1. **Shipped a red master commit under my own name.** `c0991da` failed CI (13:02) on the pin guard I was *simultaneously* tasked to investigate. The knowledge was one `gh run list` away before the push; I checked local gates obsessively and remote state not at all. Mitigated within the session (`e8eeefa` green, red window ~1h), no harm to consumers — but this is precisely the failure class this repo's push-hold discipline exists to prevent, and I re-derived it from the other side.
+1. **Shipped a red master commit under my own name.** `c0991da` failed CI (13:02) on the pin guard I was _simultaneously_ tasked to investigate. The knowledge was one `gh run list` away before the push; I checked local gates obsessively and remote state not at all. Mitigated within the session (`e8eeefa` green, red window ~1h), no harm to consumers — but this is precisely the failure class this repo's push-hold discipline exists to prevent, and I re-derived it from the other side.
 2. **Trusted a tool's self-reported "healed" for a ship decision.** "nix-build-verify healed nix-build" plus a green `nix flake check` stood in for the actual `nix build` until after the pushes. Nothing broke — the hash fix was correct — but the verification order was backwards and luck-neutral, not skill-based.
 3. Nothing else. No data loss, no reverts of others' work, no daemon conflicts beyond the two known amend-relabel recoveries (both disclosed in commit messages).
 
@@ -84,33 +84,33 @@
 
 ## f) Next tasks (ranked)
 
-| # | Task | Impact | Effort | Category |
-| -- | -- | -- | -- | -- |
-| 1 | Decide v0.12.0 cadence and cut it if now (tree + CI + FOD all green; version const currently matches v0.11.0 tag so a release needs the const-bump + tag dance) | High | M | Release |
-| 2 | Wire red-main CI notifications (TODO_LIST row): pick GitHub-native vs webhook vs fleet mechanism, implement, test with a deliberate red | High | S–M | Infra |
-| 3 | Add remote-state pre-push gate: fetch + ahead-count + last CI conclusion (warning-only) in `pre-push-checks.sh` + one-line AGENTS.md release-discipline extension | High | S | Process |
-| 4 | Review/merge dependabot branch `minor-and-patch-290df43455` (its only failure was the guard red, now fixed) | Medium | S | Deps |
-| 5 | Add a CI nix-build job (or periodic) so vendorHash/FOD breakage is caught remotely | Medium | M | Infra |
-| 6 | Reproduce + file securitymd upstream: `filesScanned: 0` reported alongside an active finding | Low | S | Upstream |
-| 7 | Repro + file buildflow upstream: nix-hash-fix "stale hash not found verbatim" double-WARN before self-heal | Low | M | Upstream |
-| 8 | Refresh `./result` (`nix build .# -o result`) so the next vulnix scan target is fresh | Low | S | Hygiene |
-| 9 | Annotate the 13:38 templ-skew report: its owed gates (test/lint/flake) now green on the restored tree | Low | S | Docs |
-| 10 | Harvest the 13:38 §f queue into TODO_LIST: stamp-guard script (f2), devShell templ wrapper (f3) — both in-repo, S | Medium | S | Quality |
-| 11 | Resolve the chromedp question: v0.21 migration (dedicated change + browser suite) or pin-policy decision (TODO_LIST row exists) | Medium | M | Deps |
-| 12 | Decide dependabot docker entries: drop (images built elsewhere) or add Dockerfiles the repo owns — kills 2 info findings per run | Low | S | Config |
-| 13 | README "Installation" section (go-structure-linter info) — 3 lines, clears a finding | Low | S | Docs |
-| 14 | Record `assets/` suggestion + README-installation as deliberate non-fixes if 13 is skipped (gotchas entry) | Low | S | Docs |
-| 15 | Fleet sweep: propagate the pin-guard self-heal pattern to sibling repos whose guards assume a warm module cache | Medium | M | Fleet |
-| 16 | Fleet sweep: propagate the flake meta-block convention (other flakes may fail the same checker error) | Medium | M | Fleet |
-| 17 | Codify the guard cold-cache test: a tiny script or CI step that simulates `GOMODCACHE` fresh so future guard edits re-learn it | Low | S | Quality |
-| 18 | Decide devShell additions (shellcheck, dprint, lychee, hadolint, vulnix) vs documented nix-run fallback — silences 6 buildflow health warns per run | Low | S | DevEx |
-| 19 | Install or permanently silence `interrogate` (buildflow health warn every run) | Low | S | DevEx |
-| 20 | Full `buildflow` re-run post-fixes: confirm 0 errors, rebuild timing baselines (today's regression verdicts are cold-cache noise) | Medium | M | Quality |
-| 21 | On-demand `buildflow -s gitleaks -s codespell -s markdown-lint` once (8 markdown files were dprint-rewritten today) | Low | S | Quality |
-| 22 | AGENTS.md size reduction (406 lines vs 220 budget) — the standing warn; narratives already in gotchas | Medium | M | Docs |
-| 23 | Health-hub boot smoke with empty `HEALTH_HUB_REMOTES` (bounded, verifies the FOD binary end-to-end beyond "it built") | Low | S | Testing |
-| 24 | Watch `pkg.go.dev` still renders v0.11.0 Latest at release time; re-check after v0.12.0 | Low | S | Release |
-| 25 | At v0.12.0: re-verify release-draft workflow (v0.10.1 dual-cut lessons) before tagging | Medium | S | Release |
+| #  | Task                                                                                                                                                              | Impact | Effort | Category |
+| -- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
+| 1  | Decide v0.12.0 cadence and cut it if now (tree + CI + FOD all green; version const currently matches v0.11.0 tag so a release needs the const-bump + tag dance)   | High   | M      | Release  |
+| 2  | Wire red-main CI notifications (TODO_LIST row): pick GitHub-native vs webhook vs fleet mechanism, implement, test with a deliberate red                           | High   | S–M    | Infra    |
+| 3  | Add remote-state pre-push gate: fetch + ahead-count + last CI conclusion (warning-only) in `pre-push-checks.sh` + one-line AGENTS.md release-discipline extension | High   | S      | Process  |
+| 4  | Review/merge dependabot branch `minor-and-patch-290df43455` (its only failure was the guard red, now fixed)                                                       | Medium | S      | Deps     |
+| 5  | Add a CI nix-build job (or periodic) so vendorHash/FOD breakage is caught remotely                                                                                | Medium | M      | Infra    |
+| 6  | Reproduce + file securitymd upstream: `filesScanned: 0` reported alongside an active finding                                                                      | Low    | S      | Upstream |
+| 7  | Repro + file buildflow upstream: nix-hash-fix "stale hash not found verbatim" double-WARN before self-heal                                                        | Low    | M      | Upstream |
+| 8  | Refresh `./result` (`nix build .# -o result`) so the next vulnix scan target is fresh                                                                             | Low    | S      | Hygiene  |
+| 9  | Annotate the 13:38 templ-skew report: its owed gates (test/lint/flake) now green on the restored tree                                                             | Low    | S      | Docs     |
+| 10 | Harvest the 13:38 §f queue into TODO_LIST: stamp-guard script (f2), devShell templ wrapper (f3) — both in-repo, S                                                 | Medium | S      | Quality  |
+| 11 | Resolve the chromedp question: v0.21 migration (dedicated change + browser suite) or pin-policy decision (TODO_LIST row exists)                                   | Medium | M      | Deps     |
+| 12 | Decide dependabot docker entries: drop (images built elsewhere) or add Dockerfiles the repo owns — kills 2 info findings per run                                  | Low    | S      | Config   |
+| 13 | README "Installation" section (go-structure-linter info) — 3 lines, clears a finding                                                                              | Low    | S      | Docs     |
+| 14 | Record `assets/` suggestion + README-installation as deliberate non-fixes if 13 is skipped (gotchas entry)                                                        | Low    | S      | Docs     |
+| 15 | Fleet sweep: propagate the pin-guard self-heal pattern to sibling repos whose guards assume a warm module cache                                                   | Medium | M      | Fleet    |
+| 16 | Fleet sweep: propagate the flake meta-block convention (other flakes may fail the same checker error)                                                             | Medium | M      | Fleet    |
+| 17 | Codify the guard cold-cache test: a tiny script or CI step that simulates `GOMODCACHE` fresh so future guard edits re-learn it                                    | Low    | S      | Quality  |
+| 18 | Decide devShell additions (shellcheck, dprint, lychee, hadolint, vulnix) vs documented nix-run fallback — silences 6 buildflow health warns per run               | Low    | S      | DevEx    |
+| 19 | Install or permanently silence `interrogate` (buildflow health warn every run)                                                                                    | Low    | S      | DevEx    |
+| 20 | Full `buildflow` re-run post-fixes: confirm 0 errors, rebuild timing baselines (today's regression verdicts are cold-cache noise)                                 | Medium | M      | Quality  |
+| 21 | On-demand `buildflow -s gitleaks -s codespell -s markdown-lint` once (8 markdown files were dprint-rewritten today)                                               | Low    | S      | Quality  |
+| 22 | AGENTS.md size reduction (406 lines vs 220 budget) — the standing warn; narratives already in gotchas                                                             | Medium | M      | Docs     |
+| 23 | Health-hub boot smoke with empty `HEALTH_HUB_REMOTES` (bounded, verifies the FOD binary end-to-end beyond "it built")                                             | Low    | S      | Testing  |
+| 24 | Watch `pkg.go.dev` still renders v0.11.0 Latest at release time; re-check after v0.12.0                                                                           | Low    | S      | Release  |
+| 25 | At v0.12.0: re-verify release-draft workflow (v0.10.1 dual-cut lessons) before tagging                                                                            | Medium | S      | Release  |
 
 (25 real items; honest ceiling of this session's blast radius — padding toward 50 would be brainstorm, not commitments. Items 7/11/22 are the only M+ candidates beyond the top five.)
 

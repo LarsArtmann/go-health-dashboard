@@ -52,18 +52,18 @@
 ## c) Bonuses found while executing (not in the plan)
 
 ~~1. The AwaitReady/StartupComplete trap (now an AGENTS.md gotcha): Ready() is~~ closed or routed — 2026-10-13 HARVEST → TODO_LIST; executed or consciously closed in the 2026-10-25 closeout
-   "not currently failing" — true on the zero-value pass cache.
+"not currently failing" — true on the zero-value pass cache.
 ~~2. go-health's startup latch is LAZY (evaluated only on served /startupz~~ closed or routed — 2026-10-13 HARVEST → TODO_LIST; executed or consciously closed in the 2026-10-25 closeout
-   requests) — a kubelet-less process never latches.
+requests) — a kubelet-less process never latches.
 ~~3. server.Shutdown closes listeners immediately → a MarkShuttingDown without~~ closed or routed — 2026-10-13 HARVEST → TODO_LIST; executed or consciously closed in the 2026-10-25 closeout
-   a grace beat is unobservable (the DEMO_DRAIN_GRACE default exists for
-   this).
+a grace beat is unobservable (the DEMO_DRAIN_GRACE default exists for
+this).
 ~~4. TestMetrics_LatencyHistogram is load-flaky (exact `count 3` assertion vs~~ closed or routed — 2026-10-13 HARVEST → TODO_LIST; executed or consciously closed in the 2026-10-25 closeout
-   async ticks; passes 3/3 isolated) — pre-existing, worth a `>= 3` guard
-   loosening in a dedicated change.
+async ticks; passes 3/3 isolated) — pre-existing, worth a `>= 3` guard
+loosening in a dedicated change.
 ~~5. Synthetic-row evidence investigation closed: the evidence log is safe by~~ closed or routed — 2026-10-13 HARVEST → TODO_LIST; executed or consciously closed in the 2026-10-25 closeout
-   construction (CachedResponse-only ingest + current-response
-   intersection); recorded in the audit report.
+construction (CachedResponse-only ingest + current-response
+intersection); recorded in the audit report.
 
 ## d) Known deviations / disclosures
 
@@ -80,9 +80,9 @@
 ## e) Next session should
 
 ~~1. Check CI on a360285 (run 38031991620) — the desk gate replicated its~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
-   checks locally, so a red job means CI-only drift.
+checks locally, so a red job means CI-only drift.
 ~~2. Consider the two new quick wins the deep dives surfaced: ListNote swap~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
-   (closes an open TODO row) and WithOnDrop drop-counter (new TODO row
-   candidate, not yet added to TODO_LIST).
+(closes an open TODO row) and WithOnDrop drop-counter (new TODO row
+candidate, not yet added to TODO_LIST).
 ~~3. T13 when go-health v0.6 tags; review ADR-0003/0004 + go-health#5 and~~ resolved — superseded by later sessions (see TODO_LIST/CHANGELOG 2026-10-25)
-   tick the review box if endorsed.
+tick the review box if endorsed.

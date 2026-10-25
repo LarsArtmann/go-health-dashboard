@@ -141,34 +141,34 @@ run — the hub page's per-remote cards have never seen axe).
 
 ## a) FULLY DONE (this afternoon session)
 
-| Item                                                                                                                                                                                                                                                                                                                      | Evidence                                 |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| ~~nsfw-classifier baseline diagnosed (ONNX real-model failures in `internal/face`+`internal/skin`, both dashboard-free, pre-existing)~~ done — this arc — evidence cited in the row | ~~targeted runs, import scan~~ |
-| ~~nsfw-classifier bumped v0.10.2→v0.11.0 (+go-health v0.7.0), delivering layer green, daemon race recovered via verify+amend~~ done — this arc — evidence cited in the row | ~~`e102344e`~~ |
-| ~~dnsblockd block root-caused: go-datastar `static/v0.6.2` tag missing upstream (ls-remote first-hand), unlandable under their exact-match gate — closed BLOCKED-upstream with evidence~~ done — this arc — evidence cited in the row | ~~research notes §Consumer sweep~~ |
-| ~~`docs/research/2026-10-25_research-notes.md` written (render deltas, SSE payload, Chrome latency, LOADTEST, Retry-After correction, consumer table, throwaway-tool note)~~ done — this arc — evidence cited in the row | ~~`45d55d2`~~ |
-| ~~Lint debt resolved (2 varnamelen: `testCase`/`csvWriter`), `nix run .#lint` 0 issues~~ done — this arc — evidence cited in the row | ~~`872b555`~~ |
-| ~~Federation hub e2e: `TestBrowser_FederationHubTwoRemotes` — 2 remotes over real HTTP, federation, source-grouped cards, namespaced rows, 2-card invariant~~ done — this arc — evidence cited in the row | ~~`48a8c11` (code rode `220c071`)~~ |
-| ~~Degraded-fixture axe audit both themes: `TestBrowser_AccessibilityDegraded`; exposed real gap (jump link never audited), root-caused the violation as harness artifact (transparent bg + dark color-scheme vs axe's white assumption), fixed harness with production canvases; production ratios hand-verified conformant~~ done — this arc — evidence cited in the row | ~~`48a8c11`~~ |
-| ~~GroupBySource screenshot captured (122 KB) + `capture-screenshots.sh grouped` arg + Federation Hub README section~~ done — this arc — evidence cited in the row | ~~`docs/screenshot-grouped.png`, `48a8c11`~~ |
-| ~~TODO_LIST harvest: 32 rows closed with evidence; 7 stale rows (T09/T10/T11/T12/T14/T19 + auto-daemon non-fix) verified-then-closed~~ done — this arc — evidence cited in the row | ~~`38a2c5a`, `cbc46c0`, `cb2b347`~~ |
-| ~~Helper-coverage row implemented: `TestTimelineEntryMappers_DegradedAndRecovered` + source-grouped `TestAlertSummary` cases~~ done — this arc — evidence cited in the row | ~~`38a2c5a`~~ |
-| ~~CHANGELOG `[Unreleased]` entries (CSV hardening, dead condition, test/CI/docs batches) + FEATURES counts 346/47 (+14)~~ done — this arc — evidence cited in the row | ~~`38a2c5a`~~ |
-| ~~Git-hygiene triage: all three relabel targets (`70d10b3`/`bfd1b1c`/`70b3282`) verified PUSHED → row closed not-amendable-without-force-push~~ done — this arc — evidence cited in the row | ~~merge-base checks~~ |
-| ~~deploy/ probe: dashboard service builds from repo (nothing to bump), external pins dependabot-governed, boot-verify blocked (no docker/podman/nerdctl on host)~~ done — this arc — evidence cited in the row | ~~compose read + runtime probe~~ |
-| ~~Full suite green + `pre-push-checks.sh` **8/8 green** (incl. new SECURITY freshness + fuzz registry 13/13)~~ done — this arc — evidence cited in the row | ~~`5ceb5f2`~~ |
-| ~~Session status addendum appended to the 12-26 report (dispositions + the 3 untouched questions)~~ done — this arc — evidence cited in the row | ~~`4ecaf49`~~ |
+| Item                                                                                                                                                                                                                                                                                                                                                                      | Evidence                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| ~~nsfw-classifier baseline diagnosed (ONNX real-model failures in `internal/face`+`internal/skin`, both dashboard-free, pre-existing)~~ done — this arc — evidence cited in the row                                                                                                                                                                                       | ~~targeted runs, import scan~~               |
+| ~~nsfw-classifier bumped v0.10.2→v0.11.0 (+go-health v0.7.0), delivering layer green, daemon race recovered via verify+amend~~ done — this arc — evidence cited in the row                                                                                                                                                                                                | ~~`e102344e`~~                               |
+| ~~dnsblockd block root-caused: go-datastar `static/v0.6.2` tag missing upstream (ls-remote first-hand), unlandable under their exact-match gate — closed BLOCKED-upstream with evidence~~ done — this arc — evidence cited in the row                                                                                                                                     | ~~research notes §Consumer sweep~~           |
+| ~~`docs/research/2026-10-25_research-notes.md` written (render deltas, SSE payload, Chrome latency, LOADTEST, Retry-After correction, consumer table, throwaway-tool note)~~ done — this arc — evidence cited in the row                                                                                                                                                  | ~~`45d55d2`~~                                |
+| ~~Lint debt resolved (2 varnamelen: `testCase`/`csvWriter`), `nix run .#lint` 0 issues~~ done — this arc — evidence cited in the row                                                                                                                                                                                                                                      | ~~`872b555`~~                                |
+| ~~Federation hub e2e: `TestBrowser_FederationHubTwoRemotes` — 2 remotes over real HTTP, federation, source-grouped cards, namespaced rows, 2-card invariant~~ done — this arc — evidence cited in the row                                                                                                                                                                 | ~~`48a8c11` (code rode `220c071`)~~          |
+| ~~Degraded-fixture axe audit both themes: `TestBrowser_AccessibilityDegraded`; exposed real gap (jump link never audited), root-caused the violation as harness artifact (transparent bg + dark color-scheme vs axe's white assumption), fixed harness with production canvases; production ratios hand-verified conformant~~ done — this arc — evidence cited in the row | ~~`48a8c11`~~                                |
+| ~~GroupBySource screenshot captured (122 KB) + `capture-screenshots.sh grouped` arg + Federation Hub README section~~ done — this arc — evidence cited in the row                                                                                                                                                                                                         | ~~`docs/screenshot-grouped.png`, `48a8c11`~~ |
+| ~~TODO_LIST harvest: 32 rows closed with evidence; 7 stale rows (T09/T10/T11/T12/T14/T19 + auto-daemon non-fix) verified-then-closed~~ done — this arc — evidence cited in the row                                                                                                                                                                                        | ~~`38a2c5a`, `cbc46c0`, `cb2b347`~~          |
+| ~~Helper-coverage row implemented: `TestTimelineEntryMappers_DegradedAndRecovered` + source-grouped `TestAlertSummary` cases~~ done — this arc — evidence cited in the row                                                                                                                                                                                                | ~~`38a2c5a`~~                                |
+| ~~CHANGELOG `[Unreleased]` entries (CSV hardening, dead condition, test/CI/docs batches) + FEATURES counts 346/47 (+14)~~ done — this arc — evidence cited in the row                                                                                                                                                                                                     | ~~`38a2c5a`~~                                |
+| ~~Git-hygiene triage: all three relabel targets (`70d10b3`/`bfd1b1c`/`70b3282`) verified PUSHED → row closed not-amendable-without-force-push~~ done — this arc — evidence cited in the row                                                                                                                                                                               | ~~merge-base checks~~                        |
+| ~~deploy/ probe: dashboard service builds from repo (nothing to bump), external pins dependabot-governed, boot-verify blocked (no docker/podman/nerdctl on host)~~ done — this arc — evidence cited in the row                                                                                                                                                            | ~~compose read + runtime probe~~             |
+| ~~Full suite green + `pre-push-checks.sh` **8/8 green** (incl. new SECURITY freshness + fuzz registry 13/13)~~ done — this arc — evidence cited in the row                                                                                                                                                                                                                | ~~`5ceb5f2`~~                                |
+| ~~Session status addendum appended to the 12-26 report (dispositions + the 3 untouched questions)~~ done — this arc — evidence cited in the row                                                                                                                                                                                                                           | ~~`4ecaf49`~~                                |
 
 ## b) PARTIALLY DONE
 
-| Item                       | State                             | Remainder                                                                                                                                  |
-| -------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Item                                                                                                     | State                                 | Remainder                                                                                                                                      |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | ~~GroupBySource screenshot~~ done — routed — TODO_LIST content-assertions row (human eyeball still owed) | ~~Captured, committed, README-wired~~ | ~~**Not visually verified** (model can't view images; proxy DOM assertions only) — needs a human eyeball or a content-asserting capture test~~ |
-| ~~Research notes~~ done — accepted risk — provenance noted; re-measure rides the ROADMAP benchstat idea | ~~Written and committed~~ | ~~Inherited numbers not re-measured (provenance now implicitly mine); benchmarks re-run skipped~~ |
-| ~~FEATURES race claim~~ done — covered — 12-26 count=2 race sanity + nightly flake canary (6153cf1) | ~~Count refreshed~~ | ~~`-race` not run this session~~ |
-| ~~deploy/ v0.11.0 evidence~~ done — routed — small quality batch row (Dockerfile base-floor spot-check) | ~~Diagnosis complete~~ | ~~Boot-verify needs a docker-capable machine; Dockerfile base-floor spot-check not done~~ |
-| ~~nsfw-classifier on v0.11.0~~ done — closed — pre-existing, unrelated (recorded in the research notes) | ~~Bumped, consumers green~~ | ~~Repo still has 2 pre-existing unrelated ONNX test failures (not ours, recorded)~~ |
-| ~~dnsblockd on v0.11.0~~ done — closed — BLOCKED upstream (no static/v0.6.2 tag; owner act) | ~~Block fully evidenced~~ | ~~Bump lands only after owner pushes `static/v0.6.2` (or relaxes their gate)~~ |
+| ~~Research notes~~ done — accepted risk — provenance noted; re-measure rides the ROADMAP benchstat idea  | ~~Written and committed~~             | ~~Inherited numbers not re-measured (provenance now implicitly mine); benchmarks re-run skipped~~                                              |
+| ~~FEATURES race claim~~ done — covered — 12-26 count=2 race sanity + nightly flake canary (6153cf1)      | ~~Count refreshed~~                   | ~~`-race` not run this session~~                                                                                                               |
+| ~~deploy/ v0.11.0 evidence~~ done — routed — small quality batch row (Dockerfile base-floor spot-check)  | ~~Diagnosis complete~~                | ~~Boot-verify needs a docker-capable machine; Dockerfile base-floor spot-check not done~~                                                      |
+| ~~nsfw-classifier on v0.11.0~~ done — closed — pre-existing, unrelated (recorded in the research notes)  | ~~Bumped, consumers green~~           | ~~Repo still has 2 pre-existing unrelated ONNX test failures (not ours, recorded)~~                                                            |
+| ~~dnsblockd on v0.11.0~~ done — closed — BLOCKED upstream (no static/v0.6.2 tag; owner act)              | ~~Block fully evidenced~~             | ~~Bump lands only after owner pushes `static/v0.6.2` (or relaxes their gate)~~                                                                 |
 
 ## c) NOT STARTED (deliberately — all decision- or authorization-gated)
 
@@ -211,24 +211,24 @@ CSS is next touched.
 ## e) WHAT WE SHOULD IMPROVE!
 
 ~~1. **Capture tests must assert content, not bytes** — post-capture DOM-text checks in~~ routed — TODO_LIST content-assertions row
-   all 4 screenshot tests (title, banner/card text) so broken renders can't ship.
+all 4 screenshot tests (title, banner/card text) so broken renders can't ship.
 ~~2. **De-duplicate the contrast numbers** — compute ratios from palette constants in a~~ routed — TODO_LIST contrast-ratios row
-   test instead of hand-written copies in ADR-0006/research/CHANGELOG/comments.
+test instead of hand-written copies in ADR-0006/research/CHANGELOG/comments.
 ~~3. **AGENTS.md gotcha entry for the harness-canvas lesson** (axe + no-Tailwind + dark~~ routed — small quality batch row (gotchas harness-canvas entry)
-   color-scheme ⇒ measure UA colors vs white; harness now mirrors production canvases).
+color-scheme ⇒ measure UA colors vs white; harness now mirrors production canvases).
 ~~4. **LSP hygiene**: restart LSP when trashed-dir diagnostics persist; investigate~~ routed — templ-skew report (stale system LSP; the NixOS templ bump is the fix)
-   templ:168 noise once instead of suppressing it visually for a whole session.
+templ:168 noise once instead of suppressing it visually for a whole session.
 ~~5. **Race leg at push time** (or accept + document the nightly-canary-only tradeoff~~ routed — small quality batch row (document the canary-only race leg in the pre-push header)
-   explicitly in pre-push-checks header).
+explicitly in pre-push-checks header).
 ~~6. **Provenance discipline for inherited numbers** — "as measured by session X" per~~ routed — ROADMAP theme 7 (benchstat baseline discipline idea standing)
-   row, or re-measure; never adopt another session's numbers unattributed.
+row, or re-measure; never adopt another session's numbers unattributed.
 ~~7. **Sibling-repo handshake**: extend the status-file handshake rule to EVERY repo we~~ routed — ROADMAP theme 7 (fleet practice idea)
-   touch, not just the primary.
+touch, not just the primary.
 ~~8. **Screencast/eyeball step for image artifacts**: a one-line `open docs/screenshot-grouped.png` note in the README PR-equivalent so a human looks at captures before release.~~ covered — TODO_LIST content-assertions row (assertions beat eyeballs)
 ~~9. **Report the hook over-match upstream** (crush-config): `rg -l … -t go` should not~~ routed — ROADMAP theme 7 (fleet filing)
-   trip the `-r` guard.
+trip the `-r` guard.
 ~~10. **First-canary-run verification tomorrow**: check the workflow's maiden nightly~~ routed — TODO_LIST canary-first-run row
-    green (new workflows fail on their first real environment more often than not).
+green (new workflows fail on their first real environment more often than not).
 
 ## f) Up to 50 things to get done next
 

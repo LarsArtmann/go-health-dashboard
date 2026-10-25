@@ -26,70 +26,71 @@
 ## A) Fully done and verified
 
 ~~1. **Pre-existing test-build breakage FIXED (root cause)** — daemon commit~~ verified this session (goldens + unit green; chromedp pins restored)
-   `93d13fd` (Oct 15) bumped chromedp v0.16.0 → v0.21.0 in go.mod WITHOUT
-   migrating browser_test.go/screenshot_test.go (~100 call sites; v0.21 is
-   a generics rework: `Run[T]`, `Do`, `remote.NewAllocator`,
-   `ListenTarget` gone). Restored chromedp v0.16.0 + its matching cdproto
-   pin. The whole package's test build was broken at HEAD before this —
-   nothing was verifiable until fixed.
+`93d13fd` (Oct 15) bumped chromedp v0.16.0 → v0.21.0 in go.mod WITHOUT
+migrating browser_test.go/screenshot_test.go (~100 call sites; v0.21 is
+a generics rework: `Run[T]`, `Do`, `remote.NewAllocator`,
+`ListenTarget` gone). Restored chromedp v0.16.0 + its matching cdproto
+pin. The whole package's test build was broken at HEAD before this —
+nothing was verifiable until fixed.
 ~~2. **P1 — Touch/keyboard-accessible evidence tooltips (HIGH-impact TODO row)**~~ done this session — landed, browser-pinned later the same day (TestBrowser_EvidenceDisclosureFocus)
-   — native `title` (invisible on touch) replaced by CSS-only disclosures:
-   focusable span + `role="tooltip"` visual toggled by
-   `group-hover`/`group-focus-within` + `sr-only` copy for screen readers;
-   unproven greens now carry a **dashed provisional outline**
-   (`outline-dashed`, glance-visible without any hover). CSP-clean (class
-   markup only), SSE-patch-pure (no scripts), goldens pinned. The truth
-   strip's tooltip got the same treatment via an info glyph
-   (`icons.Information`).
+— native `title` (invisible on touch) replaced by CSS-only disclosures:
+focusable span + `role="tooltip"` visual toggled by
+`group-hover`/`group-focus-within` + `sr-only` copy for screen readers;
+unproven greens now carry a **dashed provisional outline**
+(`outline-dashed`, glance-visible without any hover). CSP-clean (class
+markup only), SSE-patch-pure (no scripts), goldens pinned. The truth
+strip's tooltip got the same treatment via an info glyph
+(`icons.Information`).
 ~~3. **P2 — Severity-toned group count badges** — warn groups get the amber~~ done this session (groupCountTone, goldens green)
-   count chip, fail groups the red one (`groupCountTone`, mirroring the
-   upstream badge palette); pass/off stay neutral gray. "Only problems
-   carry color" rule kept.
+count chip, fail groups the red one (`groupCountTone`, mirroring the
+upstream badge palette); pass/off stay neutral gray. "Only problems
+carry color" rule kept.
 ~~4. **P3 — Filter no-match hint upgraded to `display.EmptyState`** (Search~~ done this session (filterEmptyAttrs, polarity bug fixed below)
-   icon, title, description; keeps `data-filter-empty` +
-   `data-class:hidden` via `filterEmptyAttrs`).
+icon, title, description; keeps `data-filter-empty` +
+`data-class:hidden` via `filterEmptyAttrs`).
 ~~5. **P4 — Latency tooltip now discloses the budget** —~~ done this session (latencyTooltipText)
-   `viewModel.RefreshIntervalText` stamped in `applyLatencyTone`;
-   tooltip reads "...the probe refreshes every 5s, and the value turns
-   amber past half that budget" (roadmap item from theme 6).
+`viewModel.RefreshIntervalText` stamped in `applyLatencyTone`;
+tooltip reads "...the probe refreshes every 5s, and the value turns
+amber past half that budget" (roadmap item from theme 6).
 ~~6. **Pre-existing BUG FIXED (unit-pinned): inverted filter-empty polarity**~~ done this session (TestFilterEmptyExpr pins both directions)
-   — old `filterEmptyExpr` hid the hint exactly when NOTHING matched and
-   revealed it after clearing a query; rewritten as undefined-safe
-   miss-negation (new `TestFilterEmptyExpr` pins both directions).
+— old `filterEmptyExpr` hid the hint exactly when NOTHING matched and
+revealed it after clearing a query; rewritten as undefined-safe
+miss-negation (new `TestFilterEmptyExpr` pins both directions).
 ~~7. **Test-harness correctness** — `aggregate_sse_test` read window 4KB→16KB~~ done this session (16KB read window)
-   (evidence disclosures measurably add ~600 B/pass row + ~470 B strip per
-   patch; measurement recorded in the test comment — partial answer to
-   TODO f11).
+(evidence disclosures measurably add ~600 B/pass row + ~470 B strip per
+patch; measurement recorded in the test comment — partial answer to
+TODO f11).
 ~~8. **Play-CDN v3 compatibility** — tooltip width class `max-w-64` (v4-only)~~ done this session (max-w-[16rem])
-   swapped for `max-w-[16rem]`.
+swapped for `max-w-[16rem]`.
 
 ## B) Partially done
 
 ~~1. **P5 — Status filter chips (All / Problems / Pass)**~~ fixed same day — colon grammar data-on:click; TestBrowser_StatusFilterChips green (12-26 report a1)
-   - DONE: Go expression builders (`rowFilterExpr`, chip class/pressed
-     exprs, `statusFilterSignal`), templ markup (segmented control next to
-     the filter input), unit tests, goldens.
-   - BLOCKED: real interaction dead in the pinned Datastar v1.0.3 bundle —
-     see §D1.
+
+- DONE: Go expression builders (`rowFilterExpr`, chip class/pressed
+  exprs, `statusFilterSignal`), templ markup (segmented control next to
+  the filter input), unit tests, goldens.
+- BLOCKED: real interaction dead in the pinned Datastar v1.0.3 bundle —
+  see §D1.
 
 ## C) Not started (planned, descoped by the stop)
 
 ~~1. P6 — docs closure for keyboard-links TODO row (VERIFIED already:~~ closed 2026-10-25 — TestBrowser_KeyboardLinks verified; TODO row closed (12-26 a3)
-   `TestBrowser_KeyboardLinks` at browser_test.go:1823 asserts all four
-   endpoint glyph links + accessible names + jump-link Enter navigation —
-   the TODO row just needs closing with this evidence).
+`TestBrowser_KeyboardLinks` at browser_test.go:1823 asserts all four
+endpoint glyph links + accessible names + jump-link Enter navigation —
+the TODO row just needs closing with this evidence).
 ~~2. P7 — sticky table header: analysis done, decision = SKIP (upstream~~ SKIP recorded in ROADMAP theme 6 (overflow wrapper), 2026-10-25
-   `StickyHeader` prop only works in height-constrained scroll containers;
-   our tables live in `overflow-x-auto` wrappers on a page-level scroller —
-   thead would never stick). Needs the TODO/ROADMAP documentation entry.
+`StickyHeader` prop only works in height-constrained scroll containers;
+our tables live in `overflow-x-auto` wrappers on a page-level scroller —
+thead would never stick). Needs the TODO/ROADMAP documentation entry.
 ~~3. P8 — docs batch: CHANGELOG + FEATURES entries for P1-P4, TODO_LIST~~ done 2026-10-25 — CHANGELOG/FEATURES/AGENTS/gotchas/README/screenshots via the 10:45+12:26+12:27 sessions
-   harvest (touch-tooltips done, f23 evidence, f11 measurement note),
-   AGENTS.md templ-components pin correction (says v1.21.0, go.mod is
-   v1.23.0), chromedp incident → `docs/gotchas.md`, README prose audit vs
-   new UI (f9), harness `[hidden]` CSS fix (f10), GroupBySource screenshot
-   (f17), screenshot recapture for the new tooltips/chips UI.
+harvest (touch-tooltips done, f23 evidence, f11 measurement note),
+AGENTS.md templ-components pin correction (says v1.21.0, go.mod is
+v1.23.0), chromedp incident → `docs/gotchas.md`, README prose audit vs
+new UI (f9), harness `[hidden]` CSS fix (f10), GroupBySource screenshot
+(f17), screenshot recapture for the new tooltips/chips UI.
 ~~4. Final gates: `nix run .#lint`, `nix flake check`, full browser suite~~ green — pre-push-checks 8/8 at 5ceb5f2; CI 7/7 on e8eeefa (14-19 a6/a10)
-   (serialized), screenshot capture verification.
+(serialized), screenshot capture verification.
 
 ## D) Totally fucked up (honest)
 
@@ -135,17 +136,17 @@
 **Unblock P5 (pick ONE path):**
 
 ~~1. Read the pinned bundle's `on` plugin registration semantics in~~ done 2026-10-25 — colon grammar confirmed against the bundle; chips fixed (12-26 a1)
-   go-datastar source (not minified) — `~/projects/go-datastar` — and find
-   the sanctioned event attribute grammar + assignment expression form.
+go-datastar source (not minified) — `~/projects/go-datastar` — and find
+the sanctioned event attribute grammar + assignment expression form.
 ~~2. Alternative A: server-side chips (`?status=problems` handled in~~ NOT-DO — path 1 (grammar fix) won; server-side chips moot
-   `buildData`; links, zero JS, crawler-friendly) — but must solve
-   patch-vs-query persistence (patches re-render without the query).
+`buildData`; links, zero JS, crawler-friendly) — but must solve
+patch-vs-query persistence (patches re-render without the query).
 ~~3. Alternative B: wire chips through `pageBootstrap` vanilla JS IF the~~ NOT-DO — path 1 (grammar fix) won; vanilla-JS bridge moot
-   bundle exposes any signal-write path (probably absent → likely dead end).
+bundle exposes any signal-write path (probably absent → likely dead end).
 ~~4. Alternative C: drop chips, keep the (now-fixed) hint + text filter only~~ NOT-DO — path 1 (grammar fix) won; chips kept and green
-   — smallest revert; chips become a ROADMAP idea again.
+— smallest revert; chips become a ROADMAP idea again.
 ~~5. Whatever path: make `TestBrowser_StatusFilterChips` green or delete it~~ done — TestBrowser_StatusFilterChips green (12-26 a1)
-   with the feature.
+with the feature.
 
 **Verification debt from this session:**
 ~~6. Run `TestBrowser_EvidenceDisclosureFocus` (unverified).~~ done — PASS 1.76s (12-26 a1)
@@ -217,16 +218,16 @@ run, dark re-run evidence (f22/f38).
 ## G) Questions (max 3)
 
 ~~1. **Chips direction:** A) dig the go-datastar source for the sanctioned~~ answered — path A taken; grammar fixed and chips green same day
-   `on` grammar + assignment form (my preference: the SyntaxError smells
-   like a probe-harness artifact; the grammar question is answerable from
-   the unminified repo), B) server-side `?status=` chips, or C) drop the
-   feature? (A ≈ 1-2 h, B ≈ half a day + patch-persistence design, C ≈ 10 min.)
+`on` grammar + assignment form (my preference: the SyntaxError smells
+like a probe-harness artifact; the grammar question is answerable from
+the unminified repo), B) server-side `?status=` chips, or C) drop the
+feature? (A ≈ 1-2 h, B ≈ half a day + patch-persistence design, C ≈ 10 min.)
 ~~2. **chromedp policy:** keep the v0.16.0 pin (current state) and file the~~ routed — TODO_LIST chromedp row (pin kept, migration deliberate)
-   v0.21 migration as its own task, or migrate the browser/screenshot
-   suites to v0.21 now (~100 mechanical call sites + harness rewrite for
-   `remote.NewAllocator`)?
+v0.21 migration as its own task, or migrate the browser/screenshot
+suites to v0.21 now (~100 mechanical call sites + harness rewrite for
+`remote.NewAllocator`)?
 ~~3. **Visual review:** I cannot view images in this session, so P1-P4 are~~ partially routed — screenshots recaptured 2026-10-25; human eyeball owed (TODO content-assertions row)
-   verified by markup/goldens/browser assertions only — do you want a
-   screenshot recapture + your own eyeball pass before the release cut?
+verified by markup/goldens/browser assertions only — do you want a
+screenshot recapture + your own eyeball pass before the release cut?
 
 _Arte in Aeternum — stopped cleanly, nothing hidden._
