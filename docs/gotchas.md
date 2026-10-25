@@ -292,3 +292,23 @@ from before the exclusion rule, stripped 2026-10-25; also one gocognit
 thumb: a nolint directive whose linter is excluded by a path rule is
 dead by construction — check the exclusions section before adding a
 directive anywhere, and expect strip-and-rerun to be the proof.
+
+## CI was red for 11 days and nobody looked (2026-10-14 → 2026-10-25)
+
+Two independent reds stacked on master: (1) 2026-10-15 the daemon bumped
+templ-components to v1.23.0 while `check-ui-pins.sh` still expected
+v1.21.0 (guard updated 2026-10-25); (2) the same guard's new SDK-bundle
+hash check failed on every CI runner because the module cache is cold at
+guard time and the script errored instead of running `go mod download`
+(self-heal added 2026-10-25, cold-cache verified via
+`GOMODCACHE=/tmp/... bash scripts/check-ui-pins.sh`). Last green run
+before the fix: 2026-10-14. Lessons: a gate-script change is not done
+until CI proves green on the commit carrying it (local-green ≠ CI-green
+when the gate depends on environment state like a module cache), and
+red-main needs a notification path (TODO_LIST row).
+
+Also 2026-10-25: securitymd's `missing-response-time` rule only
+recognizes conventional phrasings ("initial response", "respond
+within", "within 24/48/72 hours") — SECURITY.md's accurate
+"acknowledgement within 3 business days" failed it; reworded, meaning
+unchanged.
