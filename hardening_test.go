@@ -13,7 +13,12 @@ import (
 func TestRateLimit_ExceedsBudget(t *testing.T) {
 	t.Parallel()
 
-	s := setupDashboard(t, dashboard.WithRateLimit(2, time.Second))
+	// The hour window makes the exhaustion assertion load-immune: refill
+	// between the three back-to-back requests is negligible, so a 429
+	// here is a budget fact, not a race against the scheduler under a
+	// full parallel suite (the 2026-10-11 flake class: 1s window,
+	// 200-instead-of-429 under -race load). Refill has its own test.
+	s := setupDashboard(t, dashboard.WithRateLimit(2, time.Hour))
 	defer s.cleanup()
 
 	if w := doRequest(t, s.mux, "/health"); w.Code != http.StatusOK {
@@ -62,17 +67,49 @@ func TestRateLimit_RefillsOverTime(t *testing.T) {
 	defer s.cleanup()
 
 	if w := doRequest(t, s.mux, "/health"); w.Code != http.StatusOK {
-		t.Fatalf("request 1: want 200, got %d", w.Code)
+		t.Fatalf("first request: want 200 (bucket starts full), got %d", w.Code)
 	}
 
-	if w := doRequest(t, s.mux, "/health"); w.Code != http.StatusTooManyRequests {
-		t.Fatalf("request 2: want 429, got %d", w.Code)
+	// Exhaust: keep requesting until the bucket denies. A denied request
+	// consumes nothing and refill re-admits at most one request per
+	// second, so the loop converges on a 429 regardless of scheduler
+	// stalls between iterations — event-driven, not a fixed burst pair.
+	deadline := time.Now().Add(3 * time.Second)
+
+	for {
+		w := doRequest(t, s.mux, "/health")
+		if w.Code == http.StatusTooManyRequests {
+			break
+		}
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("exhaustion loop: unexpected status %d", w.Code)
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatal("bucket never denied within 3s (refill rate broken?)")
+		}
 	}
 
-	time.Sleep(1300 * time.Millisecond)
+	// Refill: poll until a token has accrued again. Denied requests
+	// consume nothing, so the poll cannot starve the bucket.
+	deadline = time.Now().Add(5 * time.Second)
 
-	if w := doRequest(t, s.mux, "/health"); w.Code != http.StatusOK {
-		t.Fatalf("request 3 after refill: want 200, got %d", w.Code)
+	for {
+		w := doRequest(t, s.mux, "/health")
+		if w.Code == http.StatusOK {
+			break
+		}
+
+		if w.Code != http.StatusTooManyRequests {
+			t.Fatalf("refill loop: unexpected status %d", w.Code)
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatal("bucket never refilled within 5s of a 1/s window")
+		}
+
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
