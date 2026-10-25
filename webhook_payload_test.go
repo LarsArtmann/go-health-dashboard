@@ -2,6 +2,10 @@ package dashboard
 
 import (
 	"encoding/json/v2"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
