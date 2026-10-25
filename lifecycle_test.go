@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
@@ -243,4 +244,42 @@ func TestHealthCheck_AfterShutdown_ReturnsShutDownSentinel(t *testing.T) {
 	if errors.Is(err, dashboard.ErrPusherNotStarted) {
 		t.Errorf("shut-down error must not match ErrPusherNotStarted (err: %v)", err)
 	}
+}
+
+// BenchmarkHealthCheck measures the do-cascade hot path: every container
+// health check calls Dashboard.HealthCheck, so its steady-state cost
+// (pusher liveness read + watchdog arithmetic) matters to consumers that
+// cascade frequently. The started steady state is the number worth
+// tracking; the not-started error path is included for contrast.
+func BenchmarkHealthCheck(b *testing.B) {
+	injector := do.New()
+	defer injector.Shutdown()
+
+	provideHealthy(injector, "db")
+	do.MustInvokeNamed[*healthyService](injector, "db")
+
+	probe := health.New(injector, health.WithRefreshInterval(50*time.Millisecond))
+	dash := dashboard.New(probe)
+
+	ctx := context.Background()
+
+	if err := probe.Start(ctx); err != nil {
+		b.Fatalf("probe start: %v", err)
+	}
+	defer probe.Shutdown()
+
+	if err := dash.Start(ctx); err != nil {
+		b.Fatalf("dash start: %v", err)
+	}
+	defer dash.Shutdown()
+
+	b.Run("started", func(b *testing.B) {
+		b.ReportAllocs()
+
+		for b.Loop() {
+			if err := dash.HealthCheck(ctx); err != nil {
+				b.Fatalf("steady-state HealthCheck: %v", err)
+			}
+		}
+	})
 }

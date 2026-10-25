@@ -13,6 +13,32 @@ import (
 	"github.com/samber/do/v2"
 )
 
+// selfMonitorJSON is the slice of /health the self-monitoring assertions
+// need: per-check status and error.
+type selfMonitorJSON struct {
+	Checks map[string]struct {
+		Status string `json:"status"`
+		Error  string `json:"error"`
+	} `json:"checks"`
+}
+
+// fetchSelfMonitor decodes one /health JSON snapshot.
+func fetchSelfMonitor(t *testing.T, mux *http.ServeMux) selfMonitorJSON {
+	t.Helper()
+
+	w := doRequestWithAccept(t, mux, "/health", "application/json")
+	if w.Code != http.StatusOK {
+		t.Fatalf("/health JSON: want 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp selfMonitorJSON
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode /health JSON: %v", err)
+	}
+
+	return resp
+}
+
 // TestSelfMonitoring_RegisteredDashboardAppearsInOwnTable pins the
 // empirically-verified self-monitoring behavior: `dashboard.Register`
 // stores the Dashboard in the same injector the probe evaluates on every
@@ -21,6 +47,11 @@ import (
 // consequence behind the ROADMAP self-monitoring decision — if you do not
 // want self-monitoring, construct with New instead of Register (or use a
 // separate injector scope).
+//
+// The row's arrival is POLLED, not slept for: a fixed 80ms margin was the
+// 2026-10-11 flake (want pass, got warn — the first probe tick had not
+// evaluated the dashboard yet under -race parallel load). The status and
+// error assertions run only after the row exists.
 func TestSelfMonitoring_RegisteredDashboardAppearsInOwnTable(t *testing.T) {
 	t.Parallel()
 
@@ -44,39 +75,51 @@ func TestSelfMonitoring_RegisteredDashboardAppearsInOwnTable(t *testing.T) {
 		t.Fatalf("dash start: %v", err)
 	}
 	defer func() { dash.Shutdown() }()
-	<-time.After(80 * time.Millisecond)
 
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux)
 
-	w := doRequestWithAccept(t, mux, "/health", "application/json")
-	if w.Code != http.StatusOK {
-		t.Fatalf("/health JSON: want 200, got %d: %s", w.Code, w.Body.String())
-	}
+	deadline := time.Now().Add(5 * time.Second)
 
-	var resp struct {
-		Checks map[string]struct {
+	// The row legitimately ARRIVES as warn ("Start has not been called"):
+	// the probe's first tick can beat dash.Start. Poll until it flips to
+	// pass — the steady state the old fixed sleep waited for.
+	var (
+		row   selfMonitorJSON
+		name  string
+		check struct {
 			Status string `json:"status"`
-		} `json:"checks"`
-	}
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode /health JSON: %v", err)
-	}
+			Error  string `json:"error"`
+		}
+	)
 
-	found := false
-	for name, check := range resp.Checks {
-		if strings.Contains(name, "Dashboard") {
-			found = true
-			if check.Status != "pass" {
-				t.Errorf("self-reported dashboard status: want pass, got %q", check.Status)
+	for {
+		row = fetchSelfMonitor(t, mux)
+
+		for checkName, c := range row.Checks {
+			if strings.Contains(checkName, "Dashboard") {
+				name, check = checkName, c
+
+				break
 			}
 		}
+
+		if name != "" && check.Status == "pass" {
+			break
+		}
+
+		if time.Now().After(deadline) {
+			if name == "" {
+				t.Fatalf("registered Dashboard did not appear in its own health table within 5s; checks: %v", row.Checks)
+			}
+
+			t.Fatalf("self-reported dashboard status never reached pass within 5s: %q (error %q)", check.Status, check.Error)
+		}
+
+		time.Sleep(20 * time.Millisecond)
 	}
 
-	if !found {
-		t.Errorf(
-			"registered Dashboard did not appear in its own health table; checks: %v",
-			resp.Checks,
-		)
+	if check.Error != "" {
+		t.Errorf("passing dashboard %q self-reports a non-empty error: %q", name, check.Error)
 	}
 }
