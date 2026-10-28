@@ -15,6 +15,25 @@ forgetting.
 
 ## [Unreleased]
 
+### Changed
+
+- Adopted templ-components v1.24.0 (a11y-focused release): `display.Table`
+  scroll wrappers now render `role="region"` (plus `aria-label` when a
+  caption/label is set — the dashboard passes neither, so its rendered
+  markup gains only the region roles); the 7 render goldens were
+  regenerated and the `check-ui-pins.sh` guard pins updated in the same
+  change. The local browser-suite half of the adoption ceremony could not
+  run (host Chromium cannot load http(s)); CI's browser job carries the
+  runtime verification.
+- Browser test suite migrated to the chromedp v0.21 API (generic
+  `Run`/`Evaluate`, `remote.NewAllocator`, `Events` iterators,
+  `captureScreenshot` helper) and now self-skips in ~12s with a named
+  reason when the host's Chromium cannot complete an http(s) load,
+  instead of burning the timeout per test.
+- `cmd/health-hub` runs the real two-phase drain against federation
+  (`MarkShuttingDown` → 2s observation window → dashboard → server), now
+  that go-health v0.8.1 exposes it upstream.
+
 ## [0.12.1] - 2026-10-25
 
 Re-cut of v0.12.0 with a green tag commit: the v0.12.0 tag's commit
