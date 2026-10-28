@@ -22,7 +22,7 @@ func TestMeasureChromeLaunchLatency(t *testing.T) {
 		t.Skip("set GO_HEALTH_DASHBOARD_MEASURE_CHROME=1 to measure Chrome launch latency")
 	}
 
-	chromePath := findChrome(t)
+	chromePath := usableChrome(t)
 
 	const launches = 5
 

@@ -30,10 +30,54 @@ import (
 	"github.com/samber/do/v2"
 )
 
-// findChrome returns a usable Chrome/Chromium executable or skips the test.
-// Resolution order: GO_HEALTH_DASHBOARD_CHROME env var, then well-known
-// binary names on PATH.
-func findChrome(t *testing.T) string {
+// chromeNetworkPreflightTimeout bounds the one-off probe that proves this
+// host's Chromium can actually complete an HTTP load.
+const chromeNetworkPreflightTimeout = 12 * time.Second
+
+// chromePreflight runs the network probe at most once and caches the verdict:
+// it costs a Chrome launch and cannot change within a test binary's run.
+type chromePreflight struct {
+	once sync.Once
+	err  error
+}
+
+// chromeNetworkPreflight is the process-wide preflight verdict.
+var chromeNetworkPreflight = &chromePreflight{}
+
+// check runs the probe once and returns the cached verdict.
+func (p *chromePreflight) check(chromePath string) error {
+	p.once.Do(func() { p.err = probeChromeNetwork(chromePath) })
+
+	return p.err
+}
+
+// usableChrome returns a Chrome/Chromium executable that can load an HTTP
+// page, or skips the test. Resolution order: GO_HEALTH_DASHBOARD_CHROME env
+// var, then well-known binary names on PATH.
+//
+// A binary on disk is not proof of a working browser. This host has been
+// observed rendering data: URLs in 500ms while every http:// navigation hung
+// forever (no connect ever reached the target server), which turns each
+// browser test into a 150s timeout instead of an honest skip. The preflight
+// probes once per test binary and skips with the reason attached.
+func usableChrome(t *testing.T) string {
+	t.Helper()
+
+	chromePath := locateChrome(t)
+
+	if err := chromeNetworkPreflight.check(chromePath); err != nil {
+		t.Skipf(
+			"this host's Chromium cannot complete an HTTP load (%v); set GO_HEALTH_DASHBOARD_CHROME to a working browser or run browser tests on a healthy host",
+			err,
+		)
+	}
+
+	return chromePath
+}
+
+// locateChrome resolves the Chrome/Chromium executable, skipping when none is
+// installed.
+func locateChrome(t *testing.T) string {
 	t.Helper()
 
 	if p := os.Getenv("GO_HEALTH_DASHBOARD_CHROME"); p != "" {
@@ -55,6 +99,49 @@ func findChrome(t *testing.T) string {
 	)
 
 	return ""
+}
+
+// probeChromeNetwork asks headless Chrome to render a page served over
+// loopback HTTP and reports why that failed. Any failure here is a host
+// problem, never a dashboard problem, so callers skip instead of failing.
+func probeChromeNetwork(chromePath string) error {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = io.WriteString(w, "<!doctype html><html><body><h1>chrome-preflight</h1></body></html>")
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), chromeNetworkPreflightTimeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(
+		ctx,
+		chromePath,
+		"--headless",
+		"--no-sandbox",
+		"--disable-gpu",
+		"--dump-dom",
+		server.URL+"/",
+	)
+	cmd.WaitDelay = 2 * time.Second
+
+	output, err := cmd.Output()
+	if ctx.Err() != nil {
+		return fmt.Errorf(
+			"no HTTP response within %s (the navigation never reached the httptest server)",
+			chromeNetworkPreflightTimeout,
+		)
+	}
+
+	if err != nil {
+		return fmt.Errorf("run chromium --dump-dom: %w", err)
+	}
+
+	if !strings.Contains(string(output), "chrome-preflight") {
+		return fmt.Errorf("chromium --dump-dom returned no rendered probe page")
+	}
+
+	return nil
 }
 
 // freePort reserves an ephemeral TCP port and immediately releases it, so
@@ -263,7 +350,7 @@ func startBrowserSessionOn(
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 
-	wsURL, stopChrome := startHeadlessChrome(t, findChrome(t))
+	wsURL, stopChrome := startHeadlessChrome(t, usableChrome(t))
 	t.Cleanup(stopChrome)
 
 	runCtx, runCancel := context.WithTimeout(context.Background(), browserRunTimeout)

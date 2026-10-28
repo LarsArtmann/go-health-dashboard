@@ -125,7 +125,7 @@ func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
 		t.Skipf("%s not set; screenshot capture is manual", envVar)
 	}
 
-	chromePath := findChrome(t)
+	chromePath := usableChrome(t)
 
 	injector := do.New()
 	provideHealthy(injector, "postgres")
@@ -235,7 +235,7 @@ func TestCaptureREADME_ScreenshotDegraded(t *testing.T) {
 		t.Skip("SCREENSHOT_OUTPUT_DEGRADED not set; screenshot capture is manual")
 	}
 
-	chromePath := findChrome(t)
+	chromePath := usableChrome(t)
 
 	injector := do.New()
 	provideHealthy(injector, "api-gateway")
@@ -324,7 +324,7 @@ func TestCaptureREADME_ScreenshotGrouped(t *testing.T) {
 		t.Skip("SCREENSHOT_OUTPUT_GROUPED not set; screenshot capture is manual")
 	}
 
-	chromePath := findChrome(t)
+	chromePath := usableChrome(t)
 
 	apiInjector := do.New()
 	provideHealthy(apiInjector, "postgres")
