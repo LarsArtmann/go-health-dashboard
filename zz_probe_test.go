@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -30,7 +31,7 @@ func scratchLaunch(t *testing.T) (string, func()) {
 		"--headless",
 		"--no-sandbox",
 		"--disable-gpu",
-		"--remote-debugging-port=0",
+		"--remote-debugging-port="+strconv.Itoa(freePort(t)),
 		"--user-data-dir="+profileDir,
 		"about:blank",
 	)
