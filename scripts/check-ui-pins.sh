@@ -58,19 +58,24 @@
 #
 # UNAUDITED DRIFT 2026-10-28, templ-components v1.23.0 → v1.24.0 (tenth
 # unguarded sweep; this guard is currently RED on purpose). The markup delta
-# was measured by regenerating the goldens and diffing:
-#   - display.Table's horizontal-scroll wrapper gains
-#     role="region" aria-label="…" (an a11y improvement that still changes
-#     every rendered table),
-#   - display.CopyButton gains a <span data-tc-copy-status role="status">,
-#     moves role="status" aria-live="polite" onto its label span, and its
-#     inline script gains tcAnnounceCopy.
+# was measured against the module cache sources, not guessed:
+#   - display.Table: the horizontal-scroll wrapper LOSES its
+#     role="region"/role="img" + aria-label, and the <table> element GAINS the
+#     aria-label instead. Every rendered table changes.
+#   - display.CopyButton: the label span LOSES role="status" aria-live="polite"
+#     and a sibling <span data-tc-copy-status role="status" class="sr-only">
+#     carries the announcement now; the inline script gains tcAnnounceCopy.
+#   - errorpage.NotFound404: the search field's leading icon (ps-10) is
+#     replaced by a trailing submit BUTTON carrying the same icon (ps-4/pe-14),
+#     and two new props (GoBackText, SearchSubmitLabel) gained defaults.
 # Blast radius measured: 7 golden files drift here (severity, source,
 # zeroproven, publicmode, sourceproven, trendtimeline, latencywarn) and
-# DiscordSync's internal/web snapshot suite fails for the identical reason —
-# one upstream release, two repos, same cause. Regenerating the goldens is a
-# DECISION (adopt v1.24.0) and a markup audit, not a chore: do not run
-# `-golden-update` to make this guard quiet.
+# DiscordSync's internal/web snapshot suite drops from 19 to 15 failures on the
+# identical markup — one upstream release, two repos, same cause. (The other 4
+# DiscordSync failures were a seasonal CEST/CET time bomb in its golden
+# normalizer, fixed separately.) Regenerating the goldens is a DECISION (adopt
+# v1.24.0) and a visual audit — the 404 change in particular is a UI redesign —
+# not a chore: do not run `-golden-update` to make this guard quiet.
 #
 # CEREMONY RULE: if you bump any of these dependencies, update the pins
 # in this file IN THE SAME CHANGE and re-run the browser suite. A bump

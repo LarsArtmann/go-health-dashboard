@@ -231,11 +231,12 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   movement — undocumented sweeps have landed ten times (ninth: the
   2026-10-15 daemon climb to v1.23.0, re-audited 2026-10-25 with a 19/19
   green browser suite; tenth: the 2026-10-28 daemon climb to v1.24.0,
-  currently RED and awaiting the adopt-vs-revert decision — it adds
-  `role="region" aria-label` to Table's scroll wrapper and a status span +
-  `tcAnnounceCopy` to CopyButton, which drifts 7 goldens here and
-  DiscordSync's snapshot suite, measured and documented in the script's
-  audit history). UI bumps require
+  currently RED and awaiting the adopt-vs-revert decision — its measured
+  delta moves Table's role/aria-label from the scroll wrapper onto the table,
+  moves CopyButton's live-region onto a new status span plus `tcAnnounceCopy`,
+  and redesigns the 404 search field's icon into a submit button; that drifts
+  7 goldens here and 15 of DiscordSync's snapshots, measured and documented in
+  the script's audit history). UI bumps require
   a dedicated change with a green browser suite (the unit suite cannot see
   these regressions) and the guard pins updated IN THE SAME CHANGE.
   Audit history, script-emitting-component vetting, and the green-tone
