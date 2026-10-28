@@ -31,6 +31,7 @@ func scratchLaunch(t *testing.T) (string, func()) {
 		"--headless",
 		"--no-sandbox",
 		"--disable-gpu",
+		"--no-proxy-server",
 		"--remote-debugging-port="+strconv.Itoa(freePort(t)),
 		"--user-data-dir="+profileDir,
 		"about:blank",
@@ -95,18 +96,26 @@ func TestScratchPlainPage(t *testing.T) {
 
 	ctx := scratchSession(t, wsURL)
 
+	start := time.Now()
+
+	if err := chromedp.Do(ctx, chromedp.Navigate("data:text/html,<h1>ok</h1>")); err != nil {
+		t.Fatalf("data navigate after %s: %v", time.Since(start), err)
+	}
+
+	t.Logf("data navigate in %s", time.Since(start))
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("<h1>ok</h1>"))
 	}))
 	defer server.Close()
 
-	start := time.Now()
+	start = time.Now()
 
 	if err := chromedp.Do(ctx, chromedp.Navigate(server.URL)); err != nil {
-		t.Fatalf("plain navigate after %s: %v", time.Since(start), err)
+		t.Fatalf("http navigate after %s: %v", time.Since(start), err)
 	}
 
-	t.Logf("plain navigate in %s", time.Since(start))
+	t.Logf("http navigate in %s", time.Since(start))
 }
 
 func scratchHealthServer(t *testing.T) (*httptest.Server, func()) {
