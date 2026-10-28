@@ -9,7 +9,7 @@ import (
 
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/go-health/aggregate"
-	"github.com/larsartmann/go-health/federation"
+	healthfederation "github.com/larsartmann/go-health/federation"
 )
 
 // The dashboard's Prober interface is narrow on purpose; per-source roll-up
@@ -52,7 +52,9 @@ func (p *sourceStatusProber) StartupHandler() http.HandlerFunc {
 func (p *sourceStatusProber) SourceStatuses() map[string]health.Status { return p.statuses }
 
 // plainProber is the minimal Prober WITHOUT the SourceStatuser capability —
-// the shape of every pre-v0.6.0 probe and of federation.Prober today.
+// the shape of every pre-v0.6.0 probe. Both of go-health's merge surfaces
+// (aggregate, federation as of v0.8.x) now carry the accessor, so it stands
+// for third-party Probers rather than for anything in this fleet.
 type plainProber struct {
 	resp health.Response
 }

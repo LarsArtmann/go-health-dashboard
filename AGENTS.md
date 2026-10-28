@@ -130,7 +130,7 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
 - **Per-check metadata is derived once per build (go-health v0.2.0)** — `buildViewModelAt` (injected clock) stamps `SinceText`/`DurationText` onto rows so HTML and SSE patches agree and golden files pin the clock instead of time-bombing; the row since-age, like the Updated stamp, only refreshes when a patch actually broadcasts. The metadata line renders for ANY status (a green "since" is as honest as a red one); public mode keeps it — timestamps and durations are non-identifying. Accepted risk (2026-09-17): the RENDERED duration is deliberately coarse (`durationDisplayStep` rounding at the second scale, µs precision only below 1ms), too fuzzy to fingerprint a deployment; raw nanos ride only the operator-owned wire surfaces (`/health` JSON, export), which are verbatim by design.
 - **samber/do lifecycle integration** — `Dashboard` implements `do.HealthcheckerWithContext` and `do.Shutdowner` (compile-time asserted). `Register(injector, probe, opts...)` stores it via `do.ProvideValue`, so consumers with an injector get `do.Shutdown`/`do.HealthCheck` cascades for free.
 - **Probe-cadence sink + opt-in cascade verdict (ADR-0003/0004, 2026-10-10)** — `Dashboard.Observe` is the `WithEvaluationHook` ingest seam (history/evidence are Dashboard-owned; trend/export serve recorded samples pre-Start), and `WithCascadeProbeVerdict` opts the do cascade into the probe's roll-up verdict (pusher-state errors keep precedence; default off so a hub stays healthy while remotes are dark).
-- **Source cards escalate, never soften (SourceStatuser, 2026-10-11)** — the optional `SourceStatuser` capability (`SourceStatuses() map[string]health.Status`, Healthzer pattern: outside `Prober` so external implementors never break) lets the dashboard fix a row-fold blind spot: a shutting-down source keeps its own all-pass checks, which folded to a green card under a red page. In GroupBySource mode the accessor's verdict may only WORSEN a card (`Rank`-compare; ties keep the row fold), probes without the capability render byte-identically, and public mode is unaffected (override runs before title masking). `aggregate.Aggregate` satisfies it (compile-time pinned); federation does not (upstream gap) — its dark-remote `reachable` fail row keeps the row fold honest for unreachables.
+- **Source cards escalate, never soften (SourceStatuser, 2026-10-11)** — the optional `SourceStatuser` capability (`SourceStatuses() map[string]health.Status`, Healthzer pattern: outside `Prober` so external implementors never break) lets the dashboard fix a row-fold blind spot: a shutting-down source keeps its own all-pass checks, which folded to a green card under a red page. In GroupBySource mode the accessor's verdict may only WORSEN a card (`Rank`-compare; ties keep the row fold), probes without the capability render byte-identically, and public mode is unaffected (override runs before title masking). `aggregate.Aggregate` satisfies it (compile-time pinned), and federation does too as of go-health v0.8.x (also pinned) — its dark-remote `reachable` fail row keeps the row fold honest for unreachables, and the accessor now escalates a draining remote's card instead of folding its stale greens.
 
 ### Data Flow
 
@@ -205,13 +205,37 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
 - **Two datastar packages** — `github.com/larsartmann/templ-components/datastar` (UI components: LiveRegion, SDKScript) and `github.com/larsartmann/go-datastar` (SSE protocol: ElementsFromTempl, WithModeInner). Import the latter as `dstar` to avoid name collision. A third package, `github.com/larsartmann/go-datastar/static`, embeds the real SDK JS bundle — use it in tests for hermetic browser runs.
 - **Datastar SDK requires `script-src 'unsafe-eval'`** — the SDK compiles `data-*` expressions with the `Function` constructor. Under a strict CSP without it, the bundle throws `Error: GenerateExpression` during init and the SSE connection never opens (discovered by `browser_test.go`). Nonce-based script delivery still works; styles stay clean with `WithCSSPath`.
 - **Headless Chrome must be launched manually in tests** — this machine's Chromium binds the DevTools listener to IPv6 `[::1]` and never announces a websocket with `--remote-debugging-port=0`. `startHeadlessChrome` (browser_test.go) picks a concrete free port, parses the `DevTools listening on ...` stderr line, and hands it to `chromedp.NewRemoteAllocator`. The profile dir is removed with a bounded retry because renderer children outlive the browser process.
+- **A Chrome binary on disk is not a working browser (2026-10-28)** — this host
+  (Chromium 156.0.8078.47, load 51 at the time, ~95 leaked browsers) renders
+  `data:` and `file:` URLs in under a second and its browser-process URL
+  fetcher downloads from the internet successfully, yet EVERY `http(s)`
+  navigation hangs forever and the target server never logs a request: the
+  netlog shows the TCP connect completing and the headers being generated,
+  but the GET is never written. Each browser test therefore burned its
+  `browserRunTimeout` instead of failing honestly. `usableChrome`
+  (browser_test.go) now runs `probeChromeNetwork` — one
+  `chromium --dump-dom` against a loopback `httptest` server, memoized in
+  `chromeNetworkPreflight` — and `t.Skipf`s with the reason in ~12s, so the
+  whole 19-test suite skips in 12s total. `GO_HEALTH_DASHBOARD_CHROME=` does
+  NOT disable the suite (locateChrome falls back to the devShell's Chromium);
+  the skip lever there is `-skip`. Eliminated as causes: proxy env/PAC,
+  `--no-proxy-server`, host-resolver rules, QUIC/HTTP2, the network-service
+  sandbox and in-process networking, `--single-process`, conntrack
+  saturation (2425/262144), `/dev/shm` (63G free), a pristine
+  user-data-dir, and Chrome 156's `LocalNetworkAccessChecks` feature gate.
+  Do not "fix" a hang by raising the timeout.
 - **Bisect wall `071c251..HEAD`** — 24 auto-daemon mid-edit commits do not compile (immutable history); `git bisect skip` them — classes + list: `docs/gotchas.md`, `docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
 - **UI dependencies are pinned and guarded** — templ-components v1.23.0
   (root/datastar/utils/icons) + go-datastar v0.6.2 / static v0.6.1;
   `scripts/check-ui-pins.sh` (CI Build+Test steps) fails loudly on any
-  movement — undocumented sweeps have landed nine times (ninth: the
+  movement — undocumented sweeps have landed ten times (ninth: the
   2026-10-15 daemon climb to v1.23.0, re-audited 2026-10-25 with a 19/19
-  green browser suite). UI bumps require
+  green browser suite; tenth: the 2026-10-28 daemon climb to v1.24.0,
+  currently RED and awaiting the adopt-vs-revert decision — it adds
+  `role="region" aria-label` to Table's scroll wrapper and a status span +
+  `tcAnnounceCopy` to CopyButton, which drifts 7 goldens here and
+  DiscordSync's snapshot suite, measured and documented in the script's
+  audit history). UI bumps require
   a dedicated change with a green browser suite (the unit suite cannot see
   these regressions) and the guard pins updated IN THE SAME CHANGE.
   Audit history, script-emitting-component vetting, and the green-tone
@@ -397,16 +421,22 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.7.0 in go.mod). The dashboar
   per read, 5s default timeout), checks namespaced `name/check`, dark
   remotes surface as `name/reachable` FAIL rows (never a silent freeze),
   `Check.Since` survives the wire, startup latches per remote on first
-  successful fetch. go.mod pins the **v0.7.0 tag** (2026-10-11): v0.5.x
+  successful fetch. go.mod pins **v0.8.1** (2026-10-28): v0.5.x
   added `StatusOff`, `checks`, `VersionHandler`, `WithInstanceID`,
   `MarkShuttingDown` — all adopted here; v0.6.0–v0.7.0 unified the
   merge core with aggregate (shared `internal/merge` worst-of fold) and
   fixed federation rank ties (top-level `off` no longer flips the merged
-  roll-up out of pass/warn/fail; the fold is order-independent). Known
-  gaps (upstream proposals): no `MarkShuttingDown` (a hub cannot flip
-  readiness 503 during drain); no `SourceStatuses` (a draining remote's
-  card folds rows — only aggregate exposes the accessor);
-  per-process scalars dropped by design. `cmd/health-hub` is the hub made
+  roll-up out of pass/warn/fail; the fold is order-independent). v0.8.x
+  closed BOTH former upstream gaps — federation now implements
+  `Healthz()`, `SourceStatuses()` and `MarkShuttingDown()` — so a hub gets
+  the combined-traffic route when `Routes.Healthz` is set (503 once
+  draining, pinned by `TestFederation_HealthzCapabilityForwarded`) and its
+  source cards escalate like aggregate's (compile-time pinned in
+  `sourcestatus_test.go`); `cmd/health-hub` now runs the two-phase drain
+  (mark → `drainObservation` window → dashboard → server). Still true:
+  per-process scalars are dropped by design, and federation has no
+  evaluation hook (ADR-0003's `Observe` wiring belongs on the remotes).
+  `cmd/health-hub` is the hub made
   runnable — env knobs are documented in that binary's package comment
   (`HEALTH_HUB_REMOTES`/`_TIMEOUT`/`_TREND`/`_METRICS`/`_PUSH_INTERVAL`/`_SSE_DRAIN`/`_ADDR`);
   the flake exposes `packages.health-hub`.

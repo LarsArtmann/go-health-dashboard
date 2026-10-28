@@ -56,6 +56,22 @@
 #     green under strict CSP on the bumped set before these pins were
 #     updated in the same change.
 #
+# UNAUDITED DRIFT 2026-10-28, templ-components v1.23.0 → v1.24.0 (tenth
+# unguarded sweep; this guard is currently RED on purpose). The markup delta
+# was measured by regenerating the goldens and diffing:
+#   - display.Table's horizontal-scroll wrapper gains
+#     role="region" aria-label="…" (an a11y improvement that still changes
+#     every rendered table),
+#   - display.CopyButton gains a <span data-tc-copy-status role="status">,
+#     moves role="status" aria-live="polite" onto its label span, and its
+#     inline script gains tcAnnounceCopy.
+# Blast radius measured: 7 golden files drift here (severity, source,
+# zeroproven, publicmode, sourceproven, trendtimeline, latencywarn) and
+# DiscordSync's internal/web snapshot suite fails for the identical reason —
+# one upstream release, two repos, same cause. Regenerating the goldens is a
+# DECISION (adopt v1.24.0) and a markup audit, not a chore: do not run
+# `-golden-update` to make this guard quiet.
+#
 # CEREMONY RULE: if you bump any of these dependencies, update the pins
 # in this file IN THE SAME CHANGE and re-run the browser suite. A bump
 # without its guard update leaves CI red for every subsequent commit.
