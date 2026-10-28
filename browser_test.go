@@ -21,6 +21,7 @@ import (
 
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
+	"github.com/chromedp/chromedp/remote"
 	dstarstatic "github.com/larsartmann/go-datastar/static"
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
@@ -268,7 +269,7 @@ func startBrowserSessionOn(
 	runCtx, runCancel := context.WithTimeout(context.Background(), browserRunTimeout)
 	t.Cleanup(runCancel)
 
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	allocCtx, allocCancel := remote.NewAllocator(runCtx, wsURL)
 	t.Cleanup(allocCancel)
 
 	ctx, cancel := chromedp.NewContext(allocCtx)
@@ -276,7 +277,7 @@ func startBrowserSessionOn(
 
 	errLog := watchBrowserErrors(ctx)
 
-	if err := chromedp.Run(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
+	if err := chromedp.Do(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
 		t.Fatalf("browser navigate: %v", err)
 	}
 
@@ -338,13 +339,13 @@ func TestBrowser_CSPCleanRuntime(t *testing.T) {
 	// the served HTML is. So <html> is the one allowed carrier of a style
 	// attribute; any other styled element is a real leak that would break a
 	// style-src policy without 'unsafe-inline'.
-	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(
+	if err := chromedp.Do(ctx,
+		evalInto(
 			`[...document.querySelectorAll('[style]')].filter(e => e !== document.documentElement).length`,
 			&styleViolations,
 		),
-		chromedp.Evaluate(`document.querySelectorAll('style').length`, &styleTags),
-		chromedp.Evaluate(`document.body.innerText`, &bodyText),
+		evalInto(`document.querySelectorAll('style').length`, &styleTags),
+		evalInto(`document.body.innerText`, &bodyText),
 	); err != nil {
 		t.Fatalf("browser evaluate: %v", err)
 	}
@@ -352,8 +353,8 @@ func TestBrowser_CSPCleanRuntime(t *testing.T) {
 	if styleViolations != 0 {
 		var styledHTML string
 
-		if err := chromedp.Run(ctx,
-			chromedp.Evaluate(
+		if err := chromedp.Do(ctx,
+			evalInto(
 				`[...document.querySelectorAll('[style]')].map(e => e.outerHTML).join("\n---\n")`,
 				&styledHTML,
 			)); err != nil {
@@ -388,16 +389,24 @@ type browserErrorLog struct {
 	entries []string
 }
 
-// watchBrowserErrors attaches a target-event listener that collects page
-// errors. It must be called before the first navigation.
+// watchBrowserErrors subscribes to console and exception events and collects
+// page errors. It must be called before the first navigation: both
+// subscriptions are live as soon as chromedp.Events returns, and the event
+// iterators buffer until they are drained here.
 func watchBrowserErrors(ctx context.Context) *browserErrorLog {
 	log := &browserErrorLog{}
 
-	chromedp.ListenTarget(ctx, func(ev any) {
-		switch event := ev.(type) {
-		case *runtime.EventConsoleAPICalled:
-			if event.Type != "error" {
+	consoleEvents := chromedp.Events(ctx, runtime.ConsoleAPICalled)
+	exceptionEvents := chromedp.Events(ctx, runtime.ExceptionThrown)
+
+	go func() {
+		for event, err := range consoleEvents {
+			if err != nil {
 				return
+			}
+
+			if event.Type != "error" {
+				continue
 			}
 
 			var parts []string
@@ -409,9 +418,17 @@ func watchBrowserErrors(ctx context.Context) *browserErrorLog {
 			log.mu.Lock()
 			log.entries = append(log.entries, "console.error: "+strings.Join(parts, " "))
 			log.mu.Unlock()
-		case *runtime.EventExceptionThrown:
-			if event.ExceptionDetails == nil {
+		}
+	}()
+
+	go func() {
+		for event, err := range exceptionEvents {
+			if err != nil {
 				return
+			}
+
+			if event.ExceptionDetails == nil {
+				continue
 			}
 
 			text := event.ExceptionDetails.Text
@@ -424,7 +441,7 @@ func watchBrowserErrors(ctx context.Context) *browserErrorLog {
 			log.entries = append(log.entries, "uncaught exception: "+text)
 			log.mu.Unlock()
 		}
-	})
+	}()
 
 	return log
 }
@@ -765,7 +782,7 @@ func TestBrowser_Accessibility(t *testing.T) {
 		t.Fatalf("axe inject: %v", err)
 	}
 
-	waitForJS(
+	waitForJSTo(
 		t, ctx,
 		`window.axe !== undefined`,
 		`typeof window.axe`,
@@ -824,20 +841,20 @@ func TestBrowser_Accessibility(t *testing.T) {
 func runAxeAudit(t *testing.T, ctx context.Context, start string) string {
 	t.Helper()
 
-	if err := chromedp.Run(
+	if err := chromedp.Do(
 		ctx,
-		chromedp.Evaluate(`window.__axeViolations = undefined`, nil),
+		evalDiscard(`window.__axeViolations = undefined`),
 	); err != nil {
 		t.Fatalf("axe reset: %v", err)
 	}
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(start, nil)); err != nil {
+	if err := chromedp.Do(ctx, evalDiscard(start)); err != nil {
 		t.Fatalf("axe start: %v", err)
 	}
 
 	var audit string
 
-	waitForJS(
+	waitForJSTo(
 		t, ctx,
 		`window.__axeViolations !== undefined`,
 		`window.__axeViolations`,
@@ -847,11 +864,26 @@ func runAxeAudit(t *testing.T, ctx context.Context, start string) string {
 	return audit
 }
 
-// waitForJS polls a JavaScript predicate until it is truthy (bounded by a
-// 30s deadline) and then unmarshals the value expression into res when res
-// is non-nil. This avoids chromedp.Poll's predicate-value unmarshalling
+// waitForJS polls a JavaScript predicate until it is truthy, bounded by a 30s
+// deadline. This avoids chromedp.Poll's predicate-value unmarshalling
 // semantics, which complicate boolean-gated string results.
-func waitForJS(t *testing.T, ctx context.Context, predicate, valueExpr string, res any) {
+func waitForJS(t *testing.T, ctx context.Context, predicate string) {
+	t.Helper()
+	pollJS(t, ctx, predicate, nil)
+}
+
+// waitForJSTo is waitForJS plus a decode of the value expression into out.
+func waitForJSTo[T any](t *testing.T, ctx context.Context, predicate, valueExpr string, out *T) {
+	t.Helper()
+	pollJS(t, ctx, predicate, func() {
+		if err := chromedp.Do(ctx, evalInto(valueExpr, out)); err != nil {
+			t.Fatalf("browser fetch %q: %v", valueExpr, err)
+		}
+	})
+}
+
+// pollJS polls predicate until it is truthy, then runs after (when given).
+func pollJS(t *testing.T, ctx context.Context, predicate string, after func()) {
 	t.Helper()
 
 	deadline := time.Now().Add(30 * time.Second)
@@ -864,12 +896,8 @@ func waitForJS(t *testing.T, ctx context.Context, predicate, valueExpr string, r
 		}
 
 		if truthy {
-			if res == nil {
-				return
-			}
-
-			if err := chromedp.Do(ctx, evalInto(valueExpr, res)); err != nil {
-				t.Fatalf("browser fetch %q: %v", valueExpr, err)
+			if after != nil {
+				after()
 			}
 
 			return
@@ -1252,7 +1280,7 @@ func TestBrowser_CollapseInteract(t *testing.T) {
 	// The next SSE patch (PushAlways, 200ms) replaces #health-region with a
 	// fresh server-side render, which re-collapses the group. This is the
 	// documented trade-off of server-derived collapse state.
-	waitForJS(t, ctx, detailsState+` === "closed"`, detailsState, nil)
+	waitForJS(t, ctx, detailsState+` === "closed"`)
 
 	assertNoBrowserErrors(t, errLog)
 }
@@ -1350,7 +1378,7 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 		t.Fatalf("browser reload: %v", err)
 	}
 
-	waitForJS(t, ctx, detailsState+` === "open"`, detailsState, nil)
+	waitForJS(t, ctx, detailsState+` === "open"`)
 
 	assertNoBrowserErrors(t, errLog)
 }
@@ -1399,7 +1427,7 @@ func TestBrowser_FilterInteract(t *testing.T) {
 		t.Fatalf("type into filter: %v", err)
 	}
 
-	waitForJS(t, ctx, visibleRows+` === "1"`, visibleRows, nil)
+	waitForJS(t, ctx, visibleRows+` === "1"`)
 
 	// Plan C5 leftover: re-run the accessibility audit on the FILTERED
 	// state, not just the full page — hiding rows via data-class must not
@@ -1421,7 +1449,7 @@ func TestBrowser_FilterInteract(t *testing.T) {
 		t.Fatalf("axe inject: %v", err)
 	}
 
-	waitForJS(t, ctx, `window.axe !== undefined`, `typeof window.axe`, nil)
+	waitForJS(t, ctx, `window.axe !== undefined`)
 
 	var filteredAudit string
 
@@ -1438,7 +1466,7 @@ func TestBrowser_FilterInteract(t *testing.T) {
 		t.Fatalf("axe run: %v", err)
 	}
 
-	waitForJS(t, ctx, `window.__filteredAxe !== undefined`, `window.__filteredAxe`, &filteredAudit)
+	waitForJSTo(t, ctx, `window.__filteredAxe !== undefined`, `window.__filteredAxe`, &filteredAudit)
 
 	if filteredAudit != "[]" {
 		t.Errorf("axe on the filtered DOM found serious/critical violations: %s", filteredAudit)
@@ -1454,7 +1482,7 @@ func TestBrowser_FilterInteract(t *testing.T) {
 		t.Fatalf("clear filter: %v", err)
 	}
 
-	waitForJS(t, ctx, visibleRows+` === "12"`, visibleRows, nil)
+	waitForJS(t, ctx, visibleRows+` === "12"`)
 
 	assertNoBrowserErrors(t, errLog)
 }
@@ -1520,7 +1548,7 @@ func TestBrowser_StatusFilterChips(t *testing.T) {
 		t.Fatalf("click problems chip: %v", err)
 	}
 
-	waitForJS(t, ctx, visibleRows+` === "2"`, visibleRows, nil)
+	waitForJS(t, ctx, visibleRows+` === "2"`)
 
 	var problemsPressed, allPressed string
 
@@ -1550,7 +1578,7 @@ func TestBrowser_StatusFilterChips(t *testing.T) {
 		t.Fatalf("click pass chip: %v", err)
 	}
 
-	waitForJS(t, ctx, visibleRows+` === "1"`, visibleRows, nil)
+	waitForJS(t, ctx, visibleRows+` === "1"`)
 
 	if err := chromedp.Do(ctx,
 		chromedp.Click(chromedp.CSS("#status-filter-all")),
@@ -1558,7 +1586,7 @@ func TestBrowser_StatusFilterChips(t *testing.T) {
 		t.Fatalf("click all chip: %v", err)
 	}
 
-	waitForJS(t, ctx, visibleRows+` === "3"`, visibleRows, nil)
+	waitForJS(t, ctx, visibleRows+` === "3"`)
 
 	if err := chromedp.Do(ctx,
 		chromedp.SetValue(chromedp.CSS(`#health-filter`), "zzz-no-such-service"),
@@ -1566,7 +1594,7 @@ func TestBrowser_StatusFilterChips(t *testing.T) {
 		t.Fatalf("type non-matching query: %v", err)
 	}
 
-	waitForJS(t, ctx, hintHidden+` === "false"`, hintHidden, nil)
+	waitForJS(t, ctx, hintHidden+` === "false"`)
 
 	if err := chromedp.Do(ctx, evalDiscard(`(function () {
 		var el = document.getElementById("health-filter");
@@ -1576,7 +1604,7 @@ func TestBrowser_StatusFilterChips(t *testing.T) {
 		t.Fatalf("clear filter: %v", err)
 	}
 
-	waitForJS(t, ctx, hintHidden+` === "true"`, hintHidden, nil)
+	waitForJS(t, ctx, hintHidden+` === "true"`)
 
 	assertNoBrowserErrors(t, errLog)
 }
@@ -1749,7 +1777,7 @@ func pollPillState(
 	var state string
 
 	for {
-		if err := chromedp.Run(ctx, chromedp.Evaluate(pillState, &state)); err != nil {
+		if err := chromedp.Do(ctx, evalInto(pillState, &state)); err != nil {
 			t.Fatalf("browser evaluate pill: %v", err)
 		}
 
@@ -1769,7 +1797,7 @@ func pollPillState(
 // diagnostics when a pill assertion fails.
 func dumpFetchEvents(ctx context.Context) string {
 	var events string
-	_ = chromedp.Run(ctx, chromedp.Evaluate(`JSON.stringify(window.__fetchEvents || [])`, &events))
+	_ = chromedp.Do(ctx, evalInto(`JSON.stringify(window.__fetchEvents || [])`, &events))
 
 	return events
 }
@@ -1943,18 +1971,18 @@ func TestBrowser_KeyboardNewControls(t *testing.T) {
 
 	// Focus the summary directly (keyboard path) and toggle with Enter
 	// ("\r" is the rune chromedp's keyboard encoder maps to the Enter key).
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		chromedp.Focus(chromedp.CSS(`details summary`)),
 		chromedp.KeyEvent("\r"),
 	); err != nil {
 		t.Fatalf("keyboard toggle: %v", err)
 	}
 
-	waitForJS(t, ctx, detailsState+` === "open"`, detailsState, nil)
+	waitForJS(t, ctx, detailsState+` === "open"`)
 
 	// Focus the filter input and type through the keyboard; the signal
 	// updates through the real input events.
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		chromedp.Focus(chromedp.CSS(`#health-filter`)),
 		chromedp.KeyEvent("svc-01"),
 	); err != nil {
@@ -1967,7 +1995,7 @@ func TestBrowser_KeyboardNewControls(t *testing.T) {
 		}).length + "";
 	})()`
 
-	waitForJS(t, ctx, visibleRows+` === "1"`, visibleRows, nil)
+	waitForJS(t, ctx, visibleRows+` === "1"`)
 
 	assertNoBrowserErrors(t, errLog)
 }
@@ -2001,7 +2029,7 @@ func TestBrowser_KeyboardLinks(t *testing.T) {
 	// name (its trimmed text) — reachable by keyboard via ordinary Tab order.
 	var unnamed string
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+	if err := chromedp.Do(ctx, evalInto(`(function () {
 		var links = document.querySelectorAll('a[href*="export"], a[href*="trend"], a[href*="metrics"]');
 		var missing = [];
 		links.forEach(function (a) {
@@ -2020,7 +2048,7 @@ func TestBrowser_KeyboardLinks(t *testing.T) {
 
 	var linkCount string
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(
+	if err := chromedp.Do(ctx, evalInto(
 		`document.querySelectorAll('a[href*="export"], a[href*="trend"], a[href*="metrics"]').length + ""`,
 		&linkCount,
 	)); err != nil {
@@ -2035,7 +2063,7 @@ func TestBrowser_KeyboardLinks(t *testing.T) {
 	// via keyboard: focus + Enter navigates to the problems group.
 	var jumpHref string
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(
+	if err := chromedp.Do(ctx, evalInto(
 		`(function () {
 			var links = [...document.querySelectorAll("a")];
 			var jump = links.find(function (a) { return a.getAttribute("href") === "#group-problems"; });
@@ -2050,14 +2078,14 @@ func TestBrowser_KeyboardLinks(t *testing.T) {
 		t.Fatal("jump-to-problems anchor missing on a page with failing groups")
 	}
 
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		chromedp.Focus(chromedp.CSS(`a[href="#group-problems"]`)),
 		chromedp.KeyEvent("\r"),
 	); err != nil {
 		t.Fatalf("keyboard jump activation: %v", err)
 	}
 
-	waitForJS(t, ctx,
+	waitForJSTo(t, ctx,
 		`window.location.hash === "#group-problems"`,
 		`window.location.hash`,
 		nil,
@@ -2137,7 +2165,7 @@ func TestBrowser_AggregateNewUI(t *testing.T) {
 
 	var visible string
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(visibleRows, &visible)); err != nil {
+	if err := chromedp.Do(ctx, evalInto(visibleRows, &visible)); err != nil {
 		t.Fatalf("browser evaluate rows: %v", err)
 	}
 
@@ -2152,7 +2180,7 @@ func TestBrowser_AggregateNewUI(t *testing.T) {
 		t.Fatalf("filter by source: %v", err)
 	}
 
-	waitForJS(t, ctx, visibleRows+` === "2"`, visibleRows, nil)
+	waitForJS(t, ctx, visibleRows+` === "2"`)
 
 	if err := chromedp.Do(ctx,
 		chromedp.SetValue(chromedp.CSS(`#health-filter`), "api/post"),
@@ -2160,7 +2188,7 @@ func TestBrowser_AggregateNewUI(t *testing.T) {
 		t.Fatalf("filter by full namespaced key: %v", err)
 	}
 
-	waitForJS(t, ctx, visibleRows+` === "1"`, visibleRows, nil)
+	waitForJS(t, ctx, visibleRows+` === "1"`)
 
 	assertNoBrowserErrors(t, errLog)
 }
@@ -2324,7 +2352,7 @@ func TestBrowser_FederationHubTwoRemotes(t *testing.T) {
 		`.filter(h => h.textContent.includes("all pass")).length + ""`
 
 	var cards string
-	waitForJS(t, ctx, sourceCards+` === "2"`, sourceCards, &cards)
+	waitForJSTo(t, ctx, sourceCards+` === "2"`, sourceCards, &cards)
 
 	if cards != "2" {
 		t.Fatalf("federation page should render 2 source cards, got %s", cards)
@@ -2378,11 +2406,11 @@ func TestBrowser_AccessibilityDegraded(t *testing.T) {
 		document.head.appendChild(s);
 	})()`
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(inject, nil)); err != nil {
+	if err := chromedp.Do(ctx, evalDiscard(inject)); err != nil {
 		t.Fatalf("axe inject: %v", err)
 	}
 
-	waitForJS(t, ctx, `window.axe !== undefined`, `typeof window.axe`, nil)
+	waitForJS(t, ctx, `window.axe !== undefined`)
 
 	// Same skip-link exclusion as the default-fixture audit: the link is
 	// sr-only until keyboard focus and the harness serves no real Tailwind
@@ -2404,9 +2432,9 @@ func TestBrowser_AccessibilityDegraded(t *testing.T) {
 
 	var darkClass string
 
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		chromedp.Click(chromedp.CSS(`[data-theme-toggle]`)),
-		chromedp.Evaluate(`document.documentElement.classList.contains("dark") + ""`, &darkClass),
+		evalInto(`document.documentElement.classList.contains("dark") + ""`, &darkClass),
 	); err != nil {
 		t.Fatalf("dark toggle: %v", err)
 	}

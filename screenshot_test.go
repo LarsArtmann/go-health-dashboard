@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
+	"github.com/chromedp/chromedp/remote"
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
 	"github.com/larsartmann/go-health/aggregate"
@@ -20,6 +21,18 @@ import (
 // git only tracks the executable bit, but a 0600 docs file trips readers
 // and diff tools.
 const screenshotFileMode = 0o644
+
+// screenshotQuality is the image quality the README captures are rendered at.
+const screenshotQuality = 95
+
+// captureScreenshot renders the full page at the documented viewport.
+func captureScreenshot(ctx context.Context) ([]byte, error) {
+	if err := chromedp.Do(ctx, chromedp.EmulateViewport(1280, 800)); err != nil {
+		return nil, err
+	}
+
+	return chromedp.Do(ctx, chromedp.FullScreenshot(screenshotQuality))
+}
 
 // timedScreenshotRecorder routes the capture probe through the detailed
 // seam so the README screenshots show the full v0.2.0 metadata row:
@@ -154,7 +167,7 @@ func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
 	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer runCancel()
 
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	allocCtx, allocCancel := remote.NewAllocator(runCtx, wsURL)
 	defer allocCancel()
 
 	ctx, cancel := chromedp.NewContext(allocCtx)
@@ -162,9 +175,9 @@ func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
 
 	pin := `localStorage.setItem('theme', '` + theme + `')`
 
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		chromedp.Navigate(server.URL+"/healthz"),
-		chromedp.Evaluate(pin, nil),
+		evalDiscard(pin),
 		chromedp.Navigate(server.URL+"/health"),
 	); err != nil {
 		t.Fatalf("navigate: %v", err)
@@ -256,15 +269,15 @@ func TestCaptureREADME_ScreenshotDegraded(t *testing.T) {
 	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer runCancel()
 
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	allocCtx, allocCancel := remote.NewAllocator(runCtx, wsURL)
 	defer allocCancel()
 
 	ctx, cancel := chromedp.NewContext(allocCtx)
 	defer cancel()
 
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		chromedp.Navigate(server.URL+"/healthz"),
-		chromedp.Evaluate(`localStorage.setItem('theme', 'light')`, nil),
+		evalDiscard(`localStorage.setItem('theme', 'light')`),
 		chromedp.Navigate(server.URL+"/health"),
 	); err != nil {
 		t.Fatalf("navigate: %v", err)
@@ -381,15 +394,15 @@ func TestCaptureREADME_ScreenshotGrouped(t *testing.T) {
 	runCtx, runCancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer runCancel()
 
-	allocCtx, allocCancel := chromedp.NewRemoteAllocator(runCtx, wsURL)
+	allocCtx, allocCancel := remote.NewAllocator(runCtx, wsURL)
 	defer allocCancel()
 
 	ctx, cancel := chromedp.NewContext(allocCtx)
 	defer cancel()
 
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		chromedp.Navigate(server.URL+"/healthz"),
-		chromedp.Evaluate(`localStorage.setItem('theme', 'light')`, nil),
+		evalDiscard(`localStorage.setItem('theme', 'light')`),
 		chromedp.Navigate(server.URL+"/health"),
 	); err != nil {
 		t.Fatalf("navigate: %v", err)
