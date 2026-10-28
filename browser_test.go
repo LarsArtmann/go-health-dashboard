@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -141,7 +142,7 @@ func probeChromeNetwork(chromePath string) error {
 	}
 
 	if !strings.Contains(string(output), "chrome-preflight") {
-		return fmt.Errorf("chromium --dump-dom returned no rendered probe page")
+		return errors.New("chromium --dump-dom returned no rendered probe page")
 	}
 
 	return nil

@@ -2,7 +2,7 @@
 
 **Session:** 2026-10-28, 10:33 → 11:25 CET (continuation of the go-health consumption wave that ran overnight)
 **Repos touched:** `go-health-dashboard` (primary), `go-health`, `DiscordSync` (read-only verification)
-**Verdict in one line:** the two long-standing reds in this repo are now *diagnosed to the root* — one is a compile migration that is finished and unverifiable here, the other is a UI dependency whose markup really did move — but neither is green, and I will not pretend otherwise.
+**Verdict in one line:** the two long-standing reds in this repo are now _diagnosed to the root_ — one is a compile migration that is finished and unverifiable here, the other is a UI dependency whose markup really did move — but neither is green, and I will not pretend otherwise.
 
 ---
 
@@ -14,7 +14,7 @@
 2. **The daemon commits whatever is on disk.** My throwaway probe file (`zz_probe_test.go`) went into history three times (`a4079e0`, `680d182`, `f50a439`) before I deleted it in `fd0c000`. I knew this behaviour and still left scratch files in the tree.
 3. **`GO_HEALTH_DASHBOARD_CHROME=` does not skip browser tests.** `findChrome` falls back to a `PATH` lookup, so the devShell's `chromium` was picked up anyway and the "skip the browser suite" run still hung for 10 minutes. The skip lever is `-skip`, not the env var.
 4. **I nearly filed two phantom bugs.** The prior session's notes said DiscordSync had "6 failing snapshot goldens" and a QuickTime mime failure. I verified instead: the mime red is gone, the goldens are red for a completely different reason than recorded. Had I trusted the note, the TODO row would have described the wrong defect.
-5. **The golden update I ran to *measure* the drift left 7 regenerated files in the tree** for a few minutes. I restored them from a `/tmp` copy, but I should have copied the directory *and* confirmed the restore before doing anything else.
+5. **The golden update I ran to _measure_ the drift left 7 regenerated files in the tree** for a few minutes. I restored them from a `/tmp` copy, but I should have copied the directory _and_ confirmed the restore before doing anything else.
 
 ### What could I have done better?
 
@@ -25,7 +25,7 @@
 
 ### What can I still improve?
 
-1. Make the UI pin guard's failure *actionable*: today it prints four `::error::` lines and stops. It should also print the golden command (`go test -run TestGoldenRender -golden-update`) and the exact ceremony required, so the next person does not have to reverse-engineer the rule from 200 lines of comments.
+1. Make the UI pin guard's failure _actionable_: today it prints four `::error::` lines and stops. It should also print the golden command (`go test -run TestGoldenRender -golden-update`) and the exact ceremony required, so the next person does not have to reverse-engineer the rule from 200 lines of comments.
 2. Record the v1.24.0 markup delta (`role="region" aria-label="…"` on scroll wrappers; the CopyButton status span + `tcAnnounceCopy` script) in the guard's audit history, because that is the actual reason the goldens moved in two repos at once.
 3. Add a `-short`-style escape for browser tests that does not depend on `PATH`, so a broken host produces one clean skip instead of a 10-minute timeout.
 
@@ -44,7 +44,7 @@ pre-tag: ready to tag <version>
 PRETAG_EXIT=0
 ```
 
-This is the path a tagger actually walks and it had never been executed. It passed *because* of the allow-file work from the previous session; that work is now proven rather than reasoned about.
+This is the path a tagger actually walks and it had never been executed. It passed _because_ of the allow-file work from the previous session; that work is now proven rather than reasoned about.
 
 ### a2. The fleet is genuinely at zero skew, and the allowance is gone
 
@@ -60,14 +60,14 @@ All sixteen read `v0.8.1`, including `CV`, `cv`, `nsfw-classifier` and `go-taskq
 
 The browser suite had 108 compile errors across two files (93 + 15) after the pin moved to v0.21.0 in an unreviewed sweep. All of them are gone.
 
-| Mechanical change | Sites | How |
-| --- | --- | --- |
-| `chromedp.Run(ctx, steps...)` → `chromedp.Do(...)` | 71 | scripted |
-| `chromedp.Evaluate(expr, &out)` / `(expr, nil)` | 57 | scripted → `evalInto[T]` / `evalDiscard` |
-| `chromedp.ByQuery` lookup option | 14 | scripted → `chromedp.CSS(...)` selector type |
-| `chromedp.NewRemoteAllocator` | 4 | `remote.NewAllocator` (`remote` moved into the core module) |
-| `chromedp.ListenTarget(ctx, switch on `any`)` | 1 | rewritten as two `chromedp.Events` iterators |
-| `chromedp.FullScreenshot(&png, 95)` | 3 | `captureScreenshot(ctx)` helper (`Run` returns `[]byte`) |
+| Mechanical change                                  | Sites | How                                                         |
+| -------------------------------------------------- | ----- | ----------------------------------------------------------- |
+| `chromedp.Run(ctx, steps...)` → `chromedp.Do(...)` | 71    | scripted                                                    |
+| `chromedp.Evaluate(expr, &out)` / `(expr, nil)`    | 57    | scripted → `evalInto[T]` / `evalDiscard`                    |
+| `chromedp.ByQuery` lookup option                   | 14    | scripted → `chromedp.CSS(...)` selector type                |
+| `chromedp.NewRemoteAllocator`                      | 4     | `remote.NewAllocator` (`remote` moved into the core module) |
+| `chromedp.ListenTarget(ctx, switch on`any`)`       | 1     | rewritten as two `chromedp.Events` iterators                |
+| `chromedp.FullScreenshot(&png, 95)`                | 3     | `captureScreenshot(ctx)` helper (`Run` returns `[]byte`)    |
 
 Two small shims carry the shape (`chromedp_eval_test.go`, 36 lines): `evalInto[T]` and `evalDiscard`. `waitForJS` was split into `waitForJS` (wait only, 3 args) and `waitForJSTo[T]` (wait + decode), because the old `res any` parameter cannot express "pointer or nil" once `Evaluate` is generic — seventeen call sites lost a meaningless `, nil`.
 
@@ -75,7 +75,7 @@ Two small shims carry the shape (`chromedp_eval_test.go`, 36 lines): `evalInto[T
 
 ### a4. The v1.24.0 UI bump is proven to be behaviour-changing (not just version drift)
 
-This is the finding that matters most for the repo's own red CI. `scripts/check-ui-pins.sh` fails on four modules (`templ-components` root/datastar/icons/utils, `v1.24.0` vs pinned `v1.23.0`). I regenerated the goldens to see *what* moved, then restored them. The delta:
+This is the finding that matters most for the repo's own red CI. `scripts/check-ui-pins.sh` fails on four modules (`templ-components` root/datastar/icons/utils, `v1.24.0` vs pinned `v1.23.0`). I regenerated the goldens to see _what_ moved, then restored them. The delta:
 
 - `display.Table`'s scroll wrapper gains `role="region" aria-label="…"` (an a11y improvement — but new markup).
 - `display.CopyButton` gains a `data-tc-copy-status` live-region span, moves `role="status" aria-live="polite"` onto the label, and its inline script gains `tcAnnounceCopy`.
@@ -84,10 +84,10 @@ In this repo that drifts **7 golden files** and fails 3 tests (`TestGoldenRender
 
 ### a5. The DiscordSync "two reds" re-verified, one of them retired
 
-| Prior claim | Re-run 2026-10-28 | Verdict |
-| --- | --- | --- |
-| 6 failing snapshot goldens after templ-components v1.24 | `go test ./internal/web/ -run 'Snapshot\|Golden'` → **FAIL** (activity/command-audit/voice-states snapshots) | **real**, root cause = v1.24.0 markup (a4) |
-| mediapipeline `QuickTime .mov` served as `application/octet-stream` | `go test ./internal/mediapipeline/` → **ok** (1.0 s) | **stale claim**, no longer reproducible |
+| Prior claim                                                         | Re-run 2026-10-28                                                                                            | Verdict                                    |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| 6 failing snapshot goldens after templ-components v1.24             | `go test ./internal/web/ -run 'Snapshot\|Golden'` → **FAIL** (activity/command-audit/voice-states snapshots) | **real**, root cause = v1.24.0 markup (a4) |
+| mediapipeline `QuickTime .mov` served as `application/octet-stream` | `go test ./internal/mediapipeline/` → **ok** (1.0 s)                                                         | **stale claim**, no longer reproducible    |
 
 `internal/web/golden/` (the separate golden package) is green; the failures live in `internal/web`'s own snapshots.
 
@@ -126,7 +126,7 @@ I verified the reds (a5) but did not add the two rows to `DiscordSync/TODO_LIST.
 
 ## c) NOT STARTED
 
-1. **M04 evidence table** (`docs/fleet-consumption-evidence.md` or similar): repo, module, pin, result, command, date. The data exists (a2's 16-row dump is version evidence; six consumers were build-verified in the previous session) but nothing is published. The honest version needs a *re-built* row per consumer, not a carried claim.
+1. **M04 evidence table** (`docs/fleet-consumption-evidence.md` or similar): repo, module, pin, result, command, date. The data exists (a2's 16-row dump is version evidence; six consumers were build-verified in the previous session) but nothing is published. The honest version needs a _re-built_ row per consumer, not a carried claim.
 2. **M19** (`company-master-data` → `checks.Disk`). Still deferred for the same structural reason: the probe is mounted through `go-appkit` (`*appkithealth.Mounted`), the repo is forgejo-only with no CI, and it is deliberately absent from `tools/fleet-repos.txt`.
 3. **`cv` push.** `~/projects/cv` still carries `34b219f22` (three unpushed commits' worth of divergence) and `~/projects/CV` has an uncommitted pin bump. Both need the owner's lineage decision.
 4. **go-taskqueue `NewChecks` port (`M06`).** Still blocked on the two API gaps recorded in `go-health/TODO_LIST.md`.
@@ -166,7 +166,7 @@ The multiedit that added the `remote` import and `captureScreenshot` reported su
 
 ### d5. The repo is still red in two independent ways
 
-`scripts/check-ui-pins.sh` fails by design (4 modules at v1.24.0) and 3 golden tests fail from that same markup change. The chromedp compile break is gone; the CI job will now fail *later* in the chain instead of at compile time. Net: I moved the failure, and the second failure is now better understood — but master is not green.
+`scripts/check-ui-pins.sh` fails by design (4 modules at v1.24.0) and 3 golden tests fail from that same markup change. The chromedp compile break is gone; the CI job will now fail _later_ in the chain instead of at compile time. Net: I moved the failure, and the second failure is now better understood — but master is not green.
 
 ---
 
@@ -174,10 +174,10 @@ The multiedit that added the `remote` import and `captureScreenshot` reported su
 
 1. **Environment canary first.** A one-line `chromium --dump-dom data:text/html,ok` + `… --dump-dom <local server>` preflight at the top of the browser suite would turn today's 10-minute timeout into a 2-second skip with a named reason.
 2. **Scratch files out of the tree.** Any probe file must live under `/tmp` or be git-ignored; the daemon will commit whatever it finds.
-3. **Scripts that parse a language must not half-parse it.** Either use `go/ast`/`gofmt -r` or restrict the transform to line-oriented, unambiguous patterns and *assert* the post-condition (zero remaining old symbols) inside the script itself.
+3. **Scripts that parse a language must not half-parse it.** Either use `go/ast`/`gofmt -r` or restrict the transform to line-oriented, unambiguous patterns and _assert_ the post-condition (zero remaining old symbols) inside the script itself.
 4. **The pin guard should teach.** Print the exact ceremony (goldens command, browser command, where to record the audit) in its failure output.
 5. **One decision per dependency bump.** The v1.24.0 markup change touches two repos' goldens; it deserves a single, dated decision record rather than two independent "why is this red" investigations.
-6. **`retention` for the reports.** `docs/status/` in this repo now holds 5 files from 2026-10-25 plus this one; the corpus budget gate exists for the *other* repo. Rotate older ones to `archived/` on a schedule instead of at 20 files.
+6. **`retention` for the reports.** `docs/status/` in this repo now holds 5 files from 2026-10-25 plus this one; the corpus budget gate exists for the _other_ repo. Rotate older ones to `archived/` on a schedule instead of at 20 files.
 7. **Ask the host question earlier.** Load 51 / 95 Chromium processes is a shared-resource problem across concurrent agent sessions; a cheap preflight (`nproc`, loadavg, chromedp launch latency) before starting browser work would flag it.
 
 ---
@@ -218,7 +218,7 @@ The multiedit that added the `remote` import and `captureScreenshot` reported su
 24. Revisit `evalInto`/`evalDiscard`: with `Action[T]` composition, some step lists could return values directly instead of writing through pointers.
 25. Type the test helpers (`waitForJSTo` already is; `evalInto` could take a decoder).
 26. Add a fuzz/property test for the JS-expression builders (`visibleRows`, `detailsState`, `pillState`) so a selector typo fails fast.
-27. Re-examine the 3 failing goldens' *content* — do we want `role="region"` at all, or should the wrapper use the table's own `aria-label` only?
+27. Re-examine the 3 failing goldens' _content_ — do we want `role="region"` at all, or should the wrapper use the table's own `aria-label` only?
 28. Upstream: ask templ-components for a changelog entry per markup change, so a sweep can be triaged without regenerating goldens.
 29. Add a `make goldens` (or `nix run .#goldens`) app that regenerates and prints the semantic diff.
 30. Record the golden-drift policy in `docs/adr/` (accept + regenerate is a decision, not a chore).
@@ -228,7 +228,7 @@ The multiedit that added the `remote` import and `captureScreenshot` reported su
 31. Cross-repo dependency sweep automation that opens a PR per consumer when goldens drift.
 32. Fleet-wide "markup fingerprint" check: hash the rendered table wrapper of a golden fixture in every consumer.
 33. Replace the hand-maintained `tools/fleet-repos.txt` with a query of the GitHub API (org listing + go.mod probe).
-34. Make `fleet-skew.sh` able to *bump* the stale repos (`--fix`), not just report.
+34. Make `fleet-skew.sh` able to _bump_ the stale repos (`--fix`), not just report.
 35. Reconcile the two `cv` clones with a documented canonical path.
 36. Add `go-health`'s pass-detail channel (`Check.Detail`) so `NewChecks` adopters keep their green-row notes.
 37. Revisit `WithCriticalService[T]` naming/behaviour for recorder-renamed keys.
@@ -243,7 +243,7 @@ The multiedit that added the `remote` import and `captureScreenshot` reported su
 46. Add a `TestBrowser_*` count assertion so a silently skipped suite is visible (19 expected).
 47. Land the `zz_probe`-style isolation recipe as a documented debugging playbook ("is it me or the host?").
 48. Backfill `docs/status/INDEX.md` with this report.
-49. Verify the fleet skew from a *clean* environment (no `gh` token) at least once, to exercise the `--source local` path.
+49. Verify the fleet skew from a _clean_ environment (no `gh` token) at least once, to exercise the `--source local` path.
 50. Retire the `--allow` mechanism entirely if the backlog stays at zero for a month.
 
 ---
@@ -294,11 +294,11 @@ nix develop -c go test ./internal/web/ -run 'Snapshot|Golden' -count=1   # FAIL 
 
 **Commits made**
 
-| Repo | Commit | Subject |
-| --- | --- | --- |
-| go-health | `15fad10` | chore: drop the fleet-skew allowance now that the backlog is zero (unpushed) |
-| go-health-dashboard | `5f716da`, `3fa29d2`, `5eae4ac` | daemon captures of the chromedp migration (no intent message) |
-| go-health-dashboard | `fd0c000` | chore: drop the throwaway chromedp probe |
+| Repo                | Commit                          | Subject                                                                      |
+| ------------------- | ------------------------------- | ---------------------------------------------------------------------------- |
+| go-health           | `15fad10`                       | chore: drop the fleet-skew allowance now that the backlog is zero (unpushed) |
+| go-health-dashboard | `5f716da`, `3fa29d2`, `5eae4ac` | daemon captures of the chromedp migration (no intent message)                |
+| go-health-dashboard | `fd0c000`                       | chore: drop the throwaway chromedp probe                                     |
 
 💘 Generated with Crush
 

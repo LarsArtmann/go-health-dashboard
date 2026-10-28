@@ -56,6 +56,7 @@ At ~10:37–10:41, while I was mid-migration, daemon commits (`5f716da`, `3fa29d
 ## f) NEXT — up to 50, ordered by impact
 
 **Unblock verification (the Pareto 1%):**
+
 1. Diagnose/fix the host's browsing (chromium `--dump-dom` on http URLs hangs; suspect proxy/DNS — same refusal class as the flake nix builds). Everything below depends on this.
 2. Re-run `nix develop -c go test .` on the merged migration; expect the 19 browser tests green under strict CSP.
 3. Re-run the pasted failing step: `buildflow -s test-race --verbose` (dev mode, `--exclude nix-hash-fix --exclude nix-build-verify` locally).
@@ -105,4 +106,4 @@ At ~10:37–10:41, while I was mid-migration, daemon commits (`5f716da`, `3fa29d
 
 ---
 
-*Reported from a raced, merged, compile-green but runtime-unverified tree. `go vet` is the only green gate this session can honestly claim.*
+_Reported from a raced, merged, compile-green but runtime-unverified tree. `go vet` is the only green gate this session can honestly claim._

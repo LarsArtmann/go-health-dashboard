@@ -19,11 +19,11 @@ turned out to have a seasonal golden bug that I found and fixed.
 
 ## 0. State at handoff
 
-| Repo | HEAD | Ahead of origin | Tree |
-| --- | --- | --- | --- |
-| `go-health-dashboard` | `a44f0fd docs: record what templ-components v1.24.0 actually changes, measured` | 5 | clean |
-| `go-health` | `cbd7f78 docs: publish the consumer evidence table instead of claiming compiles` | 1 | clean |
-| `DiscordSync` | `921d5fc4 fix: make golden snapshots independent of the machine's time zone` | 2 | clean |
+| Repo                  | HEAD                                                                             | Ahead of origin | Tree  |
+| --------------------- | -------------------------------------------------------------------------------- | --------------- | ----- |
+| `go-health-dashboard` | `a44f0fd docs: record what templ-components v1.24.0 actually changes, measured`  | 5               | clean |
+| `go-health`           | `cbd7f78 docs: publish the consumer evidence table instead of claiming compiles` | 1               | clean |
+| `DiscordSync`         | `921d5fc4 fix: make golden snapshots independent of the machine's time zone`     | 2               | clean |
 
 Nothing was pushed. The auto-pusher moved four earlier dashboard commits on
 its own during the session (origin jumped from `f7010ae`-ancestor to
@@ -63,7 +63,7 @@ ok  github.com/larsartmann/go-health-dashboard  12.039s     # all 19 tests
 ### a2. The host's Chromium failure is narrowed to a precise, reusable finding
 
 Chromium's own netlog (`--log-net-log`, `IncludeSensitive`) shows the request
-dying *after* the socket:
+dying _after_ the socket:
 
 ```
 TCP_CONNECT [50]  phase=1 (begin)  address=127.0.0.1:18999
@@ -76,7 +76,7 @@ CORS_REQUEST [51] GET /health HTTP/1.1        # headers generated
 The same browser process, in the same run, downloaded a component-updater
 payload from `edgedl.me.gvt1.com` (`downloaded_bytes=14332`,
 `download_time_ms=2802`, `error=0`). So: sockets work, the browser-process
-URL fetcher works, `data:` and `file:` render in under a second, and *only*
+URL fetcher works, `data:` and `file:` render in under a second, and _only_
 `http(s)` navigation stalls before the request is written.
 
 Eliminated this session (each one a real test, not a guess): proxy env and
@@ -126,11 +126,11 @@ log: 12:25:45 serving ... / 12:25:47 shutting down...
 Read from the module sources side by side (`v1.23.0` vs `v1.24.0`), not
 inferred from a rendered diff:
 
-| Component | Change |
-| --- | --- |
-| `display.Table` | the horizontal-scroll wrapper **loses** `role="region"`/`role="img"` + `aria-label`; the `<table>` element **gains** the `aria-label` |
-| `display.CopyButton` | the label span loses `role="status" aria-live="polite"`; a sibling `<span data-tc-copy-status role="status" class="sr-only">` carries the announcement; the inline script gains `tcAnnounceCopy` |
-| `errorpage.NotFound404` | the search field's leading icon (`ps-10`) is replaced by a trailing submit **button** carrying the same icon (`ps-4`/`pe-14`); `GoBackText` and `SearchSubmitLabel` props gained defaults |
+| Component               | Change                                                                                                                                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `display.Table`         | the horizontal-scroll wrapper **loses** `role="region"`/`role="img"` + `aria-label`; the `<table>` element **gains** the `aria-label`                                                            |
+| `display.CopyButton`    | the label span loses `role="status" aria-live="polite"`; a sibling `<span data-tc-copy-status role="status" class="sr-only">` carries the announcement; the inline script gains `tcAnnounceCopy` |
+| `errorpage.NotFound404` | the search field's leading icon (`ps-10`) is replaced by a trailing submit **button** carrying the same icon (`ps-4`/`pe-14`); `GoBackText` and `SearchSubmitLabel` props gained defaults        |
 
 Recorded in four places so the next person does not regenerate goldens to
 find out: `scripts/check-ui-pins.sh` audit history, `AGENTS.md` (UI-pin
@@ -270,7 +270,7 @@ because pushing was not authorized either.
 
 ### d1. I described the v1.24.0 delta wrongly, twice, and propagated it
 
-The first note said Table's scroll wrapper *gains* `role="region"`. The truth
+The first note said Table's scroll wrapper _gains_ `role="region"`. The truth
 is the opposite direction (wrapper loses it, table gains `aria-label`). That
 wrong description went into `scripts/check-ui-pins.sh`, `AGENTS.md` and a
 `TODO_LIST.md` row before I caught it — and what caught it was not my own
@@ -383,7 +383,7 @@ Ordered by impact per minute, not by size.
     immediate skip (no 12s probe) for CI parity checks.
 23. Add the preflight pattern to the templ-components-adjacent repos that run
     browser tests (DiscordSync e2e, Zlota44, KeyHolderAI).
-24. Re-measure the dashboard's 7 golden diffs and confirm each is *only* the
+24. Re-measure the dashboard's 7 golden diffs and confirm each is _only_ the
     three component changes (no fourth, unnoticed delta).
 25. Check whether the dashboard renders `display.Table` at all, or whether its
     7 goldens drift for a different reason than DiscordSync's 15.
@@ -404,7 +404,7 @@ Ordered by impact per minute, not by size.
 33. Re-run the DiscordSync full `./internal/web/...` suite (not just snapshots)
     to confirm the zone change broke nothing else.
 34. Same for `./internal/...` in DiscordSync.
-35. Extend the go-health evidence table with the two bridge modules' *local*
+35. Extend the go-health evidence table with the two bridge modules' _local_
     builds (currently L1 only).
 36. Add a "how to reproduce this table" command block to
     `docs/consumer-verification.md`.
