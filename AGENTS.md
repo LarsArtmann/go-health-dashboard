@@ -225,18 +225,25 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   user-data-dir, and Chrome 156's `LocalNetworkAccessChecks` feature gate.
   Do not "fix" a hang by raising the timeout.
 - **Bisect wall `071c251..HEAD`** — 24 auto-daemon mid-edit commits do not compile (immutable history); `git bisect skip` them — classes + list: `docs/gotchas.md`, `docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
-- **UI dependencies are pinned and guarded** — templ-components v1.23.0
+- **UI dependencies are pinned and guarded** — templ-components v1.24.0
   (root/datastar/utils/icons) + go-datastar v0.6.2 / static v0.6.1;
   `scripts/check-ui-pins.sh` (CI Build+Test steps) fails loudly on any
   movement — undocumented sweeps have landed ten times (ninth: the
   2026-10-15 daemon climb to v1.23.0, re-audited 2026-10-25 with a 19/19
   green browser suite; tenth: the 2026-10-28 daemon climb to v1.24.0,
-  currently RED and awaiting the adopt-vs-revert decision — its measured
-  delta moves Table's role/aria-label from the scroll wrapper onto the table,
-  moves CopyButton's live-region onto a new status span plus `tcAnnounceCopy`,
-  and redesigns the 404 search field's icon into a submit button; that drifts
-  7 goldens here and 15 of DiscordSync's snapshots, measured and documented in
-  the script's audit history). UI bumps require
+  ADOPTED same day — v1.24.0 is an a11y release whose Table scroll wrapper
+  GAINS `role="region"` (+ `aria-label` only when Caption/AriaLabel is set;
+  the dashboard passes neither, so its entire rendered drift is 23 unnamed
+  `role="region"` wrappers across the 7 goldens), CopyButton moves its
+  live-region onto a sibling sr-only span plus `tcAnnounceCopy`, and the 404
+  search field's icon becomes a submit button (CopyButton/404 not rendered
+  here; the same release drifts 15 of DiscordSync's snapshots). Two earlier
+  prose notes recorded the Table direction BACKWARDS (wrapper-loses) — the
+  golden word-diff + module-cache source diff are the evidence, and the
+  script's audit history carries the corrected delta. The local browser half
+  of the ceremony could not run (host Chromium cannot load http(s), see the
+  Chrome gotcha); CI's browser job carries the runtime verification, and a
+  red there means revert pins + go.mod in one change). UI bumps require
   a dedicated change with a green browser suite (the unit suite cannot see
   these regressions) and the guard pins updated IN THE SAME CHANGE.
   Audit history, script-emitting-component vetting, and the green-tone

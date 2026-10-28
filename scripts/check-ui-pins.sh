@@ -56,26 +56,41 @@
 #     green under strict CSP on the bumped set before these pins were
 #     updated in the same change.
 #
-# UNAUDITED DRIFT 2026-10-28, templ-components v1.23.0 → v1.24.0 (tenth
-# unguarded sweep; this guard is currently RED on purpose). The markup delta
-# was measured against the module cache sources, not guessed:
-#   - display.Table: the horizontal-scroll wrapper LOSES its
-#     role="region"/role="img" + aria-label, and the <table> element GAINS the
-#     aria-label instead. Every rendered table changes.
-#   - display.CopyButton: the label span LOSES role="status" aria-live="polite"
-#     and a sibling <span data-tc-copy-status role="status" class="sr-only">
-#     carries the announcement now; the inline script gains tcAnnounceCopy.
-#   - errorpage.NotFound404: the search field's leading icon (ps-10) is
-#     replaced by a trailing submit BUTTON carrying the same icon (ps-4/pe-14),
-#     and two new props (GoBackText, SearchSubmitLabel) gained defaults.
-# Blast radius measured: 7 golden files drift here (severity, source,
-# zeroproven, publicmode, sourceproven, trendtimeline, latencywarn) and
-# DiscordSync's internal/web snapshot suite drops from 19 to 15 failures on the
-# identical markup — one upstream release, two repos, same cause. (The other 4
-# DiscordSync failures were a seasonal CEST/CET time bomb in its golden
-# normalizer, fixed separately.) Regenerating the goldens is a DECISION (adopt
-# v1.24.0) and a visual audit — the 404 change in particular is a UI redesign —
-# not a chore: do not run `-golden-update` to make this guard quiet.
+# Re-audited + ADOPTED 2026-10-28 on templ-components v1.24.0 +
+# go-datastar v0.6.2:
+#   - the v1.23.0 → v1.24.0 climb rode the 2026-10-28 daemon churn (commit
+#     44d8a24, tenth unguarded occurrence); discovered red-guarded.
+#   - v1.24.0 is an a11y-focused release (tone adapters, prose, position
+#     helpers, a11y test hardening). Measured delta — module-cache source
+#     diff + golden word-diff, re-derived after TWO earlier prose notes had
+#     the Table change backwards (the wrapper does not lose its role; it
+#     GAINS one):
+#       - display.Table: the horizontal-scroll wrapper GAINS role="region",
+#         plus aria-label when AriaLabel or Caption is set (unnamed regions
+#         stay valid, they simply stay out of landmark rotors). The
+#         dashboard passes neither, so this repo's ENTIRE rendered drift is
+#         23 × `tabindex="0" role="region">` insertions across the 7
+#         goldens (severity, source, zeroproven, publicmode, sourceproven,
+#         trendtimeline, latencywarn).
+#       - display.CopyButton: the label span LOSES role="status"
+#         aria-live="polite"; a new sibling
+#         <span data-tc-copy-status role="status" class="sr-only"> owns the
+#         announcement (live regions must live outside interactive
+#         elements); display/shared.go gains tcAnnounceCopy. NOT rendered by
+#         this repo.
+#       - errorpage 404: the search field's leading icon becomes a trailing
+#         submit button (+ GoBackText/SearchSubmitLabel prop defaults). NOT
+#         rendered by this repo — but the same release drifts 15 of
+#         DiscordSync's internal/web snapshots.
+#   - goldens regenerated and reviewed in the same change:
+#     `go test -run TestGoldenRender -golden-update .`
+#   - CEREMONY DEVIATION, recorded honestly: this host's Chromium cannot
+#     complete any http(s) navigation (twelve hypotheses eliminated; netlog
+#     shows the GET never written; browser_test.go's preflight skips all 19
+#     browser tests in 12s with the reason), so the local browser half of
+#     the ceremony could not run for this adoption. Runtime-DOM verification
+#     rides CI's browser job (it installs its own Chrome); if that job goes
+#     red on v1.24.0, revert pins + go.mod in one dedicated change.
 #
 # CEREMONY RULE: if you bump any of these dependencies, update the pins
 # in this file IN THE SAME CHANGE and re-run the browser suite. A bump
@@ -86,10 +101,10 @@
 # change that updates these pins and re-runs the browser suite.
 set -euo pipefail
 
-expected_templ_components="v1.23.0"
-expected_templ_components_datastar="v1.23.0"
-expected_templ_components_utils="v1.23.0"
-expected_templ_components_icons="v1.23.0"
+expected_templ_components="v1.24.0"
+expected_templ_components_datastar="v1.24.0"
+expected_templ_components_utils="v1.24.0"
+expected_templ_components_icons="v1.24.0"
 expected_go_datastar="v0.6.2"
 expected_go_datastar_static="v0.6.1"
 
@@ -121,7 +136,7 @@ check_pin() {
 	if [[ "$actual" == "$expected" ]]; then
 		echo "OK  $module $actual"
 	else
-		echo "::error::$module is $actual, expected pinned $expected — UI dependency movement requires a dedicated change with a green browser suite; see scripts/check-ui-pins.sh"
+		echo "::error::$module is $actual, expected pinned $expected — UI dependency movement is a dedicated change: audit the markup delta (module-cache source diff), regen goldens (go test -run TestGoldenRender -golden-update .), run the browser suite, and update these pins in the same change; see scripts/check-ui-pins.sh audit history"
 		fail=1
 	fi
 }
