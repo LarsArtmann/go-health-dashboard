@@ -102,7 +102,7 @@ clean, all local gates green.
    said "vet" and the answer to "did YOU run it" is no.
 4. **First buildflow run: I piped my own verdict away** (`| tail -40` ate
    the summary) and had to reconstruct the result from `buildflow history`
-   + a re-run. Capture-to-file from the start costs nothing.
+   - a re-run. Capture-to-file from the start costs nothing.
 5. **One edit rejected for editing before reading** (CHANGELOG — I had
    only bash-grep'd it, not Viewed it). Round trip wasted; the rule exists
    and I knew it.
