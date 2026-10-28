@@ -782,12 +782,8 @@ func TestBrowser_Accessibility(t *testing.T) {
 		t.Fatalf("axe inject: %v", err)
 	}
 
-	waitForJSTo(
-		t, ctx,
-		`window.axe !== undefined`,
-		`typeof window.axe`,
-		nil,
-	)
+	waitForJS(
+		t, ctx, `window.axe !== undefined`)
 
 	// The skip link is sr-only until keyboard focus and this harness serves
 	// no real Tailwind stylesheet, so axe cannot compute meaningful contrast
@@ -1084,7 +1080,7 @@ func TestBrowser_MetricsUnderStrictCSP(t *testing.T) {
 	}
 
 	var scrape string
-	waitForJS(
+	waitForJSTo(
 		t,
 		ctx,
 		`window.__scrape !== undefined`,
@@ -1466,7 +1462,13 @@ func TestBrowser_FilterInteract(t *testing.T) {
 		t.Fatalf("axe run: %v", err)
 	}
 
-	waitForJSTo(t, ctx, `window.__filteredAxe !== undefined`, `window.__filteredAxe`, &filteredAudit)
+	waitForJSTo(
+		t,
+		ctx,
+		`window.__filteredAxe !== undefined`,
+		`window.__filteredAxe`,
+		&filteredAudit,
+	)
 
 	if filteredAudit != "[]" {
 		t.Errorf("axe on the filtered DOM found serious/critical violations: %s", filteredAudit)
@@ -2085,11 +2087,7 @@ func TestBrowser_KeyboardLinks(t *testing.T) {
 		t.Fatalf("keyboard jump activation: %v", err)
 	}
 
-	waitForJSTo(t, ctx,
-		`window.location.hash === "#group-problems"`,
-		`window.location.hash`,
-		nil,
-	)
+	waitForJS(t, ctx, `window.location.hash === "#group-problems"`)
 
 	assertNoBrowserErrors(t, errLog)
 }

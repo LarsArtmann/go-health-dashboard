@@ -31,7 +31,7 @@ func captureScreenshot(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 
-	return chromedp.Do(ctx, chromedp.FullScreenshot(screenshotQuality))
+	return chromedp.Run(ctx, chromedp.FullScreenshot(screenshotQuality))
 }
 
 // timedScreenshotRecorder routes the capture probe through the detailed
