@@ -182,12 +182,8 @@ func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
 
 	time.Sleep(600 * time.Millisecond)
 
-	var png []byte
-
-	if err := chromedp.Run(ctx,
-		chromedp.EmulateViewport(1280, 800),
-		chromedp.FullScreenshot(&png, 95),
-	); err != nil {
+	png, err := captureScreenshot(ctx)
+	if err != nil {
 		t.Fatalf("screenshot: %v", err)
 	}
 
@@ -286,12 +282,8 @@ func TestCaptureREADME_ScreenshotDegraded(t *testing.T) {
 
 	time.Sleep(600 * time.Millisecond)
 
-	var png []byte
-
-	if err := chromedp.Run(ctx,
-		chromedp.EmulateViewport(1280, 800),
-		chromedp.FullScreenshot(&png, 95),
-	); err != nil {
+	png, err := captureScreenshot(ctx)
+	if err != nil {
 		t.Fatalf("screenshot: %v", err)
 	}
 
@@ -415,12 +407,8 @@ func TestCaptureREADME_ScreenshotGrouped(t *testing.T) {
 
 	time.Sleep(600 * time.Millisecond)
 
-	var png []byte
-
-	if err := chromedp.Run(ctx,
-		chromedp.EmulateViewport(1280, 800),
-		chromedp.FullScreenshot(&png, 95),
-	); err != nil {
+	png, err := captureScreenshot(ctx)
+	if err != nil {
 		t.Fatalf("screenshot: %v", err)
 	}
 

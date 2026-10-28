@@ -525,7 +525,7 @@ func waitForBodyText(t *testing.T, ctx context.Context, want string) {
 	for {
 		var bodyText string
 
-		if err := chromedp.Run(ctx, chromedp.Evaluate(query, &bodyText)); err != nil {
+		if err := chromedp.Do(ctx, evalInto(query, &bodyText)); err != nil {
 			t.Fatalf("browser evaluate: %v", err)
 		}
 
@@ -606,7 +606,7 @@ func TestBrowser_OffRowContract(t *testing.T) {
 		return JSON.stringify({found: true, badge: true, cls: el.className, text: el.textContent.trim()});
 	})()`
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(probeJS, &raw)); err != nil {
+	if err := chromedp.Do(ctx, evalInto(probeJS, &raw)); err != nil {
 		t.Fatalf("browser evaluate: %v", err)
 	}
 
@@ -646,9 +646,9 @@ func TestBrowser_OffRowContract(t *testing.T) {
 
 	var bodyText string
 
-	if err := chromedp.Run(
+	if err := chromedp.Do(
 		ctx,
-		chromedp.Evaluate(`document.body.innerText`, &bodyText),
+		evalInto(`document.body.innerText`, &bodyText),
 	); err != nil {
 		t.Fatalf("browser evaluate: %v", err)
 	}
@@ -724,13 +724,13 @@ func TestBrowser_Accessibility(t *testing.T) {
 
 	var lang, missingNames, missingRegions string
 
-	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(`document.documentElement.lang || ""`, &lang),
-		chromedp.Evaluate(
+	if err := chromedp.Do(ctx,
+		evalInto(`document.documentElement.lang || ""`, &lang),
+		evalInto(
 			`[...document.querySelectorAll("button,a")].filter(e => !e.textContent.trim() && !e.getAttribute("aria-label") && !e.getAttribute("title")).length + ""`,
 			&missingNames,
 		),
-		chromedp.Evaluate(
+		evalInto(
 			`document.querySelector("main,[role=main]") ? "main" : (document.querySelector("[aria-label],[role=region]") ? "region" : "none")`,
 			&missingRegions,
 		),
@@ -761,7 +761,7 @@ func TestBrowser_Accessibility(t *testing.T) {
 		document.head.appendChild(s);
 	})()`
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(inject, nil)); err != nil {
+	if err := chromedp.Do(ctx, evalDiscard(inject)); err != nil {
 		t.Fatalf("axe inject: %v", err)
 	}
 
@@ -799,9 +799,9 @@ func TestBrowser_Accessibility(t *testing.T) {
 	// the dark class applied. One Chrome launch covers both themes.
 	var darkClass string
 
-	if err := chromedp.Run(ctx,
-		chromedp.Click(`[data-theme-toggle]`, chromedp.ByQuery),
-		chromedp.Evaluate(`document.documentElement.classList.contains("dark") + ""`, &darkClass),
+	if err := chromedp.Do(ctx,
+		chromedp.Click(chromedp.CSS(`[data-theme-toggle]`)),
+		evalInto(`document.documentElement.classList.contains("dark") + ""`, &darkClass),
 	); err != nil {
 		t.Fatalf("dark toggle: %v", err)
 	}
@@ -859,7 +859,7 @@ func waitForJS(t *testing.T, ctx context.Context, predicate, valueExpr string, r
 	for {
 		var truthy bool
 
-		if err := chromedp.Run(ctx, chromedp.Evaluate("!!("+predicate+")", &truthy)); err != nil {
+		if err := chromedp.Do(ctx, evalInto("!!("+predicate+")", &truthy)); err != nil {
 			t.Fatalf("browser evaluate %q: %v", predicate, err)
 		}
 
@@ -868,7 +868,7 @@ func waitForJS(t *testing.T, ctx context.Context, predicate, valueExpr string, r
 				return
 			}
 
-			if err := chromedp.Run(ctx, chromedp.Evaluate(valueExpr, res)); err != nil {
+			if err := chromedp.Do(ctx, evalInto(valueExpr, res)); err != nil {
 				t.Fatalf("browser fetch %q: %v", valueExpr, err)
 			}
 
@@ -973,17 +973,17 @@ func TestBrowser_KeyboardNavigation(t *testing.T) {
 	stops := make([]string, 0, 15)
 	visibleWithOutline := 0
 
-	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(`document.activeElement && document.activeElement.blur(); "ok"`, &desc),
+	if err := chromedp.Do(ctx,
+		evalInto(`document.activeElement && document.activeElement.blur(); "ok"`, &desc),
 	); err != nil {
 		t.Fatalf("blur initial focus: %v", err)
 	}
 
 	for i := range 15 {
-		if err := chromedp.Run(ctx, chromedp.KeyEvent("\t")); err != nil {
+		if err := chromedp.Do(ctx, chromedp.KeyEvent("\t")); err != nil {
 			t.Fatalf("tab keypress %d: %v", i, err)
 		}
-		if err := chromedp.Run(ctx, chromedp.Evaluate(describeFocus, &desc)); err != nil {
+		if err := chromedp.Do(ctx, evalInto(describeFocus, &desc)); err != nil {
 			t.Fatalf("describe focus after tab %d: %v", i, err)
 		}
 		stops = append(stops, desc)
@@ -1051,7 +1051,7 @@ func TestBrowser_MetricsUnderStrictCSP(t *testing.T) {
 	})()`
 
 	var status string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(fetch, &status)); err != nil {
+	if err := chromedp.Do(ctx, evalInto(fetch, &status)); err != nil {
 		t.Fatalf("metrics fetch evaluate: %v", err)
 	}
 
@@ -1073,7 +1073,7 @@ func TestBrowser_MetricsUnderStrictCSP(t *testing.T) {
 	}
 
 	var body string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.__scrape`, &body)); err != nil {
+	if err := chromedp.Do(ctx, evalInto(`window.__scrape`, &body)); err != nil {
 		t.Fatalf("read scrape text: %v", err)
 	}
 
@@ -1133,7 +1133,7 @@ func TestBrowser_AggregateCSPClean(t *testing.T) {
 
 		if dash.SubscriberCount() == 0 {
 			var html string
-			_ = chromedp.Run(ctx, chromedp.Evaluate(`document.body.innerHTML.slice(0, 600)`, &html))
+			_ = chromedp.Do(ctx, evalInto(`document.body.innerHTML.slice(0, 600)`, &html))
 			t.Fatalf(
 				"aggregate page SSE never connected; console: %v; body: %s",
 				errLog.all(),
@@ -1143,7 +1143,7 @@ func TestBrowser_AggregateCSPClean(t *testing.T) {
 	}
 
 	var namespaced string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(
+	if err := chromedp.Do(ctx, evalInto(
 		`document.body.innerText.includes("api/postgres") ? "yes" : "no"`,
 		&namespaced,
 	)); err != nil {
@@ -1159,7 +1159,7 @@ func TestBrowser_AggregateCSPClean(t *testing.T) {
 
 	// CSP-clean invariants, same as the single-probe page.
 	var styles string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(
+	if err := chromedp.Do(ctx, evalInto(
 		`document.querySelectorAll("style").length + ":" + [...document.querySelectorAll("[style]:not(html)")].length`,
 		&styles,
 	)); err != nil {
@@ -1168,7 +1168,7 @@ func TestBrowser_AggregateCSPClean(t *testing.T) {
 
 	if styles != "0:0" {
 		var offender string
-		_ = chromedp.Run(ctx, chromedp.Evaluate(
+		_ = chromedp.Do(ctx, evalInto(
 			`[...document.querySelectorAll("[style]")].map(e => e.outerHTML.slice(0, 300)).join(" || ")`,
 			&offender,
 		))
@@ -1216,7 +1216,7 @@ func TestBrowser_CollapseInteract(t *testing.T) {
 
 	var state string
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(detailsState, &state)); err != nil {
+	if err := chromedp.Do(ctx, evalInto(detailsState, &state)); err != nil {
 		t.Fatalf("browser evaluate: %v", err)
 	}
 
@@ -1224,11 +1224,11 @@ func TestBrowser_CollapseInteract(t *testing.T) {
 		t.Fatalf("healthy group should start collapsed, got %q", state)
 	}
 
-	if err := chromedp.Run(ctx, chromedp.Click("details summary", chromedp.ByQuery)); err != nil {
+	if err := chromedp.Do(ctx, chromedp.Click(chromedp.CSS("details summary"))); err != nil {
 		t.Fatalf("click summary: %v", err)
 	}
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(detailsState, &state)); err != nil {
+	if err := chromedp.Do(ctx, evalInto(detailsState, &state)); err != nil {
 		t.Fatalf("browser evaluate after click: %v", err)
 	}
 
@@ -1238,7 +1238,7 @@ func TestBrowser_CollapseInteract(t *testing.T) {
 
 	var tableVisible bool
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(
+	if err := chromedp.Do(ctx, evalInto(
 		`document.querySelector("details table") !== null && document.querySelector("details table").offsetParent !== null`,
 		&tableVisible,
 	)); err != nil {
@@ -1288,7 +1288,7 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 
 	var state string
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(detailsState, &state)); err != nil {
+	if err := chromedp.Do(ctx, evalInto(detailsState, &state)); err != nil {
 		t.Fatalf("browser evaluate: %v", err)
 	}
 
@@ -1299,13 +1299,13 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 		)
 	}
 
-	if err := chromedp.Run(ctx, chromedp.Click("details summary", chromedp.ByQuery)); err != nil {
+	if err := chromedp.Do(ctx, chromedp.Click(chromedp.CSS("details summary"))); err != nil {
 		t.Fatalf("click summary: %v", err)
 	}
 
 	var stored string
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(
+	if err := chromedp.Do(ctx, evalInto(
 		`localStorage.getItem("health-healthy-group-collapsed") || ""`,
 		&stored,
 	)); err != nil {
@@ -1321,13 +1321,13 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 	// then assert it is still open.
 	time.Sleep(700 * time.Millisecond)
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(detailsState, &state)); err != nil {
+	if err := chromedp.Do(ctx, evalInto(detailsState, &state)); err != nil {
 		t.Fatalf("browser evaluate after patches: %v", err)
 	}
 
 	if state != "open" {
 		var diag string
-		_ = chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+		_ = chromedp.Do(ctx, evalInto(`(function () {
 			var d = document.querySelector('details[data-collapsible]');
 			var plain = document.querySelector('details');
 			return JSON.stringify({
@@ -1346,7 +1346,7 @@ func TestBrowser_CollapsePersistInteract(t *testing.T) {
 	}
 
 	// A full reload must also honor the stored state.
-	if err := chromedp.Run(ctx, chromedp.Navigate(session.server.URL+"/health")); err != nil {
+	if err := chromedp.Do(ctx, chromedp.Navigate(session.server.URL+"/health")); err != nil {
 		t.Fatalf("browser reload: %v", err)
 	}
 
@@ -1385,7 +1385,7 @@ func TestBrowser_FilterInteract(t *testing.T) {
 
 	var visible string
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(visibleRows, &visible)); err != nil {
+	if err := chromedp.Do(ctx, evalInto(visibleRows, &visible)); err != nil {
 		t.Fatalf("browser evaluate: %v", err)
 	}
 
@@ -1393,8 +1393,8 @@ func TestBrowser_FilterInteract(t *testing.T) {
 		t.Fatalf("all 12 rows should start visible, got %s", visible)
 	}
 
-	if err := chromedp.Run(ctx,
-		chromedp.SetValue(`#health-filter`, "svc-03", chromedp.ByQuery),
+	if err := chromedp.Do(ctx,
+		chromedp.SetValue(chromedp.CSS(`#health-filter`), "svc-03"),
 	); err != nil {
 		t.Fatalf("type into filter: %v", err)
 	}
@@ -1412,12 +1412,12 @@ func TestBrowser_FilterInteract(t *testing.T) {
 		_, _ = w.Write(axeBytes)
 	})
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+	if err := chromedp.Do(ctx, evalDiscard(`(function () {
 		if (window.axe) { return; }
 		var el = document.createElement("script");
 		el.src = "/static/axe.js";
 		document.head.appendChild(el);
-	})()`, nil)); err != nil {
+	})()`)); err != nil {
 		t.Fatalf("axe inject: %v", err)
 	}
 
@@ -1425,7 +1425,7 @@ func TestBrowser_FilterInteract(t *testing.T) {
 
 	var filteredAudit string
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`axe.run(
+	if err := chromedp.Do(ctx, evalDiscard(`axe.run(
 		{ include: [document] },
 		{ resultTypes: ["violations"] }
 	).then(function (r) {
@@ -1434,7 +1434,7 @@ func TestBrowser_FilterInteract(t *testing.T) {
 		}).map(function (v) { return v.id + ":" + v.nodes.length; }));
 	}).catch(function (e) {
 		window.__filteredAxe = "AXE_ERROR: " + e;
-	})`, nil)); err != nil {
+	})`)); err != nil {
 		t.Fatalf("axe run: %v", err)
 	}
 
@@ -1446,11 +1446,11 @@ func TestBrowser_FilterInteract(t *testing.T) {
 
 	// chromedp.SetValue cannot set an empty string, so clear via JS and
 	// dispatch the input event data-bind listens on.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+	if err := chromedp.Do(ctx, evalDiscard(`(function () {
 		var el = document.getElementById("health-filter");
 		el.value = "";
 		el.dispatchEvent(new Event("input", { bubbles: true }));
-	})()`, nil)); err != nil {
+	})()`)); err != nil {
 		t.Fatalf("clear filter: %v", err)
 	}
 
@@ -1498,7 +1498,7 @@ func TestBrowser_StatusFilterChips(t *testing.T) {
 
 	var visible, hint string
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(visibleRows, &visible)); err != nil {
+	if err := chromedp.Do(ctx, evalInto(visibleRows, &visible)); err != nil {
 		t.Fatalf("evaluate visible rows: %v", err)
 	}
 
@@ -1506,7 +1506,7 @@ func TestBrowser_StatusFilterChips(t *testing.T) {
 		t.Fatalf("all 3 rows must start visible (1 pass, 2 warn), got %s", visible)
 	}
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(hintHidden, &hint)); err != nil {
+	if err := chromedp.Do(ctx, evalInto(hintHidden, &hint)); err != nil {
 		t.Fatalf("evaluate hint: %v", err)
 	}
 
@@ -1514,8 +1514,8 @@ func TestBrowser_StatusFilterChips(t *testing.T) {
 		t.Fatalf("no-match hint must start hidden, got hidden=%s", hint)
 	}
 
-	if err := chromedp.Run(ctx,
-		chromedp.Click("#status-filter-problems", chromedp.ByQuery),
+	if err := chromedp.Do(ctx,
+		chromedp.Click(chromedp.CSS("#status-filter-problems")),
 	); err != nil {
 		t.Fatalf("click problems chip: %v", err)
 	}
@@ -1524,12 +1524,12 @@ func TestBrowser_StatusFilterChips(t *testing.T) {
 
 	var problemsPressed, allPressed string
 
-	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(
+	if err := chromedp.Do(ctx,
+		evalInto(
 			`document.getElementById("status-filter-problems").getAttribute("aria-pressed")`,
 			&problemsPressed,
 		),
-		chromedp.Evaluate(
+		evalInto(
 			`document.getElementById("status-filter-all").getAttribute("aria-pressed")`,
 			&allPressed,
 		),
@@ -1544,35 +1544,35 @@ func TestBrowser_StatusFilterChips(t *testing.T) {
 		)
 	}
 
-	if err := chromedp.Run(ctx,
-		chromedp.Click("#status-filter-pass", chromedp.ByQuery),
+	if err := chromedp.Do(ctx,
+		chromedp.Click(chromedp.CSS("#status-filter-pass")),
 	); err != nil {
 		t.Fatalf("click pass chip: %v", err)
 	}
 
 	waitForJS(t, ctx, visibleRows+` === "1"`, visibleRows, nil)
 
-	if err := chromedp.Run(ctx,
-		chromedp.Click("#status-filter-all", chromedp.ByQuery),
+	if err := chromedp.Do(ctx,
+		chromedp.Click(chromedp.CSS("#status-filter-all")),
 	); err != nil {
 		t.Fatalf("click all chip: %v", err)
 	}
 
 	waitForJS(t, ctx, visibleRows+` === "3"`, visibleRows, nil)
 
-	if err := chromedp.Run(ctx,
-		chromedp.SetValue(`#health-filter`, "zzz-no-such-service", chromedp.ByQuery),
+	if err := chromedp.Do(ctx,
+		chromedp.SetValue(chromedp.CSS(`#health-filter`), "zzz-no-such-service"),
 	); err != nil {
 		t.Fatalf("type non-matching query: %v", err)
 	}
 
 	waitForJS(t, ctx, hintHidden+` === "false"`, hintHidden, nil)
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+	if err := chromedp.Do(ctx, evalDiscard(`(function () {
 		var el = document.getElementById("health-filter");
 		el.value = "";
 		el.dispatchEvent(new Event("input", { bubbles: true }));
-	})()`, nil)); err != nil {
+	})()`)); err != nil {
 		t.Fatalf("clear filter: %v", err)
 	}
 
@@ -1610,7 +1610,7 @@ func TestBrowser_EvidenceDisclosureFocus(t *testing.T) {
 
 	var focusState string
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+	if err := chromedp.Do(ctx, evalInto(`(function () {
 		var badge = document.querySelector('tr td span[tabindex="0"]');
 		if (!badge) { return "no-disclosure"; }
 		badge.focus();
@@ -1672,13 +1672,13 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 
 	// Record every SDK lifecycle event so a failure can show what actually
 	// fired instead of guessing from minified bundle logic.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+	if err := chromedp.Do(ctx, evalDiscard(`(function () {
 		window.__fetchEvents = [];
 		document.addEventListener("datastar-fetch", function (e) {
 			var d = e.detail || {};
 			window.__fetchEvents.push(d.type + (d.argsRaw && d.argsRaw.status ? ":" + d.argsRaw.status : ""));
 		});
-	})()`, nil)); err != nil {
+	})()`)); err != nil {
 		t.Fatalf("inject event recorder: %v", err)
 	}
 
@@ -1693,7 +1693,7 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 
 	var state string
 
-	if err := chromedp.Run(ctx, chromedp.Evaluate(pillState, &state)); err != nil {
+	if err := chromedp.Do(ctx, evalInto(pillState, &state)); err != nil {
 		t.Fatalf("browser evaluate: %v", err)
 	}
 
@@ -1811,7 +1811,7 @@ func TestBrowser_RetryAlwaysRidesOutMaxConnections(t *testing.T) {
 
 	errLogB := watchBrowserErrors(tabB)
 
-	if err := chromedp.Run(tabB, chromedp.Navigate(session.server.URL+"/health")); err != nil {
+	if err := chromedp.Do(tabB, chromedp.Navigate(session.server.URL+"/health")); err != nil {
 		t.Fatalf("tab B navigate: %v", err)
 	}
 
@@ -1864,7 +1864,7 @@ func TestBrowser_MobileViewport(t *testing.T) {
 
 	// The session's first navigation ran at the default viewport; reload
 	// under mobile emulation before asserting layout.
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		chromedp.EmulateViewport(375, 667),
 		chromedp.Navigate(session.server.URL+"/health"),
 	); err != nil {
@@ -1875,12 +1875,12 @@ func TestBrowser_MobileViewport(t *testing.T) {
 
 	var pageOverflow, wrapperContained bool
 
-	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(
+	if err := chromedp.Do(ctx,
+		evalInto(
 			`document.documentElement.scrollWidth <= window.innerWidth + 1`,
 			&pageOverflow,
 		),
-		chromedp.Evaluate(
+		evalInto(
 			`(function () {
 				var w = document.querySelector(".overflow-x-auto");
 				return !!w && w.scrollWidth >= w.clientWidth - 2 && w.scrollWidth <= w.clientWidth + 400;
@@ -1899,9 +1899,9 @@ func TestBrowser_MobileViewport(t *testing.T) {
 
 	var bodyText string
 
-	if err := chromedp.Run(
+	if err := chromedp.Do(
 		ctx,
-		chromedp.Evaluate(`document.body.innerText`, &bodyText),
+		evalInto(`document.body.innerText`, &bodyText),
 	); err != nil {
 		t.Fatalf("browser evaluate body: %v", err)
 	}
@@ -1944,7 +1944,7 @@ func TestBrowser_KeyboardNewControls(t *testing.T) {
 	// Focus the summary directly (keyboard path) and toggle with Enter
 	// ("\r" is the rune chromedp's keyboard encoder maps to the Enter key).
 	if err := chromedp.Run(ctx,
-		chromedp.Focus(`details summary`, chromedp.ByQuery),
+		chromedp.Focus(chromedp.CSS(`details summary`)),
 		chromedp.KeyEvent("\r"),
 	); err != nil {
 		t.Fatalf("keyboard toggle: %v", err)
@@ -1955,7 +1955,7 @@ func TestBrowser_KeyboardNewControls(t *testing.T) {
 	// Focus the filter input and type through the keyboard; the signal
 	// updates through the real input events.
 	if err := chromedp.Run(ctx,
-		chromedp.Focus(`#health-filter`, chromedp.ByQuery),
+		chromedp.Focus(chromedp.CSS(`#health-filter`)),
 		chromedp.KeyEvent("svc-01"),
 	); err != nil {
 		t.Fatalf("keyboard filter focus: %v", err)
@@ -2051,7 +2051,7 @@ func TestBrowser_KeyboardLinks(t *testing.T) {
 	}
 
 	if err := chromedp.Run(ctx,
-		chromedp.Focus(`a[href="#group-problems"]`, chromedp.ByQuery),
+		chromedp.Focus(chromedp.CSS(`a[href="#group-problems"]`)),
 		chromedp.KeyEvent("\r"),
 	); err != nil {
 		t.Fatalf("keyboard jump activation: %v", err)
@@ -2146,16 +2146,16 @@ func TestBrowser_AggregateNewUI(t *testing.T) {
 	}
 
 	// Filtering by source prefix narrows to that source's checks only.
-	if err := chromedp.Run(ctx,
-		chromedp.SetValue(`#health-filter`, "worker", chromedp.ByQuery),
+	if err := chromedp.Do(ctx,
+		chromedp.SetValue(chromedp.CSS(`#health-filter`), "worker"),
 	); err != nil {
 		t.Fatalf("filter by source: %v", err)
 	}
 
 	waitForJS(t, ctx, visibleRows+` === "2"`, visibleRows, nil)
 
-	if err := chromedp.Run(ctx,
-		chromedp.SetValue(`#health-filter`, "api/post", chromedp.ByQuery),
+	if err := chromedp.Do(ctx,
+		chromedp.SetValue(chromedp.CSS(`#health-filter`), "api/post"),
 	); err != nil {
 		t.Fatalf("filter by full namespaced key: %v", err)
 	}
@@ -2405,7 +2405,7 @@ func TestBrowser_AccessibilityDegraded(t *testing.T) {
 	var darkClass string
 
 	if err := chromedp.Run(ctx,
-		chromedp.Click(`[data-theme-toggle]`, chromedp.ByQuery),
+		chromedp.Click(chromedp.CSS(`[data-theme-toggle]`)),
 		chromedp.Evaluate(`document.documentElement.classList.contains("dark") + ""`, &darkClass),
 	); err != nil {
 		t.Fatalf("dark toggle: %v", err)
