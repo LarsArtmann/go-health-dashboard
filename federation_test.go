@@ -188,11 +188,14 @@ func TestFederation_UnreachableRemoteFlowsThroughWebhook(t *testing.T) {
 	}
 }
 
-// TestFederation_HealthzCapabilityNotForwarded completes the capability
-// matrix: the federation prober does NOT implement go-health v0.4.0's
-// Healthz (only Probe and aggregate do), so hub deployments get no
-// combined-traffic route even when Routes.Healthz is configured.
-func TestFederation_HealthzCapabilityNotForwarded(t *testing.T) {
+// TestFederation_HealthzCapabilityForwarded completes the capability matrix:
+// go-health's federation prober implements Healthz (Probe, aggregate and
+// federation all do as of v0.8.x), so a hub deployment gets the
+// combined-traffic route when Routes.Healthz is configured. The route answers
+// 200 while the remotes are healthy and 503 once the hub marks itself as
+// shutting down — the drain signal a load balancer needs before the listener
+// closes.
+func TestFederation_HealthzCapabilityForwarded(t *testing.T) {
 	t.Parallel()
 
 	remote := serveHealthyRemote(t)
@@ -204,8 +207,8 @@ func TestFederation_HealthzCapabilityNotForwarded(t *testing.T) {
 		t.Fatalf("federation.New: %v", err)
 	}
 
-	if _, ok := any(fed).(dashboard.Healthzer); ok {
-		t.Fatal("federation prober must not expose a Healthz capability")
+	if _, ok := any(fed).(dashboard.Healthzer); !ok {
+		t.Fatal("federation prober must expose a Healthz capability")
 	}
 
 	routes := dashboard.DefaultRoutes()
@@ -216,7 +219,13 @@ func TestFederation_HealthzCapabilityNotForwarded(t *testing.T) {
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux)
 
-	if code := doRequest(t, mux, "/livez").Code; code != http.StatusNotFound {
-		t.Errorf("combined-traffic route must stay unregistered through federation, got %d", code)
+	if code := doRequest(t, mux, "/livez").Code; code != http.StatusOK {
+		t.Errorf("combined-traffic route must serve the merged view, got %d", code)
+	}
+
+	fed.MarkShuttingDown()
+
+	if code := doRequest(t, mux, "/livez").Code; code != http.StatusServiceUnavailable {
+		t.Errorf("combined-traffic route must answer 503 while the hub drains, got %d", code)
 	}
 }

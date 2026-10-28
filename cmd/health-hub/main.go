@@ -35,13 +35,14 @@
 // freeze. The dashboard groups cards per remote, so the hub reads as one
 // card per service.
 //
-// Drain-safety limitation: go-health's federation Prober has no
-// MarkShuttingDown, so /readyz keeps answering from merge-on-read fetches
-// until the listener closes — the hub cannot flip its own readiness to 503
-// during a drain the way a single probe can. Shutdown therefore leads with
-// the dashboard (SSE clients disconnected promptly instead of holding the
-// server open for the full grace window); flipping readiness at the source
-// is tracked as a go-health upstream proposal.
+// Drain safety: the hub runs go-health's two-phase drain. On SIGTERM it
+// first marks the federation prober as shutting down, so /readyz answers 503
+// from the next merge-on-read fetch onward while the fetches themselves keep
+// running and drained bodies stay fresh. It holds that state for
+// drainObservation so a load balancer has a window to observe the 503, then
+// stops the dashboard (SSE clients disconnected promptly instead of holding
+// the server open for the full grace window) and finally the HTTP server.
+// Liveness and startup are unaffected by the mark, matching a single probe.
 //
 // The server root (/) redirects to the dashboard page — the vhost in
 // front of the hub proxies every path, and a bare 404 on "/" reads as
@@ -88,6 +89,7 @@ const (
 	defaultFetchExpiry = 5 * time.Second
 	startupGate        = 15 * time.Second
 	startupPollStep    = 100 * time.Millisecond
+	drainObservation   = 2 * time.Second
 )
 
 var (
@@ -278,13 +280,17 @@ func run() error {
 
 	select {
 	case <-ctx.Done():
-		// Drain-safe order: stop the dashboard BEFORE the HTTP server so
-		// SSE clients are disconnected promptly (and, with a drain window,
-		// new SSE connections already see 503) instead of their open
-		// streams holding server.Shutdown open for the entire grace
-		// window. The deferred dash.Shutdown stays as the early-exit
-		// safety net and is idempotent. Federation cannot flip /readyz to
-		// 503 (no MarkShuttingDown) - documented in the package comment.
+		// Phase one of the drain: flip the federation's own readiness to 503
+		// and hold it long enough for a load balancer to observe, so the hub
+		// leaves rotation before its listener closes.
+		fed.MarkShuttingDown()
+		time.Sleep(drainObservation)
+
+		// Phase two: stop the dashboard BEFORE the HTTP server so SSE clients
+		// are disconnected promptly (and, with a drain window, new SSE
+		// connections already see 503) instead of their open streams holding
+		// server.Shutdown open for the entire grace window. The deferred
+		// dash.Shutdown stays as the early-exit safety net and is idempotent.
 		dash.Shutdown()
 
 		return shutdown(server)

@@ -9,13 +9,19 @@ import (
 
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/go-health/aggregate"
+	"github.com/larsartmann/go-health/federation"
 )
 
 // The dashboard's Prober interface is narrow on purpose; per-source roll-up
 // statuses ride an optional capability instead (SourceStatuser, mirroring
-// Healthzer). go-health's aggregate gained the accessor in v0.6.0 — this
-// pins that the bump keeps the capability satisfiable by real merge surfaces.
-var _ SourceStatuser = (*aggregate.Aggregate)(nil)
+// Healthzer). go-health's aggregate gained the accessor in v0.6.0 and
+// federation followed in v0.8.x — both pins keep the capability satisfiable
+// by real merge surfaces, so a future drop breaks a build instead of
+// silently softening every federated source card.
+var (
+	_ SourceStatuser = (*aggregate.Aggregate)(nil)
+	_ SourceStatuser = (*healthfederation.Prober)(nil)
+)
 
 // sourceStatusProber is a Prober fake that also implements SourceStatuser:
 // the shape of go-health's aggregate.Aggregate after the v0.7.0 bump. The
