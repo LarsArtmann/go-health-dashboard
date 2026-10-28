@@ -9,7 +9,7 @@ require (
 	github.com/dustin/go-humanize v1.1.0
 	github.com/larsartmann/go-datastar v0.6.2
 	github.com/larsartmann/go-datastar/static v0.6.1
-	github.com/larsartmann/go-health v0.7.0
+	github.com/larsartmann/go-health v0.8.1
 	github.com/larsartmann/go-sse v0.6.2
 	github.com/larsartmann/go-sse/ssetest v0.5.0
 	github.com/larsartmann/templ-components v1.24.0
