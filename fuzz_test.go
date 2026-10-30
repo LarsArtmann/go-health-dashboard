@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"bytes"
+	"encoding/csv"
 	"encoding/json/v2"
 	"maps"
 	"math"
@@ -339,6 +340,9 @@ func FuzzCSVExport(f *testing.F) {
 		`"quoted"`,
 		"unicode ✓ café",
 		"pass;injection",
+		" ",
+		"\t",
+		"trailing ",
 		strings.Repeat("x", 300),
 	} {
 		f.Add(seed)
@@ -365,9 +369,17 @@ func FuzzCSVExport(f *testing.F) {
 					first,
 				)
 			}
-			fields := strings.Split(lines[2], ",")
-			if len(fields) != 3 || fields[2] != status {
-				t.Fatalf("row does not round-trip clean status %q: %q", status, lines[2])
+			// Parse the row back with encoding/csv — the parser any consumer
+			// uses — instead of a naive comma split: csv.Writer legitimately
+			// quotes fields with leading whitespace (fieldNeedsQuotes,
+			// Excel-safe), and the invariant is that the status ROUND-TRIPS,
+			// not that it renders unquoted (fuzz corpus 8643a79bab153d1b).
+			rows, err := csv.NewReader(strings.NewReader(first)).ReadAll()
+			if err != nil {
+				t.Fatalf("exported CSV does not parse for status %q: %v", status, err)
+			}
+			if len(rows) != 3 || len(rows[2]) != 3 || rows[2][2] != status {
+				t.Fatalf("row does not round-trip clean status %q: %q", status, first)
 			}
 		}
 	})
