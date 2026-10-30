@@ -385,7 +385,12 @@ func FuzzCSVExport(f *testing.F) {
 				t.Fatalf("expected 3 parsed rows for clean status %q: %q", status, first)
 			}
 			if got := rows[2][2]; got != status && got != "'"+status {
-				t.Fatalf("row does not round-trip clean status %q: got field %q in %q", status, got, first)
+				t.Fatalf(
+					"row does not round-trip clean status %q: got field %q in %q",
+					status,
+					got,
+					first,
+				)
 			}
 		}
 	})

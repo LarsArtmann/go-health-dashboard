@@ -17,6 +17,22 @@ forgetting.
 
 ### Changed
 
+- Nothing yet.
+
+### Fixed
+
+- Nothing yet.
+
+## [0.12.2] - 2026-10-30
+
+The dependency-alignment release: templ-components v1.24.0 (a11y markup
+drift), go-health v0.8.1, the chromedp v0.21 test migration, and the
+health-hub two-phase drain. No new library API; rendered markup gains only
+the Table scroll-wrapper `role="region"` attributes, and the CSV/export
+wire surfaces are byte-identical.
+
+### Changed
+
 - Adopted templ-components v1.24.0 (a11y-focused release): `display.Table`
   scroll wrappers now render `role="region"` (plus `aria-label` when a
   caption/label is set — the dashboard passes neither, so its rendered
@@ -33,6 +49,18 @@ forgetting.
 - `cmd/health-hub` runs the real two-phase drain against federation
   (`MarkShuttingDown` → 2s observation window → dashboard → server), now
   that go-health v0.8.1 exposes it upstream.
+
+### Fixed
+
+- Nightly fuzz green again: `FuzzCSVExport`'s round-trip assertion parsed
+  rows with a naive comma split, so two legitimate exporter behaviors —
+  `csv.Writer` quoting fields with leading whitespace (Excel-safe) and
+  `exportCSVField` neutralizing formula-starter statuses with a leading
+  `'` — failed the invariant on non-bugs (corpus 8643a79bab153d1b, two
+  red nightlies in a row). The assertion now parses the export via
+  `encoding/csv` — the parser any consumer uses — and accepts the status
+  or its neutralized form; seeds pin `" "`, `"\t"`, and `"trailing "`.
+  Test-only: exporter output is unchanged.
 
 ## [0.12.1] - 2026-10-25
 
@@ -1322,7 +1350,8 @@ did not exist at `01277d3`.*
   Replaced by `fingerprintChecks` which sorts keys before concatenating
   (`status.go:215`)
 
-[Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.10.2...v0.11.0
