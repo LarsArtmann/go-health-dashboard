@@ -12,6 +12,11 @@
 #   8. golangci-lint (nix run .#lint, same as CI's Lint job)
 #   9. art-dupl accepted-clone baseline (reports/dupl/, go-etag gate pattern)
 #
+# Tool gates retry once when the host is saturated: templ-fmt died at spawn
+# with zero output while the 5-min load was 37 (2026-10-30 triage) — a
+# transient kill class, not a real failure. PRE_PUSH_MAX_LOAD overrides the
+# saturation threshold (default: nproc).
+#
 # Run: bash scripts/pre-push-checks.sh
 # Exits non-zero on the first failure with the same wording CI prints.
 set -euo pipefail
@@ -19,6 +24,27 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 fail=0
+
+load5=$(cut -d' ' -f2 /proc/loadavg)
+echo "host load: 5-min ${load5} on $(nproc) cores (tool-retry threshold ${PRE_PUSH_MAX_LOAD:-$(nproc)}; override PRE_PUSH_MAX_LOAD)"
+
+# run_tool COMMAND... — retry once when the first attempt fails while the
+# host is saturated. A genuine failure fails both attempts; only the
+# load-starvation class (kills/timeouts at or right after spawn) gets a
+# second chance.
+run_tool() {
+	if "$@"; then
+		return 0
+	fi
+	load_at_fail=$(cut -d' ' -f2 /proc/loadavg)
+	if awk -v l="$load_at_fail" -v m="${PRE_PUSH_MAX_LOAD:-$(nproc)}" 'BEGIN { exit !(l+0 > m+0) }'; then
+		echo "::warning::tool '$1' failed under host load ${load_at_fail} — retrying once (transient spawn-starvation class, see 2026-10-30 templ-fmt incident)"
+		sleep 2
+		"$@"
+	else
+		return 1
+	fi
+}
 
 # 1. FEATURES test-count drift guard (same formula as ci.yml).
 actual_funcs=$(cat ./*_test.go | grep -cE '^func (Test|Benchmark|Fuzz)' || true)
@@ -46,7 +72,7 @@ if [ "$version_const" != "$latest_tag" ]; then
 fi
 
 # 3. UI dependency pins.
-if ! bash scripts/check-ui-pins.sh; then
+if ! run_tool bash scripts/check-ui-pins.sh; then
 	fail=1
 fi
 
@@ -138,7 +164,7 @@ fi
 # 8. Lint (CI Lint-job parity): the desk gate went green three sessions
 # in a row while lint findings sat in the tree; only the explicit lint
 # run caught them. Same flake app the CI Lint job runs.
-if ! nix run .#lint; then
+if ! run_tool nix run .#lint; then
 	fail=1
 fi
 
@@ -150,7 +176,7 @@ fi
 # deliberately, with rationale, in the same change.
 if command -v art-dupl >/dev/null 2>&1; then
 	dupl_out=$(mktemp)
-	GOEXPERIMENT=jsonv2 art-dupl --type-aware --sort total-tokens -t 5 --ignore-tests . >"$dupl_out" 2>&1 || {
+	run_tool env GOEXPERIMENT=jsonv2 art-dupl --type-aware --sort total-tokens -t 5 --ignore-tests . >"$dupl_out" 2>&1 || {
 		cat "$dupl_out"
 		echo "::error::art-dupl run failed"
 		rm -f "$dupl_out"

@@ -342,6 +342,12 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   (nix-build-verify 0/10 before the skip, green after). Generated-file
   freshness stays owned by CI hygiene + the flake apps. Re-verification
   evidence + unskip condition: `docs/gotchas.md`.
+- **Pasted failures may predate HEAD — check provenance before diagnosing**
+  — before diagnosing any pasted test failure, `rg` the cited assertion at
+  HEAD and compare commit timestamps (`git log -1 --format='%ci'`): the
+  FuzzCSVExport seed#13 paste cited `fuzz_test.go:382` with a message that
+  lives at `:389` post-fix — the failure was already dead at HEAD, and a
+  line shift is the fastest stale-vs-broken tell (2026-10-30).
 - **BuildFlow-adjacent tool traps** — (1) `erraudit nolint-audit` takes a
   DIRECTORY (`.`), not `./...`. (2) A stale erraudit binary fails with a
   bogus "updates to go.mod needed" — trust `erraudit version`, rebuild from
@@ -351,7 +357,18 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   check `git diff go.mod go.sum` after ANY buildflow run (the 2026-09-22
   sweep + revert: `docs/gotchas.md`). (5) The flake's nix-build steps fail
   on this machine with proxy DNS refusal — `--exclude nix-hash-fix
-  --exclude nix-build-verify` locally, trust CI for flake builds.
+  --exclude nix-build-verify` locally, trust CI for flake builds. (6) A
+  cache-served green is input-reverification, not execution proof — the
+  2026-10-30 triage caught a previously-failed test-race "passing" in 6.1s
+  from cache while the real race suite takes minutes; re-running a FAILED
+  step must go uncached (`scripts/rerun-failed-uncached.sh` =
+  `BUILDFLOW_NO_RESULT_CACHE=1 buildflow --failed-only`; raw go tests:
+  `-count=1`) — a suspiciously fast green is the tell, so time it against
+  `buildflow history`. (7) Tool timeouts under host saturation are
+  transient: templ-fmt died at spawn with zero output at 23x its p95 while
+  the 5-min load was 37; rerun once before investigating —
+  `pre-push-checks.sh` now retries tool gates automatically when load >
+  nproc (`PRE_PUSH_MAX_LOAD` overrides).
 
 ---
 
