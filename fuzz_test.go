@@ -324,8 +324,10 @@ func csvExportFor(t *testing.T, status string) string {
 
 // FuzzCSVExport exercises the CSV exporter with arbitrary status payloads.
 // Invariants: never panics, deterministic, always starts with the fixed
-// header, and clean statuses (no comma, quote, CR, or LF) render as exactly
-// three round-tripping fields per row.
+// header, and clean statuses (no comma, quote, CR, or LF) parse back — via
+// encoding/csv, the parser any consumer uses — to exactly three fields per
+// row, with the status equal to the input or its formula-neutralized form
+// (exportCSVField prepends a ' to formula-starter first bytes).
 func FuzzCSVExport(f *testing.F) {
 	for _, seed := range []string{
 		"pass",
@@ -372,14 +374,18 @@ func FuzzCSVExport(f *testing.F) {
 			// Parse the row back with encoding/csv — the parser any consumer
 			// uses — instead of a naive comma split: csv.Writer legitimately
 			// quotes fields with leading whitespace (fieldNeedsQuotes,
-			// Excel-safe), and the invariant is that the status ROUND-TRIPS,
-			// not that it renders unquoted (fuzz corpus 8643a79bab153d1b).
+			// Excel-safe; fuzz corpus 8643a79bab153d1b), and formula-starter
+			// statuses legitimately round-trip to their neutralized form
+			// (leading ', see exportCSVField) — not byte-identical.
 			rows, err := csv.NewReader(strings.NewReader(first)).ReadAll()
 			if err != nil {
 				t.Fatalf("exported CSV does not parse for status %q: %v", status, err)
 			}
-			if len(rows) != 3 || len(rows[2]) != 3 || rows[2][2] != status {
-				t.Fatalf("row does not round-trip clean status %q: %q", status, first)
+			if len(rows) != 3 || len(rows[2]) != 3 {
+				t.Fatalf("expected 3 parsed rows for clean status %q: %q", status, first)
+			}
+			if got := rows[2][2]; got != status && got != "'"+status {
+				t.Fatalf("row does not round-trip clean status %q: got field %q in %q", status, got, first)
 			}
 		}
 	})
