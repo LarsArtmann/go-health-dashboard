@@ -66,9 +66,9 @@ templ View(data viewModel) {
 							Icon:  icons.Clock,
 						})
 						@latencyStatCard(data)
-						if data.InstanceID != "" {
+						if !data.InstanceID.IsZero() {
 							@display.StatCard(display.StatCardProps{
-								Value: data.InstanceID,
+								Value: data.InstanceID.Get(),
 								Label: "Instance",
 								Tone:  display.StatTonePurple,
 								Icon:  icons.Server,

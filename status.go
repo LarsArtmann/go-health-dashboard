@@ -144,12 +144,12 @@ type viewModel struct {
 	FeedbackType feedback.FeedbackType
 	StatusText   string
 	Version      string
-	// InstanceID is the serving replica's identity (go-health's
-	// WithInstanceID), rendered as its own stat card when non-empty so
-	// replicas behind one load balancer are distinguishable. Cleared in
-	// public mode: instance IDs are semi-identifying (they often encode
-	// host or zone names).
-	InstanceID string
+	// InstanceID is the serving replica's identity (go-health's branded
+	// health.InstanceID from WithInstanceID), rendered as its own stat
+	// card when set so replicas behind one load balancer are
+	// distinguishable. Cleared in public mode: instance IDs are
+	// semi-identifying (they often encode host or zone names).
+	InstanceID health.InstanceID
 	Uptime     string
 	LatencyMs  int64
 	// RefreshIntervalText is the probe's refresh cadence in display form
@@ -1047,7 +1047,7 @@ type TimelineEntry struct {
 // cleared outright: it often encodes a host or zone name.
 func anonymizeViewModel(vm *viewModel) {
 	vm.PublicMode = true
-	vm.InstanceID = ""
+	vm.InstanceID = health.NewInstanceID("")
 
 	for groupIdx := range vm.Groups {
 		group := &vm.Groups[groupIdx]

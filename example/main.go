@@ -280,7 +280,7 @@ func probeIdentityOptions() []health.Option {
 	opts := []health.Option{health.WithVersion(version.Version)}
 
 	if id, ok := instanceID(); ok {
-		opts = append(opts, health.WithInstanceID(id))
+		opts = append(opts, health.WithInstanceID(health.NewInstanceID(id)))
 	}
 
 	return opts

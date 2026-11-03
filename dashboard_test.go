@@ -1004,7 +1004,7 @@ func TestRender_InstanceIDCardWhenSet(t *testing.T) {
 
 	resp := health.Response{
 		Status:     health.StatusPass,
-		InstanceID: "hub-east-7",
+		InstanceID: health.NewInstanceID("hub-east-7"),
 		Checks:     map[string]health.Check{"api": {Status: health.StatusPass}},
 	}
 
@@ -1046,7 +1046,7 @@ func TestPublicMode_InstanceIDMasked(t *testing.T) {
 
 	resp := health.Response{
 		Status:     health.StatusPass,
-		InstanceID: "host-7.internal",
+		InstanceID: health.NewInstanceID("host-7.internal"),
 		Checks:     map[string]health.Check{"api": {Status: health.StatusPass}},
 	}
 
