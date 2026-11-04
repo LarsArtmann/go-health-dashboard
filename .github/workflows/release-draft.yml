@@ -46,19 +46,46 @@ jobs:
           fi
           cat release-notes.md
 
+      # Mirror of pre-push-checks.sh gate 7, evaluated at the moment that
+      # matters: SECURITY.md's supported-versions row must cover the tag
+      # being released (the row rots every release; caught 0.10.x-stale
+      # against v0.11.0 on 2026-10-25).
+      - name: SECURITY.md covers this tag's minor line
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          security_row=$(grep -oE '^\| [0-9]+\.[0-9]+\.x' SECURITY.md | head -1 | grep -oE '[0-9]+\.[0-9]+')
+          minor=$(echo "$version" | cut -d. -f1-2)
+          echo "SECURITY.md row ${security_row}.x; releasing ${minor}.x"
+          if [ "$security_row" != "$minor" ]; then
+            echo "::error::SECURITY.md supported-versions row (${security_row}.x) does not cover ${GITHUB_REF_NAME} — update the row in the same change as the tag"
+            exit 1
+          fi
+
       - name: Create or update the draft release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          state=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" --jq '.draft' 2>/dev/null || echo "absent")
-          case "$state" in
-            absent)
-              gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --notes-file release-notes.md
-              ;;
-            true)
-              gh release edit "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md
-              ;;
-            false)
-              echo "Release ${GITHUB_REF_NAME} is already published — leaving it untouched (never unpublish a live page)."
-              ;;
-          esac
+          # Existence probe runs WITHOUT --jq: on a 404 gh api exits
+          # non-zero only when there is no jq filter to succeed on the
+          # error JSON. The old probe (`--jq '.draft' || echo absent`)
+          # masked the 404 — jq succeeded on the error JSON, printed
+          # "null", "null" matched NO case branch, bash exited 0, and no
+          # draft was ever created for ANY tag (v0.12.0/v0.12.1 pages
+          # were manual).
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            state=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" --jq '.draft')
+            case "$state" in
+              true)
+                gh release edit "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md
+                ;;
+              false)
+                echo "Release ${GITHUB_REF_NAME} is already published — leaving it untouched (never unpublish a live page)."
+                ;;
+              *)
+                echo "::error::unexpected release state for ${GITHUB_REF_NAME}: draft='${state}' — refusing to guess"
+                exit 1
+                ;;
+            esac
+          else
+            gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --notes-file release-notes.md
+          fi

@@ -51,6 +51,19 @@
               program = lib.getExe script;
               meta.description = description;
             };
+
+          # Bare `templ` inside the devShell proxies to `go tool templ`, so
+          # the sanctioned invocation (go.mod's tool directive pin) is also
+          # the lazy one. The stale system binary (/run/current-system
+          # v0.3.1020 vs the pin) shadows PATH otherwise and re-regresses
+          # the tree on every bare run (2026-10-25 skew incident).
+          templWrapper = pkgs.writeShellApplication {
+            name = "templ";
+            runtimeInputs = [ goPkg ];
+            text = ''
+              exec go tool templ "$@"
+            '';
+          };
         in
         {
           treefmt = {
@@ -131,6 +144,7 @@
           devShells.default = pkgs.mkShell {
             packages = [
               goPkg
+              templWrapper
               pkgs.golangci-lint
               pkgs.gofumpt
               pkgs.golines
@@ -152,6 +166,7 @@
               echo "GOEXPERIMENT=$GOEXPERIMENT (required for go-sse dependency)" >&2
               echo "GOWORK=off (ignore parent workspace)" >&2
               echo "GO_HEALTH_DASHBOARD_CHROME=$GO_HEALTH_DASHBOARD_CHROME (browser suite)" >&2
+              echo "templ is proxied to 'go tool templ' (go.mod pin) — bare invocations are safe here" >&2
             '';
           };
 

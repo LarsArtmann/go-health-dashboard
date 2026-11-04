@@ -26,6 +26,18 @@ templ-components, go-datastar, and go-sse as transitive dependencies would destr
 that value proposition. The dashboard lives in its own module so consumers who
 only want JSON health probes pay zero dependency cost.
 
+## Installation
+
+```sh
+go get github.com/larsartmann/go-health-dashboard
+```
+
+Or run the federation hub binary straight from the flake:
+
+```sh
+nix run github:larsartmann/go-health-dashboard#health-hub
+```
+
 ## Quick Start
 
 ```go
