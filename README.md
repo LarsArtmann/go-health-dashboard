@@ -558,6 +558,36 @@ If you keep the Tailwind Play CDN (no `WithCSSPath`), that script injects a
 generated `<style>` element at runtime and therefore additionally requires
 `style-src 'unsafe-inline'`.
 
+### The two integration failure signatures
+
+**Unstyled page (all or parts).** The dashboard emits Tailwind utility
+classes only; it ships no stylesheet. Your build must compile them into the
+CSS you pass to `WithCSSPath`. Tailwind scans YOUR sources, not the module
+cache — expose the class strings with an `@source` directive pointing at a
+templ-components sibling checkout, a vendored copy, or a class manifest
+copied from the module (the `dnsblockd` `library-classes.txt` pattern), then
+run `tc doctor` (templ-components' CLI) to diagnose the pipeline. If the
+page renders but badges, alerts, or cards have no background, the compiled
+CSS predates the classes the module now emits.
+
+**CSP console errors, no live updates.** The Datastar SDK compiles its
+`data-*` expressions with the `Function` constructor. Under a policy without
+`'unsafe-eval'` it throws `Error: GenerateExpression` on init and the SSE
+connection never opens — the page renders, then never updates. The nonce
+must also reach the dashboard's scripts: without `WithNonce`/
+`WithNonceExtractor`, the fixed construction-time nonce will not match a
+per-request policy header and the browser blocks every dashboard script.
+Mount `RecommendedCSP` on the dashboard routes (or compose it with your
+hardening, as `go-taskqueue` does — first header wins, so strip-and-reappend
+rather than add a second header).
+
+**Dependency-graph drift.** Go's minimal-version selection takes the
+HIGHEST templ-components your build requires — if another dependency of
+yours needs a newer version than the dashboard pins, you get the newer one,
+and its rendered class strings may differ (v1.26.0 renamed the warning
+palette yellow → amber). After any dependency bump, recompile your CSS;
+this repo's release notes call out rendered drift.
+
 ## Security
 
 See [SECURITY.md](SECURITY.md) for how to report vulnerabilities and

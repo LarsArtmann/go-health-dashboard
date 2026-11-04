@@ -2,11 +2,24 @@ package dashboard_test
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 	"testing"
 
 	dashboard "github.com/larsartmann/go-health-dashboard"
 )
+
+// stripDecorativeSVGs removes aria-hidden <svg>…</svg> blocks from a
+// rendered body so contrast scans judge only content-bearing markup.
+// Decorative graphics are exempt from the WCAG 1.4.11 non-text floor, and
+// the upstream components' icons (Alert status glyph, chevrons) carry their
+// meaning in adjacent text. Rendered SVGs here never nest, so the
+// non-greedy match to the first closing tag is exact.
+var decorativeSVGRe = regexp.MustCompile(`<svg[^>]*aria-hidden="true"[^>]*>.*?</svg>`)
+
+func stripDecorativeSVGs(body string) string {
+	return decorativeSVGRe.ReplaceAllString(body, "")
+}
 
 // TestWithGrouping_RendersSourceCards wires WithGrouping end-to-end: the
 // plain (un-namespaced) fixture checks land in the fallback Services card
@@ -131,7 +144,13 @@ func TestMobileRowStacking_Markup(t *testing.T) {
 //
 // Deliberately out of scope: the upstream CollapsibleSection chevron keeps
 // its gray-400 idle class (decorative disclosure icon, upstream-owned
-// markup), and the Badge/Alert/StatCard chip palettes are upstream's.
+// markup), the Badge/Alert/StatCard chip palettes are upstream's, and the
+// upstream Alert's aria-hidden status icon (templ-components v1.26.0 ships
+// text-amber-600 there — 3.19:1 clears the 3:1 non-text floor of WCAG
+// 1.4.11 for decorative graphics; the 4.5:1 text standard does not apply).
+// The scan below strips aria-hidden <svg> elements before checking the
+// failing list, so decorative upstream icons cannot trip the text bans
+// while any -600 tone on real text still fails.
 func TestRender_ContrastSafeStatusColors(t *testing.T) {
 	t.Parallel()
 
@@ -142,11 +161,11 @@ func TestRender_ContrastSafeStatusColors(t *testing.T) {
 	defer s.cleanup()
 
 	w := doRequest(t, s.mux, "/health")
-	body := w.Body.String()
+	body := stripDecorativeSVGs(w.Body.String())
 
 	for _, failing := range []string{
 		`text-green-600`, // 3.30:1 on white
-		`text-amber-600`, // 3.19:1 on white
+		`text-amber-600`, // 3.19:1 on white — text only; decorative icons are stripped above
 		// The pre-fix raw-key form (2.54:1 on white, 3.04:1 on dark). The
 		// failures fixture uses plain names, so the raw-key line itself may
 		// not render here — the assertion guards against reintroduction.

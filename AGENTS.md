@@ -226,7 +226,7 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   user-data-dir, and Chrome 156's `LocalNetworkAccessChecks` feature gate.
   Do not "fix" a hang by raising the timeout.
 - **Bisect wall `071c251..HEAD`** — 24 auto-daemon mid-edit commits do not compile (immutable history); `git bisect skip` them — classes + list: `docs/gotchas.md`, `docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
-- **UI dependencies are pinned and guarded** — templ-components v1.24.0
+- **UI dependencies are pinned and guarded** — templ-components v1.26.0
   (root/datastar/utils/icons) + go-datastar v0.6.2 / static v0.6.1;
   `scripts/check-ui-pins.sh` (CI Build+Test steps) fails loudly on any
   movement — undocumented sweeps have landed ten times (ninth: the
@@ -238,15 +238,31 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   `role="region"` wrappers across the 7 goldens), CopyButton moves its
   live-region onto a sibling sr-only span plus `tcAnnounceCopy`, and the 404
   search field's icon becomes a submit button (CopyButton/404 not rendered
-  here; the same release drifts 15 of DiscordSync's snapshots). Two earlier
-  prose notes recorded the Table direction BACKWARDS (wrapper-loses) — the
-  golden word-diff + module-cache source diff are the evidence, and the
-  script's audit history carries the corrected delta. The local browser half
-  of the ceremony could not run (host Chromium cannot load http(s), see the
-  Chrome gotcha); CI's browser job carries the runtime verification, and a
-  red there means revert pins + go.mod in one change). UI bumps require
-  a dedicated change with a green browser suite (the unit suite cannot see
-  these regressions) and the guard pins updated IN THE SAME CHANGE.
+  here; the same release drifts 15 of DiscordSync's snapshots). The
+  ELEVENTH movement (2026-11-04) was the first DELIBERATE adoption driven
+  by fleet reality: 8 consumer graphs (ChastityAPI, CV, go-taskqueue,
+  dnsblockd, dynamic-markdown-site, timesheets, library-policy, webphone)
+  already resolve v1.26.0 via MVS, so CI was testing v1.24.0 while
+  consumers RAN v1.26.0. Rendered drift = warning palette yellow→amber
+  (Badge + Alert icon; `text-amber-600` on the decorative aria-hidden
+  Alert icon passes 1.4.11's 3:1 non-text floor — the contrast scan now
+  strips aria-hidden SVGs before applying the 4.5:1 text bans, since it
+  always meant status-bearing text); `groupCountTone` migrated to amber in
+  the same change so the page ships ONE warning palette (its doc comment
+  mirrors upstream BadgeWarning fills); layout.Base/theme script/datastar
+  byte-identical for this repo. Consumer-side hazard: MVS drift silently
+  changes class strings their compiled CSS doesn't know — README "The two
+  integration failure signatures" + `tc doctor` are the remediation path
+  (webphone's health.css and dnsblockd's library-classes.txt were stale on
+  the old palette). Two earlier prose notes recorded the Table direction
+  BACKWARDS (wrapper-loses) — the golden word-diff + module-cache source
+  diff are the evidence, and the script's audit history carries the
+  corrected delta. The local browser half of the ceremony could not run
+  (host Chromium cannot load http(s), see the Chrome gotcha); CI's browser
+  job carries the runtime verification, and a red there means revert pins
+  + go.mod in one change. UI bumps require a dedicated change with a green
+  browser suite (the unit suite cannot see these regressions) and the
+  guard pins updated IN THE SAME CHANGE.
   Audit history, script-emitting-component vetting, and the green-tone
   contrast ban: `docs/gotchas.md`.
 - **Datastar v1.0 attribute names are colon-keyed** — the SDK (pinned

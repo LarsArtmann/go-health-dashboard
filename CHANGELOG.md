@@ -17,11 +17,21 @@ forgetting.
 
 ### Changed
 
-- Nothing yet.
+- templ-components v1.24.0 → v1.26.0 (pins + guard in one change). Rendered
+  drift: the warning badge and alert palette migrates yellow → amber
+  (`bg-amber-100 text-amber-800` + darks); `groupCountTone` follows in the
+  same change so the page ships one warning palette, not two. Integrators
+  MUST recompile their Tailwind CSS after upgrading (see README "The CSS
+  contract"): consumers whose builds resolve templ-components ≥ v1.25 via
+  their own dependency graphs already render amber today. The go-health
+  pseudo-version moved two days (20261102 → 20261104, docs-only delta).
+  No JSON/webhook/metrics surface changes.
 
 ### Fixed
 
-- Nothing yet.
+- Committed generated templ output restored to the canonical fmt shape
+  (raw generator output had landed via a mid-edit daemon commit, turning
+  the CI Hygiene drift check red; rendered HTML byte-identical).
 
 ## [0.12.2] - 2026-10-30
 
