@@ -17,6 +17,27 @@ forgetting.
 
 ### Added
 
+- Nothing yet.
+
+### Changed
+
+- Nothing yet.
+
+### Fixed
+
+- Nothing yet.
+
+## [0.13.1] - 2026-11-04
+
+The green-CI re-cut of v0.13.0 (whose tag commit red on the CHANGELOG
+structural lint — the v0.12.1 precedent), shipping the same-day wave:
+the master-red-alert watchdog, the CI nix-build job (which caught real
+vendorHash drift on its first run), `RecommendedCSPStrict`, the
+templ-components v1.27.0 + templ v0.3.1100 pairing, go-health v0.10.0
+(the routes release), and the CI-verified aggregate-page axe audit.
+
+### Added
+
 - `RecommendedCSPStrict(nonce)`: the hardened variant of the verified
   policy — `base-uri` tightens from `'self'` to `'none'` and
   `frame-ancestors`/`form-action` pin to `'none'` (neither falls back to
@@ -1478,7 +1499,8 @@ did not exist at `01277d3`.*
   Replaced by `fingerprintChecks` which sorts keys before concatenating
   (`status.go:215`)
 
-[Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.12.0...v0.12.1
