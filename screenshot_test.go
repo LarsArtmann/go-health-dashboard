@@ -2,7 +2,6 @@ package dashboard_test
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -89,26 +88,50 @@ func normalizeScreenshotPerms(t *testing.T, out string) {
 }
 
 // assertCaptureContent polls the live DOM until the page text carries
-// every expected substring, then re-checks the fetched text explicitly so
-// a predicate/value desync can never mask a miss. A screenshot captures
-// CONTENT: before this guard, a broken render shipped as a perfectly
-// valid PNG (2026-10-25 closeout finding), and the grouped capture was
-// never eyeballed by a human at all.
+// every expected substring, failing with the ACTUAL body text on timeout
+// (the first CI run of this guard failed on a wrong expectation and the
+// predicate-only message forced a second run to diagnose — the dump makes
+// the next failure one-shot). A screenshot captures CONTENT: before this
+// guard, a broken render shipped as a perfectly valid PNG (2026-10-25
+// closeout finding), and the grouped capture was never eyeballed by a
+// human at all.
+//
+// Expectation rules derived the hard way (CI run 41871952783):
+//   - the banner text follows the fixture's roll-up, not the happy path
+//     (the light fixture is WARN by design: metrics-exporter non-critical
+//     fails, so the banner reads "Degraded — Non-Critical Issues");
+//   - healthy rows sit behind a collapsible <details> once HealthyCount
+//     reaches the threshold, and innerText EXCLUDES collapsed content —
+//     never assert pass-row names on a collapsed page;
+//   - source-grouped pages skip the collapse policy entirely, so their
+//     rows are always assertable.
 func assertCaptureContent(t *testing.T, ctx context.Context, want ...string) {
 	t.Helper()
 
-	cond := make([]string, 0, len(want))
-	for _, w := range want {
-		cond = append(cond, fmt.Sprintf("document.body.innerText.includes(%q)", w))
-	}
+	deadline := time.Now().Add(15 * time.Second)
 
 	var bodyText string
-	waitForJSTo(t, ctx, strings.Join(cond, " && "), `document.body.innerText`, &bodyText)
-
-	for _, w := range want {
-		if !strings.Contains(bodyText, w) {
-			t.Fatalf("screenshot page text missing %q; body text: %.400s", w, bodyText)
+	for {
+		if err := chromedp.Do(ctx, evalInto(`document.body.innerText`, &bodyText)); err != nil {
+			t.Fatalf("browser fetch body text: %v", err)
 		}
+
+		var missing []string
+		for _, w := range want {
+			if !strings.Contains(bodyText, w) {
+				missing = append(missing, w)
+			}
+		}
+
+		if len(missing) == 0 {
+			return
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatalf("screenshot page text missing %q; body text: %.600s", missing, bodyText)
+		}
+
+		time.Sleep(250 * time.Millisecond)
 	}
 }
 
@@ -244,12 +267,10 @@ func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
 
 	assertCaptureContent(t, ctx,
 		"Production Cluster",
-		"All Systems Operational",
-		"postgres",
-		"api-gateway",
+		"Degraded — Non-Critical Issues",
+		"Non-Critical Issues",
 		"metrics-exporter",
-		"analytics",
-		"memory-pressure",
+		"exporter endpoint unreachable",
 	)
 	assertCaptureTheme(t, ctx, theme)
 
@@ -359,8 +380,8 @@ func TestCaptureREADME_ScreenshotDegraded(t *testing.T) {
 		"Critical Failures",
 		"postgres",
 		"connection refused (db-1:5432)",
-		"api-gateway",
 		"metrics-exporter",
+		"exporter endpoint unreachable",
 	)
 
 	png, err := captureScreenshot(ctx)

@@ -197,7 +197,7 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
 - **Repo scripts that exec `go` need the devShell** — `check-ui-pins.sh`, `verify-release.sh`, and any script invoking Go must run as `nix develop -c bash scripts/<x>.sh`: the ambient PATH go is 1.26.7 with `GOTOOLCHAIN=local`, which dies on go.mod's 1.27.1 floor with a misleading `go: updates to go.mod needed` (hit three times on 2026-09-22; the devShell's go_1_27 is the only correct context). Root-fix queued: scripts should self-select the right go.
 - **treefmt's goimports needs the flake's go, not nixpkgs'** — nixpkgs' gotools wrapper pins its build go (1.26.x) onto PATH; with go.mod's `1.27.1` floor, `go list` attempts a GOTOOLCHAIN download inside the NETWORK-LESS treefmt sandbox and `checks.format` fails deterministically (CI included — not a local-DNS problem, first misdiagnosed as one on 2026-09-22). Fixed by wrapping goimports with `goPkg` in `flake.nix`; any new go-invoking formatter needs the same treatment.
 - **The v0.10.1 dual-cut (2026-09-22)** — tag-commit hygiene failures + an `awk -v` regex bug in the release-draft workflow; recovered as the green-CI re-cut v0.10.1. Full story: `docs/gotchas.md`.
-- **The templ generator is pinned by go.mod's `tool` directive** — `go tool templ generate` is the ONLY sanctioned invocation, everywhere (flake apps, the health-hub FOD preBuild, CI, local shells; `pkgs.templ` was removed), so the generator version structurally cannot diverge from the module's own requirement. Upgrading templ = bump go.mod, run `go tool templ generate`, commit the (re-formatted) output in the same change; canonical order stays generate → fmt. History of the two misses: `docs/gotchas.md`. Third miss (2026-10-25): the system-wide PATH binary (`/run/current-system/sw/bin/templ`, NixOS config, v0.3.1020) was version-skewed against the go.mod pin (v0.3.1070) and FAILED on syntax the pinned tool supports — symptom is a bogus `source formatting error ... missing ',' in argument list` pointing at a valid line (view.templ:168); the same stale binary feeds the editor's templ LSP (persistent squiggle). A stale `// templ: version:` stamp inside `*_templ.go` is the tell that a skewered generator wrote committed output. Recovery: `nix develop -c go tool templ generate` → `nix fmt`; root fix = bump the system templ package so CLI+LSP match the pin.
+- **The templ generator is pinned by go.mod's `tool` directive** — `go tool templ generate` is the ONLY sanctioned invocation, everywhere (flake apps, the health-hub FOD preBuild, CI, local shells; `pkgs.templ` was removed), so the generator version structurally cannot diverge from the module's own requirement. Upgrading templ = bump go.mod, run `go tool templ generate`, commit the (re-formatted) output in the same change; canonical order stays generate → fmt. History of the two misses: `docs/gotchas.md`. Third miss (2026-10-25): the system-wide PATH binary (`/run/current-system/sw/bin/templ`, NixOS config, v0.3.1020) was version-skewed against the go.mod pin (v0.3.1070) and FAILED on syntax the pinned tool supports — symptom is a bogus `source formatting error ... missing ',' in argument list` pointing at a valid line (view.templ:168); the same stale binary feeds the editor's templ LSP (persistent squiggle). A stale `// templ: version:` stamp inside `*_templ.go` is the tell that a skewered generator wrote committed output. Recovery: `nix develop -c go tool templ generate` → `nix fmt`; root fix = bump the system templ package so CLI+LSP match the pin. Belt-and-suspenders SHIPPED in-repo 2026-11-04: `scripts/check-templ-stamps.sh` (stamp==pin guard; CI Build + Hygiene jobs and pre-push gate 10 — Hygiene also lost its dead `go install templ@v0.3.1020` step) and a devShell `templ` wrapper proxying `go tool templ`, so a bare `templ generate` inside `nix develop` runs the pinned generator (ROADMAP Open Question on layering: the in-repo layer exists; the NixOS bump remains the root fix).
 - **Raw templ output ≠ committed output — a templ LSP races generation (2026-10-11)** — raw `*_templ.go` is separate-imports/`var x =` style; the committed shape is post-`nix fmt` (gofumpt/goimports). `nix run .#build` right after generation can therefore show a big "style diff" that is NOT a generator change, and a local templ LSP (its `Post-generation event` lines) may rewrite files between the CLI run and the daemon's snapshot — a daemon commit can capture either shape. Recovery: run the canonical `go tool templ generate` (its `updates=0` is fine), then `nix fmt`, THEN diff; a weak content probe (one line that exists in both styles) gave a false "HEAD == tree" twice before this was understood.
 - **Probe and Dashboard must be Started** — Call `probe.Start(ctx)` and `dash.Start(ctx)` before serving traffic. Without Start, `CachedResponse()` returns a zero-value Response and the pusher goroutine isn't running.
 - **No replace directives in the released module** — As of v0.1.0 all dependencies resolve from published versions. Local `replace` directives to sibling repos (`../go-health`, `../templ-components`, `../go-datastar`, `../go-sse`) are only needed for local development against unpublished sibling changes; never commit them.
@@ -307,11 +307,13 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   release edits too, before tagging — the changelog structural lint reads the
   EDITED file; a pre-edit-only gate 0 cannot catch the cut's own drift
   (v0.12.0's tag went red on exactly that; re-cut as v0.12.1, v0.10.1
-  precedent). (6) The release-draft workflow has NEVER produced a draft for
-  any tag: `gh api --jq '.draft'` masks the 404 exit code (jq succeeds on the
-  error JSON, prints null), the case statement falls through silently, and
-  the run goes green — create pages with `gh release create` until the
-  workflow is fixed (TODO_LIST row). War stories: `docs/gotchas.md`.
+  precedent). (6) The release-draft workflow's silent no-op is FIXED
+  (2026-11-04): the existence probe no longer masks the 404, the state
+  value is asserted with a loud catch-all, and the SECURITY.md freshness
+  check (pre-push gate 7) is mirrored into the workflow. Still unproven
+  END-TO-END: no tag has exercised the fixed workflow yet — create pages
+  with `gh release create` as the fallback until one tag ships a real
+  draft. War stories: `docs/gotchas.md`.
 - **erraudit blank-identifier policy** — response-writer discards are
   centralized in `writeBody` (handlers.go) with ONE reasoned
   `//nolint:erraudit`; `//nolint:erraudit // reason` is the sanctioned
@@ -392,10 +394,10 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
 
 ### go-health (`github.com/larsartmann/go-health`)
 
-Provides `Probe`, `Response`, `Check`, `Status` (v0.7.0 in go.mod). The dashboard is a pure consumer — zero changes needed to go-health:
+Provides `Probe`, `Response`, `Check`, `Status` (v0.9.0 in go.mod). The dashboard is a pure consumer — zero changes needed to go-health. v0.9.0 (adopted 2026-11-04 from the v0.8.2 pseudo-version, via a buildflow dependency run): `Check.Since` renamed to `Check.StatusSince` and `SanitizeResponse` to `CoerceValidUTF8` — call sites migrated mechanically; the WIRE field stays `since,omitzero`, so `/health` JSON is byte-stable (tests pin it):
 
 - `Probe.CachedResponse() Response` — reads atomic cache, overlays shutdown flag
-- `Check.Since` / `Check.DurationNanos` (since v0.2.0, additive, `omitzero` on the
+- `Check.StatusSince` (named `Check.Since` before v0.9.0) / `Check.DurationNanos` (since v0.2.0, additive, `omitzero` on the
   wire) — probe-observed state-entry time and executor-reported execution
   nanoseconds. Timing sources are opt-in: `NewWithDetailedCheck(fn)` (injector-free)
   or a `HealthRecorder` implementing `DetailedHealthRecorder` (`CheckDetail` is the
@@ -404,7 +406,7 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.7.0 in go.mod). The dashboar
   (int64), not `time.Duration` — encoding/json/v2 cannot marshal time.Duration.
   The dashboard surfaces both in the check rows (HTML) and as
   `dashboard_health_check_last_duration_seconds` (metrics)
-- `SanitizeResponse(Response) Response` — replaces invalid UTF-8 with U+FFFD;
+- `CoerceValidUTF8(Response) Response` (named `SanitizeResponse` before v0.9.0) — replaces invalid UTF-8 with U+FFFD;
   the dashboard applies it once at the response choke point (`currentResponse`)
   so every write seam (JSON, webhook, SSE, metrics, CSV) stays valid under
   jsonv2 semantics
@@ -462,7 +464,7 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.7.0 in go.mod). The dashboar
   `Prober`-compatible surface: merge-on-read (one parallel fetch per remote
   per read, 5s default timeout), checks namespaced `name/check`, dark
   remotes surface as `name/reachable` FAIL rows (never a silent freeze),
-  `Check.Since` survives the wire, startup latches per remote on first
+  `Check.StatusSince` survives the wire (wire name `since`), startup latches per remote on first
   successful fetch. go.mod pins **v0.8.1** (2026-10-28): v0.5.x
   added `StatusOff`, `checks`, `VersionHandler`, `WithInstanceID`,
   `MarkShuttingDown` — all adopted here; v0.6.0–v0.7.0 unified the

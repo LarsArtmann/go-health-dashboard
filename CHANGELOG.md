@@ -15,16 +15,62 @@ forgetting.
 
 ## [Unreleased]
 
+### Added
+
+- templ generator stamp guard (`scripts/check-templ-stamps.sh`): every
+  committed `*_templ.go` stamp must equal go.mod's templ pin, the `tool`
+  directive must exist, and no `replace` may target the generator module.
+  Wired into the CI Build and Hygiene jobs (the Hygiene job also lost its
+  dead `go install templ@v0.3.1020` step, which put a STALE binary on PATH)
+  and into the local pre-push gate. Catches the 2026-10-25 skew-incident
+  class at the desk.
+- Bare `templ` inside the devShell now proxies to `go tool templ`
+  (flake.nix wrapper), so the sanctioned invocation is also the lazy one —
+  the stale system binary can no longer shadow the pinned generator
+  interactively.
+- Remote-state pre-push gate (warning-only): `git fetch` + unpushed-commit
+  count + the last `ci.yml` run conclusion on master, so red-remote and
+  unpushed state are part of the gate instead of the operator's memory.
+  Never fails offline; warns loudly instead.
+- `TestWCAG_StatusPaletteContrast` (contrast_test.go): every WCAG AA
+  verdict for the status palette is now COMPUTED from the Tailwind v3
+  palette constants (verified against upstream `colors.js`), replacing
+  four hand-maintained copies that had already drifted — the dark-contrast
+  research note claimed gray-500 on white ≈ 7.5:1; the true value is
+  4.83:1 (correction recorded in the note and ADR-0006 annotated). The
+  test pins both directions: safe pairs must clear 4.5:1, the banned
+  -600 tones must stay below it.
+- Screenshot capture tests assert content, not bytes: all four README
+  captures now wait for the expected DOM text (banner verdict, check
+  names, error strings, source-group rows) and the requested theme class
+  before writing the PNG — a broken render can no longer ship as a valid
+  screenshot. The first CI run of the guard caught its own wrong
+  expectations (the light fixture's roll-up is warn, and healthy rows
+  hide inside a collapsed `<details>` whose content `innerText`
+  excludes); expectations now assert only deterministic content, and a
+  timeout dumps the actual body text.
+- README "Installation" section (`go get` + `nix run ...#health-hub`).
+- Release-draft workflow: the existence probe no longer masks the 404
+  (the old `--jq '.draft' || echo absent` pattern made jq succeed on the
+  error JSON, print null, match no case branch, and silently exit 0 — no
+  draft was ever created for ANY tag), the state value is asserted with a
+  loud catch-all, and a SECURITY.md supported-versions freshness check
+  mirrors pre-push gate 7 at the release moment.
+
 ### Changed
 
+- go-health pseudo-version → released v0.9.0: `Check.Since` renamed to
+  `Check.StatusSince` and `SanitizeResponse` to `CoerceValidUTF8` (call
+  sites migrated mechanically; no dashboard API change). Arrived via a
+  buildflow dependency run and adopted after build + full test suite
+  verification.
 - templ-components v1.24.0 → v1.26.0 (pins + guard in one change). Rendered
   drift: the warning badge and alert palette migrates yellow → amber
   (`bg-amber-100 text-amber-800` + darks); `groupCountTone` follows in the
   same change so the page ships one warning palette, not two. Integrators
   MUST recompile their Tailwind CSS after upgrading (see README "The CSS
   contract"): consumers whose builds resolve templ-components ≥ v1.25 via
-  their own dependency graphs already render amber today. The go-health
-  pseudo-version moved two days (20261102 → 20261104, docs-only delta).
+  their own dependency graphs already render amber today.
   No JSON/webhook/metrics surface changes.
 
 ### Fixed

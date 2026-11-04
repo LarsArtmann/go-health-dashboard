@@ -346,11 +346,12 @@ These require user decisions and cannot be resolved by reading code:
   structural lint — missing standing `[Unreleased]` + footer link —
   disclosed on its release page). chromedp v0.21 and the CV rollout
   deliberately ride a later release.
-- **Templ toolchain layering — OPEN (raised 2026-10-25).** The system
-  templ (v0.3.1020) is stale vs the go.mod pin (v0.3.1070): the NixOS
-  config bump is the root fix (external act); in-repo belt-and-suspenders
-  (stamp guard + devShell wrapper) may be redundant after it — how much
-  layering is wanted? TODO_LIST carries the in-repo rows either way.
+- **Templ toolchain layering — HALF-ANSWERED (2026-11-04).** The
+  in-repo belt-and-suspenders SHIPPED: `scripts/check-templ-stamps.sh`
+  (stamp==pin guard in CI + pre-push) and a devShell `templ` wrapper
+  proxying `go tool templ`. The NixOS config bump (system templ v0.3.1020
+  vs the pin, feeding the editor LSP) remains the external root fix; once
+  it lands, decide whether either in-repo layer should be retired.
 
 ## Design Spikes (v0.3.x cycle, not implemented)
 
