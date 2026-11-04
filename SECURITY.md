@@ -9,6 +9,7 @@ section for the rare behavior changes).
 
 | Version | Supported        |
 | ------- | ---------------- |
+| 0.13.x  | Yes              |
 | 0.12.x  | Yes              |
 | < 0.12  | No — please bump |
 

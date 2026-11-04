@@ -17,6 +17,39 @@ forgetting.
 
 ### Added
 
+- Nothing yet.
+
+### Changed
+
+- Nothing yet.
+
+### Fixed
+
+- Nothing yet.
+
+## [0.13.0] - 2026-11-04
+
+The coordinated-wave release: adopts go-health v0.9.0 (the
+`Check.StatusSince` rename and branded `InstanceID` end-to-end) and
+templ-components v1.26.0 (amber warning palette), and ships the
+2026-11-04 gates-and-truth batch: computed WCAG contrast verdicts,
+content-asserting screenshot tests, the templ stamp guard, and a
+release-draft workflow that can no longer silently skip draft creation.
+
+### Compatibility
+
+- The module graph now requires go-health v0.9.0 (renamed
+  `Check.StatusSince`, branded `health.InstanceID`). No dashboard API
+  changed; consumers pinning go-health v0.8.x must move to v0.9.0 in
+  the same bump.
+- Warning badge and alert palette migrate yellow → amber
+  (templ-components v1.25+): integrators rendering the dashboard page
+  inside their own app MUST recompile their Tailwind CSS after
+  upgrading (see README "The CSS contract"). JSON, webhook, and
+  metrics surfaces are unchanged.
+
+### Added
+
 - templ generator stamp guard (`scripts/check-templ-stamps.sh`): every
   committed `*_templ.go` stamp must equal go.mod's templ pin, the `tool`
   directive must exist, and no `replace` may target the generator module.
