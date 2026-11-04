@@ -115,6 +115,23 @@
 #     CI's browser job. A red there means revert pins + go.mod in one
 #     change.
 #
+# Re-audited + ADOPTED 2026-11-04 (second wave) on templ-components
+# v1.27.0 + templ v0.3.1100 — the PAIRED release (upstream requires
+# templ-components >= v1.27.0 to pair with templ >= v0.3.1100 in go.mod
+# AND the generator; the v0.3.1100 generator emits
+# templruntime.NewAttributeExpression, which older templ runtimes do not
+# provide — mixing fails with undefined compile errors). The bump arrived
+# via a parallel buildflow go-mod-update sweep; adopted as a dedicated
+# change: go.mod + regeneration (`go tool templ generate` — the stamp
+# guard pins the generator half mechanically) + these pins in one commit.
+# Measured delta: v1.27.0's changed surface (Slider live track fill,
+# Accordion exclusive name-grouping, autofill tint, docs-site code
+# chrome, dark-mode scan additions) is NOT rendered by this dashboard;
+# the full unit suite including all golden renders is green on the
+# v1.27.0 set. Runtime verification rides CI's browser job (host
+# Chromium cannot load http(s)); a red there means revert pins + go.mod
+# in one change.
+#
 # CEREMONY RULE: if you bump any of these dependencies, update the pins
 # in this file IN THE SAME CHANGE and re-run the browser suite. A bump
 # without its guard update leaves CI red for every subsequent commit.

@@ -205,6 +205,10 @@ func TestRecommendedCSPStrict_IsTightenedBasePolicy(t *testing.T) {
 	want := strings.Replace(base, "base-uri 'self'", "base-uri 'none'", 1) +
 		"; frame-ancestors 'none'; form-action 'none'"
 	if strict != want {
-		t.Errorf("RecommendedCSPStrict drifted from the tightened-base structural pin:\n%q\nwant:\n%q", strict, want)
+		t.Errorf(
+			"RecommendedCSPStrict drifted from the tightened-base structural pin:\n%q\nwant:\n%q",
+			strict,
+			want,
+		)
 	}
 }

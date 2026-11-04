@@ -1338,6 +1338,13 @@ func TestBrowser_AggregateAxeAudit(t *testing.T) {
 	)
 	defer s.cleanup()
 
+	if axeBytes != nil {
+		s.mux.HandleFunc("/static/axe.js", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/javascript")
+			_, _ = w.Write(axeBytes)
+		})
+	}
+
 	session := startBrowserSession(t, s, "")
 	ctx, errLog := session.ctx, session.errLog
 
