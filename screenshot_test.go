@@ -2,9 +2,11 @@ package dashboard_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -83,6 +85,48 @@ func normalizeScreenshotPerms(t *testing.T, out string) {
 
 	if err := os.Chmod(out, screenshotFileMode); err != nil {
 		t.Fatalf("chmod screenshot: %v", err)
+	}
+}
+
+// assertCaptureContent polls the live DOM until the page text carries
+// every expected substring, then re-checks the fetched text explicitly so
+// a predicate/value desync can never mask a miss. A screenshot captures
+// CONTENT: before this guard, a broken render shipped as a perfectly
+// valid PNG (2026-10-25 closeout finding), and the grouped capture was
+// never eyeballed by a human at all.
+func assertCaptureContent(t *testing.T, ctx context.Context, want ...string) {
+	t.Helper()
+
+	cond := make([]string, 0, len(want))
+	for _, w := range want {
+		cond = append(cond, fmt.Sprintf("document.body.innerText.includes(%q)", w))
+	}
+
+	var bodyText string
+	waitForJSTo(t, ctx, strings.Join(cond, " && "), `document.body.innerText`, &bodyText)
+
+	for _, w := range want {
+		if !strings.Contains(bodyText, w) {
+			t.Fatalf("screenshot page text missing %q; body text: %.400s", w, bodyText)
+		}
+	}
+}
+
+// assertCaptureTheme pins the pre-capture theme state: the page script
+// maps the pinned localStorage theme onto the html element's dark class
+// (light is the absence of dark), so the class must already reflect the
+// requested theme or the capture would document the wrong palette.
+func assertCaptureTheme(t *testing.T, ctx context.Context, theme string) {
+	t.Helper()
+
+	var darkApplied bool
+	if err := chromedp.Do(ctx, evalInto(`document.documentElement.classList.contains('dark')`, &darkApplied)); err != nil {
+		t.Fatalf("theme class check: %v", err)
+	}
+
+	wantDark := theme == "dark"
+	if darkApplied != wantDark {
+		t.Fatalf("html dark class is %v, want %v (theme %q)", darkApplied, wantDark, theme)
 	}
 }
 
@@ -195,6 +239,17 @@ func captureThemeScreenshot(t *testing.T, envVar, theme, out string) {
 
 	time.Sleep(600 * time.Millisecond)
 
+	assertCaptureContent(t, ctx,
+		"Production Cluster",
+		"All Systems Operational",
+		"postgres",
+		"api-gateway",
+		"metrics-exporter",
+		"analytics",
+		"memory-pressure",
+	)
+	assertCaptureTheme(t, ctx, theme)
+
 	png, err := captureScreenshot(ctx)
 	if err != nil {
 		t.Fatalf("screenshot: %v", err)
@@ -294,6 +349,16 @@ func TestCaptureREADME_ScreenshotDegraded(t *testing.T) {
 	}
 
 	time.Sleep(600 * time.Millisecond)
+
+	assertCaptureContent(t, ctx,
+		"Production Cluster",
+		"Unhealthy — Critical Failures",
+		"Critical Failures",
+		"postgres",
+		"connection refused (db-1:5432)",
+		"api-gateway",
+		"metrics-exporter",
+	)
 
 	png, err := captureScreenshot(ctx)
 	if err != nil {
@@ -419,6 +484,15 @@ func TestCaptureREADME_ScreenshotGrouped(t *testing.T) {
 	}
 
 	time.Sleep(600 * time.Millisecond)
+
+	assertCaptureContent(t, ctx,
+		"Federation Hub",
+		"api/postgres",
+		"api/api-gateway",
+		"worker/redis",
+		"worker/queue",
+		"connection refused (worker-1:5672)",
+	)
 
 	png, err := captureScreenshot(ctx)
 	if err != nil {
