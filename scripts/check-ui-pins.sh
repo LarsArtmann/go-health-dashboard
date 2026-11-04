@@ -92,6 +92,29 @@
 #     rides CI's browser job (it installs its own Chrome); if that job goes
 #     red on v1.24.0, revert pins + go.mod in one dedicated change.
 #
+# Re-audited + ADOPTED 2026-11-04 on templ-components v1.26.0 +
+# go-datastar v0.6.2:
+#   - MOTIVATION, fleet-level: 8 consumer graphs (ChastityAPI, CV,
+#     go-taskqueue, dnsblockd, dynamic-markdown-site, timesheets,
+#     library-policy, webphone) already resolve v1.26.0 via MVS — their own
+#     templ-components needs outrank this repo's pin, so the dashboard was
+#     CI-tested on v1.24.0 while consumers RAN v1.26.0. Adopting converges
+#     the tested surface with the shipped surface.
+#   - Measured delta (module-cache diff + golden word-diff, all 7 goldens
+#     regenerated): display.Badge warning palette yellow→amber
+#     (bg-amber-100/text-amber-800 + darks); layout.Base unchanged for this
+#     repo (v1.26.0's color-scheme meta addition is layout.Minimal-only,
+#     theme-toggle storage-sync lives in upstream's toggle script, not the
+#     hand-rolled page script); feedback.Alert/StatCard/Table/datastar
+#     byte-identical; display.Sparkline coordinate fix not rendered here.
+#   - groupCountTone (status.go) migrated yellow→amber in the same change:
+#     its doc comment mirrors upstream BadgeWarning fills, and leaving it
+#     yellow would ship BOTH palettes to every consumer's compiled CSS.
+#   - CEREMONY DEVIATION as in the v1.24.0 entry: this host's Chromium
+#     cannot complete http(s) navigation; runtime-DOM verification rides
+#     CI's browser job. A red there means revert pins + go.mod in one
+#     change.
+#
 # CEREMONY RULE: if you bump any of these dependencies, update the pins
 # in this file IN THE SAME CHANGE and re-run the browser suite. A bump
 # without its guard update leaves CI red for every subsequent commit.
@@ -101,10 +124,10 @@
 # change that updates these pins and re-runs the browser suite.
 set -euo pipefail
 
-expected_templ_components="v1.24.0"
-expected_templ_components_datastar="v1.24.0"
-expected_templ_components_utils="v1.24.0"
-expected_templ_components_icons="v1.24.0"
+expected_templ_components="v1.26.0"
+expected_templ_components_datastar="v1.26.0"
+expected_templ_components_utils="v1.26.0"
+expected_templ_components_icons="v1.26.0"
 expected_go_datastar="v0.6.2"
 expected_go_datastar_static="v0.6.1"
 

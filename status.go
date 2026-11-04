@@ -45,7 +45,7 @@ func groupCountTone(s health.Status) string {
 	case health.StatusFail:
 		return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
 	case health.StatusWarn:
-		return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+		return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
 	case health.StatusPass:
 		return countToneNeutral
 	case health.StatusOff:

@@ -12,10 +12,10 @@ require (
 	github.com/larsartmann/go-health v0.8.2-0.20261102043228-d783d78e1f2e
 	github.com/larsartmann/go-sse v0.6.2
 	github.com/larsartmann/go-sse/ssetest v0.5.0
-	github.com/larsartmann/templ-components v1.24.0
-	github.com/larsartmann/templ-components/datastar v1.24.0
-	github.com/larsartmann/templ-components/icons v1.24.0
-	github.com/larsartmann/templ-components/utils v1.24.0
+	github.com/larsartmann/templ-components v1.26.0
+	github.com/larsartmann/templ-components/datastar v1.26.0
+	github.com/larsartmann/templ-components/icons v1.26.0
+	github.com/larsartmann/templ-components/utils v1.26.0
 	github.com/prometheus/client_model v0.6.3
 	github.com/prometheus/common v0.72.1
 	github.com/samber/do/v2 v2.1.0
@@ -33,7 +33,7 @@ require (
 	github.com/larsartmann/go-branded-id v0.7.0 // indirect
 	github.com/larsartmann/go-error-family v0.12.0 // indirect
 	github.com/larsartmann/go-sse/sseparse v0.2.1 // indirect
-	github.com/larsartmann/templ-components/htmx v1.24.0 // indirect
+	github.com/larsartmann/templ-components/htmx v1.26.0 // indirect
 	github.com/mattn/go-colorable v0.1.16 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
