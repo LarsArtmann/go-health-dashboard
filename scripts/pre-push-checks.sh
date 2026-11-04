@@ -11,6 +11,10 @@
 #   7. SECURITY.md freshness: supported-versions row vs latest tag
 #   8. golangci-lint (nix run .#lint, same as CI's Lint job)
 #   9. art-dupl accepted-clone baseline (reports/dupl/, go-etag gate pattern)
+#  10. templ stamp guard: committed *_templ.go stamps == go.mod tool pin
+#  11. Remote state: origin fetch + unpushed commits + last master CI
+#      conclusion (warning-only — the 11-day red window and the c0991da
+#      red push both happened with all-local-green trees)
 #
 # Tool gates retry once when the host is saturated: templ-fmt died at spawn
 # with zero output while the 5-min load was 37 (2026-10-30 triage) — a
@@ -191,6 +195,40 @@ if command -v art-dupl >/dev/null 2>&1; then
 	fi
 else
 	echo "art-dupl not on PATH — skipping clone-baseline gate (install it or run via the devShell)"
+fi
+
+# 10. templ stamp guard (scripts/check-templ-stamps.sh): committed stamps
+# must match go.mod's generator pin — the 2026-10-25 skew incident class.
+if ! bash scripts/check-templ-stamps.sh; then
+	fail=1
+fi
+
+# 11. Remote state (warning-only): red-main and unpushed-work detection.
+# The 11-day red window (2026-10-14→25) and the c0991da red push both
+# happened with all-local-green trees; remote state must be part of the
+# gate, not the operator's memory. Never fails the gate (offline/gh
+# absence must not block a legitimate push) — it warns loudly instead.
+if git fetch origin master --quiet 2>/dev/null; then
+	ahead=$(git rev-list --count origin/master..HEAD 2>/dev/null || echo "?")
+	if [ "$ahead" != "0" ]; then
+		echo "::warning::${ahead} local commit(s) not pushed to origin/master — verify-release and consumers only see pushed state"
+	fi
+	if command -v gh >/dev/null 2>&1; then
+		ci_json=$(gh run list --branch master --limit 1 --json conclusion,headSha --jq '.[0] | "\(.conclusion) \(.headSha)"' 2>/dev/null || echo "")
+		ci_conclusion=${ci_json%% *}
+		ci_sha=${ci_json#* }
+		origin_tip=$(git rev-parse origin/master 2>/dev/null || echo "")
+		if [ -n "$ci_conclusion" ] && [ "$ci_conclusion" != "success" ]; then
+			echo "::warning::last CI run on master is ${ci_conclusion} (${ci_sha}) — confirm the failure is understood before pushing on top of red"
+		fi
+		if [ -n "$ci_sha" ] && [ -n "$origin_tip" ] && [ "$ci_sha" != "$origin_tip" ]; then
+			echo "::warning::origin/master (${origin_tip}) has commits newer than the last CI run (${ci_sha}) — remote tip is not CI-tested"
+		fi
+	else
+		echo "::warning::gh not on PATH — CI-conclusion check skipped"
+	fi
+else
+	echo "::warning::git fetch failed (offline?) — remote-state check skipped"
 fi
 
 if [ "$fail" -ne 0 ]; then
