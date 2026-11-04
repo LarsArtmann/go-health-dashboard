@@ -124,10 +124,10 @@
 # change that updates these pins and re-runs the browser suite.
 set -euo pipefail
 
-expected_templ_components="v1.26.0"
-expected_templ_components_datastar="v1.26.0"
-expected_templ_components_utils="v1.26.0"
-expected_templ_components_icons="v1.26.0"
+expected_templ_components="v1.27.0"
+expected_templ_components_datastar="v1.27.0"
+expected_templ_components_utils="v1.27.0"
+expected_templ_components_icons="v1.27.0"
 expected_go_datastar="v0.6.2"
 expected_go_datastar_static="v0.6.1"
 
