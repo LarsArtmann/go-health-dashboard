@@ -39,5 +39,7 @@ the decorative disclosure chevron `<svg>` — non-text contrast needs
 - The uppercase per-column labels in the stacked mobile layout use the
   same gray-400 pairing, so the mobile visual check inherits this
   verdict.
-- Light-mode equivalents (gray-500 on white ≈ 7.5:1) predate this
-  measurement and were already AA-clean.
+- Light-mode equivalents predate this measurement and were already
+  AA-clean — but the ≈7.5:1 figure originally written here was wrong:
+  gray-500 on white computes to **4.83:1** (see the 2026-11-04 note
+  above; contrast_test.go is the living source).
