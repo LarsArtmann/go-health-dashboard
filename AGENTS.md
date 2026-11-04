@@ -319,10 +319,12 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   precedent). (6) The release-draft workflow's silent no-op is FIXED
   (2026-11-04): the existence probe no longer masks the 404, the state
   value is asserted with a loud catch-all, and the SECURITY.md freshness
-  check (pre-push gate 7) is mirrored into the workflow. Still unproven
-  END-TO-END: no tag has exercised the fixed workflow yet — create pages
-  with `gh release create` as the fallback until one tag ships a real
-  draft. War stories: `docs/gotchas.md`.
+  check (pre-push gate 7) is mirrored into the workflow. PROVEN
+  END-TO-END 2026-11-04: the v0.13.0 tag push ran the fixed workflow to
+  a real Draft (run 41894182554, 3m35s) — the `gh release create`
+  fallback is retired; publish drafts with
+  `gh release edit <ver> --draft=false` after CI green + verify-release.
+  War stories: `docs/gotchas.md`.
 - **erraudit blank-identifier policy** — response-writer discards are
   centralized in `writeBody` (handlers.go) with ONE reasoned
   `//nolint:erraudit`; `//nolint:erraudit // reason` is the sanctioned
