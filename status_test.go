@@ -746,7 +746,7 @@ func TestGroupChecks_CarriesCheckMetadata(t *testing.T) {
 	checks := map[string]health.Check{
 		"api/postgres": {
 			Status:        health.StatusPass,
-			Since:         since,
+			StatusSince:   since,
 			DurationNanos: int64(42 * time.Millisecond),
 		},
 	}
@@ -783,7 +783,7 @@ func TestBuildViewModelAt_DerivesMetadataTexts(t *testing.T) {
 	resp := health.Response{
 		Status: health.StatusWarn,
 		Checks: map[string]health.Check{
-			"api/mail": {Status: health.StatusWarn, Since: now.Add(-17 * time.Minute)},
+			"api/mail": {Status: health.StatusWarn, StatusSince: now.Add(-17 * time.Minute)},
 			"api/postgres": {
 				Status:        health.StatusPass,
 				DurationNanos: int64(823 * time.Microsecond),

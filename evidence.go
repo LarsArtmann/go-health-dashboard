@@ -202,7 +202,7 @@ const evidenceTooltip = "A pass badge means only that no failure was observed. C
 // badgeEvidenceTitle builds the per-row tooltip for a pass badge: unproven
 // greens disclose their lack of evidence; proven greens cite the last
 // observed non-pass, turning a green row into backed claims. When the
-// probe reports a state-entry time (go-health v0.2.0 Check.Since), the
+// probe reports a state-entry time (go-health v0.9.0 Check.StatusSince), the
 // proven tooltip pairs the dashboard-observed fact with the probe-side
 // stamp — two independent witnesses for one green row. Non-pass rows need
 // no tooltip — the badge itself is the deviation.

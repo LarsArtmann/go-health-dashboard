@@ -21,7 +21,7 @@ var webhookPinSince = time.Date(2026, 9, 17, 12, 0, 0, 0, time.UTC)
 
 // TestWebhookPayload_PinWireShape pins the transition payload's wire shape:
 // status, checks{status,error}, and changed_at — nothing else. The
-// go-health v0.2.0 metadata fields (Check.Since, DurationNanos)
+// go-health v0.2.0 metadata fields (Check.StatusSince, DurationNanos)
 // deliberately do NOT transit: the webhook announces transition facts, not
 // display metadata. This test fails if the shape ever grows or drops a
 // field silently.
@@ -35,13 +35,13 @@ func TestWebhookPayload_PinWireShape(t *testing.T) {
 		Checks: map[string]health.Check{
 			"api/postgres": {
 				Status:        health.StatusPass,
-				Since:         webhookPinSince,
+				StatusSince:   webhookPinSince,
 				DurationNanos: int64(42 * time.Millisecond),
 			},
 			"db": {
-				Status: health.StatusFail,
-				Error:  "connection refused",
-				Since:  webhookPinSince,
+				Status:      health.StatusFail,
+				Error:       "connection refused",
+				StatusSince: webhookPinSince,
 			},
 		},
 	}
@@ -66,13 +66,13 @@ func TestWebhookPayload_PublicModeMasksNames(t *testing.T) {
 		Checks: map[string]health.Check{
 			"api/postgres": {
 				Status:        health.StatusPass,
-				Since:         webhookPinSince,
+				StatusSince:   webhookPinSince,
 				DurationNanos: int64(42 * time.Millisecond),
 			},
 			"db": {
-				Status: health.StatusFail,
-				Error:  "connection refused",
-				Since:  webhookPinSince,
+				Status:      health.StatusFail,
+				Error:       "connection refused",
+				StatusSince: webhookPinSince,
 			},
 		},
 	}

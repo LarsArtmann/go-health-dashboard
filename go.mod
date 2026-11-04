@@ -9,7 +9,7 @@ require (
 	github.com/dustin/go-humanize v1.1.0
 	github.com/larsartmann/go-datastar v0.6.2
 	github.com/larsartmann/go-datastar/static v0.6.1
-	github.com/larsartmann/go-health v0.8.2-0.20261104024539-3baa4715aa24
+	github.com/larsartmann/go-health v0.9.0
 	github.com/larsartmann/go-sse v0.6.2
 	github.com/larsartmann/go-sse/ssetest v0.5.0
 	github.com/larsartmann/templ-components v1.26.0
@@ -30,7 +30,7 @@ require (
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-json-experiment/json v0.0.0-20260820222146-c27c302e5fc3 // indirect
-	github.com/larsartmann/go-branded-id v0.7.0 // indirect
+	github.com/larsartmann/go-branded-id v0.7.1 // indirect
 	github.com/larsartmann/go-error-family v0.12.0 // indirect
 	github.com/larsartmann/go-sse/sseparse v0.2.1 // indirect
 	github.com/larsartmann/templ-components/htmx v1.26.0 // indirect

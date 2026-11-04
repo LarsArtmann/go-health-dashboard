@@ -198,7 +198,7 @@ func TestExportHandler_JSONCarriesCheckMetadata(t *testing.T) {
 		Checks: map[string]health.Check{
 			"api/database": {
 				Status:        health.StatusPass,
-				Since:         since,
+				StatusSince:   since,
 				DurationNanos: int64(42 * time.Millisecond),
 			},
 			"api/plain": {Status: health.StatusPass},

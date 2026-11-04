@@ -42,14 +42,14 @@ func goldenChecks() map[string]health.Check {
 	return map[string]health.Check{
 		"api/postgres": {Status: health.StatusPass, DurationNanos: int64(823 * time.Microsecond)},
 		"api/mail": {
-			Status: health.StatusWarn,
-			Error:  "smtp timeout after 5s",
-			Since:  goldenSince,
+			Status:      health.StatusWarn,
+			Error:       "smtp timeout after 5s",
+			StatusSince: goldenSince,
 		},
 		"worker/queue": {
 			Status:        health.StatusFail,
 			Error:         "connection refused",
-			Since:         goldenSince,
+			StatusSince:   goldenSince,
 			DurationNanos: int64(42 * time.Millisecond),
 		},
 		"*github.com/x/y/handlers.Handlers": {Status: health.StatusPass},

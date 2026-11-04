@@ -487,7 +487,7 @@ func groupChecks(checks map[string]health.Check) []checkGroup {
 			Display:       shortDisplayName(name),
 			Status:        check.Status,
 			Error:         check.Error,
-			Since:         check.Since,
+			Since:         check.StatusSince,
 			DurationNanos: check.DurationNanos,
 		}
 
@@ -573,7 +573,7 @@ func groupChecksBySource(checks map[string]health.Check) []checkGroup {
 			Display:       shortDisplayName(name),
 			Status:        check.Status,
 			Error:         check.Error,
-			Since:         check.Since,
+			Since:         check.StatusSince,
 			DurationNanos: check.DurationNanos,
 		})
 	}

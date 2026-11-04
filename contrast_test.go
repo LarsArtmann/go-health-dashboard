@@ -51,6 +51,7 @@ func (c tailwindV3Color) relativeLuminance() float64 {
 		if s <= 0.03928 {
 			return s / 12.92
 		}
+
 		return math.Pow((s+0.055)/1.055, 2.4)
 	}
 

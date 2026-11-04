@@ -260,7 +260,7 @@ func TestSSE_PatchCarriesCheckMetadata(t *testing.T) {
 		Checks: map[string]health.Check{
 			"api/database": {
 				Status:        health.StatusPass,
-				Since:         time.Now().UTC().Add(-17 * time.Minute),
+				StatusSince:   time.Now().UTC().Add(-17 * time.Minute),
 				DurationNanos: int64(42 * time.Millisecond),
 			},
 		},

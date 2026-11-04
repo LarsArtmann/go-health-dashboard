@@ -20,7 +20,7 @@ func benchMetadataChecks(n int, withMetadata bool) health.Response {
 	for i := range n {
 		check := health.Check{Status: health.StatusPass}
 		if withMetadata {
-			check.Since = since
+			check.StatusSince = since
 			check.DurationNanos = int64(823 * time.Microsecond)
 		}
 

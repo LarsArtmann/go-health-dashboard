@@ -149,9 +149,9 @@ func TestAnonymizeViewModel_KeepsMetadataTexts(t *testing.T) {
 		Status: health.StatusWarn,
 		Checks: map[string]health.Check{
 			"api/mail": {
-				Status: health.StatusWarn,
-				Error:  "secret host unreachable",
-				Since:  now.Add(-17 * time.Minute),
+				Status:      health.StatusWarn,
+				Error:       "secret host unreachable",
+				StatusSince: now.Add(-17 * time.Minute),
 			},
 		},
 	}

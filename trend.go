@@ -55,8 +55,8 @@ func buildExportPayload(samples []sample, resp health.Response) jsonExportPayloa
 	checks := make(map[string]jsonCheckMeta, len(resp.Checks))
 	for name, check := range resp.Checks {
 		meta := jsonCheckMeta{DurationNs: check.DurationNanos}
-		if !check.Since.IsZero() {
-			meta.Since = check.Since.UTC().Format(time.RFC3339)
+		if !check.StatusSince.IsZero() {
+			meta.Since = check.StatusSince.UTC().Format(time.RFC3339)
 		}
 
 		checks[name] = meta

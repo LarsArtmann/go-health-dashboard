@@ -26,6 +26,8 @@ github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 github.com/larsartmann/go-branded-id v0.7.0 h1:k5KT50Kh0WmeniH0rQ3Gvm2RdSAQFZtuRhXWDtQkWhU=
 github.com/larsartmann/go-branded-id v0.7.0/go.mod h1:gM5FhB6d23qZO8hIU/rHpUnm/6dwKy9UGMhgvXDqNsc=
+github.com/larsartmann/go-branded-id v0.7.1 h1:w68pg/t74AM8PsTVVw7VkL3vq2C70zLH1jFxJCJwLPk=
+github.com/larsartmann/go-branded-id v0.7.1/go.mod h1:gM5FhB6d23qZO8hIU/rHpUnm/6dwKy9UGMhgvXDqNsc=
 github.com/larsartmann/go-datastar v0.6.2 h1:jmfiddveCW0zi1j2064zQDhFAZaRfjRQZmhWmVT6w3U=
 github.com/larsartmann/go-datastar v0.6.2/go.mod h1:/Tg5AAvuJoKVk2KiWc6sT/6szRmrXYsYXsUQYkXovnQ=
 github.com/larsartmann/go-datastar/static v0.6.1 h1:f9uKQG0tabjkdYVHM0qVmZlGDGsUVRxPU+UuelGhpxk=
@@ -34,6 +36,8 @@ github.com/larsartmann/go-error-family v0.12.0 h1:HEtocvwaPe9udDusqDqV0pxN9Wx98K
 github.com/larsartmann/go-error-family v0.12.0/go.mod h1:gB43rKC69SoPilihuze43OFqKYMGQxDNUi/25PF9MgE=
 github.com/larsartmann/go-health v0.8.2-0.20261104024539-3baa4715aa24 h1:mJ99PkgEQBxCenK9aGQXy3K1a6ZVTK45YcSq7eOSfHU=
 github.com/larsartmann/go-health v0.8.2-0.20261104024539-3baa4715aa24/go.mod h1:6z/h+gPOx2xXVJw/fGxOcEwN5qcHpxDAZh0mJirEmSs=
+github.com/larsartmann/go-health v0.9.0 h1:MgkzfgzAn3/Ty4LsA5jJHTKh3RPS6vIrXTLHlC+/N40=
+github.com/larsartmann/go-health v0.9.0/go.mod h1:oaTith1RwwDMaq0Qy2+ga3PoefmAfud1SsFqy8jeI08=
 github.com/larsartmann/go-sse v0.6.2 h1:a1f/EnjhWlsNnxo0U1DygpYMy2XbUfyGBuKMWhwQg0U=
 github.com/larsartmann/go-sse v0.6.2/go.mod h1:PVVDLkzjkTR2MvqcqL3/XmWY8cdSUpEe8YWaouHVVz4=
 github.com/larsartmann/go-sse/sseparse v0.2.1 h1:GHn8SFFZkMJRhLkmusJwtchgSPJV0/b5Keq6z3xop9k=

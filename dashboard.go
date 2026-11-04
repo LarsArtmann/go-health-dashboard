@@ -201,12 +201,12 @@ func resolvePushInterval(configured time.Duration, probe Prober) time.Duration {
 }
 
 // currentResponse returns the probe's cached health snapshot, sanitized for
-// wire consumption: go-health's SanitizeResponse replaces invalid UTF-8 (a
+// wire consumption: go-health's CoerceValidUTF8 replaces invalid UTF-8 (a
 // real possibility in service-supplied error strings) with U+FFFD, keeping
 // every downstream write seam — JSON responses, webhook payloads, SSE
 // patches, metrics labels, CSV export — valid under jsonv2 semantics.
 func (d *Dashboard) currentResponse() health.Response {
-	return health.SanitizeResponse(d.probe.CachedResponse())
+	return health.CoerceValidUTF8(d.probe.CachedResponse())
 }
 
 // sourceStatuses returns the probe's per-source roll-up statuses when the

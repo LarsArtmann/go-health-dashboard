@@ -11,10 +11,16 @@
 #   7. SECURITY.md freshness: supported-versions row vs latest tag
 #   8. golangci-lint (nix run .#lint, same as CI's Lint job)
 #   9. art-dupl accepted-clone baseline (reports/dupl/, go-etag gate pattern)
-#  10. templ stamp guard: committed *_templ.go stamps == go.mod tool pin
-#  11. Remote state: origin fetch + unpushed commits + last master CI
-#      conclusion (warning-only — the 11-day red window and the c0991da
-#      red push both happened with all-local-green trees)
+#   10. templ stamp guard: committed *_templ.go stamps == go.mod tool pin
+#   11. Remote state: origin fetch + unpushed commits + last master CI
+#       conclusion (warning-only — the 11-day red window and the c0991da
+#       red push both happened with all-local-green trees)
+#
+# NOT covered here: the timing-flake leg (go test -race -shuffle=on
+# -count=5) runs NIGHTLY ONLY in flake-canary.yml — a green pre-push does
+# not cover it; check the last canary conclusion when touching
+# timing-sensitive code (the 2026-10-11 selfmonitor/rate-limit flakes
+# surfaced only under that load).
 #
 # Tool gates retry once when the host is saturated: templ-fmt died at spawn
 # with zero output while the 5-min load was 37 (2026-10-30 triage) — a
@@ -214,7 +220,7 @@ if git fetch origin master --quiet 2>/dev/null; then
 		echo "::warning::${ahead} local commit(s) not pushed to origin/master — verify-release and consumers only see pushed state"
 	fi
 	if command -v gh >/dev/null 2>&1; then
-		ci_json=$(gh run list --branch master --limit 1 --json conclusion,headSha --jq '.[0] | "\(.conclusion) \(.headSha)"' 2>/dev/null || echo "")
+		ci_json=$(gh run list --workflow ci.yml --branch master --limit 1 --json conclusion,headSha --jq '.[0] | "\(.conclusion) \(.headSha)"' 2>/dev/null || echo "")
 		ci_conclusion=${ci_json%% *}
 		ci_sha=${ci_json#* }
 		origin_tip=$(git rev-parse origin/master 2>/dev/null || echo "")

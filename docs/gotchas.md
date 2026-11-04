@@ -392,3 +392,27 @@ Method note: the first consumer greps used `rg -E node_modules` — `-E`
 is ripgrep's ENCODING flag, not exclude — producing silent
 false-negatives ("no amber anywhere") until rerun with `-g '!…'`.
 Trust greps only with verified flag semantics.
+
+## The harness canvas: a11y audits measure against whatever CSS you serve (2026-10-25)
+
+The browser-test harness serves a minimal CSS stand-in
+(`browserStaticCSS`, browser_test.go) instead of full Tailwind. The
+degraded-fixture axe audit initially flagged UA-default link colors that
+pass in production — root cause: the stand-in set NO body background, so
+every surface was transparent and axe-core evaluated contrast against
+white even in dark color-scheme mode. The fix (mirror production:
+`body { background-color: #ffffff }`, `html.dark body { #111827 }` plus
+`[hidden] { display: none !important }` mirroring preflight) is a
+standing rule, not a one-off:
+
+- A harness CSS stand-in must reproduce every SURFACE the audit's
+  contrast math can see (body canvas, dark canvas) and every PREFLIGHT
+  behavior the page's visibility logic relies on (`[hidden]` — without
+  it, all three connection-pill states render at once in the harness).
+- When axe flags something "new", first ask what canvas the harness
+  served — a wrong stand-in turns a passing page into failures and can
+  equally mask real ones.
+- The same lens applies in reverse: a harness that adds styling
+  production lacks (Play-CDN-only classes, for example) proves nothing
+  about the compiled-CSS deployment.
+
