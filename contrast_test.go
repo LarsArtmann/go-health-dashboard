@@ -27,11 +27,11 @@ type tailwindV3Color struct {
 // renders subtly different sRGB values — re-derive this map from the v4
 // theme and re-run this file's tests before trusting any verdict below.
 var tailwindPalette = map[string]tailwindV3Color{
-	"white":    {0xff, 0xff, 0xff},
-	"gray-400": {0x9c, 0xa3, 0xaf},
-	"gray-500": {0x6b, 0x72, 0x80},
-	"gray-800": {0x1f, 0x29, 0x37},
-	"gray-900": {0x11, 0x18, 0x27},
+	"white":     {0xff, 0xff, 0xff},
+	"gray-400":  {0x9c, 0xa3, 0xaf},
+	"gray-500":  {0x6b, 0x72, 0x80},
+	"gray-800":  {0x1f, 0x29, 0x37},
+	"gray-900":  {0x11, 0x18, 0x27},
 	"green-400": {0x4a, 0xde, 0x80},
 	"green-600": {0x16, 0xa3, 0x4a},
 	"green-700": {0x15, 0x80, 0x3d},
@@ -89,9 +89,9 @@ func TestWCAG_StatusPaletteContrast(t *testing.T) {
 	// asserts them (class -> palette entry). The light half sits on
 	// white; every dark:* variant sits on the gray-800 card surface.
 	safePairs := []struct {
-		class   string
-		fg      string
-		dark    bool
+		class string
+		fg    string
+		dark  bool
 	}{
 		{"text-green-700 dark:text-green-400", "green-700", false},
 		{"text-green-700 dark:text-green-400", "green-400", true},
@@ -113,7 +113,10 @@ func TestWCAG_StatusPaletteContrast(t *testing.T) {
 		if ratio < aaNormalText {
 			t.Errorf(
 				"%s (%s on dark surface) computes to %.2f:1 — BELOW the AA floor %v: the class pair is no longer contrast-safe",
-				pair.class, pair.fg, ratio, aaNormalText,
+				pair.class,
+				pair.fg,
+				ratio,
+				aaNormalText,
 			)
 		}
 
@@ -135,7 +138,9 @@ func TestWCAG_StatusPaletteContrast(t *testing.T) {
 		if ratio >= aaNormalText {
 			t.Errorf(
 				"banned tone %s computes to %.2f:1 on white — at or above the AA floor %v: relax the TestRender_ContrastSafeStatusColors ban deliberately if this movement is intended",
-				pair.class, ratio, aaNormalText,
+				pair.class,
+				ratio,
+				aaNormalText,
 			)
 		}
 
@@ -147,9 +152,9 @@ func TestWCAG_StatusPaletteContrast(t *testing.T) {
 	// decorative chevron's gray-500 needs only the 3:1 non-text floor
 	// (WCAG 1.4.11).
 	recordOnly := []struct {
-		pair    string
-		fg, bg  string
-		floor   float64
+		pair   string
+		fg, bg string
+		floor  float64
 	}{
 		{"gray-400 on gray-900 (metadata on table)", "gray-400", "gray-900", aaNormalText},
 		{"gray-500 on gray-900 (decorative chevron, 1.4.11)", "gray-500", "gray-900", 3.0},
@@ -168,5 +173,7 @@ func TestWCAG_StatusPaletteContrast(t *testing.T) {
 		return
 	}
 
-	t.Log("all status-palette verdicts recomputed from the Tailwind v3 constants; ADR-0006's Context figures are the 2026-09-10 audit snapshot")
+	t.Log(
+		"all status-palette verdicts recomputed from the Tailwind v3 constants; ADR-0006's Context figures are the 2026-09-10 audit snapshot",
+	)
 }

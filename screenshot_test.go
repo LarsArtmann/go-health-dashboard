@@ -120,7 +120,10 @@ func assertCaptureTheme(t *testing.T, ctx context.Context, theme string) {
 	t.Helper()
 
 	var darkApplied bool
-	if err := chromedp.Do(ctx, evalInto(`document.documentElement.classList.contains('dark')`, &darkApplied)); err != nil {
+	if err := chromedp.Do(
+		ctx,
+		evalInto(`document.documentElement.classList.contains('dark')`, &darkApplied),
+	); err != nil {
 		t.Fatalf("theme class check: %v", err)
 	}
 

@@ -279,6 +279,9 @@ func TestFederation_ReadyDrainsTo503WithFlag(t *testing.T) {
 	}
 
 	if code := doRequest(t, mux, "/healthz").Code; code != http.StatusOK {
-		t.Errorf("healthz must stay 200 while the hub drains (liveness is dependency-blind), got %d", code)
+		t.Errorf(
+			"healthz must stay 200 while the hub drains (liveness is dependency-blind), got %d",
+			code,
+		)
 	}
 }
