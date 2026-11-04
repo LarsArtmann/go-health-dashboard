@@ -53,6 +53,13 @@ forgetting.
   which older templ runtimes do not provide), so the bump, the
   regeneration, and the pin-guard audit landed in one change. No
   rendered markup changed for the dashboard's component set.
+- Adopted go-health v0.10.0 (the routes release) the day it shipped:
+  its breaking changes — `DefaultRoutes()` mounting `GET /version` with
+  a mandatory `WithVersion` stamp and method-qualified default patterns
+  — do not touch this dashboard, which registers its own
+  `dashboard.Routes` and keeps the hand-wired `VersionHandler` the
+  release notes explicitly sanction for hub processes. Zero call-site
+  changes; the wire format of `/health` is unchanged (pinned by tests).
 
 ### Fixed
 

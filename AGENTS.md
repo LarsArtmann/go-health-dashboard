@@ -405,7 +405,7 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
 
 ### go-health (`github.com/larsartmann/go-health`)
 
-Provides `Probe`, `Response`, `Check`, `Status` (v0.9.0 in go.mod). The dashboard is a pure consumer — zero changes needed to go-health. v0.9.0 (adopted 2026-11-04 from the v0.8.2 pseudo-version, via a buildflow dependency run): `Check.Since` renamed to `Check.StatusSince` and `SanitizeResponse` to `CoerceValidUTF8` — call sites migrated mechanically; the WIRE field stays `since,omitzero`, so `/health` JSON is byte-stable (tests pin it):
+Provides `Probe`, `Response`, `Check`, `Status` (v0.10.0 in go.mod). The dashboard is a pure consumer — zero changes needed to go-health. v0.9.0 (adopted 2026-11-04 from the v0.8.2 pseudo-version, via a buildflow dependency run): `Check.Since` renamed to `Check.StatusSince` and `SanitizeResponse` to `CoerceValidUTF8` — call sites migrated mechanically; the WIRE field stays `since,omitzero`, so `/health` JSON is byte-stable (tests pin it). v0.10.0 (adopted 2026-11-04, same day, from its release notes): `DefaultRoutes()` now mounts `GET /version` and REQUIRES a `WithVersion` stamp (an un-stamped probe registering the defaults panics at `RegisterRoutes` — an endpoint answering `{"version":""}` would lie), and every default pattern is method-qualified (`GET /healthz` etc.) so registration can no longer conflict with common page-router shapes. THE DASHBOARD IS UNAFFECTED by both changes: it never registers go-health's `DefaultRoutes` (its own `dashboard.Routes` + `RegisterRoutes` wire the probe handlers directly), and the binaries' hand-wired `mux.HandleFunc("/version", health.VersionHandler(...))` stays the SANCTIONED hub pattern per the release notes (aggregate/federation carry no build identity; `VersionHandler` remains exported for exactly this). Zero call-site changes; full suite green on the bump:
 
 - `Probe.CachedResponse() Response` — reads atomic cache, overlays shutdown flag
 - `Check.StatusSince` (named `Check.Since` before v0.9.0) / `Check.DurationNanos` (since v0.2.0, additive, `omitzero` on the
@@ -476,7 +476,8 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.9.0 in go.mod). The dashboar
   per read, 5s default timeout), checks namespaced `name/check`, dark
   remotes surface as `name/reachable` FAIL rows (never a silent freeze),
   `Check.StatusSince` survives the wire (wire name `since`), startup latches per remote on first
-  successful fetch. go.mod pins **v0.8.1** (2026-10-28): v0.5.x
+  successful fetch. go.mod pins the root module **v0.10.0** (2026-11-04; v0.8.1 notes kept for
+  history): v0.5.x
   added `StatusOff`, `checks`, `VersionHandler`, `WithInstanceID`,
   `MarkShuttingDown` — all adopted here; v0.6.0–v0.7.0 unified the
   merge core with aggregate (shared `internal/merge` worst-of fold) and
