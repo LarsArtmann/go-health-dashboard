@@ -20,6 +20,13 @@ check table (`dark:bg-gray-900`, #111827) inside the card surface
 | gray-100 on gray-900 (headings)           | 16.12:1    | AA pass                          |
 | gray-500 on gray-900 (the one borderline) | 3.67:1     | AA large-text only               |
 
+2026-11-04: the ratios above are now COMPUTED by
+`TestWCAG_StatusPaletteContrast` (contrast_test.go) from the Tailwind v3
+palette constants — this table is the 2026-09-23 audit snapshot, and the
+test is the living source. Correction the computation surfaced: the
+light-mode claim below said gray-500 on white ≈ 7.5:1; the true value is
+**4.83:1** (AA pass, but not the near-AAA margin claimed).
+
 The `dark:text-gray-500` string that appears in the render belongs to
 the decorative disclosure chevron `<svg>` — non-text contrast needs
 3:1 (WCAG 1.4.11), which 3.67:1 passes. It is never used for text.

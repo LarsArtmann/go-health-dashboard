@@ -426,9 +426,9 @@ func latencyTooltipText(vm viewModel) string {
 	)
 }
 
-// latencyValueClass maps the latency tone onto the value-text color. All
-// three pairs are the page's measured WCAG decisions (amber-700 5.02:1 and
-// red-600 4.83:1 on white; the -400 variants on gray-800) — the same pairs
+// latencyValueClass maps the latency tone onto the value-text color. The
+// pairs are the page's WCAG decisions, computed from the Tailwind palette
+// constants in contrast_test.go — the same pairs
 // TestRender_ContrastSafeStatusColors locks.
 func latencyValueClass(t latencyTone) string {
 	switch t {

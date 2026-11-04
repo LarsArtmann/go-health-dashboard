@@ -134,13 +134,12 @@ func TestMobileRowStacking_Markup(t *testing.T) {
 }
 
 // TestRender_ContrastSafeStatusColors locks the WCAG AA color decisions for
-// status-bearing text on the live page. Measured ratios (WCAG relative
-// luminance, normal text needs >= 4.5:1; values computed 2026-09-10):
-//
-//	green-600 on white 3.30 / amber-600 on white 3.19 / gray-400 on white 2.54  -> FAIL, replaced
-//	green-700 on white 5.02 / amber-700 on white 5.02 / red-600 on white 4.83   -> pass
-//	gray-500 on white 4.83 / gray-400 on gray-800 5.78 (raw keys, labels)       -> pass
-//	dark variants (gray-400/green-400/amber-400/red-400/blue-400 on gray-800): 5.31-8.79 -> pass
+// status-bearing text on the live page. The ratios behind every verdict are
+// COMPUTED, never hand-copied: TestWCAG_StatusPaletteContrast derives them
+// from the Tailwind v3 palette constants and fails the build if any ratio
+// crosses the 4.5:1 floor in either direction. This test pins the RENDERED
+// half of the same decision: the failing classes must not appear, the safe
+// pairs must.
 //
 // Deliberately out of scope: the upstream CollapsibleSection chevron keeps
 // its gray-400 idle class (decorative disclosure icon, upstream-owned
@@ -164,7 +163,7 @@ func TestRender_ContrastSafeStatusColors(t *testing.T) {
 	body := stripDecorativeSVGs(w.Body.String())
 
 	for _, failing := range []string{
-		`text-green-600`, // 3.30:1 on white
+		`text-green-600`, // 3.30:1 on white — computed in contrast_test.go
 		`text-amber-600`, // 3.19:1 on white — text only; decorative icons are stripped above
 		// The pre-fix raw-key form (2.54:1 on white, 3.04:1 on dark). The
 		// failures fixture uses plain names, so the raw-key line itself may
@@ -179,9 +178,10 @@ func TestRender_ContrastSafeStatusColors(t *testing.T) {
 	for _, want := range []string{
 		`text-green-700 dark:text-green-400`,
 		`text-amber-700 dark:text-amber-400`,
-		`text-red-600 dark:text-red-400`, // 4.83:1 on white — passes
-		// Details dash and raw check keys: 2.54:1 -> 4.83:1 on white, and
-		// 3.04:1 -> 5.78:1 on the dark card surface.
+		`text-red-600 dark:text-red-400`, // 4.83:1 on white — passes (computed)
+		// Details dash and raw check keys: the 2.54:1 pre-fix form was
+		// replaced by this pair (4.83:1 on white, 5.78:1 on the dark
+		// card surface — computed in contrast_test.go).
 		`text-gray-500 dark:text-gray-400`,
 	} {
 		if !strings.Contains(body, want) {

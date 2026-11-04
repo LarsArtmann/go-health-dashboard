@@ -16,6 +16,12 @@ measured at **3.30:1 on white** (WCAG relative luminance; normal text needs
 `green-700`/`amber-700`/`red-600` (+ their `dark:*-400` variants, 5.31-8.79:1
 on gray-800).
 
+Since 2026-11-04 these ratios are no longer hand-copied anywhere:
+`TestWCAG_StatusPaletteContrast` (contrast_test.go) computes them from the
+Tailwind v3 palette constants and fails the build if any ratio crosses the
+4.5:1 floor in either direction. The figures in this section are the
+2026-09-10 audit snapshot — historical record, not the living source.
+
 Every attempt to use the upstream green tile would either fail AA or force
 us to locally override upstream markup per call site.
 
