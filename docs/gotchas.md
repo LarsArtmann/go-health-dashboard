@@ -344,3 +344,51 @@ recognizes conventional phrasings ("initial response", "respond
 within", "within 24/48/72 hours") — SECURITY.md's accurate
 "acknowledgement within 3 business days" failed it; reworded, meaning
 unchanged.
+
+## Consumer MVS drift is invisible to this repo's guard (2026-11-04)
+
+"Projects that integrate us are failing CSS and Content Security policies"
+turned out to be three stacked failure modes, none of them a dashboard bug
+in the strict sense — every one is the library's integration CONTRACT
+being invisible at the moment it matters:
+
+1. **MVS takes the highest templ-components in the consumer's graph, not
+   this repo's pin.** On 2026-11-04, 8 consumer graphs (ChastityAPI, CV,
+   go-taskqueue, dnsblockd, dynamic-markdown-site, timesheets,
+   library-policy, webphone) resolved templ-components v1.26.0 while this
+   repo's CI tested v1.24.0 — the guard (`check-ui-pins.sh`) pins OUR
+   go.mod and cannot see consumer graphs. v1.26.0 renamed the warning
+   palette yellow→amber; consumers whose compiled CSS/manifests predate
+   the rename render warn badges and alerts with no background. That is
+   why the pins were ADOPTED at v1.26.0 the same day (eleventh movement,
+   first deliberate one): converge the tested surface with the shipped
+   surface. Consumers on the old palette after this: webphone (rebuilt
+   `health.css` 2026-11-04), dnsblockd (`library-classes.txt` still
+   carries the v1.24.0 badge line), dynamic-markdown-site (no dashboard
+   CSS at all), library-policy (no CSS by design — minimal ADR-0009
+   dogfood wiring).
+
+2. **The dashboard ships no stylesheet — consumer Tailwind never scans
+   the module cache.** Compiled CSS only exists if the consumer exposes
+   class strings to Tailwind (sibling-checkout `@source`, vendored copy,
+   or a copied class manifest) and passes `WithCSSPath`. Symptom: page
+   renders, styling missing or partial. Remediation lives in README
+   ("The two integration failure signatures") + `tc doctor`.
+
+3. **CSP contracts break silently in both directions.** dynamic-markdown-
+   site's dashboard routes bypassed its security middleware entirely
+   (outer mux in `WithHealthProbes`) — no headers at all, and the site's
+   global policy has no `'unsafe-eval'`, which the Datastar SDK needs
+   (Function-constructor compilation; without it: `Error:
+   GenerateExpression`, SSE never opens, page renders then never
+   updates). Fixed there 2026-11-04 (scoped CSP lane + pinned test).
+   go-taskqueue already composed `RecommendedCSP` with its own hardening
+   (strip-and-reappend — CSP is first-occurrence-wins); that recurring
+   local patch is the evidence behind the RecommendedCSP-hardening
+   TODO_LIST row. library-policy serves the dashboard with no CSP
+   headers at all (works by absence of policy).
+
+Method note: the first consumer greps used `rg -E node_modules` — `-E`
+is ripgrep's ENCODING flag, not exclude — producing silent
+false-negatives ("no amber anywhere") until rerun with `-g '!…'`.
+Trust greps only with verified flag semantics.
