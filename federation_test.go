@@ -1,6 +1,7 @@
 package dashboard_test
 
 import (
+	"encoding/json"
 	"io"
 	"net"
 	"net/http"
@@ -227,5 +228,57 @@ func TestFederation_HealthzCapabilityForwarded(t *testing.T) {
 
 	if code := doRequest(t, mux, "/livez").Code; code != http.StatusServiceUnavailable {
 		t.Errorf("combined-traffic route must answer 503 while the hub drains, got %d", code)
+	}
+}
+
+// TestFederation_ReadyDrainsTo503WithFlag pins the LB-facing half of the
+// hub's SIGTERM drain end to end at the handler level: once the federation
+// prober is marked as shutting down, the readiness route answers 503 with
+// `"shutting_down":true` in the body while the liveness route keeps
+// answering 200. This is the assertion docs/drafts/dashboard-family-handoff.md
+// draft 2 asks for — the mark is exactly what cmd/health-hub's ctx.Done()
+// branch performs before holding the drain-observation window.
+func TestFederation_ReadyDrainsTo503WithFlag(t *testing.T) {
+	t.Parallel()
+
+	remote := serveHealthyRemote(t)
+
+	fed, err := healthfederation.New([]healthfederation.Remote{
+		{Name: "edge", URL: remote.URL},
+	})
+	if err != nil {
+		t.Fatalf("federation.New: %v", err)
+	}
+
+	dash := dashboard.New(fed)
+
+	mux := http.NewServeMux()
+	dash.RegisterRoutes(mux)
+
+	if code := doRequest(t, mux, "/readyz").Code; code != http.StatusOK {
+		t.Fatalf("readyz before the drain mark must answer 200, got %d", code)
+	}
+
+	fed.MarkShuttingDown()
+
+	w := doRequest(t, mux, "/readyz")
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("readyz after MarkShuttingDown must answer 503, got %d", w.Code)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &decoded); err != nil {
+		t.Fatalf("unmarshal readyz body %s: %v", w.Body.String(), err)
+	}
+	flag, ok := decoded["shutting_down"].(bool)
+	if !ok {
+		t.Fatalf("shutting_down missing or not a JSON bool in readyz body %s", w.Body.String())
+	}
+	if !flag {
+		t.Errorf("shutting_down = false, want true on the drained readiness body")
+	}
+
+	if code := doRequest(t, mux, "/healthz").Code; code != http.StatusOK {
+		t.Errorf("healthz must stay 200 while the hub drains (liveness is dependency-blind), got %d", code)
 	}
 }
