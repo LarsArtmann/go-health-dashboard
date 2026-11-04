@@ -46,7 +46,7 @@ pusher.go        — pusher struct (with atomic connection counter), PushMode en
 webhook.go       — webhookNotifier: change-only JSON transition pushes (WithWebhook), public-mode masking, bounded in-flight goroutines
 metrics.go       — Hand-rolled Prometheus text exposition 0.0.4 (WithMetrics), latency histogram, label escaping, deterministic sorted output
 trend.go         — TrendHandler (/health/trend: samples + transitions JSON) and ExportHandler (/health/export: JSON/CSV); shared jsonSamples/jsonTransitions wire mapping and the not-started vs not-enabled 503s
-csp.go           — RecommendedCSP(nonce): the verified strict CSP policy (no unsafe-inline; unsafe-eval for the Datastar SDK)
+csp.go           — RecommendedCSP(nonce) + RecommendedCSPStrict(nonce): the verified strict CSP policy and its hardened embedder variant (no unsafe-inline; unsafe-eval for the Datastar SDK; strict adds frame-ancestors/form-action/base-uri 'none')
 ratelimit.go     — Hand-rolled token bucket for WithRateLimit (429 + Retry-After; probes exempt)
 introspect.go    — IntrospectionHandler (WithIntrospection): resolved configuration as JSON, metadata-only
 favicon.go       — Embedded SVG favicon + FaviconHandler()
@@ -226,7 +226,7 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   user-data-dir, and Chrome 156's `LocalNetworkAccessChecks` feature gate.
   Do not "fix" a hang by raising the timeout.
 - **Bisect wall `071c251..HEAD`** — 24 auto-daemon mid-edit commits do not compile (immutable history); `git bisect skip` them — classes + list: `docs/gotchas.md`, `docs/status/archived/2026-09-04_19-15_bisectability-audit.md`.
-- **UI dependencies are pinned and guarded** — templ-components v1.26.0
+- **UI dependencies are pinned and guarded** — templ-components v1.27.0
   (root/datastar/utils/icons) + go-datastar v0.6.2 / static v0.6.1;
   `scripts/check-ui-pins.sh` (CI Build+Test steps) fails loudly on any
   movement — undocumented sweeps have landed ten times (ninth: the
@@ -262,7 +262,16 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   job carries the runtime verification, and a red there means revert pins
   + go.mod in one change. UI bumps require a dedicated change with a green
   browser suite (the unit suite cannot see these regressions) and the
-  guard pins updated IN THE SAME CHANGE.
+  guard pins updated IN THE SAME CHANGE. The TWELFTH movement (2026-11-04,
+  hours after the eleventh) rode a buildflow go-mod-update sweep onto the
+  day-old PAIRED release templ-components v1.27.0 + templ v0.3.1100 —
+  upstream requires the pairing (the v0.3.1100 generator emits
+  `templruntime.NewAttributeExpression`, which older templ runtimes do
+  not provide; mixing fails with `undefined` compile errors), so bump,
+  `go tool templ generate` regeneration, and pin-guard audit MUST land as
+  one change; nixpkgs' templ package ships an older generator whose
+  version string lies — only `go tool templ generate` is sanctioned
+  (the stamp guard enforces the generator half mechanically).
   Audit history, script-emitting-component vetting, and the green-tone
   contrast ban: `docs/gotchas.md`.
 - **Datastar v1.0 attribute names are colon-keyed** — the SDK (pinned
@@ -487,7 +496,7 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.9.0 in go.mod). The dashboar
 
 ### templ-components (`github.com/larsartmann/templ-components`)
 
-Provides `display` (Card, Table, Badge, StatCard, Grid), `feedback` (Alert with FeedbackType), `datastar` (LiveRegion, SDKScript), `layout` (Base with HTMXVersion="" to disable HTMX), `utils` (BaseProps).
+Provides `display` (Card, Table, Badge, StatCard, Grid), `feedback` (Alert with FeedbackType), `datastar` (LiveRegion, SDKScript), `layout` (Base with HTMXVersion="" to disable HTMX), `utils` (BaseProps). Pinned v1.27.0 with a HARD pairing requirement: templ-components ≥ v1.27.0 must pair with templ ≥ v0.3.1100 in go.mod AND the generator (upstream release note; mixing generators and runtimes fails with `undefined` compile errors). Upgrade both together and regenerate via `go tool templ generate` only.
 
 ### go-datastar (`github.com/larsartmann/go-datastar`)
 

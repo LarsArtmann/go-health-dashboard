@@ -230,6 +230,14 @@ if git fetch origin master --quiet 2>/dev/null; then
 		if [ -n "$ci_sha" ] && [ -n "$origin_tip" ] && [ "$ci_sha" != "$origin_tip" ]; then
 			echo "::warning::origin/master (${origin_tip}) has commits newer than the last CI run (${ci_sha}) — remote tip is not CI-tested"
 		fi
+		# The canary (race/shuffle/count=5) is the timing-flake leg; a red
+		# there is invisible to the per-push CI suite, so the desk gate
+		# surfaces it (report §e6, 2026-11-04).
+		canary_json=$(gh run list --workflow flake-canary.yml --branch master --limit 1 --json conclusion,headSha --jq '.[0] | "\(.conclusion) \(.headSha)"' 2>/dev/null || echo "")
+		canary_conclusion=${canary_json%% *}
+		if [ -n "$canary_conclusion" ] && [ "$canary_conclusion" != "success" ]; then
+			echo "::warning::last Nightly Flake Canary run on master is ${canary_conclusion} — the timing-flake leg failed; check flake-canary.yml runs before trusting a green unit suite"
+		fi
 	else
 		echo "::warning::gh not on PATH — CI-conclusion check skipped"
 	fi

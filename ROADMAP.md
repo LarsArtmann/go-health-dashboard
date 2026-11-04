@@ -93,6 +93,11 @@ Raw ideas:
   derive from `Since`; designed in the same note)
 - Incident tracking (annotate status changes with context) — deferred; needs
   product thought beyond the timeline card that shipped in the v0.3.x cycle
+- SSE connection counters + watchdog gauge as metrics
+  (`dashboard_sse_active_connections`, `dashboard_pusher_stale_total`) —
+  harvested 2026-11-04
+- Rate-limit observability: 429 counter and Retry-After histogram —
+  harvested 2026-11-04
 
 ### 4. Deployment Flexibility
 
@@ -107,6 +112,14 @@ Raw ideas:
   cost) — BLOCKED on the `GOEXPERIMENT=jsonv2` decision (Open Questions)
 - Screenshot or PDF export for incident reports — screenshots are covered by
   env-guarded tests; PDF remains out of scope
+- Per-client/per-IP rate limiting option (current `WithRateLimit` is global)
+  — harvested 2026-11-04
+- Request-logging middleware option (slog) for dashboard-owned routes —
+  harvested 2026-11-04
+- Jitter on `WithMaxConnectionLifetime` (avoid synchronized reconnect
+  herds across many clients) — harvested 2026-11-04
+- `Retry-After` header on connection-limit 503s (the rate limiter already
+  sends it; the SSE connection cap does not) — harvested 2026-11-04
 
 ### 5. Pipeline, Testing and Docs Tooling
 
@@ -175,6 +188,14 @@ Raw ideas:
   relaxation; blocked until both UI modules move)
 - Sign release tags (`tag.gpgSign`, documented in `docs/release-checklist.md`;
   compare links shipped in the CHANGELOG footer 2026-09-04)
+- Harvested 2026-11-04 from the gates-and-truth report §f: markdown-lint
+  pass over docs/ (mechanically catches table-escaping drift); codify the
+  cold-cache `check-ui-pins.sh` behavior as a test; devShell gains
+  shellcheck + actionlint (gate scripts lint locally without ad-hoc
+  fetches); `interrogate` doc-coverage evaluation; buildflow
+  rerun-failed-uncached baseline evidence for the cache-green class; hub
+  boot smoke test in CI (container runtime absent locally); cross-process
+  browser-test file-lock (fleet-level candidate for the 600s hang class)
 
 ### 6. Dashboard UI/UX polish (post-2026-10-09 revamp follow-ups)
 

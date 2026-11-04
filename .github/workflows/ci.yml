@@ -275,3 +275,19 @@ jobs:
 
       - name: nix flake check
         run: nix flake check
+
+  nix-build:
+    name: Nix build (vendorHash/FOD)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
+
+      # The plain-go jobs above cannot see vendorHash or FOD drift: the
+      # 2026-10-15..10-25 vendorHash drift and the guard cold-cache class
+      # were both CI-invisible for days. Building the default package (the
+      # health-hub buildGoModule FOD) exercises vendorHash and the templ
+      # FOD preBuild on every push.
+      - name: Build flake default package (health-hub)
+        run: nix build .#default

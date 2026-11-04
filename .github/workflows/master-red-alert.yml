@@ -1,0 +1,37 @@
+name: Master Red Alert
+
+# The 2026-10-14 → 2026-10-25 lesson: master CI stayed red for 11 days
+# unnoticed. Two triggers turn a red default branch into an open tracking
+# issue instead of silence: this workflow runs on every completed CI run
+# of master (fast path) and sweeps nightly (backstop for the case where
+# CI stops running at all — the green-recency detector in the script).
+# Secretless: uses the workflow's own GITHUB_TOKEN (issues: write);
+# paging happens through GitHub notifications on the tracking issue.
+# Fleet precedent: templ-components master-red-alert.yml (the v1.11.0
+# nine-day lesson), extended with go-cqrs-lite's sentinel green-recency.
+
+on:
+  schedule:
+    - cron: "23 5 * * *" # daily 05:23 UTC — off-peak minute (fleet convention)
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Open or update an issue when master pipelines are red
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/check-master-green.sh

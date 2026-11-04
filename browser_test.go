@@ -1297,6 +1297,116 @@ func TestBrowser_AggregateCSPClean(t *testing.T) {
 	assertNoBrowserErrors(t, errLog)
 }
 
+// TestBrowser_AggregateAxeAudit runs the full axe-core audit against the
+// source-GROUPED aggregate page — the hub-card surface (source cards,
+// severity-toned count chips, filter chips, namespaced rows) that the
+// single-probe TestBrowser_Accessibility never renders, and that the
+// 2026-10-25 quality batch flagged as never audited. Light theme only:
+// theming is CSS-class-only, the toggle mechanism is audited in the
+// single-probe test, and the harness serves no real stylesheet so contrast
+// is not computable either way.
+func TestBrowser_AggregateAxeAudit(t *testing.T) {
+	t.Parallel()
+
+	axeBytes := fetchAxeCore(t)
+
+	const nonce = "browser-agg-a11y-nonce"
+
+	apiInjector := do.New()
+	provideHealthy(apiInjector, "postgres")
+	invoke[*healthyService](t, apiInjector, "postgres")
+
+	apiProbe := health.New(apiInjector, health.WithRefreshInterval(100*time.Millisecond))
+	if err := apiProbe.Start(context.Background()); err != nil {
+		t.Fatalf("api probe start: %v", err)
+	}
+	defer apiProbe.Shutdown()
+
+	agg, err := aggregate.New(
+		aggregate.Source{Name: "api", Probe: apiProbe},
+	)
+	if err != nil {
+		t.Fatalf("aggregate.New: %v", err)
+	}
+
+	s := setupDashboardWithProber(t, agg,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithGrouping(dashboard.GroupBySource),
+		dashboard.WithTitle("Federation Hub"),
+	)
+	defer s.cleanup()
+
+	session := startBrowserSession(t, s, "")
+	ctx, errLog := session.ctx, session.errLog
+
+	waitForSubscriber(t, s.dash)
+
+	// Structural spot-checks that always run when Chrome is available:
+	// every interactive element on the card surface needs an accessible
+	// name (the count and filter chips are the new button population
+	// here), and the grouped page must actually render the card it
+	// audits — a fixture drift that hides the cards must not produce a
+	// vacuously green audit.
+	var missingNames, groupVisible string
+
+	if err := chromedp.Do(ctx,
+		evalInto(
+			`[...document.querySelectorAll("button,a")].filter(e => !e.textContent.trim() && !e.getAttribute("aria-label") && !e.getAttribute("title")).length + ""`,
+			&missingNames,
+		),
+		evalInto(`document.body.innerText.includes("api/postgres") ? "yes" : "no"`, &groupVisible),
+	); err != nil {
+		t.Fatalf("browser evaluate: %v", err)
+	}
+
+	if missingNames != "0" {
+		t.Errorf("%s button(s)/link(s) on the grouped page have no accessible name", missingNames)
+	}
+
+	if groupVisible != "yes" {
+		t.Fatalf("grouped aggregate page does not show the namespaced api/postgres row")
+	}
+
+	if axeBytes == nil {
+		return
+	}
+
+	inject := `(function () {
+		if (window.axe) { return; }
+		var s = document.createElement("script");
+		s.src = "/static/axe.js";
+		document.head.appendChild(s);
+	})()`
+
+	if err := chromedp.Do(ctx, evalDiscard(inject)); err != nil {
+		t.Fatalf("axe inject: %v", err)
+	}
+
+	waitForJS(
+		t, ctx, `window.axe !== undefined`)
+
+	// Same skip-link exclusion as the single-probe audit: sr-only until
+	// keyboard focus, and the harness serves no real Tailwind stylesheet.
+	start := `axe.run(
+		{ include: [document], exclude: [["a[href='#main-content']"]] },
+		{ resultTypes: ["violations"] }
+	).then(function (r) {
+		window.__axeViolations = JSON.stringify(r.violations.filter(function (v) {
+			return v.impact === "serious" || v.impact === "critical";
+		}).map(function (v) { return v.id + ":" + v.impact + ":" + v.nodes.length + ":" + v.nodes.map(function (n) { return n.html; }).join(" | ").slice(0, 200); }));
+	}).catch(function (e) {
+		window.__axeViolations = "AXE_ERROR: " + e;
+	})`
+
+	if audit := runAxeAudit(t, ctx, start); audit != "[]" {
+		t.Errorf("axe-core found serious/critical violations on the grouped page: %s", audit)
+	}
+
+	assertNoBrowserErrors(t, errLog)
+}
+
 // TestBrowser_CollapseInteract proves the healthy-group collapse end-to-end
 // under a strict CSP: the group starts collapsed (server-derived default),
 // clicking the summary expands it, and the next SSE patch re-applies the

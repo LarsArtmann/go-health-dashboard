@@ -17,15 +17,47 @@ forgetting.
 
 ### Added
 
-- Nothing yet.
+- `RecommendedCSPStrict(nonce)`: the hardened variant of the verified
+  policy — `base-uri` tightens from `'self'` to `'none'` and
+  `frame-ancestors`/`form-action` pin to `'none'` (neither falls back to
+  `default-src`, so the base policy leaves them permissive). Replaces the
+  strip-and-reappend patch strict consumers (go-taskqueue) had to carry,
+  which CSP's first-occurrence-wins semantics make impossible to express
+  by appending. The dashboard page runs unmodified under it; the base
+  `RecommendedCSP` bytes are unchanged.
+- Master-red-alert watchdog (`.github/workflows/master-red-alert.yml` +
+  `scripts/check-master-green.sh`): every completed CI run of master and
+  a nightly sweep turn a red default branch into an open tracking issue
+  (secretless — the workflow's own `GITHUB_TOKEN`; paging happens via
+  GitHub notifications). A green-recency detector on the sweep also fires
+  when CI has not been green for 3 days, covering the silently-dead-CI
+  class. Fleet precedents: templ-components' master-red-alert and
+  go-cqrs-lite's sentinel; closes the 11-day red-window blind spot.
+- CI `nix-build` job: builds the flake's default package (the health-hub
+  `buildGoModule` FOD) on every push, so vendorHash and FOD drift are
+  caught remotely — the 2026-10-15..10-25 vendorHash drift and the guard
+  cold-cache class were both invisible to the plain-go CI jobs.
+- Pre-push remote-state gate now also watches the Nightly Flake Canary
+  conclusion: a red timing-flake leg (race/shuffle/count=5) is invisible
+  to the per-push suite, so the desk gate surfaces it.
+- Fleet `sort | tail -1` anti-pattern audit over the sibling repos'
+  gate/release scripts: clean — every version pick already uses
+  `--sort=-v:refname` or `sort -V`; the plain-collation form was found
+  only over fixed-format `go tool cover` output, where it is safe.
 
 ### Changed
 
-- Nothing yet.
+- Adopted the paired UI-toolchain wave (templ-components v1.27.0 +
+  templ v0.3.1100): the release notes require the two to move together
+  (the v0.3.1100 generator emits `templruntime.NewAttributeExpression`,
+  which older templ runtimes do not provide), so the bump, the
+  regeneration, and the pin-guard audit landed in one change. No
+  rendered markup changed for the dashboard's component set.
 
 ### Fixed
 
 - Nothing yet.
+
 
 ## [0.13.0] - 2026-11-04
 
