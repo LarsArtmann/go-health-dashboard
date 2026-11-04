@@ -3,8 +3,8 @@ module github.com/larsartmann/go-health-dashboard
 go 1.27
 
 require (
-	github.com/a-h/templ v0.3.1070
-	github.com/chromedp/cdproto v0.158.4
+	github.com/a-h/templ v0.3.1100
+	github.com/chromedp/cdproto v0.159.0
 	github.com/chromedp/chromedp v0.21.0
 	github.com/dustin/go-humanize v1.1.0
 	github.com/larsartmann/go-datastar v0.6.2
@@ -17,7 +17,7 @@ require (
 	github.com/larsartmann/templ-components/icons v1.26.0
 	github.com/larsartmann/templ-components/utils v1.26.0
 	github.com/prometheus/client_model v0.6.3
-	github.com/prometheus/common v0.72.1
+	github.com/prometheus/common v0.73.1
 	github.com/samber/do/v2 v2.1.0
 )
 
@@ -38,6 +38,7 @@ require (
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/natefinch/atomic v1.0.1 // indirect
+	github.com/pandatix/go-abnf v0.5.3 // indirect
 	github.com/samber/go-type-to-string v1.8.0 // indirect
 	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/net v0.61.0 // indirect
