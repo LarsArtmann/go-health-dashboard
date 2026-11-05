@@ -359,3 +359,80 @@ func TestShutdown_HeartbeatGoroutinesExit(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 	}
 }
+
+// TestHeartbeatScan_DetectsAndDrainsOneConnection is the permanent
+// FAIL-path probe behind the 2026-11-05 flake fix: it proves the attributed
+// heartbeat scan (a) SEES a live connection's heartbeat goroutine while it
+// exists — the leak signature the watchdog must never go blind to — and
+// (b) sees it drain back to the sibling-noise floor after Shutdown plus
+// client close. It is the executable form of the one-off
+// before=0/during=1/after=0 probe run during that incident; if the scan's
+// frame match ever regresses, the detection phase fails loudly instead of
+// silently re-becoming the NumGoroutine false-positive class.
+func TestHeartbeatScan_DetectsAndDrainsOneConnection(t *testing.T) {
+	t.Parallel()
+
+	svc := &toggleService{}
+	svc.healthy.Store(true)
+
+	server, dash, cleanup := setupSSEServer(t, 50*time.Millisecond, svc,
+		dashboard.WithHeartbeatInterval(50*time.Millisecond),
+	)
+	defer cleanup()
+
+	baseline := heartbeatGoroutines()
+
+	//nolint:bodyclose // closed explicitly below after the drain poll
+	resp, err := http.Get(server.URL + "/health/sse")
+	if err != nil {
+		t.Fatalf("client connect: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	deadline := time.Now().Add(5 * time.Second)
+	for dash.SubscriberCount() != 1 {
+		if time.Now().After(deadline) {
+			t.Fatalf("SubscriberCount: want 1, got %d", dash.SubscriberCount())
+		}
+
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	// Detection: the connection's heartbeat goroutine must be visible to
+	// the attributed scan while the connection is live.
+	deadline = time.Now().Add(5 * time.Second)
+	for heartbeatGoroutines() <= baseline {
+		if time.Now().After(deadline) {
+			t.Fatalf(
+				"heartbeat scan went blind: baseline %d, now %d with 1 live subscriber — the (*pusher).Heartbeat frame match regressed",
+				baseline,
+				heartbeatGoroutines(),
+			)
+		}
+
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	dash.Shutdown()
+	_ = resp.Body.Close()
+
+	// Recovery: back to the sibling-noise floor, as in the watchdog test.
+	deadline = time.Now().Add(3 * time.Second)
+	for {
+		now := heartbeatGoroutines()
+		if dash.SubscriberCount() == 0 && now <= baseline+2 {
+			break
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatalf(
+				"heartbeat goroutines after shutdown: baseline %d, now %d (subscribers %d) — single-connection heartbeat leak",
+				baseline,
+				now,
+				dash.SubscriberCount(),
+			)
+		}
+
+		time.Sleep(50 * time.Millisecond)
+	}
+}
