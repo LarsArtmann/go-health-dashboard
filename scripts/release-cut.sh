@@ -49,7 +49,7 @@ die() {
 
 # 0. Preconditions.
 [ -z "$(git status --porcelain)" ] || die "working tree dirty — commit or stash first (a cut is a clean-tree operation)"
-git rev-parse -q --verify "refs/tags/$VERSION" > /dev/null && die "tag $VERSION already exists"
+git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null && die "tag $VERSION already exists"
 
 latest_tag=$(git tag --sort=-v:refname | head -1)
 if ! printf '%s\n%s\n' "${latest_tag#v}" "$VERSION_N" | sort -V | tail -1 | grep -qx "$VERSION_N"; then
@@ -101,14 +101,14 @@ else
 			next
 		}
 		{ print }
-	' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
+	' CHANGELOG.md >CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
 fi
 
 link_line="[$VERSION_N]: https://github.com/LarsArtmann/go-health-dashboard/compare/${latest_tag}...${VERSION}"
 if grep -qF "$link_line" CHANGELOG.md; then
 	: # already present (re-run after a partial failure)
 else
-	printf '%s\n' "$link_line" >> CHANGELOG.md
+	printf '%s\n' "$link_line" >>CHANGELOG.md
 fi
 grep -qF "$link_line" CHANGELOG.md || die "footer link missing after edit"
 echo "   ..  CHANGELOG re-headed to [$VERSION_N] - $TODAY + fresh [Unreleased] + footer link"

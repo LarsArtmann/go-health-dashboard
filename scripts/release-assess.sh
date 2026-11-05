@@ -97,8 +97,8 @@ else
 fi
 
 # 5. Remote state (best-effort — offline triage stays useful).
-if command -v gh > /dev/null 2>&1; then
-	last_run=$(gh run list --branch master --limit 1 --json conclusion,displayTitle --jq '.[0] | "\(.conclusion): \(.displayTitle)"' 2> /dev/null || true)
+if command -v gh >/dev/null 2>&1; then
+	last_run=$(gh run list --branch master --limit 1 --json conclusion,displayTitle --jq '.[0] | "\(.conclusion): \(.displayTitle)"' 2>/dev/null || true)
 	if [ -n "$last_run" ]; then
 		info "last master run: $last_run"
 		case "$last_run" in
@@ -109,7 +109,7 @@ if command -v gh > /dev/null 2>&1; then
 		warn "gh run list returned nothing (auth or offline?)"
 	fi
 
-	latest_release=$(gh release list --limit 5 --json tagName,isDraft,isLatest --jq '.[] | select(.isLatest) | "\(.tagName) draft=\(.isDraft)"' 2> /dev/null || true)
+	latest_release=$(gh release list --limit 5 --json tagName,isDraft,isLatest --jq '.[] | select(.isLatest) | "\(.tagName) draft=\(.isDraft)"' 2>/dev/null || true)
 	info "latest GitHub release: ${latest_release:-none visible}"
 else
 	warn "gh not available — remote state unchecked"
