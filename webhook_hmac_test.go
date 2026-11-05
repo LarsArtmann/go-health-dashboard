@@ -19,7 +19,7 @@ import (
 // verifyLikeReceiver recomputes the receiver-side HMAC over the delivered
 // "<timestamp>.<raw body>" material and compares constant-time, exactly as
 // the WithWebhookHMAC doc contract describes.
-func verifyLikeReceiver(secret []byte, t *testing.T, r *http.Request, rawBody []byte) bool {
+func verifyLikeReceiver(t *testing.T, secret []byte, r *http.Request, rawBody []byte) bool {
 	t.Helper()
 
 	sig := r.Header.Get("X-Health-Dashboard-Signature")
@@ -33,13 +33,13 @@ func verifyLikeReceiver(secret []byte, t *testing.T, r *http.Request, rawBody []
 		return false
 	}
 
-	ts := r.Header.Get("X-Health-Dashboard-Timestamp")
-	if _, err := strconv.ParseInt(ts, 10, 64); err != nil {
+	stamp := r.Header.Get("X-Health-Dashboard-Timestamp")
+	if _, err := strconv.ParseInt(stamp, 10, 64); err != nil {
 		return false
 	}
 
 	mac := hmac.New(sha256.New, secret)
-	mac.Write([]byte(ts))
+	mac.Write([]byte(stamp))
 	mac.Write([]byte("."))
 	mac.Write(rawBody)
 
@@ -52,7 +52,7 @@ func TestWebhookHMAC_SignsDeliveries(t *testing.T) {
 	const secret = "receiver-only-secret"
 
 	var (
-		mu     sync.Mutex
+		hookMu sync.Mutex
 		valid  bool
 		body   []byte
 		header http.Header
@@ -62,12 +62,12 @@ func TestWebhookHMAC_SignsDeliveries(t *testing.T) {
 	hook := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		raw, _ := io.ReadAll(r.Body)
 
-		mu.Lock()
-		valid = verifyLikeReceiver([]byte(secret), t, r, raw)
+		hookMu.Lock()
+		valid = verifyLikeReceiver(t, []byte(secret), r, raw)
 		body = raw
 		header = r.Header.Clone()
 		seen = true
-		mu.Unlock()
+		hookMu.Unlock()
 
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -85,9 +85,9 @@ func TestWebhookHMAC_SignsDeliveries(t *testing.T) {
 
 	deadline := time.Now().Add(3 * time.Second)
 	for {
-		mu.Lock()
+		hookMu.Lock()
 		done := seen
-		mu.Unlock()
+		hookMu.Unlock()
 
 		if done {
 			break
@@ -100,8 +100,8 @@ func TestWebhookHMAC_SignsDeliveries(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
+	hookMu.Lock()
+	defer hookMu.Unlock()
 
 	if !valid {
 		t.Fatalf("receiver rejected the signature on a signed delivery (sig %q, ts %q)",
@@ -126,12 +126,12 @@ func TestWebhookHMAC_Table(t *testing.T) {
 		{name: "signed when secret set", configured: "s3cret", wantHeaders: true},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			var (
-				mu        sync.Mutex
+				hookMu    sync.Mutex
 				signature string
 				timestamp string
 				custom    string
@@ -140,12 +140,12 @@ func TestWebhookHMAC_Table(t *testing.T) {
 
 			hook := httptest.NewServer(
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					mu.Lock()
+					hookMu.Lock()
 					signature = r.Header.Get("X-Health-Dashboard-Signature")
 					timestamp = r.Header.Get("X-Health-Dashboard-Timestamp")
 					custom = r.Header.Get("X-Custom-Auth")
 					seen = true
-					mu.Unlock()
+					hookMu.Unlock()
 
 					w.WriteHeader(http.StatusOK)
 				}),
@@ -154,7 +154,7 @@ func TestWebhookHMAC_Table(t *testing.T) {
 
 			notifier := newWebhookNotifier(Config{
 				WebhookURL:        hook.URL,
-				WebhookHMACSecret: tc.configured,
+				WebhookHMACSecret: testCase.configured,
 				WebhookHeaders:    map[string]string{"X-Custom-Auth": "bearer"},
 			})
 
@@ -167,9 +167,9 @@ func TestWebhookHMAC_Table(t *testing.T) {
 
 			deadline := time.Now().Add(3 * time.Second)
 			for {
-				mu.Lock()
+				hookMu.Lock()
 				op := seen
-				mu.Unlock()
+				hookMu.Unlock()
 
 				if op {
 					break
@@ -182,10 +182,10 @@ func TestWebhookHMAC_Table(t *testing.T) {
 				time.Sleep(10 * time.Millisecond)
 			}
 
-			mu.Lock()
-			defer mu.Unlock()
+			hookMu.Lock()
+			defer hookMu.Unlock()
 
-			if tc.wantHeaders {
+			if testCase.wantHeaders {
 				if signature == "" || timestamp == "" {
 					t.Fatalf("signed delivery missing headers: sig %q ts %q", signature, timestamp)
 				}
@@ -220,7 +220,7 @@ func TestWebhookHMAC_WrongSecretAndTamperFailVerification(t *testing.T) {
 	const secret = "the-real-secret"
 
 	var (
-		mu   sync.Mutex
+		hookMu sync.Mutex
 		hdr  http.Header
 		raw  []byte
 		seen bool
@@ -229,11 +229,11 @@ func TestWebhookHMAC_WrongSecretAndTamperFailVerification(t *testing.T) {
 	hook := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 
-		mu.Lock()
+		hookMu.Lock()
 		hdr = r.Header.Clone()
 		raw = body
 		seen = true
-		mu.Unlock()
+		hookMu.Unlock()
 
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -251,9 +251,9 @@ func TestWebhookHMAC_WrongSecretAndTamperFailVerification(t *testing.T) {
 
 	deadline := time.Now().Add(3 * time.Second)
 	for {
-		mu.Lock()
+		hookMu.Lock()
 		op := seen
-		mu.Unlock()
+		hookMu.Unlock()
 
 		if op {
 			break
@@ -266,15 +266,15 @@ func TestWebhookHMAC_WrongSecretAndTamperFailVerification(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
+	hookMu.Lock()
+	defer hookMu.Unlock()
 
 	sig := hdr.Get("X-Health-Dashboard-Signature")
-	ts := hdr.Get("X-Health-Dashboard-Timestamp")
+	stamp := hdr.Get("X-Health-Dashboard-Timestamp")
 
 	// Wrong secret: a receiver configured with a different key must reject.
 	mac := hmac.New(sha256.New, []byte("wrong-secret"))
-	mac.Write([]byte(ts))
+	mac.Write([]byte(stamp))
 	mac.Write([]byte("."))
 	mac.Write(raw)
 
@@ -289,7 +289,7 @@ func TestWebhookHMAC_WrongSecretAndTamperFailVerification(t *testing.T) {
 
 	// Sanity: the unmodified material verifies under the real secret.
 	realMac := hmac.New(sha256.New, []byte(secret))
-	realMac.Write([]byte(ts))
+	realMac.Write([]byte(stamp))
 	realMac.Write([]byte("."))
 	realMac.Write(raw)
 	if !hmac.Equal(delivered, realMac.Sum(nil)) {
@@ -301,7 +301,7 @@ func TestWebhookHMAC_WrongSecretAndTamperFailVerification(t *testing.T) {
 	tampered[len(tampered)-1] ^= 0x20
 
 	tamperMac := hmac.New(sha256.New, []byte(secret))
-	tamperMac.Write([]byte(ts))
+	tamperMac.Write([]byte(stamp))
 	tamperMac.Write([]byte("."))
 	tamperMac.Write(tampered)
 

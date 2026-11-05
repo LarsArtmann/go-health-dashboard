@@ -173,14 +173,14 @@ func (n *webhookNotifier) post(resp health.Response) {
 	req.Header.Set("Content-Type", "application/json")
 
 	if len(n.hmacSecret) > 0 {
-		ts := time.Now().Unix()
+		signedAt := time.Now().Unix()
 		mac := hmac.New(sha256.New, n.hmacSecret)
-		mac.Write(fmt.Appendf(nil, "%d.", ts))
+		mac.Write(fmt.Appendf(nil, "%d.", signedAt))
 		mac.Write(body)
 		sig := hex.EncodeToString(mac.Sum(nil))
 
 		req.Header.Set("X-Health-Dashboard-Signature", "sha256="+sig)
-		req.Header.Set("X-Health-Dashboard-Timestamp", strconv.FormatInt(ts, 10))
+		req.Header.Set("X-Health-Dashboard-Timestamp", strconv.FormatInt(signedAt, 10))
 	}
 
 	for k, v := range n.headers {
