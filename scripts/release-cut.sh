@@ -71,32 +71,38 @@ sed -i "s|const Version = \"[^\"]*\"|$const_line|" dashboard.go
 grep -qF "$const_line" dashboard.go || die "const bump failed"
 echo "   ..  const bumped: $const_line"
 
-# 2. CHANGELOG re-head + fresh Unreleased + footer link.
-old_section=$(grep -n '^## \[Unreleased\]' CHANGELOG.md | head -1 | cut -d: -f1)
-[ -n "$old_section" ] || die "[Unreleased] section not found in CHANGELOG.md"
+# 2. CHANGELOG re-head + fresh Unreleased + footer link. Idempotent: a
+#    re-run after a battery failure (see step 3's rollback) finds the
+#    version section already present and skips the transform.
+if grep -qF "## [$VERSION_N] - " CHANGELOG.md; then
+	echo "   ..  CHANGELOG already re-headed to [$VERSION_N] — resuming"
+else
+	old_section=$(grep -n '^## \[Unreleased\]' CHANGELOG.md | head -1 | cut -d: -f1)
+	[ -n "$old_section" ] || die "[Unreleased] section not found in CHANGELOG.md"
 
-awk -v ver="$VERSION_N" -v today="$TODAY" '
-	/^## \[Unreleased\]$/ && !done {
-		print "## [Unreleased]"
-		print ""
-		print "### Added"
-		print ""
-		print "- Nothing yet."
-		print ""
-		print "### Changed"
-		print ""
-		print "- Nothing yet."
-		print ""
-		print "### Fixed"
-		print ""
-		print "- Nothing yet."
-		print ""
-		print "## [" ver "] - " today
-		done=1
-		next
-	}
-	{ print }
-' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
+	awk -v ver="$VERSION_N" -v today="$TODAY" '
+		/^## \[Unreleased\]$/ && !done {
+			print "## [Unreleased]"
+			print ""
+			print "### Added"
+			print ""
+			print "- Nothing yet."
+			print ""
+			print "### Changed"
+			print ""
+			print "- Nothing yet."
+			print ""
+			print "### Fixed"
+			print ""
+			print "- Nothing yet."
+			print ""
+			print "## [" ver "] - " today
+			done=1
+			next
+		}
+		{ print }
+	' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
+fi
 
 link_line="[$VERSION_N]: https://github.com/LarsArtmann/go-health-dashboard/compare/${latest_tag}...${VERSION}"
 if grep -qF "$link_line" CHANGELOG.md; then
@@ -107,25 +113,37 @@ fi
 grep -qF "$link_line" CHANGELOG.md || die "footer link missing after edit"
 echo "   ..  CHANGELOG re-headed to [$VERSION_N] - $TODAY + fresh [Unreleased] + footer link"
 
-# 3. Full pre-push battery on the EDITED tree (gate 0 included; the
-# changelog lint now reads the edited file — the v0.12.0 lesson).
-echo "   ..  running pre-push-checks.sh on the edited tree (minutes; Go tooling)"
-bash scripts/pre-push-checks.sh || die "pre-push battery red on the edited tree — fix, then re-run the cut"
-
-# 4. Commit the two edited files + annotated tag.
+# 3. Commit + local tag FIRST, then the full battery. Order matters:
+#    the battery's version-guard check (const == latest tag) can only
+#    pass once the tag exists, and the changelog structural lint must
+#    read the EDITED file (the v0.12.0 lesson — gate 0 after the release
+#    edits, not before). If the battery fails, roll back both the commit
+#    (soft — the edits stay staged for fixing) and the local tag, then
+#    abort; nothing was pushed.
 git add dashboard.go CHANGELOG.md
-git commit -m "chore(release): cut $VERSION" \
-	-m "Version const + CHANGELOG re-head + footer link, battery green on the edited tree. Tag-first push follows; draft publishes manually after CI green + verify-release." ||
+if ! git commit -m "chore(release): cut $VERSION" \
+	-m "Version const + CHANGELOG re-head + footer link; battery green follows before any push. Tag-first push; draft publishes manually after CI green + verify-release."; then
 	die "commit failed"
-git tag -a "$VERSION" -m "$VERSION" || die "tag creation failed"
-echo "   ..  committed $(git rev-parse --short HEAD) + tagged $VERSION"
+fi
 
-# 5. Tag-first push, then master.
+git tag -a "$VERSION" -m "$VERSION" || die "tag creation failed"
+echo "   ..  committed $(git rev-parse --short HEAD) + tagged $VERSION (local)"
+
+echo "   ..  running pre-push-checks.sh on the tagged tree (minutes; Go tooling)"
+if ! bash scripts/pre-push-checks.sh; then
+	git reset --soft HEAD~1
+	git tag -d "$VERSION"
+	echo "::error::pre-push battery red on the tagged tree — rolled back (edits stay staged, local tag removed); fix and re-run the cut"
+	exit 1
+fi
+
+# 4. Tag-first push, then master.
 git push origin "$VERSION" || die "TAG PUSH FAILED — master untouched; resolve remote state before any further push"
 echo "   ..  tag pushed"
 git push origin HEAD || die "master push failed (tag is out) — push master manually once resolved"
 echo "   ..  master pushed"
 
+# 5. Human tail.
 cat <<RELEASE_NEXT
 
 NEXT STEPS (human-owned, remote state):
