@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Pre-commit hygiene (core.hooksPath=.githooks is set fleet-wide in
+# ~/.gitconfig; the directory's existence in a repo activates the hook).
+#
+# Blocks two classes:
+#   1. buildflow-drift-prone files (go.mod, go.sum, *_templ.go) staged
+#      WITHOUT SWEEP_OK=1 — the 2026-11-05 amend swept buildflow-authored
+#      drift into an intent commit via `git add -A`, and the 2026-09-22
+#      go-mod-update sweep rode a daemon commit the same way. A legitimate
+#      dependency bump or templ regeneration re-runs the commit with
+#      SWEEP_OK=1 (that override IS the deliberate-change signal).
+#   2. a structurally broken CHANGELOG — scripts/check-changelog.sh runs at
+#      commit time, not just push time (last session's entry sat unvalidated
+#      until CI; the lint is cheap and needs no Go toolchain).
+#
+# This hook does NOT block the auto-daemon's ordinary work: docs, scripts,
+# and source files commit normally — only the drift-prone trio needs the
+# override.
+set -euo pipefail
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+
+sweep=$(printf '%s\n' "$staged" | grep -E '^(go\.mod|go\.sum)$|_templ\.go$' || true)
+if [ -n "$sweep" ] && [ "${SWEEP_OK:-0}" != "1" ]; then
+	echo "::error::pre-commit: drift-prone files staged without SWEEP_OK=1:" >&2
+	printf '%s\n' "$sweep" | sed 's/^/  /' >&2
+	echo "A deliberate dependency bump or templ regeneration? Re-run:" >&2
+	echo "  SWEEP_OK=1 git commit ..." >&2
+	exit 1
+fi
+
+if ! bash scripts/check-changelog.sh > /dev/null 2>&1; then
+	echo "::error::pre-commit: CHANGELOG structural lint failed — run scripts/check-changelog.sh for details" >&2
+	exit 1
+fi
+
+exit 0

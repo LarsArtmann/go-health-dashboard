@@ -524,3 +524,11 @@ The DI container that go-health uses to discover health-checkable services. The 
 - **Lifecycle interfaces** — `Dashboard` implements `do.HealthcheckerWithContext` (`HealthCheck(ctx) error`) and `do.Shutdowner` (`Shutdown()`), verified by compile-time assertions. When registered via `Register`, the Dashboard participates in container-wide `do.HealthCheck` and `do.Shutdown` cascades.
 - **`Register(injector, probe, opts...)`** — Convenience function that creates the Dashboard and calls `do.ProvideValue`. Consumers who already have a `do.Injector` (required by go-health's `Probe`) can register the dashboard with a single call instead of manually wiring Start/Shutdown.
 - **`injector.Shutdown()` returns `*do.ShutdownReport`** (not `error` directly, though it implements `error`). Always returns non-nil — check `report.Succeed` or `len(report.Errors)`, not `!= nil`.
+- **Pre-commit hook guards drift-prone staging (2026-11-05)** — `.githooks/pre-commit`
+  (activated by the fleet-wide `core.hooksPath=.githooks`) blocks commits staging
+  `go.mod`/`go.sum`/`*_templ.go` without `SWEEP_OK=1` — the override IS the
+  deliberate-change signal (dep bumps, paired templ regenerations). It also runs
+  `scripts/check-changelog.sh` at COMMIT time (the lint is Go-free; last session's
+  entry sat unvalidated until CI). Ordinary daemon sweeps of docs/scripts/source
+  still commit; a sweep touching the trio now fails loudly instead of capturing
+  drift (the 2026-09-22 and 2026-11-05 sweep incidents are the rationale).
