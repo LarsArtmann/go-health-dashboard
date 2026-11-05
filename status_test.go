@@ -415,6 +415,69 @@ func TestFingerprintChecks_NoDelimiterCollision(t *testing.T) {
 	}
 }
 
+// TestFingerprintChecks_GoldenVectors pins the fingerprint format
+// byte-exactly (the stability contract documented on fingerprintChecks,
+// 2026-11-05): any change to the serialization is a breaking change to
+// push-mode change detection and webhook dedup and must be a deliberate,
+// changelog-documented act that updates these vectors in the same change.
+// Hand-derived from the algorithm: per check in sorted-name order,
+// "<len>:<name>;<len>:<status>;<len>:<error>;".
+func TestFingerprintChecks_GoldenVectors(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name  string
+		checks map[string]health.Check
+		want  string
+	}{
+		{
+			name:  "empty map is the empty string",
+			checks: map[string]health.Check{},
+			want:  "",
+		},
+		{
+			name: "two checks, one with error",
+			checks: map[string]health.Check{
+				"svc/db":    {Status: health.StatusPass},
+				"svc/cache": {Status: health.StatusWarn, Error: "timeout"},
+			},
+			want: "9:svc/cache;4:warn;7:timeout;6:svc/db;4:pass;0:;",
+		},
+		{
+			name: "delimiter-bearing name stays unambiguous",
+			checks: map[string]health.Check{
+				"we:ird;key": {Status: health.StatusPass},
+			},
+			want: "10:we:ird;key;4:pass;0:;",
+		},
+		{
+			name: "off status serializes like any status",
+			checks: map[string]health.Check{
+				"svc/analytics": {Status: health.StatusOff},
+			},
+			want: "13:svc/analytics;3:off;0:;",
+		},
+		{
+			name: "multi-field names sort before numbers (byte order)",
+			checks: map[string]health.Check{
+				"svc-02": {Status: health.StatusPass},
+				"svc-10": {Status: health.StatusPass},
+			},
+			want: "6:svc-02;4:pass;0:;6:svc-10;4:pass;0:;",
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := fingerprintChecks(testCase.checks); got != testCase.want {
+				t.Fatalf("fingerprint format drifted (BREAKING — see the stability contract):\n  got  %q\n  want %q", got, testCase.want)
+			}
+		})
+	}
+}
+
 // healthyChecks builds an n-entry all-pass checks map.
 func healthyChecks(n int) map[string]health.Check {
 	checks := make(map[string]health.Check, n)

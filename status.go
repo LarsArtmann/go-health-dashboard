@@ -1000,6 +1000,15 @@ func (row checkRow) displayName() string {
 // produces the same output (Go map iteration order is randomized). Each
 // field is length-prefixed so names containing delimiter characters can
 // never collide with a different split across name, status, and error.
+//
+// Stability contract (2026-11-05): the returned string IS the fingerprint —
+// per check in sorted-name order, "<len>:<name>;<len>:<status>;<len>:<error>;"
+// concatenated. Metadata is deliberately excluded (duration changes every
+// tick and would turn PushOnChange into a broadcast storm). The format is
+// pinned byte-exactly by TestFingerprintChecks_GoldenVectors; any change to
+// it is a BREAKING change to push-mode change detection and webhook dedup
+// semantics and must ship with a CHANGELOG note and a minor-version bump —
+// never as a silent refactor.
 func fingerprintChecks(checks map[string]health.Check) string {
 	keys := make([]string, 0, len(checks))
 

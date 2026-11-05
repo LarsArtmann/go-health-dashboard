@@ -501,6 +501,11 @@ Tested version matrix (`go.mod` is the live source of truth):
   `PushOnChange` re-announces the current state once after upgrading.
 - **Stability:** the exported API is 0.x and may still evolve; see
   [ROADMAP.md](ROADMAP.md) "v1.0 Criteria" for what a 1.0 freeze means.
+  Within 0.x, the push fingerprint format (the sorted, length-prefixed
+  `name/status/error` serialization behind `PushOnChange` and webhook
+  dedup) is pinned byte-exactly by golden vectors: any change to it ships
+  as a documented, minor-version-bumped breaking change with a one-time
+  re-announce after upgrade — never as a silent refactor.
 
 ## Dark Mode
 
