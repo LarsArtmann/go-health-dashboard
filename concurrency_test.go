@@ -382,7 +382,6 @@ func TestHeartbeatScan_DetectsAndDrainsOneConnection(t *testing.T) {
 
 	baseline := heartbeatGoroutines()
 
-	//nolint:bodyclose // closed explicitly below after the drain poll
 	resp, err := http.Get(server.URL + "/health/sse")
 	if err != nil {
 		t.Fatalf("client connect: %v", err)
