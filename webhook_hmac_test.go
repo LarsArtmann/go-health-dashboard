@@ -16,6 +16,67 @@ import (
 	health "github.com/larsartmann/go-health"
 )
 
+// webhookCapture collects one delivery's headers and raw body from the
+// receiver handler under a lock, so polls and assertions read a consistent
+// snapshot.
+type webhookCapture struct {
+	mu       sync.Mutex
+	headers  http.Header
+	rawBody  []byte
+	received bool
+}
+
+func (c *webhookCapture) record(r *http.Request) {
+	raw, _ := io.ReadAll(r.Body)
+
+	c.mu.Lock()
+	c.headers = r.Header.Clone()
+	c.rawBody = raw
+	c.received = true
+	c.mu.Unlock()
+}
+
+func (c *webhookCapture) header(name string) string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.headers.Get(name)
+}
+
+func (c *webhookCapture) body() []byte {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.rawBody
+}
+
+func (c *webhookCapture) delivered() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.received
+}
+
+// waitForHookDelivery polls until the receiver has captured a delivery or
+// the deadline passes, so webhook goroutine scheduling never races the
+// assertions.
+func waitForHookDelivery(t *testing.T, capture *webhookCapture) {
+	t.Helper()
+
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		if capture.delivered() {
+			return
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatal("no webhook delivery arrived within 3s")
+		}
+
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
 // verifyLikeReceiver recomputes the receiver-side HMAC over the delivered
 // "<timestamp>.<raw body>" material and compares constant-time, exactly as
 // the WithWebhookHMAC doc contract describes.
@@ -46,36 +107,33 @@ func verifyLikeReceiver(t *testing.T, secret []byte, r *http.Request, rawBody []
 	return hmac.Equal(delivered, mac.Sum(nil))
 }
 
+// recomputeSignature is the receiver-side recompute over an explicit
+// timestamp and raw body (for wrong-secret and tamper cases).
+func recomputeSignature(secret []byte, stamp string, rawBody []byte) []byte {
+	mac := hmac.New(sha256.New, secret)
+	mac.Write([]byte(stamp))
+	mac.Write([]byte("."))
+	mac.Write(rawBody)
+
+	return mac.Sum(nil)
+}
+
 func TestWebhookHMAC_SignsDeliveries(t *testing.T) {
 	t.Parallel()
 
-	const secret = "receiver-only-secret"
+	const hookSecret = "receiver-only-secret"
 
-	var (
-		hookMu sync.Mutex
-		valid  bool
-		body   []byte
-		header http.Header
-		seen   bool
-	)
+	capture := &webhookCapture{}
 
 	hook := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		raw, _ := io.ReadAll(r.Body)
-
-		hookMu.Lock()
-		valid = verifyLikeReceiver(t, []byte(secret), r, raw)
-		body = raw
-		header = r.Header.Clone()
-		seen = true
-		hookMu.Unlock()
-
+		capture.record(r)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer hook.Close()
 
 	notifier := newWebhookNotifier(Config{
 		WebhookURL:        hook.URL,
-		WebhookHMACSecret: secret,
+		WebhookHMACSecret: hookSecret,
 	})
 
 	notifier.fireOnChange(health.Response{
@@ -83,34 +141,26 @@ func TestWebhookHMAC_SignsDeliveries(t *testing.T) {
 		Checks: map[string]health.Check{"svc/db": {Status: health.StatusPass}},
 	})
 
-	deadline := time.Now().Add(3 * time.Second)
-	for {
-		hookMu.Lock()
-		done := seen
-		hookMu.Unlock()
+	waitForHookDelivery(t, capture)
 
-		if done {
-			break
-		}
-
-		if time.Now().After(deadline) {
-			t.Fatal("no signed delivery arrived within 3s")
-		}
-
-		time.Sleep(10 * time.Millisecond)
-	}
-
-	hookMu.Lock()
-	defer hookMu.Unlock()
-
-	if !valid {
-		t.Fatalf("receiver rejected the signature on a signed delivery (sig %q, ts %q)",
-			header.Get("X-Health-Dashboard-Signature"),
-			header.Get("X-Health-Dashboard-Timestamp"))
-	}
-
-	if len(body) == 0 {
+	if len(capture.body()) == 0 {
 		t.Fatal("delivered body empty")
+	}
+
+	stamp := capture.header("X-Health-Dashboard-Timestamp")
+	if _, err := strconv.ParseInt(stamp, 10, 64); err != nil {
+		t.Fatalf("non-integer timestamp %q: %v", stamp, err)
+	}
+
+	delivered, err := hex.DecodeString(
+		strings.TrimPrefix(capture.header("X-Health-Dashboard-Signature"), "sha256="),
+	)
+	if err != nil {
+		t.Fatalf("signature not sha256=-prefixed hex: %v", err)
+	}
+
+	if !hmac.Equal(delivered, recomputeSignature([]byte(hookSecret), stamp, capture.body())) {
+		t.Fatal("receiver-side verification failed on a correctly-signed delivery")
 	}
 }
 
@@ -130,23 +180,11 @@ func TestWebhookHMAC_Table(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			var (
-				hookMu    sync.Mutex
-				signature string
-				timestamp string
-				custom    string
-				seen      bool
-			)
+			capture := &webhookCapture{}
 
 			hook := httptest.NewServer(
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					hookMu.Lock()
-					signature = r.Header.Get("X-Health-Dashboard-Signature")
-					timestamp = r.Header.Get("X-Health-Dashboard-Timestamp")
-					custom = r.Header.Get("X-Custom-Auth")
-					seen = true
-					hookMu.Unlock()
-
+					capture.record(r)
 					w.WriteHeader(http.StatusOK)
 				}),
 			)
@@ -165,83 +203,68 @@ func TestWebhookHMAC_Table(t *testing.T) {
 				},
 			})
 
-			deadline := time.Now().Add(3 * time.Second)
-			for {
-				hookMu.Lock()
-				op := seen
-				hookMu.Unlock()
+			waitForHookDelivery(t, capture)
 
-				if op {
-					break
-				}
-
-				if time.Now().After(deadline) {
-					t.Fatal("no delivery arrived within 3s")
-				}
-
-				time.Sleep(10 * time.Millisecond)
-			}
-
-			hookMu.Lock()
-			defer hookMu.Unlock()
+			signature := capture.header("X-Health-Dashboard-Signature")
+			stamp := capture.header("X-Health-Dashboard-Timestamp")
 
 			if testCase.wantHeaders {
-				if signature == "" || timestamp == "" {
-					t.Fatalf("signed delivery missing headers: sig %q ts %q", signature, timestamp)
-				}
-
-				if _, err := strconv.ParseInt(timestamp, 10, 64); err != nil {
-					t.Fatalf("non-integer timestamp %q: %v", timestamp, err)
-				}
-
-				if !strings.HasPrefix(signature, "sha256=") {
-					t.Fatalf("signature lacks sha256= prefix: %q", signature)
-				}
+				assertSignedDelivery(t, signature, stamp)
 			} else {
-				if signature != "" || timestamp != "" {
-					t.Fatalf(
-						"unsigned delivery carries signature headers: sig %q ts %q",
-						signature,
-						timestamp,
-					)
-				}
+				assertUnsignedDelivery(t, signature, stamp)
 			}
 
-			if custom != "bearer" {
+			if custom := capture.header("X-Custom-Auth"); custom != "bearer" {
 				t.Fatalf("custom header lost when HMAC configured: %q", custom)
 			}
 		})
 	}
 }
 
+func assertSignedDelivery(t *testing.T, signature, stamp string) {
+	t.Helper()
+
+	if signature == "" || stamp == "" {
+		t.Fatalf("signed delivery missing headers: sig %q ts %q", signature, stamp)
+	}
+
+	if _, err := strconv.ParseInt(stamp, 10, 64); err != nil {
+		t.Fatalf("non-integer timestamp %q: %v", stamp, err)
+	}
+
+	if !strings.HasPrefix(signature, "sha256=") {
+		t.Fatalf("signature lacks sha256= prefix: %q", signature)
+	}
+}
+
+func assertUnsignedDelivery(t *testing.T, signature, stamp string) {
+	t.Helper()
+
+	if signature != "" || stamp != "" {
+		t.Fatalf(
+			"unsigned delivery carries signature headers: sig %q ts %q",
+			signature,
+			stamp,
+		)
+	}
+}
+
 func TestWebhookHMAC_WrongSecretAndTamperFailVerification(t *testing.T) {
 	t.Parallel()
 
-	const secret = "the-real-secret"
+	const hookSecret = "the-real-secret"
 
-	var (
-		hookMu sync.Mutex
-		hdr  http.Header
-		raw  []byte
-		seen bool
-	)
+	capture := &webhookCapture{}
 
 	hook := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, _ := io.ReadAll(r.Body)
-
-		hookMu.Lock()
-		hdr = r.Header.Clone()
-		raw = body
-		seen = true
-		hookMu.Unlock()
-
+		capture.record(r)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer hook.Close()
 
 	notifier := newWebhookNotifier(Config{
 		WebhookURL:        hook.URL,
-		WebhookHMACSecret: secret,
+		WebhookHMACSecret: hookSecret,
 	})
 
 	notifier.fireOnChange(health.Response{
@@ -249,63 +272,31 @@ func TestWebhookHMAC_WrongSecretAndTamperFailVerification(t *testing.T) {
 		Checks: map[string]health.Check{"svc/cache": {Status: health.StatusWarn}},
 	})
 
-	deadline := time.Now().Add(3 * time.Second)
-	for {
-		hookMu.Lock()
-		op := seen
-		hookMu.Unlock()
+	waitForHookDelivery(t, capture)
 
-		if op {
-			break
-		}
-
-		if time.Now().After(deadline) {
-			t.Fatal("no delivery arrived within 3s")
-		}
-
-		time.Sleep(10 * time.Millisecond)
-	}
-
-	hookMu.Lock()
-	defer hookMu.Unlock()
-
-	sig := hdr.Get("X-Health-Dashboard-Signature")
-	stamp := hdr.Get("X-Health-Dashboard-Timestamp")
-
-	// Wrong secret: a receiver configured with a different key must reject.
-	mac := hmac.New(sha256.New, []byte("wrong-secret"))
-	mac.Write([]byte(stamp))
-	mac.Write([]byte("."))
-	mac.Write(raw)
+	sig := capture.header("X-Health-Dashboard-Signature")
+	stamp := capture.header("X-Health-Dashboard-Timestamp")
 
 	delivered, err := hex.DecodeString(strings.TrimPrefix(sig, "sha256="))
 	if err != nil {
 		t.Fatalf("delivered signature not hex: %v", err)
 	}
 
-	if hmac.Equal(delivered, mac.Sum(nil)) {
+	// Wrong secret: a receiver configured with a different key must reject.
+	if hmac.Equal(delivered, recomputeSignature([]byte("wrong-secret"), stamp, capture.body())) {
 		t.Fatal("signature verified under a WRONG receiver secret")
 	}
 
 	// Sanity: the unmodified material verifies under the real secret.
-	realMac := hmac.New(sha256.New, []byte(secret))
-	realMac.Write([]byte(stamp))
-	realMac.Write([]byte("."))
-	realMac.Write(raw)
-	if !hmac.Equal(delivered, realMac.Sum(nil)) {
+	if !hmac.Equal(delivered, recomputeSignature([]byte(hookSecret), stamp, capture.body())) {
 		t.Fatal("delivered signature does not verify under the real secret")
 	}
 
 	// Tamper: flipping one payload byte must invalidate verification.
-	tampered := append([]byte(nil), raw...)
+	tampered := append([]byte(nil), capture.body()...)
 	tampered[len(tampered)-1] ^= 0x20
 
-	tamperMac := hmac.New(sha256.New, []byte(secret))
-	tamperMac.Write([]byte(stamp))
-	tamperMac.Write([]byte("."))
-	tamperMac.Write(tampered)
-
-	if hmac.Equal(delivered, tamperMac.Sum(nil)) {
+	if hmac.Equal(delivered, recomputeSignature([]byte(hookSecret), stamp, tampered)) {
 		t.Fatal("tampered body still verifies against the delivered signature")
 	}
 }
