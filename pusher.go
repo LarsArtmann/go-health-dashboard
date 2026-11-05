@@ -48,6 +48,10 @@ type pusher struct {
 	maxLifetime   time.Duration
 	connections   atomic.Int64
 	lastBroadcast atomic.Int64
+	// cancel stops the push loop: the loop runs on a child of Start's ctx
+	// (the caller owns that ctx, so Shutdown must not cancel it directly),
+	// and Shutdown releases the child to end the loop (issue #14).
+	cancel context.CancelFunc
 	// dropTotal counts SSE patches dropped because a subscriber's buffer
 	// was full. The broadcaster fires the hook once per FULL subscriber
 	// per broadcast, so this counts (client, broadcast) pairs — N slow

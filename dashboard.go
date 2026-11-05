@@ -223,23 +223,29 @@ func (d *Dashboard) sourceStatuses() map[string]health.Status {
 // Start launches the SSE pusher goroutine that broadcasts health updates to
 // connected clients. Call before serving HTTP traffic.
 //
-// The ctx controls the lifetime of the pusher goroutine. Call Shutdown to
-// stop it cleanly.
+// The push loop's lifetime derives from ctx internally (a child context the
+// Dashboard owns), so Shutdown stops the loop even when the caller's ctx
+// stays live; cancelling ctx also stops it.
 func (d *Dashboard) Start(ctx context.Context) error {
 	p := newPusher(d)
+
+	loopCtx, cancel := context.WithCancel(ctx)
+	p.cancel = cancel
 
 	d.push.Store(p)
 	d.started.Store(true)
 
-	go p.start(ctx)
+	go p.start(loopCtx)
 
 	return nil
 }
 
-// Shutdown stops the SSE pusher and closes all broadcaster connections.
-// When WithShutdownDrain is configured, new connections are rejected
-// immediately and existing clients get up to the configured window to
-// disconnect before the broadcaster closes. Safe to call multiple times.
+// Shutdown stops the SSE pusher loop and closes all broadcaster connections.
+// The loop goroutine exits even though the ctx passed to Start may still be
+// live — Shutdown owns the loop's internal lifetime, not the caller's ctx
+// (issue #14). When WithShutdownDrain is configured, new connections are
+// rejected immediately and existing clients get up to the configured window
+// to disconnect before the broadcaster closes. Safe to call multiple times.
 func (d *Dashboard) Shutdown() {
 	p := d.push.Swap(nil)
 	if p == nil {
@@ -255,6 +261,10 @@ func (d *Dashboard) Shutdown() {
 	}
 
 	p.broadcaster.Close()
+
+	// The loop exits through its usual ctx.Done path; the extra Close inside
+	// is a no-op (go-sse Close is idempotent).
+	p.cancel()
 }
 
 // ErrPusherNotActive is the parent sentinel for all "the real-time pusher is
