@@ -17,7 +17,13 @@ forgetting.
 
 ### Added
 
-- Nothing yet.
+- Mechanical buildflow gate for Go tooling: `scripts/go-tooling-gate.sh`
+  attributes buildflow processes via `/proc/PID/cwd` and exits 1 while a run
+  is active in THIS repository (runs in other repos are informational; an
+  unreadable cwd fails closed). Wired into every flake app, the devShell templ
+  wrapper, the devShell `go` shell function, and pre-push check 0 — the
+  attention-enforced "no Go tooling during a buildflow run" rule now fails
+  mechanically instead of by memory.
 
 ### Changed
 
@@ -33,13 +39,23 @@ forgetting.
   process. The loop now runs on an internal child of `Start`'s ctx that
   `Shutdown` releases after the broadcaster close; cancelling the caller's
   ctx also stops it, and `Start`/`Shutdown` remain safe to call in cycles.
+  Pinned by `TestShutdown_StopsPusherLoopGoroutine` (8 Start/Shutdown cycles:
+  a leak is +8 permanent goroutines against ±2 sibling churn, counted via an
+  attributed `(*pusher).start` stack scan; mutation-checked) and soaked
+  green under the full-package `-race -count=3` run (root package 72.5s,
+  2026-11-05).
 - The SSE heartbeat-leak watchdog test (`TestShutdown_HeartbeatGoroutinesExit`)
   no longer false-fails under loaded CI: its leak signal is now the count of
   goroutines actually running go-sse's per-connection `Heartbeat` loop
   (attributed, sibling-noise tolerant) instead of a process-wide
   `runtime.NumGoroutine` baseline, whose +2 slack over a ~190-goroutine
   package baseline read +11 unrelated parallel-fixture churn as a leak while
-  the dashboard's own subscribers had already drained to zero.
+  the dashboard's own subscribers had already drained to zero. The scan's
+  FAIL path is now pinned permanently by
+  `TestHeartbeatScan_DetectsAndDrainsOneConnection` (one live connection →
+  the scan must see its heartbeat; Shutdown + close → back to the
+  sibling-noise floor; mutation-checked: blinding the frame match fails
+  loudly with "scan went blind").
 
 ## [0.13.1] - 2026-11-04
 
