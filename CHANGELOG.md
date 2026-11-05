@@ -17,6 +17,20 @@ forgetting.
 
 ### Added
 
+- Nothing yet.
+
+### Changed
+
+- Nothing yet.
+
+### Fixed
+
+- Nothing yet.
+
+## [0.13.2] - 2026-11-05
+
+### Added
+
 - README "Compatibility Policy" section (v1.0-readiness criterion 3): semver
   discipline stated explicitly — patch releases never break, minor releases
   may break only with a CHANGELOG Compatibility note, deprecations run one
@@ -1574,3 +1588,4 @@ did not exist at `01277d3`.*
 [0.2.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/LarsArtmann/go-health-dashboard/compare/01277d3...v0.1.0
 [0.1.0-alpha]: https://github.com/LarsArtmann/go-health-dashboard/commit/01277d35044e4a71b8f309d0ebc48f0972d5f596
+[0.13.2]: https://github.com/LarsArtmann/go-health-dashboard/compare/v0.13.1...v0.13.2
