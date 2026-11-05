@@ -248,11 +248,39 @@ func auditWebhookDeliveries(t *testing.T, payloads []string) (bool, bool, bool) 
 
 // --- Heartbeat goroutine lifetime (plan M84) ---
 
+// heartbeatGoroutines counts goroutines currently running go-sse's
+// per-connection Heartbeat loop. The metric is attributable: sibling tests
+// hold at most a couple of live SSE connections at any instant, so a
+// fixture leaking its own five heartbeats dominates the reading — unlike
+// a process-wide runtime.NumGoroutine baseline, which ~350 parallel
+// fixtures turn into noise (the 2026-11-05 CI red read +11 unrelated
+// goroutines as a "leak" while SubscriberCount had already drained to 0).
+func heartbeatGoroutines() int {
+	buf := make([]byte, 1<<20) //nolint:makezero // runtime.Stack writes up to len, never append
+	for {
+		n := runtime.Stack(buf, true)
+		if n < len(buf) {
+			break
+		}
+		buf = make([]byte, 2*len(buf)) //nolint:makezero // ditto — grow the stack dump window
+	}
+
+	count := 0
+	for goroutine := range strings.SplitSeq(string(buf), "\n\n") {
+		if strings.Contains(goroutine, ".Heartbeat(") {
+			count++
+		}
+	}
+
+	return count
+}
+
 // TestShutdown_HeartbeatGoroutinesExit proves the per-connection heartbeat
 // goroutines do not leak across Shutdown: with five hot-beat connections,
-// after Shutdown plus closing every client the goroutine count returns to
-// its baseline (within noise) instead of staying elevated by one leaked
-// ticker per connection.
+// after Shutdown plus closing every client the heartbeat-goroutine count
+// returns to its pre-connect level (within sibling-test noise) instead of
+// staying elevated by one leaked ticker per connection, and the dashboard's
+// own subscriber accounting drains to zero.
 func TestShutdown_HeartbeatGoroutinesExit(t *testing.T) {
 	t.Parallel()
 
@@ -264,9 +292,7 @@ func TestShutdown_HeartbeatGoroutinesExit(t *testing.T) {
 	)
 	defer cleanup()
 
-	runtime.GC()
-	time.Sleep(50 * time.Millisecond)
-	baseline := runtime.NumGoroutine()
+	baseline := heartbeatGoroutines()
 
 	const clients = 5
 
@@ -304,7 +330,8 @@ func TestShutdown_HeartbeatGoroutinesExit(t *testing.T) {
 	}
 
 	// Every heartbeat goroutine is now beating every 50ms; a leak shows up
-	// as five goroutines that survive Shutdown.
+	// as five goroutines that survive Shutdown — five against a slack of
+	// two sibling connections.
 	dash.Shutdown()
 
 	for _, c := range open {
@@ -315,16 +342,14 @@ func TestShutdown_HeartbeatGoroutinesExit(t *testing.T) {
 
 	deadline = time.Now().Add(3 * time.Second)
 	for {
-		runtime.GC()
-
-		now := runtime.NumGoroutine()
+		now := heartbeatGoroutines()
 		if dash.SubscriberCount() == 0 && now <= baseline+2 {
 			break
 		}
 
 		if time.Now().After(deadline) {
 			t.Fatalf(
-				"goroutines after shutdown: baseline %d, now %d (subscribers %d) — heartbeat goroutines leak",
+				"heartbeat goroutines after shutdown: baseline %d, now %d (subscribers %d) — heartbeat goroutines leak",
 				baseline,
 				now,
 				dash.SubscriberCount(),

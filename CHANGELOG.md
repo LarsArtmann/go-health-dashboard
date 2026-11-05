@@ -25,7 +25,13 @@ forgetting.
 
 ### Fixed
 
-- Nothing yet.
+- The SSE heartbeat-leak watchdog test (`TestShutdown_HeartbeatGoroutinesExit`)
+  no longer false-fails under loaded CI: its leak signal is now the count of
+  goroutines actually running go-sse's per-connection `Heartbeat` loop
+  (attributed, sibling-noise tolerant) instead of a process-wide
+  `runtime.NumGoroutine` baseline, whose +2 slack over a ~190-goroutine
+  package baseline read +11 unrelated parallel-fixture churn as a leak while
+  the dashboard's own subscribers had already drained to zero.
 
 ## [0.13.1] - 2026-11-04
 
