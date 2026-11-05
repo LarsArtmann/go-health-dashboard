@@ -27,7 +27,10 @@ forgetting.
 
 ### Changed
 
-- Nothing yet.
+- Dependency bumps adopted in-tree (dependabot PR #22 auto-closed as
+  superseded by the templ paired adoption; PR #24's scope): chromedp/cdproto
+  v0.158.4 → v0.159.1 and prometheus/common v0.72.1 → v0.73.1, with the
+  vendorHash moved in the same change and the health-hub FOD verified green.
 
 ### Fixed
 
