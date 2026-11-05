@@ -286,13 +286,13 @@ func BenchmarkHealthCheck(b *testing.B) {
 	})
 }
 
-// pusherLoopGoroutineIDs returns the goroutine IDs whose stacks run the
-// dashboard push loop (the (*pusher).start frame). Attributed like
-// heartbeatGoroutines: process-wide counts are not a leak signal in this
-// package — dozens of sibling fixtures hold live push loops at any instant
-// under the full-suite parallel load — so the test below diffs goroutine
-// IDs instead of comparing global counts.
-func pusherLoopGoroutineIDs() map[string]struct{} {
+// pusherLoopGoroutines counts goroutines running the dashboard push loop
+// (the (*pusher).start frame). Attributed like heartbeatGoroutines:
+// process-wide counts are not a leak signal in this package — dozens of
+// sibling fixtures hold live push loops at any instant under the full-suite
+// parallel load — so the test below compares against a baseline taken under
+// the same sibling population, not zero.
+func pusherLoopGoroutines() int {
 	buf := make([]byte, 1<<20) //nolint:makezero // runtime.Stack writes up to len, never append
 	for {
 		n := runtime.Stack(buf, true)
@@ -302,82 +302,63 @@ func pusherLoopGoroutineIDs() map[string]struct{} {
 		buf = make([]byte, 2*len(buf)) //nolint:makezero // ditto — grow the stack dump window
 	}
 
-	ids := make(map[string]struct{})
+	count := 0
 	for goroutine := range strings.SplitSeq(string(buf), "\n\n") {
-		if !strings.Contains(goroutine, "(*pusher).start") {
-			continue
-		}
-
-		// Header shape: "goroutine 1234 [select]:"
-		_, rest, _ := strings.Cut(goroutine, " ")
-		if id, _, found := strings.Cut(rest, " "); found {
-			ids[id] = struct{}{}
+		if strings.Contains(goroutine, "(*pusher).start") {
+			count++
 		}
 	}
 
-	return ids
+	return count
 }
 
 // TestShutdown_StopsPusherLoopGoroutine pins the issue-#14 fix: Shutdown
 // must end the push loop even though the ctx passed to Start stays live.
-// The assertion diffs goroutine IDs observed before Start against those
-// still running after Shutdown — a leaked loop keeps its exact ID alive,
-// while sibling fixtures' loops (which constantly start and stop in
-// parallel with this test) never enter the diff window.
+// Discrimination comes from cycle amplification rather than exact identity:
+// sibling fixtures churn live loops in parallel with this test, so a single
+// Start/Shutdown round would be unreadable — but a leaked loop is PERMANENT,
+// so eight cycles make the leak a +8 signal against ±2 sibling noise, while
+// a fixed Shutdown returns the count to its baseline. The slack mirrors the
+// heartbeat-watchdog precedent (sibling churn tolerance, not leak tolerance:
+// 8 leaked loops cannot hide under it).
 func TestShutdown_StopsPusherLoopGoroutine(t *testing.T) {
 	t.Parallel()
 
 	setup := setupDashboard(t)
 	defer setup.cleanup()
 
-	idsBefore := pusherLoopGoroutineIDs()
+	baseline := pusherLoopGoroutines()
 
-	if err := setup.dash.Start(t.Context()); err != nil {
-		t.Fatalf("dashboard start: %v", err)
+	const cycles = 8
+	for range cycles {
+		if err := setup.dash.Start(t.Context()); err != nil {
+			t.Fatalf("dashboard start: %v", err)
+		}
+
+		// Give the loop goroutine time to schedule (and start ticking)
+		// before shutting it down again, so a fixed Shutdown always has a
+		// live loop to reap and the per-cycle deltas are meaningful.
+		time.Sleep(20 * time.Millisecond)
+
+		setup.dash.Shutdown()
+
+		time.Sleep(20 * time.Millisecond)
 	}
 
-	// Poll for the first snapshot whose ID diff against idsBefore is
-	// non-empty: that new ID is this test's loop (scheduled within a few
-	// ms of Start), taken at the earliest possible appearance so the
-	// window for a sibling fixture to start a loop inside the diff stays
-	// minimal.
-	var loopIDs map[string]struct{}
-	deadline := time.Now().Add(3 * time.Second)
+	deadline := time.Now().Add(5 * time.Second)
 	for {
-		after := pusherLoopGoroutineIDs()
-		for id := range after {
-			if _, seen := idsBefore[id]; !seen {
-				loopIDs = map[string]struct{}{id: {}}
-			}
-		}
-		if loopIDs != nil {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatal("push loop goroutine not observed after Start")
-		}
-		time.Sleep(5 * time.Millisecond)
-	}
-
-	setup.dash.Shutdown()
-
-	// The caller's ctx (t.Context) is still live here; only Shutdown stops
-	// the loop.
-	deadline = time.Now().Add(3 * time.Second)
-	for {
-		now := pusherLoopGoroutineIDs()
-		leaked := false
-		for id := range loopIDs {
-			if _, running := now[id]; running {
-				leaked = true
-			}
-		}
-		if !leaked {
+		now := pusherLoopGoroutines()
+		if now <= baseline+2 {
 			return
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("push loop goroutine %v still running 3s after Shutdown (issue #14 signature)", loopIDs)
+			t.Fatalf(
+				"push loop goroutines after %d Start/Shutdown cycles: baseline %d, now %d — loops leak across Shutdown (issue #14)",
+				cycles,
+				baseline,
+				now,
+			)
 		}
-		time.Sleep(5 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 }

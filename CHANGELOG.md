@@ -25,6 +25,14 @@ forgetting.
 
 ### Fixed
 
+- `Shutdown` now stops the SSE push loop goroutine (issue #14). The loop
+  previously ran on the `ctx` passed to `Start` and nothing cancelled it, so
+  a `Shutdown()` call leaked one ticking goroutine per dashboard — it kept
+  reading the probe cache, accruing trend/evidence samples, and broadcasting
+  into the already-closed broadcaster (silently dropped) for the life of the
+  process. The loop now runs on an internal child of `Start`'s ctx that
+  `Shutdown` releases after the broadcaster close; cancelling the caller's
+  ctx also stops it, and `Start`/`Shutdown` remain safe to call in cycles.
 - The SSE heartbeat-leak watchdog test (`TestShutdown_HeartbeatGoroutinesExit`)
   no longer false-fails under loaded CI: its leak signal is now the count of
   goroutines actually running go-sse's per-connection `Heartbeat` loop
