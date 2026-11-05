@@ -53,7 +53,7 @@ if [ "$EVENT" = "schedule" ] || [ "$EVENT" = "workflow_dispatch" ]; then
 	if [ -z "$latest_green" ] || [ "$latest_green" = "null" ]; then
 		RED_STALE+=("- no successful CI run found on master at all (CI may be dead)")
 	else
-		age_days=$(( ($(date +%s) - $(date -d "$latest_green" +%s)) / 86400 ))
+		age_days=$((($(date +%s) - $(date -d "$latest_green" +%s)) / 86400))
 		if [ "$age_days" -ge "$GREEN_RECENCY_DAYS" ]; then
 			RED_STALE+=("- last successful master CI run is $age_days day(s) old ($latest_green) — CI may be silently dead")
 		fi

@@ -260,20 +260,20 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   corrected delta. The local browser half of the ceremony could not run
   (host Chromium cannot load http(s), see the Chrome gotcha); CI's browser
   job carries the runtime verification, and a red there means revert pins
-  + go.mod in one change. UI bumps require a dedicated change with a green
-  browser suite (the unit suite cannot see these regressions) and the
-  guard pins updated IN THE SAME CHANGE. The TWELFTH movement (2026-11-04,
-  hours after the eleventh) rode a buildflow go-mod-update sweep onto the
-  day-old PAIRED release templ-components v1.27.0 + templ v0.3.1100 —
-  upstream requires the pairing (the v0.3.1100 generator emits
-  `templruntime.NewAttributeExpression`, which older templ runtimes do
-  not provide; mixing fails with `undefined` compile errors), so bump,
-  `go tool templ generate` regeneration, and pin-guard audit MUST land as
-  one change; nixpkgs' templ package ships an older generator whose
-  version string lies — only `go tool templ generate` is sanctioned
-  (the stamp guard enforces the generator half mechanically).
-  Audit history, script-emitting-component vetting, and the green-tone
-  contrast ban: `docs/gotchas.md`.
+  - go.mod in one change. UI bumps require a dedicated change with a green
+    browser suite (the unit suite cannot see these regressions) and the
+    guard pins updated IN THE SAME CHANGE. The TWELFTH movement (2026-11-04,
+    hours after the eleventh) rode a buildflow go-mod-update sweep onto the
+    day-old PAIRED release templ-components v1.27.0 + templ v0.3.1100 —
+    upstream requires the pairing (the v0.3.1100 generator emits
+    `templruntime.NewAttributeExpression`, which older templ runtimes do
+    not provide; mixing fails with `undefined` compile errors), so bump,
+    `go tool templ generate` regeneration, and pin-guard audit MUST land as
+    one change; nixpkgs' templ package ships an older generator whose
+    version string lies — only `go tool templ generate` is sanctioned
+    (the stamp guard enforces the generator half mechanically).
+    Audit history, script-emitting-component vetting, and the green-tone
+    contrast ban: `docs/gotchas.md`.
 - **Datastar v1.0 attribute names are colon-keyed** — the SDK (pinned
   v0.6.2 bundle) registers plugins by name and splits keys on `:`:
   `data-bind="query"` (not the pre-1.0 `data-model`),

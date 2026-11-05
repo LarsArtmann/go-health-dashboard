@@ -415,4 +415,3 @@ standing rule, not a one-off:
 - The same lens applies in reverse: a harness that adds styling
   production lacks (Play-CDN-only classes, for example) proves nothing
   about the compiled-CSS deployment.
-
