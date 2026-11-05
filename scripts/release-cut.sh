@@ -134,10 +134,10 @@ echo "   ..  tag pushed"
 git push origin HEAD || die "master push failed (tag is out) — push master manually once resolved"
 echo "   ..  master pushed"
 
-cat <<NEXT
+cat <<RELEASE_NEXT
 
 NEXT STEPS (human-owned, remote state):
   1. wait for CI on $(git rev-parse --short HEAD) — gh run watch (or gh run list)
   2. bash scripts/verify-release.sh $VERSION   # after CI green
   3. publish the auto-draft: gh release edit $VERSION --draft=false
-NEXT
+RELEASE_NEXT
