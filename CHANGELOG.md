@@ -17,6 +17,12 @@ forgetting.
 
 ### Added
 
+- README "Compatibility Policy" section (v1.0-readiness criterion 3): semver
+  discipline stated explicitly — patch releases never break, minor releases
+  may break only with a CHANGELOG Compatibility note, deprecations run one
+  full minor ahead of removal, the support line is the latest minor, and
+  v1.0 is a freeze owned by the ROADMAP criteria. The push fingerprint
+  contract (below) is the worked example of the format-change discipline.
 - Webhook HMAC signing: `WithWebhookHMAC(secret)` authenticates deliveries to
   receivers — HMAC-SHA256 over `<timestamp>.<body>` delivered as
   `X-Health-Dashboard-Signature: sha256=<hex>` plus

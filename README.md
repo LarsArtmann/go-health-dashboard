@@ -507,6 +507,33 @@ Tested version matrix (`go.mod` is the live source of truth):
   as a documented, minor-version-bumped breaking change with a one-time
   re-announce after upgrade — never as a silent refactor.
 
+## Compatibility Policy
+
+The module is 0.x and ships under [Semver](https://semver.org) with these
+standing promises:
+
+- **Patch releases (`0.x.Z`) never break.** They carry fixes, docs, and
+  tooling only. Wire contracts are pinned by golden/stability tests
+  (the `/health` JSON shape, export shape, webhook payload, metric names,
+  and the push fingerprint format), so a patch cannot silently change what
+  consumers parse.
+- **Minor releases (`0.x.0`) may carry breaking changes, but never
+  silently.** Every behavior or format change ships with a CHANGELOG
+  "Compatibility" note (the v0.7.0 `WithBasePath` precedent) describing
+  what changed, who is affected, and how to migrate. Format changes also
+  update their golden vectors in the same change — the fingerprint contract
+  is the worked example.
+- **Deprecation runs one full minor ahead of removal.** An option,
+  endpoint, or behavior marked deprecated keeps working for at least one
+  minor release with a deprecation notice in its doc comment and the
+  CHANGELOG; removal happens no earlier than the next minor after that.
+- **Support line: latest minor only.** Bug and security fixes target the
+  latest minor; see [SECURITY.md](SECURITY.md) for reporting and supported
+  versions. Once a 1.x line exists, it receives fixes per that policy.
+- **v1.0 is a freeze, not a number.** After v1.0, breaking changes require
+  a major version; the [ROADMAP](ROADMAP.md) "v1.0 Criteria" section owns
+  the readiness checklist.
+
 ## Dark Mode
 
 The dashboard respects the user's OS dark-mode preference and includes a
