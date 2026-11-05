@@ -34,6 +34,12 @@ forgetting.
 
 ### Changed
 
+- The push fingerprint format is now a pinned, documented contract (resolves
+  the 0.4.0-era "pending a versioning decision"): the sorted, length-prefixed
+  `name/status/error` serialization is frozen byte-exactly by golden-vector
+  tests, the function doc declares any format change a breaking change
+  (CHANGELOG note + minor-version bump), and README states the guarantee.
+  No behavior change — the format is exactly what 0.4.0 shipped.
 - Dependency bumps adopted in-tree (dependabot PR #22 auto-closed as
   superseded by the templ paired adoption; PR #24's scope): chromedp/cdproto
   v0.158.4 → v0.159.1 and prometheus/common v0.72.1 → v0.73.1, with the

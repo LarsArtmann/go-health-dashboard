@@ -426,14 +426,14 @@ func TestFingerprintChecks_GoldenVectors(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name  string
+		name   string
 		checks map[string]health.Check
-		want  string
+		want   string
 	}{
 		{
-			name:  "empty map is the empty string",
+			name:   "empty map is the empty string",
 			checks: map[string]health.Check{},
-			want:  "",
+			want:   "",
 		},
 		{
 			name: "two checks, one with error",
@@ -472,7 +472,11 @@ func TestFingerprintChecks_GoldenVectors(t *testing.T) {
 			t.Parallel()
 
 			if got := fingerprintChecks(testCase.checks); got != testCase.want {
-				t.Fatalf("fingerprint format drifted (BREAKING — see the stability contract):\n  got  %q\n  want %q", got, testCase.want)
+				t.Fatalf(
+					"fingerprint format drifted (BREAKING — see the stability contract):\n  got  %q\n  want %q",
+					got,
+					testCase.want,
+				)
 			}
 		})
 	}
