@@ -150,7 +150,7 @@
                 "-X github.com/larsartmann/go-health-dashboard/pkg/version.injected=${self.shortRev or "dev"}"
               ];
 
-              vendorHash = "sha256-p3OdqhqmFNx9zvpk4Ar/9C4oYzpydky1VdRZAWtNZD0=";
+              vendorHash = "sha256-7eXwlsmjpOdPBPFy1QmHsn162XHms9n2RV1m5K6IrYk=";
 
               meta = {
                 description = "Federation hub serving a real-time health dashboard over N remote go-health instances";
