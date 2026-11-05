@@ -17,6 +17,13 @@ forgetting.
 
 ### Added
 
+- Webhook HMAC signing: `WithWebhookHMAC(secret)` authenticates deliveries to
+  receivers — HMAC-SHA256 over `<timestamp>.<body>` delivered as
+  `X-Health-Dashboard-Signature: sha256=<hex>` plus
+  `X-Health-Dashboard-Timestamp` (unix seconds). Opt-in and stdlib-only;
+  empty secret (default) leaves deliveries unsigned, and user-supplied
+  `WebhookHeaders` are unaffected. Receivers verify by recomputing the HMAC
+  over the raw body with `hmac.Equal` and rejecting stale timestamps.
 - Mechanical buildflow gate for Go tooling: `scripts/go-tooling-gate.sh`
   attributes buildflow processes via `/proc/PID/cwd` and exits 1 while a run
   is active in THIS repository (runs in other repos are informational; an

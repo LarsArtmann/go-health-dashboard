@@ -315,6 +315,13 @@ dash := dashboard.New(probe,
 )
 ```
 
+Receivers can authenticate deliveries instead of trusting the network:
+`WithWebhookHMAC(secret)` signs every payload with HMAC-SHA256 over
+`<timestamp>.<body>`, delivered as `X-Health-Dashboard-Signature: sha256=<hex>`
+plus `X-Health-Dashboard-Timestamp`. Verify by recomputing the HMAC over the
+raw body (read it before unmarshalling), comparing with `hmac.Equal`, and
+rejecting timestamps outside your replay window.
+
 ## Multi-Service Dashboards (aggregate)
 
 One process embedding several logical services? go-health v0.1.0's

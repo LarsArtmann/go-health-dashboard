@@ -70,6 +70,7 @@
 | Pusher staleness watchdog                             | 🟢 `FULLY_FUNCTIONAL` | `dashboard.go` — `HealthCheck` returns `ErrPusherStale` after `max(3× push interval, 1s floor)` so fast probes are not false-flagged; report-only                  |
 | Webhook push (`WithWebhook`)                          | 🟢 `FULLY_FUNCTIONAL` | `webhook.go` — change-only JSON transitions + initial announce, independent of PushMode; 10s timeout, bounded in-flight, silent best-effort; `integration_test.go` |
 | Webhook auth headers + public-mode masking            | 🟢 `FULLY_FUNCTIONAL` | `options.go` `WithWebhookHeaders` + `webhook.go` — canonical Go headers, `check-N` masking and error stripping in public mode; `integration_test.go`               |
+| Webhook HMAC signing (`WithWebhookHMAC`)              | 🟢 `FULLY_FUNCTIONAL` | `webhook.go` — HMAC-SHA256 over `<timestamp>.<body>`, `X-Health-Dashboard-Signature: sha256=<hex>` + `X-Health-Dashboard-Timestamp` headers, stdlib-only, opt-in (empty = unsigned); wrong-secret + tamper rejection pinned in `webhook_hmac_test.go` |
 
 ## Multi-Service and Integration
 
