@@ -42,14 +42,6 @@ VERSION="v${1#v}"
 VERSION_N="${VERSION#v}"
 TODAY=$(date +%F)
 
-# Self-select the right go (AGENTS.md: repo scripts that exec go need the
-# devShell; ambient PATH go may predate go.mod's floor).
-if go list -m github.com/larsartmann/go-health >/dev/null 2>&1; then
-	GO=(go)
-else
-	GO=(nix develop -c go)
-fi
-
 die() {
 	echo "::error::$1"
 	exit 1
