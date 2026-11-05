@@ -2,10 +2,14 @@ package dashboard
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json/v2"
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -63,11 +67,12 @@ func (s *webhookDeliveryStats) record(ok bool, seconds float64) {
 }
 
 type webhookNotifier struct {
-	stats   *webhookDeliveryStats
-	url     string
-	headers map[string]string
-	public  bool
-	client  *http.Client
+	stats      *webhookDeliveryStats
+	url        string
+	headers    map[string]string
+	hmacSecret []byte
+	public     bool
+	client     *http.Client
 
 	mu              sync.Mutex
 	lastStatus      health.Status
@@ -85,10 +90,11 @@ func newWebhookNotifier(cfg Config) *webhookNotifier {
 	}
 
 	return &webhookNotifier{
-		url:     cfg.WebhookURL,
-		headers: cfg.WebhookHeaders,
-		public:  cfg.PublicMode,
-		client:  &http.Client{Timeout: webhookTimeout},
+		url:        cfg.WebhookURL,
+		headers:    cfg.WebhookHeaders,
+		hmacSecret: []byte(cfg.WebhookHMACSecret),
+		public:     cfg.PublicMode,
+		client:     &http.Client{Timeout: webhookTimeout},
 	}
 }
 
@@ -165,6 +171,17 @@ func (n *webhookNotifier) post(resp health.Response) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+
+	if len(n.hmacSecret) > 0 {
+		ts := time.Now().Unix()
+		mac := hmac.New(sha256.New, n.hmacSecret)
+		mac.Write(fmt.Appendf(nil, "%d.", ts))
+		mac.Write(body)
+		sig := hex.EncodeToString(mac.Sum(nil))
+
+		req.Header.Set("X-Health-Dashboard-Signature", "sha256="+sig)
+		req.Header.Set("X-Health-Dashboard-Timestamp", strconv.FormatInt(ts, 10))
+	}
 
 	for k, v := range n.headers {
 		req.Header.Set(k, v)

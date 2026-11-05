@@ -135,6 +135,11 @@ type Config struct {
 	// receiver authentication (e.g. {"Authorization": "Bearer ..."}).
 	// Nil/empty (default) sends only Content-Type.
 	WebhookHeaders map[string]string
+
+	// WebhookHMACSecret signs every webhook delivery with HMAC-SHA256 when
+	// non-empty (see WithWebhookHMAC). Empty (default) leaves deliveries
+	// unsigned.
+	WebhookHMACSecret string
 }
 
 // WithMiddleware wraps every dashboard-owned handler (dashboard HTML, SSE,
@@ -310,6 +315,28 @@ func WithWebhook(url string) Option {
 func WithWebhookHeaders(headers map[string]string) Option {
 	return func(cfg *Config) {
 		cfg.WebhookHeaders = headers
+	}
+}
+
+// WithWebhookHMAC signs every webhook delivery with HMAC-SHA256 so the
+// receiver can authenticate that the payload came from this dashboard and
+// was not tampered with in transit:
+//
+//	dashboard.WithWebhook(url, WithWebhookHMAC(secret))
+//
+// Each delivery carries two extra headers:
+//
+//   - X-Health-Dashboard-Signature: "sha256=" + hex(HMAC-SHA256(secret,
+//     "<timestamp>.<body>"))
+//   - X-Health-Dashboard-Timestamp: unix seconds at signing time
+//
+// A receiver verifies by recomputing HMAC over "<timestamp>.<raw body>"
+// (read the body BEFORE any unmarshal) and comparing with hmac.Equal,
+// then rejecting timestamps outside its replay window. The secret is never
+// logged. Empty string (default) leaves deliveries unsigned.
+func WithWebhookHMAC(secret string) Option {
+	return func(cfg *Config) {
+		cfg.WebhookHMACSecret = secret
 	}
 }
 
