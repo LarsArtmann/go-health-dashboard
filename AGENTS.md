@@ -382,7 +382,14 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   DIRECTORY (`.`), not `./...`. (2) A stale erraudit binary fails with a
   bogus "updates to go.mod needed" — trust `erraudit version`, rebuild from
   HEAD. (3) Never run Go tooling while a buildflow run is active (torn
-  go.mod/`*_templ.go` state). (4) `go-mod-update` sweeps the UI pins — run
+  go.mod/`*_templ.go` state) — MECHANICAL since 2026-11-05:
+  `scripts/go-tooling-gate.sh` (pgrep + `/proc/PID/cwd` attribution; runs in
+  OTHER repos are informational-only and don't block; unreadable cwd fails
+  closed) is prepended to every flake app via mkApp, the devShell templ
+  wrapper, the devShell `go` shell function, and pre-push check 0. Run the
+  gate directly before any hand-invoked `nix develop -c go ...` that bypasses
+  those paths (e.g. inside `bash scripts/<x>.sh`, which doesn't inherit the
+  devShell function). (4) `go-mod-update` sweeps the UI pins — run
   local gates as `buildflow --build-mode dev --exclude go-mod-update` and
   check `git diff go.mod go.sum` after ANY buildflow run (the 2026-09-22
   sweep + revert: `docs/gotchas.md`). (5) The flake's nix-build steps fail

@@ -39,11 +39,34 @@
           # Must satisfy go.mod's floor — bump both in the same change.
           goPkg = pkgs.go_1_27;
 
+          # Go-tooling gate as a store artifact: every app below and the
+          # templ wrapper prepend it, so `nix run .#test` (and friends)
+          # refuse to start while a buildflow run is active in this repo —
+          # its steps mutate go.mod and *_templ.go mid-flight, and the
+          # attention-enforced version of that rule failed twice in two
+          # consecutive sessions (2026-11-04/05).
+          goToolingGate = pkgs.writeShellApplication {
+            name = "go-tooling-gate";
+            runtimeInputs = [
+              pkgs.coreutils
+              pkgs.procps
+              pkgs.git
+            ];
+            text = builtins.readFile ./scripts/go-tooling-gate.sh;
+          };
+
           mkApp =
             name: description: runtimeInputs: text:
             let
               script = pkgs.writeShellApplication {
-                inherit name runtimeInputs text;
+                inherit name runtimeInputs;
+                # Gate first: writeShellApplication enables errexit, so a
+                # repo-local buildflow run aborts the app before any Go
+                # tooling spawns.
+                text = ''
+                  ${lib.getExe goToolingGate}
+                  ${text}
+                '';
               };
             in
             {
@@ -59,8 +82,14 @@
           # the tree on every bare run (2026-10-25 skew incident).
           templWrapper = pkgs.writeShellApplication {
             name = "templ";
-            runtimeInputs = [ goPkg ];
+            runtimeInputs = [
+              goPkg
+              pkgs.coreutils
+              pkgs.procps
+              pkgs.git
+            ];
             text = ''
+              ${lib.getExe goToolingGate}
               exec go tool templ "$@"
             '';
           };
@@ -167,6 +196,20 @@
               echo "GOWORK=off (ignore parent workspace)" >&2
               echo "GO_HEALTH_DASHBOARD_CHROME=$GO_HEALTH_DASHBOARD_CHROME (browser suite)" >&2
               echo "templ is proxied to 'go tool templ' (go.mod pin) — bare invocations are safe here" >&2
+              # Mechanical no-Go-during-buildflow rule for bare `go ...
+              # invocations (scripts/go-tooling-gate.sh). Defined after the
+              # banner so the banner's own `go version` stays ungated;
+              # stdout stays clean because the gate writes to stderr.
+              go() {
+                local gate
+                gate="$({ git rev-parse --show-toplevel 2>/dev/null || pwd; })/scripts/go-tooling-gate.sh"
+                if [ -f "$gate" ]; then
+                  bash "$gate" || return 1
+                else
+                  echo "go-tooling-gate: gate script not found — running ungated" >&2
+                fi
+                command go "$@"
+              }
             '';
           };
 

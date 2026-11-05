@@ -2,6 +2,9 @@
 # Local session-closing gate — encodes the exact drift-guard formulas CI
 # runs, so a red job is discovered at the desk instead of after a push:
 #
+#   0. Buildflow-run gate (scripts/go-tooling-gate.sh) — must precede
+#      every Go-tooling check below; a repo-local buildflow run mutates
+#      go.mod/*_templ.go mid-flight (see the script header)
 #   1. FEATURES.md test-suite counts vs the actual *_test.go files
 #   2. Version const vs the latest git tag (version-guard job)
 #   3. UI dependency pins (scripts/check-ui-pins.sh)
@@ -54,6 +57,15 @@ run_tool() {
 	else
 		return 1
 	fi
+}
+
+# 0. Buildflow-run gate: checks 8+ exec Go tooling; running them while a
+#    repo-local buildflow run mutates go.mod/*_templ.go reads torn state
+#    (violated attentionally twice, 2026-11-04/05 — now mechanical).
+#    Abort immediately: later checks must not run in that window.
+bash scripts/go-tooling-gate.sh || {
+	echo "::error::pre-push aborted at check 0 — resolve the repo-local buildflow run before pushing"
+	exit 1
 }
 
 # 1. FEATURES test-count drift guard (same formula as ci.yml).
