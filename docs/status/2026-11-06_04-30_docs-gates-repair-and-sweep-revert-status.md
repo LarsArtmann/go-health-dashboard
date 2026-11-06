@@ -1,0 +1,43 @@
+# Status Report — Docs-Gates Repair, the ci.yml Permissions Fix, and the Sweep Revert
+
+**Session:** 2026-11-05 ~18:30 → 2026-11-06 ~04:30 CET (single execution session, user directive: break down, execute, verify, keep going).
+**Trigger:** the evening `buildflow --fix --build-mode=full` run failed (exit 1) with one hard step failure (`test-coverage`) plus a findings tail nobody had triaged.
+**Baseline:** master at `d7059a9` pushed, tree clean, v0.13.2 published (verify-release 9/9).
+
+---
+
+## a) FULLY DONE
+
+1. **The original failure was a transient, and it is verified as such.** `test-coverage` died in 18.6s during the 18:41 run while three other repos' buildflow runs held the host at load 60+. The stored output was truncated to 1979 chars (the failing test name is unrecoverable), but re-running the step uncached passes twice at HEAD — once via `BUILDFLOW_NO_RESULT_CACHE=1 buildflow -s test-coverage` (218.5s real execution under load 72) and once via raw `go test -count=1 -shuffle=<the very seed from the failed run> -cover ./...`. Buildflow itself classifies it `[transient:tool.execution_failed]`. No code change warranted; the documented wall-clock flake class (2026-10-11) absorbs it.
+2. **cue-vet error fixed: ci.yml `permissions:`.** The fleet cue-policy (`ci_workflow.cue`) requires a top-level `permissions:` block; `ci.yml` was the only workflow without one. Added `permissions: contents: read` (minimal grant, matching release-check/flake-canary). `buildflow -s cue-vet` → zero findings.
+3. **docs-gates battery taken from 3 red gates to ALL GREEN** (freshness / audit-all / annotate / routing / cadence). The repair, in order of scale:
+   - **annotate gate (was 821 findings → 0):** 759 malformed `| ~~ |` unclosed marker cells closed to the canonical `~~ ~~` empty-struck-cell form (mechanical, per-cell-parity rule G); 3 true straddle rows re-struck per cell; 1 code-span-pipe row reworded (rule G splits cells on unescaped pipes); 53 A/evidence verdicts rewritten into the gate's actual vocabulary (`markerRe`: done/resolved/superseded/fixed/adopted/decided/verified/won't implement/not-do/duplicate/struck/moot/no longer — "satisfied", "Still open", and bare "routed" are NOT markers, and `openPhrases` voids them); 5 rule-F inline-code spacing fixes; 8 C/path verdict citations rewritten to point at things that exist (the gate Lstat-checks every path-like token in a verdict).
+   - **audit-all gate (was ~108 unharvested → ratcheted):** 16 August-era items struck with VERIFIED dispositions (each checked against the current tree: WithCSSPath exists at `ed2b759`, flake.lock at `29f3382`, .golangci.yml at `a3ea558`, sse_integration_test.go, og: tags, dependabot.yml, CI race job, SubscriberCount, the go-health design-doc module reference), 4 rows from the 02-48 report routed to their existing TODO_LIST rows, and the 88-item pre-canon remainder pinned by `.docs-gates.json` `audit_max: 88` — the gate author's explicit doctrine ("draining a legacy backlog in one sitting was never this gate's job"; the upstream gate sat permanently red at 78 items for 15 days). TODO_LIST carries the drain row.
+   - **cadence gate (was 18 unarchived > 15 → PASS):** archive ritual run for the three oldest eligible reports (17-02 full audit, 17-53 dedup-fixture, 19-17 self-review): items dispositioned, `check-rows --strict` + `bare-rows` run BEFORE the `git mv` (both green — the two session-metadata fact-tables carry the sanctioned exact-line `<!-- check-rows:ledger -->` exemption), Live-remainder banners added, bulk-archive manifest appended to `docs/status/archived/README.md`. 15 unarchived ≤ 15.
+4. **The templ-tool break and the dependency sweep — found, root-caused, reverted.** `buildflow format` failed: `go tool templ` cannot compile because our module graph selects `a-h/parse v0.0.0-20261027` (which removed `parse.Parser[string].Match`) while templ v0.3.1100 pins the 2025-01-22 version. The bump arrived via a daemon commit (`495b06b`) that ALSO swept chromedp v0.21.0→v0.23.0 + cdproto v0.159.2, go-sse v0.6.2→v0.7.0, and go-datastar v0.6.2→v0.6.3 — the documented non-adopted sweep class, auto-pushed past the `SWEEP_OK` hook (the daemon does not run hooks). Reverted go.mod/go.sum to the v0.13.2 pin set as a forward-fix; verified: `go tool templ` builds (v0.3.1100), `check-ui-pins.sh` green, full `go build ./...` + root package test suite green (41s, shuffle on). CHANGELOG [Unreleased] carries the story; AGENTS.md carries the two new gotchas (parse-is-pinned-by-templ; daemon-bypasses-hook).
+5. **Formatter fingerprint drift settled.** The preflight "templ-fmt v0.3.1020 → v0.3.1114" was the NixOS templ bump landing (the root fix the 2026-10-25 gotcha queued). `buildflow format` now runs green and re-verified all cached verdicts under the new identity.
+6. **Fresh harvest + the memory protocol.** TODO_LIST gained: the second-session-during-release policy decision row (harvested from the 17-53 report), the watchdog watched-list single-sourcing row (harvested from the 01-14 report), and the audit-backlog drain row. AGENTS.md updated (templ-bump landed, parse constraint, daemon-hook bypass). CHANGELOG [Unreleased] filled.
+
+## b) PARTIALLY DONE
+
+1. **The audit-all backlog is pinned, not drained** — 88 pre-canon items remain (68 in the 2026-08-08/09 archived reports). The TODO_LIST drain row owns the cadence; the pin keeps the battery green meanwhile.
+2. **Final full-battery re-run** — targeted verification is green (test-coverage uncached, cue-vet, docs-gates, format, go build+test); the full `buildflow --fix` re-run that closes the loop on the ORIGINAL invocation was not repeated after the revert (the next session's `pre-push-checks.sh` covers the same ground; see §c).
+
+## c) NOT STARTED (all routed; nothing new minted)
+
+- The 88-item audit drain (TODO_LIST row, owns the ratchet).
+- Dependabot PRs #28 (chromedp 0.21.1) and #21 (golang alpine) — unchanged from the 18-08 report; NOTE: the sweep's chromedp v0.23.0 was reverted, so #28's base is still v0.21.x. Re-verify against the restored pins when the dep batch runs.
+- The buildflow findings that are documented non-fixes stayed non-fixes: go-auto-upgrade samber/lo suggestions (zero-deps policy), file-size-check on test files, go-structure-linter assets/ suggestion (skip-gated), vulnix nixpkgs CVEs (channel), dependabot docker entries (detector false-negative — root `Dockerfile` and `deploy/docker-compose.yml` both exist).
+
+## d) TOTALLY FUCKED UP
+
+1. **The verdict-spec off-by-one (three lines, not one).** Applying the sse-rewrite verdicts, I mapped evidence to line numbers from a truncated read: govulncheck's item got the SSE-test verdict, the SSE-test item got WithCSSPath's, and WithCSSPath's got the nonce's. Exactly the failure the docs-health skill warns about ("construct the map FROM the emitted keys and their matched lines, never from remembered greps"). Caught on re-read; all three corrected and the final alignment verified item-by-item. The lesson is now physical: for ANY spec edit over flagged lines, print item+verdict PAIRS after writing.
+2. **The `<!-- check-rows:ledger -->` marker must be the EXACT whole line.** My first insert appended explanatory text to the marker line; both gates ignored it. `case t == ledgerMarker` in the scanner is a literal comparison. Two round trips wasted; the working form is marker-alone, explanation on a separate comment line above it.
+3. **I initially trusted a truncated gate output.** The first audit-all view showed 4 unharvested items; the real count was 108 (my `head`-style reading hid the rest). All downstream scoping (harvest vs ratchet) was re-done against full outputs.
+4. **The daemon beat the hook.** The whole point of the 2026-11-05 pre-commit guard was to stop undocumented module sweeps, and the very next night a sweep landed anyway — via the daemon's own commit path (no hooks), then auto-pushed. Detection happened only because `buildflow format` failed on the poisoned graph. The recovery (forward-fix revert) is clean, but the guard's coverage gap is real and now documented in AGENTS.md.
+
+## e) WHAT WE SHOULD IMPROVE
+
+1. **Read full gate output before scoping work** (see d3) — `--format finding` files beat greps-with-heads. Cost of skipping: one wrong strategy fork.
+2. **Verify-after-format is now muscle memory** — the formatter-order canon (check-rows on both sides of a format pass) ran clean this time; keep it mandatory for struck-table edits.
+3. **The docs-gates drain deserves a recurring slot**: one audit-all replay per docs-health session, annotate the top stale cluster, lower the pin. The TODO row says this; this bullet makes it a habit.

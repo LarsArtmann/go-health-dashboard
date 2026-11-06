@@ -66,3 +66,26 @@ Kept in place (NOT archived — genuinely open work or active references):
   queue: T24 (chromedp) and T27 (v0.12.0) remain open.
 - `docs/design/2026-09-17_*`, `docs/research/2026-*` — historical design and
   measurement snapshots actively cited by living docs.
+
+---
+
+# Archive Manifest — 2026-11-05 docs-gates repair sweep
+
+Three reports archived while bringing the docs-gates battery green (annotate
+matrix + audit-all dispositions + cadence archive ritual). Eligibility gates
+ran BEFORE each move: `check-rows --strict` and `bare-rows` both pass on the
+moved set (the two metadata fact-tables carry the sanctioned
+`<!-- check-rows:ledger -->` exemption).
+
+Status reports → `docs/status/archived/`:
+
+| File (2026 prefix)                                   | Reason everything is resolved                                                                           |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 2026-10-25_17-02 docs-health full audit sweep        | Audit executed same-day (its own manifest below); item 30 closed with the live pkg.go.dev v0.13.2 check |
+| 2026-10-25_17-53 dedup fixture + clone-baseline gate | Dedup pass landed (startDashboardFixture, gate 9); row 44 harvested to TODO_LIST (Blocked table)        |
+| 2026-10-25_18-54 v0.12.1 release retro | Retro of a shipped release; row 3 struck (release-cut.sh delivers the post-edit battery), row 17 harvested to TODO_LIST (go-etag port) |
+| 2026-10-28_19-17 self-review v1.24.0 adoption        | Adoption landed same day (v1.24.0 guard green); loopback-reaping row moot (processes verified gone)     |
+
+Kept in place (NOT archived — genuinely open work or active references): the
+fifteen remaining unarchived reports, incl. the 2026-11-05 handoffs
+(01-14, 02-48, 18-08).

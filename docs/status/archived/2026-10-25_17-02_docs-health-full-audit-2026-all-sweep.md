@@ -1,5 +1,10 @@
 # Status + Brutal Self-Review — docs-health FULL AUDIT: all 2026-* files, living-docs rebuild, 35-file archive sweep (2026-10-25, 17:02)
 
+> **Live remainder:** none — all actionable items struck resolved inline; the living-docs rebuild it shipped landed in TODO_LIST/FEATURES/CHANGELOG (2026-10-25) and pkg.go.dev propagation verified live for v0.13.2 (2026-11-05).
+
+<!-- session-metadata fact table: Session/Window/Start/End/Gates/Commits rows are facts, not actionable items -->
+<!-- check-rows:ledger -->
+
 |                        |                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Session**            | "View ALL \*\*/2026-0\* files! Execute the docs-health SKILL! ... TODO_LIST, CHANGELOG, AGENTS, README, ROADMAP, FEATURES must be all SUPERB ... Archive FULLY done and UPDATED (inline strikethrough) .md files" — one session, AUDIT mode (BUILD + HARVEST + VERIFY + ANNOTATE/ARCHIVE)                                                                                                                              |
@@ -98,7 +103,7 @@
 27. Recapture all four screenshots on the release commit (after item 11).
 28. SECURITY row/footer pre-flight (gate makes it mechanical).
 29. Post-tag consumer re-sweep (7 green siblings re-pin; nsfw already v0.11.0).
-30. pkg.go.dev propagation spot-check for the new tag.
+30. ~~pkg.go.dev propagation spot-check for the new tag.~~ resolved — propagation verified live: pkg.go.dev serves v0.13.2 as Latest (checked 2026-11-05); proxy-side integrity rides verify-release.sh (GOSUMDB).
 31. `verify-release.sh <ver>` full 9/9 + release-draft workflow re-verify (f25).
 
 **Docs/system hygiene from this session's observations: 32-42**

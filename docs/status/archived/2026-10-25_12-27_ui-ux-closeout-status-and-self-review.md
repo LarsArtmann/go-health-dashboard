@@ -96,8 +96,8 @@ pushed with CI 7/7 green (2026-10-25 14:19 session).
 
 ## f) NEXT (up to 50, roughly pareto-sorted)
 
-| #  | Task | Source                                                                                                               |
-| -- | ---- | -------------------------------------------------------------------------------------------------------------------- |
+| #     | Task | Source                                                                                                               |
+| ----- | ---- | -------------------------------------------------------------------------------------------------------------------- |
 | ~~ ~~ | 1    | Fix the 8 lint findings in the quiet session's files (6 intrange, 2 varnamelen) and push master                      |
 | ~~ ~~ | 2    | Fresh `nix flake check` + `scripts/pre-push-checks.sh` at push time                                                  |
 | ~~ ~~ | 3    | Verify `check-ui-pins.sh` CI wiring (10-day red window unexplained)                                                  |

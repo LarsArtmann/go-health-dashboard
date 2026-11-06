@@ -107,8 +107,8 @@ Nothing shipped broken — every design miss was caught by a gate before the tre
 
 Ranked by impact. Effort: S <30min, M 30min–2h, L >2h. (HARVEST fuel — most #s continue the previous report's numbering; NEW marks this session's additions.)
 
-| #  | Task | Impact                                                                                                                                                    | Effort  | Category |
-| -- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------- |
+| #     | Task | Impact                                                                                                                                                    | Effort  | Category |
+| ----- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------- |
 | ~~ ~~ | 1    | Touch-tooltips story for evidence badges (#16) — the last v0.11.0 batch item                                                                              | High    | M        |
 | ~~ ~~ | 2    | Cut v0.11.0: checklist per TODO_LIST row; tag-then-master; `verify-release.sh`                                                                            | High    | M        |
 | ~~ ~~ | 3    | Re-run vulncheck at release; record the 9-stdlib-vuln toolchain decision                                                                                  | High    | S        |

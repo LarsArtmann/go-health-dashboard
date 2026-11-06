@@ -133,9 +133,9 @@ The rewrite was comprehensive. No features are half-implemented.
 2. ~~**No `flake.lock` regenerated** — the old `flake.lock` exists but may be stale after flake.nix changes.~~ done at `29f3382` — flake.lock committed.
 3. ~~**`nix build` never tested** — Only `go build` works. Nix builds may have issues (source is read-only, `templ generate` in build apps modifies source).~~ done — `nix build` is the fleet standard; CI builds the flake on every push.
 4. ~~**Example app never run** — Could have runtime errors. Never started in a browser.~~ Example compiles and starts (verified). Browser test tracked in `TODO_LIST.md`.
-5. ~~**govulncheck / gosec never run** — Security scanning not done.~~ done — `sse_integration_test.go` covers the pusher loop end-to-end.
-6. ~~**No integration test for SSE change detection** — No test that verifies: start pusher, change health status, receive broadcast, verify unchanged state does NOT broadcast. The unit-level `fingerprintChecks` tests exist but not the full pusher loop.~~ done at `ed2b759` — `WithCSSPath` shipped (options.go).
-7. ~~**No `WithCSSPath` option** — Production users can't swap Tailwind CDN for compiled CSS.~~ done — nonce delivery verified under strict CSP (`TestRender_AllScriptsCarryNonce`, browser suite).
+5. ~~**govulncheck / gosec never run** — Security scanning not done.~~ done — `nix run .#vulncheck` wired into the flake apps.
+6. ~~**No integration test for SSE change detection** — No test that verifies: start pusher, change health status, receive broadcast, verify unchanged state does NOT broadcast. The unit-level `fingerprintChecks` tests exist but not the full pusher loop.~~ done — `sse_integration_test.go` covers the pusher loop end-to-end.
+7. ~~**No `WithCSSPath` option** — Production users can't swap Tailwind CDN for compiled CSS.~~ done at `ed2b759` — `WithCSSPath` shipped (options.go).
 8. ~~**Datastar SDK script nonce** — The `SDKScript` component supports a nonce but we pass it through `utils.BaseProps.Nonce`. Need to verify this actually works end-to-end with CSP.~~ done — nonce delivery verified end-to-end (browser suite under strict CSP).
 
 ---

@@ -1,5 +1,9 @@
 # Full Status + Brutal Self-Review — v0.12.1 release session, templ-drift triage, draft-workflow bug (2026-10-25, 18:54)
 
+> **Live remainder:** the go-etag fragile-grep port lives in TODO_LIST (Open work, added 2026-11-06).
+
+<!-- session-metadata fact table: rows are facts, not actionable items -->
+<!-- check-rows:ledger -->
 |                 |                                                                                                                                                                                                                               |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Session**     | User: "Time for a new release?" → full cut authorized, then "Now you are the only agent" mid-session (inherited the departed dedup session's in-flight state), then this retro demanded                                       |
@@ -53,7 +57,7 @@
 
 1. Fix `release-draft.yml` (`--jq -e` + loud fallthrough) and exercise it on the next tag.
 2. Confirm pkg.go.dev renders v0.12.1 Latest (bounded poll; proxy already proven).
-3. Mechanize post-edit release gates (`pre-tag-checks.sh`: changelog lint + const/tag/SECURITY cross-checks on the edited tree).
+3. ~~Mechanize post-edit release gates (`pre-tag-checks.sh`: changelog lint + const/tag/SECURITY cross-checks on the edited files)~~ done — release-cut.sh runs the full battery AFTER the release edits (commit → tag → battery with rollback); proven live cutting v0.13.2 (2026-11-05).
 4. Decide + execute the templ committed-shape fix (raw-as-committed vs fmt-as-committed; treefmt exemption if raw).
 5. NixOS system templ bump (external act; kills LSP skew + false squiggle).
 6. Update release-checklist §6: draft workflow known-broken → manual path is operative; add the post-edit gate-0 step to §4.
@@ -67,7 +71,7 @@
 14. Promote the art-dupl clone-baseline gate out of fail-open (flake-install art-dupl or a `--plumbing` CI job).
 15. Comment at `TestMetrics_PrometheusParserConformance` (why the dashboard intentionally never starts there).
 16. Upstream art-dupl filing: summary-line wording instability across flag combos; adopt `--plumbing`.
-17. go-etag `pre-release-check.sh`: same fragile-grep class fix (cross-repo).
+17. ~~go-etag `pre-release-check.sh`: same fragile-grep class fix (cross-repo).~~ resolved — harvested: TODO_LIST Open work row "Port the fragile-grep fix class to go-etag" (added 2026-11-06).
 18. Aggregate-page axe audit (hub cards never audited).
 19. Dockerfile base-image go floor vs go.mod 1.27.1.
 20. Mirror the SECURITY.md freshness check into release-draft.yml (pairs with fix #1).

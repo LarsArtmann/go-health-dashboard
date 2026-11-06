@@ -28,24 +28,24 @@
 
 ## a) FULLY DONE (this session run)
 
-| #  | Work | Evidence                                                                                                                                                                                                                                                                                                                                                                                                        |
-| -- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ~~ ~~ | 1    | **T1 Go-directive guard**: `scripts/check-go-directive.sh` (exact `go 1.27.1` assertion, restore pattern in header), wired into CI Build **and** Test jobs, negative-tested (downgraded + missing directive → exit 1 with `::error::`), AGENTS.md buildflow-trap bullet cross-linked                                                                                                                            |
-| ~~ ~~ | 2    | **T2 Docs closeout**: superseded `Re-pin go-health v0.3.0` BLOCKED row closed, federation-row premise refreshed, audit rows added to Next Up, CHANGELOG `[Unreleased]` Fixed (two `Deterministic` fixes + test names), Changed (v0.4.0 ratification + go-floor note), Added (guard)                                                                                                                             |
-| ~~ ~~ | 3    | **T3 Federation insurance batch**: compile-time `var _ dashboard.Prober = (*healthfederation.Prober)(nil)`; end-to-end evidence test (unreachable remote's `dark/reachable` fail row → "Failure evidence: 1 of 2 checks" + unproven green); seam spot-checks with a quote-hostile remote name through hand-rolled Prometheus label escaping AND webhook announce payload; health-hub-suffices decision recorded |
-| ~~ ~~ | 4    | **T4 Rank adoption, behavior-locked**: `numericHealthStatus` derives known statuses from `health.Status.Rank()` (unknown stays −1), `statusValue` computes `Rank()/2` (unknown stays plot-0), `worstGroupStatus` keeps early-return switch with Rank citation + explicit stricter-than-Rank rationale. Baseline test run before, identical run after                                                            |
-| ~~ ~~ | 5    | **T5 InstanceID surfacing**: `viewModel.InstanceID` wired from `resp.InstanceID`, conditional "Instance" stat card in `view.templ`, `anonymizeViewModel` clears it (public mode), positive/negative/masking tests, golden ceremony (regenerated + reviewed by eye: exactly one whitespace byte across 5 files — templ conditional separator, zero semantic drift), browser suite green                          |
-| ~~ ~~ | 6    | **T6 Trend Deterministic**: `/health/trend` marshals with `json.Deterministic(true)` (slices-only today, future-proofing rationale in comment), `TestTrendHandler_JSONIsByteStable` pins two scrapes byte-identical                                                                                                                                                                                             |
-| ~~ ~~ | 7    | **T7 Healthz passthrough**: `Healthzer` optional interface (exported `Prober` untouched), `Routes.Healthz` default-disabled with kubelet-collision rationale, `WithBasePath` prefixing, `registerHealthz` wiring (unwrapped like probe routes), 3 tests (registered-when-implemented / skipped-when-absent / disabled-by-default with `/healthz` liveness intact)                                               |
-| ~~ ~~ | 8    | **T8 Example → NewChecks**: default probe builds services via `health.NewChecks` (plain funcs, timed), verified LIVE: rows render real µs durations (22µs/11µs/9µs), `/readyz` JSON carries `duration_ns` per check; samber/do lifecycle demo preserved (`Register` still hosts the dashboard)                                                                                                                  |
-| ~~ ~~ | 9    | **T9 Final gates**: `nix run .#build` → `nix fmt` (canonical order) → full test suite (main/hub/version all ok) → lint **0 issues** (after fixing 2 self-introduced findings: cyclop 14>12 via `registerHealthz` extraction; unparam unused `injector` param) → vet → check-ui-pins OK → check-go-directive OK → pushed `cdea97b..837f12e`                                                                      |
-| ~~ ~~ | 10   | **FEATURES registry kept honest**: test-suite count updated in same change per task (281→286→287→289→292), including rescuing a pre-existing +2 drift from the earlier byte-stability session                                                                                                                                                                                                                   |
-| ~~ ~~ | 11   | **Daemon discipline held**: every task committed immediately after verification; ~5 daemon sweeps folded forward, none rebased; go.mod verified `go 1.27.1` + v0.4.0 after every buildflow pass (untouched at every check)                                                                                                                                                                                      |
+| #     | Work | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~ ~~ | 1    | ~~**T1 Go-directive guard**: `scripts/check-go-directive.sh` (exact `go 1.27.1` assertion, restore pattern in header), wired into CI Build **and** Test jobs, negative-tested (downgraded + missing directive → exit 1 with `::error::`), AGENTS.md buildflow-trap bullet cross-linked~~ resolved — shipped (`f476f76`), later removed as obsolete (`44d1ff4`: conflict chain dissolved); floor enforcement moved to buildflow go-version-auto-configure |
+| ~~ ~~ | 2    | **T2 Docs closeout**: superseded `Re-pin go-health v0.3.0` BLOCKED row closed, federation-row premise refreshed, audit rows added to Next Up, CHANGELOG `[Unreleased]` Fixed (two `Deterministic` fixes + test names), Changed (v0.4.0 ratification + go-floor note), Added (guard)                                                                                                                                                                      |
+| ~~ ~~ | 3    | **T3 Federation insurance batch**: compile-time `var _ dashboard.Prober = (*healthfederation.Prober)(nil)`; end-to-end evidence test (unreachable remote's `dark/reachable` fail row → "Failure evidence: 1 of 2 checks" + unproven green); seam spot-checks with a quote-hostile remote name through hand-rolled Prometheus label escaping AND webhook announce payload; health-hub-suffices decision recorded                                          |
+| ~~ ~~ | 4    | **T4 Rank adoption, behavior-locked**: `numericHealthStatus` derives known statuses from `health.Status.Rank()` (unknown stays −1), `statusValue` computes `Rank()/2` (unknown stays plot-0), `worstGroupStatus` keeps early-return switch with Rank citation + explicit stricter-than-Rank rationale. Baseline test run before, identical run after                                                                                                     |
+| ~~ ~~ | 5    | **T5 InstanceID surfacing**: `viewModel.InstanceID` wired from `resp.InstanceID`, conditional "Instance" stat card in `view.templ`, `anonymizeViewModel` clears it (public mode), positive/negative/masking tests, golden ceremony (regenerated + reviewed by eye: exactly one whitespace byte across 5 files — templ conditional separator, zero semantic drift), browser suite green                                                                   |
+| ~~ ~~ | 6    | **T6 Trend Deterministic**: `/health/trend` marshals with `json.Deterministic(true)` (slices-only today, future-proofing rationale in comment), `TestTrendHandler_JSONIsByteStable` pins two scrapes byte-identical                                                                                                                                                                                                                                      |
+| ~~ ~~ | 7    | **T7 Healthz passthrough**: `Healthzer` optional interface (exported `Prober` untouched), `Routes.Healthz` default-disabled with kubelet-collision rationale, `WithBasePath` prefixing, `registerHealthz` wiring (unwrapped like probe routes), 3 tests (registered-when-implemented / skipped-when-absent / disabled-by-default with `/healthz` liveness intact)                                                                                        |
+| ~~ ~~ | 8    | **T8 Example → NewChecks**: default probe builds services via `health.NewChecks` (plain funcs, timed), verified LIVE: rows render real µs durations (22µs/11µs/9µs), `/readyz` JSON carries `duration_ns` per check; samber/do lifecycle demo preserved (`Register` still hosts the dashboard)                                                                                                                                                           |
+| ~~ ~~ | 9    | **T9 Final gates**: `nix run .#build` → `nix fmt` (canonical order) → full test suite (main/hub/version all ok) → lint **0 issues** (after fixing 2 self-introduced findings: cyclop 14>12 via `registerHealthz` extraction; unparam unused `injector` param) → vet → check-ui-pins OK → check-go-directive OK → pushed `cdea97b..837f12e`                                                                                                               |
+| ~~ ~~ | 10   | **FEATURES registry kept honest**: test-suite count updated in same change per task (281→286→287→289→292), including rescuing a pre-existing +2 drift from the earlier byte-stability session                                                                                                                                                                                                                                                            |
+| ~~ ~~ | 11   | **Daemon discipline held**: every task committed immediately after verification; ~5 daemon sweeps folded forward, none rebased; go.mod verified `go 1.27.1` + v0.4.0 after every buildflow pass (untouched at every check)                                                                                                                                                                                                                               |
 
 ## b) PARTIALLY DONE
 
-| #  | Work | What exists                                                                     | What's missing                                                              |
-| -- | ---- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| #     | Work | What exists                                                                     | What's missing                                                              |
+| ----- | ---- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | ~~ ~~ | 1    | **FEATURES.md inventory**                                                       | Test-count row accurate (292/40)                                            |
 | ~~ ~~ | 2    | **T7.3 aggregate-path Healthz test**                                            | Stub with/without capability + default-route test                           |
 | ~~ ~~ | 3    | **InstanceID on the hub**                                                       | Response-level stat card (serving replica disambiguated)                    |
@@ -85,58 +85,58 @@ Nothing shipped broken — final state is green everywhere (build, full suite, r
 
 _Brainstorm list, impact-ordered, marked: [NEW] born this session, [ROW] existing TODO_LIST item, [FLEET] lives outside this repo, [DECISION] needs user input._
 
-| #  | Thing | Why / source                                                                                                                             |
-| -- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| ~~ ~~ | 1     | [NEW] Run `scripts/pre-push-checks.sh` now as belt-and-braces                                                                            |
-| ~~ ~~ | 2     | [NEW] Add FEATURES.md rows: InstanceID stat card, Healthzer route, NewChecks example                                                     |
-| ~~ ~~ | 3     | [NEW] Aggregate-path Healthz test (T7.3 remainder)                                                                                       |
-| ~~ ~~ | 4     | [NEW] Annotate the Pareto plan doc: T1–T9 executed, links to commits                                                                     |
-| ~~ ~~ | 5     | [NEW] ANNOTATE the deep-dive HTML report: both Deterministic findings fixed today                                                        |
-| ~~ ~~ | 6     | [DECISION] Cut v0.10.0 — Unreleased carries Healthzer + InstanceID + guard + fixes; tag-first checklist                                  |
-| ~~ ~~ | 7     | [NEW] `HEALTH_HUB_HEALTHZ` env knob on the hub binary                                                                                    |
-| ~~ ~~ | 8     | [NEW] AGENTS.md: document Healthzer + Routes.Healthz in Key Design Decisions                                                             |
-| ~~ ~~ | 9     | [NEW] AGENTS.md: document InstanceID card + public-mode masking                                                                          |
-| ~~ ~~ | 10    | [NEW] README: Instance card + Healthz route for end-users                                                                                |
-| ~~ ~~ | 11    | [NEW] Golden fixture WITH InstanceID set (positive pin of the card render)                                                               |
-| ~~ ~~ | 12    | [NEW] Introspection: document the deliberate Healthz-route omission (or include it)                                                      |
-| ~~ ~~ | 13    | [NEW] `scripts/demo-smoke.sh`: scripted example-server scrape (curl-shaped)                                                              |
-| ~~ ~~ | 14    | [FLEET] File buildflow go-mod-normalize downgrade (1.27.1→1.27 twice in a day) upstream                                                  |
-| ~~ ~~ | 15    | [ROW] shellcheck for `scripts/*.sh` in CI — new guard script raises the stakes                                                           |
-| ~~ ~~ | 16    | [DECISION] Evidence persistence + evidence-in-metrics                                                                                    |
-| ~~ ~~ | 17    | [ROW] Exercise `release-draft.yml` on the next tag                                                                                       |
-| ~~ ~~ | 18    | [ROW] verify-dep-bump.sh: read coverage floor from ci.yml                                                                                |
-| ~~ ~~ | 19    | [ROW] verify-dep-bump.sh: daemon-proof fmt check                                                                                         |
-| ~~ ~~ | 20    | [ROW] verify-dep-bump.sh: devShell-independent `go tool cover`                                                                           |
-| ~~ ~~ | 21    | [ROW] Compose-stack CI policy                                                                                                            |
-| ~~ ~~ | 22    | [ROW] Tag-ruleset bypass policy (`bypass: never` vs admin)                                                                               |
-| ~~ ~~ | 23    | [ROW] Enable private vulnerability reporting                                                                                             |
-| ~~ ~~ | 24    | [FLEET] Unskip go-structure-linter when BuildFlow pins config-capable SDK                                                                |
-| ~~ ~~ | 25    | [FLEET] Unskip branching-flow (phantom-type API decision)                                                                                |
-| ~~ ~~ | 26    | [FLEET] Unskip templ-generate (DAG ordering)                                                                                             |
-| ~~ ~~ | 27    | [ROW] Boot full compose stack e2e + screenshot                                                                                           |
-| ~~ ~~ | 28    | [ROW] Write `deploy/README.md`                                                                                                           |
-| ~~ ~~ | 29    | [ROW] `scripts/set-tag-protection.sh` rulesets-as-code                                                                                   |
-| ~~ ~~ | 30    | [ROW] CHANGELOG per-bullet tag audit v0.3.0–v0.8.0                                                                                       |
-| ~~ ~~ | 31    | [ROW] Pin `shutting_down:true` webhook payload case                                                                                      |
-| ~~ ~~ | 32    | [ROW] `testdata/golden/source.html` vs since-tooltips check                                                                              |
-| ~~ ~~ | 33    | [ROW] M88 keyboard-navigation a11y smoke                                                                                                 |
-| ~~ ~~ | 34    | [ROW] M89 metrics endpoint under strict CSP browser test                                                                                 |
-| ~~ ~~ | 35    | [ROW] M91 browser-suite startup latency measurement                                                                                      |
-| ~~ ~~ | 36    | [ROW] M92 load-test env knobs beyond 20×3 fixture                                                                                        |
-| ~~ ~~ | 37    | [ROW] M103 unit-test the version-guard grep logic                                                                                        |
-| ~~ ~~ | 38    | [ROW] M105 doc.go combo examples (webhook+public, WithBasePath)                                                                          |
-| ~~ ~~ | 39    | [ROW] M106 bisect-wall audit amendment (2026-09-17/22 scars)                                                                             |
-| ~~ ~~ | 40    | [ROW] M107 nightly Release-page-exists job                                                                                               |
-| ~~ ~~ | 41    | [ROW] Mobile visual check of the metadata line                                                                                           |
-| ~~ ~~ | 42    | [ROW] Dark-mode contrast measurement (dim metadata line)                                                                                 |
-| ~~ ~~ | 43    | [ROW] Re-run aggregate load test on current render                                                                                       |
-| ~~ ~~ | 44    | [ROW] Toolchain bump via verify-dep-bump.sh when 1.27.x patch ships                                                                      |
-| ~~ ~~ | 45    | [ROW] Digest-pin compose images + dependabot                                                                                             |
-| ~~ ~~ | 46    | [ROW] Compose healthchecks (prometheus→grafana readiness)                                                                                |
-| ~~ ~~ | 47    | [ROW] Write `docs/metrics.md` consumer reference                                                                                         |
-| ~~ ~~ | 48    | [ROW] Grafana threshold-alert example                                                                                                    |
-| ~~ ~~ | 49    | [ROW] Upstream filings (templ formatting, erraudit ×2)                                                                                   |
-| ~~ ~~ | 50    | [NEW] Consider InstanceID in metrics labels (replica disambiguation vs cardinality) — needs a written tradeoff before anyone asks for it |
+| #     | Thing | Why / source                                                                                                                                       |
+| ----- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~ ~~ | 1     | [NEW] Run `scripts/pre-push-checks.sh` now as belt-and-braces                                                                                      |
+| ~~ ~~ | 2     | [NEW] Add FEATURES.md rows: InstanceID stat card, Healthzer route, NewChecks example                                                               |
+| ~~ ~~ | 3     | [NEW] Aggregate-path Healthz test (T7.3 remainder)                                                                                                 |
+| ~~ ~~ | 4     | [NEW] Annotate the Pareto plan doc: T1–T9 executed, links to commits                                                                               |
+| ~~ ~~ | 5     | [NEW] ANNOTATE the deep-dive HTML report: both Deterministic findings fixed today                                                                  |
+| ~~ ~~ | 6     | [DECISION] Cut v0.10.0 — Unreleased carries Healthzer + InstanceID + guard + fixes; tag-first checklist                                            |
+| ~~ ~~ | 7     | [NEW] `HEALTH_HUB_HEALTHZ` env knob on the hub binary                                                                                              |
+| ~~ ~~ | 8     | [NEW] AGENTS.md: document Healthzer + Routes.Healthz in Key Design Decisions                                                                       |
+| ~~ ~~ | 9     | [NEW] AGENTS.md: document InstanceID card + public-mode masking                                                                                    |
+| ~~ ~~ | 10    | [NEW] README: Instance card + Healthz route for end-users                                                                                          |
+| ~~ ~~ | 11    | [NEW] Golden fixture WITH InstanceID set (positive pin of the card render)                                                                         |
+| ~~ ~~ | 12    | [NEW] Introspection: document the deliberate Healthz-route omission (or include it)                                                                |
+| ~~ ~~ | 13    | ~~[NEW] `scripts/demo-smoke.sh`: scripted example-server scrape (curl-shaped)~~ resolved — superseded by the deploy boot-verify effort (TODO_LIST) |
+| ~~ ~~ | 14    | [FLEET] File buildflow go-mod-normalize downgrade (1.27.1→1.27 twice in a day) upstream                                                            |
+| ~~ ~~ | 15    | [ROW] shellcheck for `scripts/*.sh` in CI — new guard script raises the stakes                                                                     |
+| ~~ ~~ | 16    | [DECISION] Evidence persistence + evidence-in-metrics                                                                                              |
+| ~~ ~~ | 17    | [ROW] Exercise `release-draft.yml` on the next tag                                                                                                 |
+| ~~ ~~ | 18    | [ROW] verify-dep-bump.sh: read coverage floor from ci.yml                                                                                          |
+| ~~ ~~ | 19    | [ROW] verify-dep-bump.sh: daemon-proof fmt check                                                                                                   |
+| ~~ ~~ | 20    | [ROW] verify-dep-bump.sh: devShell-independent `go tool cover`                                                                                     |
+| ~~ ~~ | 21    | [ROW] Compose-stack CI policy                                                                                                                      |
+| ~~ ~~ | 22    | [ROW] Tag-ruleset bypass policy (`bypass: never` vs admin)                                                                                         |
+| ~~ ~~ | 23    | [ROW] Enable private vulnerability reporting                                                                                                       |
+| ~~ ~~ | 24    | [FLEET] Unskip go-structure-linter when BuildFlow pins config-capable SDK                                                                          |
+| ~~ ~~ | 25    | [FLEET] Unskip branching-flow (phantom-type API decision)                                                                                          |
+| ~~ ~~ | 26    | [FLEET] Unskip templ-generate (DAG ordering)                                                                                                       |
+| ~~ ~~ | 27    | [ROW] Boot full compose stack e2e + screenshot                                                                                                     |
+| ~~ ~~ | 28    | [ROW] Write `deploy/README.md`                                                                                                                     |
+| ~~ ~~ | 29    | [ROW] `scripts/set-tag-protection.sh` rulesets-as-code                                                                                             |
+| ~~ ~~ | 30    | [ROW] CHANGELOG per-bullet tag audit v0.3.0–v0.8.0                                                                                                 |
+| ~~ ~~ | 31    | [ROW] Pin `shutting_down:true` webhook payload case                                                                                                |
+| ~~ ~~ | 32    | [ROW] `testdata/golden/source.html` vs since-tooltips check                                                                                        |
+| ~~ ~~ | 33    | [ROW] M88 keyboard-navigation a11y smoke                                                                                                           |
+| ~~ ~~ | 34    | [ROW] M89 metrics endpoint under strict CSP browser test                                                                                           |
+| ~~ ~~ | 35    | [ROW] M91 browser-suite startup latency measurement                                                                                                |
+| ~~ ~~ | 36    | [ROW] M92 load-test env knobs beyond 20×3 fixture                                                                                                  |
+| ~~ ~~ | 37    | [ROW] M103 unit-test the version-guard grep logic                                                                                                  |
+| ~~ ~~ | 38    | [ROW] M105 doc.go combo examples (webhook+public, WithBasePath)                                                                                    |
+| ~~ ~~ | 39    | [ROW] M106 bisect-wall audit amendment (2026-09-17/22 scars)                                                                                       |
+| ~~ ~~ | 40    | [ROW] M107 nightly Release-page-exists job                                                                                                         |
+| ~~ ~~ | 41    | [ROW] Mobile visual check of the metadata line                                                                                                     |
+| ~~ ~~ | 42    | [ROW] Dark-mode contrast measurement (dim metadata line)                                                                                           |
+| ~~ ~~ | 43    | [ROW] Re-run aggregate load test on current render                                                                                                 |
+| ~~ ~~ | 44    | [ROW] Toolchain bump via verify-dep-bump.sh when 1.27.x patch ships                                                                                |
+| ~~ ~~ | 45    | [ROW] Digest-pin compose images + dependabot                                                                                                       |
+| ~~ ~~ | 46    | [ROW] Compose healthchecks (prometheus→grafana readiness)                                                                                          |
+| ~~ ~~ | 47    | [ROW] Write `docs/metrics.md` consumer reference                                                                                                   |
+| ~~ ~~ | 48    | [ROW] Grafana threshold-alert example                                                                                                              |
+| ~~ ~~ | 49    | [ROW] Upstream filings (templ formatting, erraudit ×2)                                                                                             |
+| ~~ ~~ | 50    | [NEW] Consider InstanceID in metrics labels (replica disambiguation vs cardinality) — needs a written tradeoff before anyone asks for it           |
 
 _Items 1–5 + 7–13 are the true "next session" queue; 6 gates most of them. Items 16+ are the pre-existing parallel backlog — do not re-plan here (docs-health HARVEST routes them)._
 

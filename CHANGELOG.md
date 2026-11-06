@@ -17,15 +17,32 @@ forgetting.
 
 ### Added
 
-- Nothing yet.
+- `.docs-gates.json` with `audit_max: 88`: the docs-gates annotate/audit battery
+  is green fleet-wide; the 88-item pre-canon audit backlog (August-era reports)
+  is pinned and drains via the TODO_LIST "Drain the docs-gates audit-all
+  backlog" row instead of holding the battery red.
 
 ### Changed
 
-- Nothing yet.
+- Documentation-gates repair sweep: status-report annotations brought to the
+  canonical verdict vocabulary (`done at`/`resolved`/`decided`/`moot`), the
+  759 malformed `| ~~ |` marker cells closed to the canonical `~~ ~~` form,
+  whole-row table strikes re-struck per cell, inline-code spacing fixed, three
+  reports archived with Live-remainder banners and an archive-manifest entry,
+  and four unharvested items routed to their TODO_LIST rows.
 
 ### Fixed
 
-- Nothing yet.
+- CI: `.github/workflows/ci.yml` gained the top-level `permissions:
+  contents: read` block (fleet cue-policy requires it; every sibling workflow
+  already carried one).
+- Master carried a daemon-swept dependency bump (chromedp v0.21.0→v0.23.0 +
+  cdproto v0.159.2, go-sse v0.6.2→v0.7.0, go-datastar v0.6.3, and a-h/parse to
+  a 2026-10-27 pseudo-version) that broke `go tool templ` compilation (templ
+  v0.3.1100's jstokenizer cannot build against a-h/parse ≥ 2026-10-27) and
+  violated the deliberate UI/runtime pins. Pins restored to the v0.13.2 set
+  (the sha256s in go.sum included); treat a-h/parse as pinned until templ
+  upgrades its own requirement.
 
 ## [0.13.2] - 2026-11-05
 

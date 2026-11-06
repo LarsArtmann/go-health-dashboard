@@ -236,10 +236,10 @@ Two problems:
 1. **Fix `hashChecks` non-deterministic bug** — sort keys before hashing
 2. **Implement `WithPushMode(PushMode)` option**
 3. **Set `GOWORK=off` in flake.nix devShell**
-4. **Generate `flake.lock`**
+4. ~~**Generate `flake.lock`**~~ done at `29f3382`.
 5. **Actually run `nix build` and fix whatever breaks**
 6. **Run `golangci-lint` and fix issues**
-7. **Run `govulncheck`**
+7. ~~**Run `govulncheck`**~~ done — `nix run .#vulncheck` wired into the flake apps.
 8. **Remove go-datastar from dependencies** (if not going to use it) OR implement Datastar SSE mode
 9. **Add LICENSE file**
 10. **Test the example app by actually running it**
@@ -252,9 +252,9 @@ Two problems:
 14. **Add version constant**
 15. **Remove unused `r *http.Request` parameter from `buildData`**
 16. **Fix benchmark helper to not use `&testing.T{}`**
-17. **Add SSE change detection integration test**
-18. **Update go-health `content-negotiation-design.md` to link to this repo** (P16.4)
-19. **Add `Content-Type` constants**
+17. ~~**Add SSE change detection integration test**~~ done — `sse_integration_test.go`.
+18. ~~**Update go-health `content-negotiation-design.md` to link to this repo** (P16.4)~~ resolved — doc carries the module reference (`// Module: github.com/larsartmann/go-health-dashboard`).
+19. ~~**Add `Content-Type` constants**~~ moot — content types set inline per handler (handlers.go).
 20. **Verify mobile responsive layout with actual viewport testing**
 
 ### Medium Priority
@@ -264,10 +264,10 @@ Two problems:
 23. **Add auto-generated refresh timestamp display** (PolledRegion ShowTimestamp)
 24. **Add status history/sparkline** (templ-components has Sparkline)
 25. **Add favicon**
-26. **Add OG metadata for dashboard page**
+26. ~~**Add OG metadata for dashboard page**~~ done — `og:` tags in view.templ.
 27. **Consider build-tag gating for SSE code** (so consumers who don't need SSE don't pull go-sse)
 28. **Add graceful SSE client reconnection** (EventSource auto-reconnects, but verify)
-29. **Add SSE connection count metrics** (Broadcaster.SubscriberCount)
+29. ~~**Add SSE connection count metrics** (Broadcaster.SubscriberCount)~~ resolved — `SubscriberCount()` shipped; gauge exposure tracked on ROADMAP §3 (M13).
 30. **Add request logging middleware option**
 31. **Add custom CSS class option for dashboard container**
 32. **Add option to hide StatCards** (minimal mode)
@@ -283,14 +283,14 @@ Two problems:
 39. **Add TODO_LIST.md**
 40. **Add ROADMAP.md**
 41. **Add docs/DOMAIN_LANGUAGE.md**
-42. **Add screenshot to README** (run example, capture browser screenshot)
+42. ~~**Add screenshot to README** (run example, capture browser screenshot)~~ done — `docs/screenshot.png` embedded in README.
 43. **Add CI/CD GitHub Actions workflow**
-44. **Add Dependabot config**
+44. ~~**Add Dependabot config**~~ done — `.github/dependabot.yml`.
 45. **Add pre-commit hooks**
-46. **Add release process documentation**
-47. **Add semantic versioning tags**
-48. **Add `go test -race` to CI**
-49. **Add coverage badge to README**
+46. ~~**Add release process documentation**~~ resolved — release discipline documented (AGENTS.md; scripts/release-cut.sh, verify-release.sh).
+47. ~~**Add semantic versioning tags**~~ done — v-tag train live (v0.13.2 latest, protected ruleset).
+48. ~~**Add `go test -race` to CI**~~ done — CI race job (ci.yml).
+49. ~~**Add coverage badge to README**~~ resolved — routed → ROADMAP 2026-09-04 docs-health pass (coverage badge).
 50. **Consider extracting SSE pusher into interface for testability**
 
 ---

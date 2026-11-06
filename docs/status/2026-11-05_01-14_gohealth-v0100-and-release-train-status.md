@@ -94,7 +94,7 @@
 4. Script the release cut (`scripts/cut-release.sh`) — re-head, fresh Unreleased, footer link, const bump, lint, tag-first order.
 5. Add "no master pushes while a CI-master run is in flight" to release discipline (and a gate-11 warning for in-flight runs).
 6. Diagnose-before-rerun rule folded into release-discipline item 5.
-7. Watchdog watched-list single-sourcing (script array ↔ gate 11 ↔ docs).
+7. ~~Watchdog watched-list single-sourcing (script array ↔ gate 11 ↔ docs).~~ resolved — harvested: TODO_LIST Open work row (added 2026-11-05).
 8. Audit the watchdog workflow under fork PRs (`workflow_run` + `branches` + `issues: write` interactions) and decide whether it should watch Release integrity / Nightly Fuzz too.
 9. Proofread rendered release notes as a publish step (`gh release view` before `--draft=false`).
 10. Retire AGENTS.md templ-pin history into `docs/gotchas.md` (the three-layer gotcha compression from the previous report's §e10 — still pending).

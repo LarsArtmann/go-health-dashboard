@@ -1,5 +1,7 @@
 # Status — 2026-10-28 19:17 CET (self-review: the v1.24.0 adoption session)
 
+> **Live remainder:** none — the loopback-server reaping item went moot (processes and listeners verified gone, 2026-11-05).
+
 **Session:** continued the chromedp-v0.21 / templ-components-v1.24.0 thread;
 executed the adoption that two prior sessions had prepared but refused to
 decide. Repo: `go-health-dashboard`. No pushes. Tree at handoff: `f8bc970`,
@@ -153,7 +155,7 @@ clean, all local gates green.
 6. Annotate TODO row 25: dependabot branch superseded by the migration.
 7. DiscordSync: adopt v1.24.0 (15 snapshot regens + 404 visual review) as
    one dedicated change mirroring this repo's guard entry.
-8. Reap the two leftover loopback servers (kill PIDs 550329, 1969384).
+8. ~~Reap the two leftover loopback servers (kill PIDs 550329, 1969384).~~ moot — processes and listeners gone (verified 2026-11-05: ports 8977/18999 unbound, PIDs dead).
 9. Host hygiene sweep: identify chrome processes with no owning session
    before reaping; investigate load 201 (runaway session farm?).
 10. Run `go vet ./...` once explicitly to close this session's claim gap.

@@ -87,8 +87,8 @@ Nothing shipped broken — both design misses were caught by the verification la
 
 Ranked by impact. Effort: S <30min, M 30min–2h, L >2h. (HARVEST fuel for TODO_LIST/ROADMAP.)
 
-| #  | Task | Impact                                                                                                                 | Effort | Category |
-| -- | ---- | ---------------------------------------------------------------------------------------------------------------------- | ------ | -------- |
+| #     | Task | Impact                                                                                                                 | Effort | Category |
+| ----- | ---- | ---------------------------------------------------------------------------------------------------------------------- | ------ | -------- |
 | ~~ ~~ | 1    | Cut v0.11.0: CHANGELOG re-head, version const, `pre-push-checks.sh`, tag-then-master push, `verify-release.sh`         | High   | M        |
 | ~~ ~~ | 2    | Run `docs-health` HARVEST: route section (f) into TODO_LIST/ROADMAP                                                    | High   | S        |
 | ~~ ~~ | 3    | Add golden fixture with trend+timeline both present (grid path)                                                        | High   | S        |

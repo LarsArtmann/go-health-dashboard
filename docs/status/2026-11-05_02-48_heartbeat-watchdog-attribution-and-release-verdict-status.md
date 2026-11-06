@@ -85,58 +85,58 @@ Nothing was started on any of these this session; listed because they were notic
 
 Provenance: **[S]** = surfaced by this session; **[C]** = carried from the 01:14 handoff (noticed, untouched). Impact/Effort per the harvest guide; HARVEST should route these into TODO_LIST/ROADMAP (this file is the input, not the tombstone).
 
-| #  | Task                                                                                                                                                | Impact | Effort | Category      |
-| -- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------ | ------------- |
-| 1  | **[S]** Mechanical buildflow gate: abort Go tooling while buildflow runs (script/hook)                                                              | High   | S      | Quality       |
-| 2  | **[S]** Permanent leak-injection assertion for the heartbeat watchdog (FAIL path CI-executed)                                                       | High   | S      | Quality       |
-| 3  | **[S]** Fix issue #14: `Shutdown()` cancels the Start ctx (pusher lifetime) — API-contract decision needed (g2)                                     | High   | M      | Bug           |
-| 4  | **[S]** `scripts/release-assess.sh` (+ `release-cut.sh`): 3rd hand-rolled ceremony                                                                  | High   | M      | Cleanup       |
-| 5  | **[C]** PR #22 disposition: comment + close-or-keep (needs g3)                                                                                      | Medium | S      | Cleanup       |
-| 6  | **[C]** Adopt cdproto v0.159.0 + prometheus/common v0.73.1 (one vendorHash cycle)                                                                   | Medium | M      | Feature       |
-| 7  | **[C]** Issue #17: triage the nightly fuzz failure (run 38674181389)                                                                                | Medium | M      | Bug           |
-| 8  | **[C]** Issue #23: `data-nonce` on `<html>` — upstream API gap, decide file-vs-wrap                                                                 | Medium | S      | Feature       |
-| 9  | **[S]** Stability soak: new watchdog assertion under repeated full-package `-race`                                                                  | Medium | S      | Quality       |
-| 10 | **[S]** Chaos-load attempt at the original +11 flake (validate tolerance empirically)                                                               | Medium | M      | Quality       |
-| 11 | **[S]** Run `check-changelog.sh` locally on the current Unreleased entry; adopt pre-commit-local habit                                              | Low    | S      | Quality       |
-| 12 | **[S]** Ban `git add -A`: repo-level hook/pre-push check enforcing explicit-path staging                                                            | Medium | S      | Quality       |
-| 13 | **[C]** Watchdog security audit: `workflow_run` + fork interactions                                                                                 | Medium | M      | Quality       |
-| 14 | **[C]** Watchdog self-watch + dedupe watched-workflows list (script array vs gate 11)                                                               | Low    | S      | Quality       |
-| 15 | **[C]** NixOS templ bump — root fix for the generator-skew class (hit again tonight via buildflow fmt)                                              | High   | M      | Bug           |
-| 16 | **[C]** Editor LSP repoint (phantom squiggle from the skewered system templ)                                                                        | Low    | S      | Cleanup       |
-| 17 | **[C]** Release-cut script companion: re-head/Unreleased/footer-links automation                                                                    | Medium | M      | Cleanup       |
-| 18 | **[C]** markdown-lint pass over docs/                                                                                                               | Low    | M      | Quality       |
-| 19 | **[C]** Cold-cache pins-guard test                                                                                                                  | Low    | S      | Quality       |
-| 20 | **[C]** devShell shellcheck + actionlint integration                                                                                                | Low    | S      | Quality       |
-| 21 | **[C]** interrogate lint adoption                                                                                                                   | Low    | S      | Quality       |
-| 22 | **[C]** buildflow rerun baselines (time `rerun-failed-uncached.sh` vs cache greens)                                                                 | Low    | S      | Quality       |
-| 23 | **[C]** Hub boot smoke test in CI                                                                                                                   | Medium | M      | Quality       |
-| 24 | **[C]** Cross-process browser file-lock                                                                                                             | Low    | M      | Quality       |
-| 25 | **[C]** SSE counters + watchdog gauge metrics (ROADMAP §3)                                                                                          | Medium | M      | Feature       |
-| 26 | **[C]** Rate-limit observability metrics (ROADMAP §3)                                                                                               | Medium | M      | Feature       |
-| 27 | **[C]** Per-IP rate limits (ROADMAP §4)                                                                                                             | Low    | L      | Feature       |
-| 28 | **[C]** Request-logging middleware (ROADMAP §4)                                                                                                     | Low    | M      | Feature       |
-| 29 | **[C]** Connection-lifetime jitter (ROADMAP §4)                                                                                                     | Low    | S      | Feature       |
-| 30 | **[C]** Retry-After on connection-limit 503s (ROADMAP §4)                                                                                           | Low    | S      | Feature       |
-| ~~31~~ | ~~**[C]** PVR blocked row~~ resolved — TODO_LIST "Enable private vulnerability reporting" (BLOCKED row, repo-admin action)                                                                                                                             | Low    | L      | Feature       |
-| ~~32~~ | ~~**[C]** CV adoption~~ resolved — TODO_LIST "CV-side adoption: bump to v0.11.0, deploy, verify live page" (BLOCKED row)                                                                                                                                 | Low    | L      | Feature       |
-| 33 | **[C]** dnsblockd lockstep                                                                                                                          | Low    | M      | Feature       |
-| 34 | **[C]** Upstream filings (templ-components et al.)                                                                                                  | Low    | M      | Documentation |
-| 35 | **[C]** Em-dash copy decision                                                                                                                       | Low    | S      | Documentation |
-| 36 | **[C]** GOEXPERIMENT decision                                                                                                                       | Low    | S      | Cleanup       |
-| ~~37~~ | ~~**[C]** Compose CI policy~~ resolved — TODO_LIST "Compose-stack CI policy" (BLOCKED row)                                                                                                                           | Low    | S      | Documentation |
-| ~~38~~ | ~~**[C]** Tag-bypass policy~~ resolved — TODO_LIST "Tag-ruleset bypass policy" (BLOCKED row)                                                                                                                           | Low    | S      | Documentation |
-| 39 | **[C]** Evidence machine contract (badge tooltips machine-readable?)                                                                                | Low    | M      | Feature       |
-| 40 | **[C]** Webhook HMAC signing                                                                                                                        | Medium | M      | Feature       |
-| 41 | **[C]** Fingerprint stability guarantee                                                                                                             | Medium | M      | Feature       |
-| 42 | **[C]** v1.0 compatibility-policy section                                                                                                           | Medium | S      | Documentation |
-| 43 | **[C]** Daemon-commit relabels (hygiene debt in history)                                                                                            | Low    | S      | Cleanup       |
-| 44 | **[C]** Deploy boot-verify                                                                                                                          | Low    | M      | Quality       |
-| 45 | **[C]** Consumer MVS fleet watch (templ-components v1.26/v1.27 drift)                                                                               | Medium | S      | Quality       |
-| 46 | **[S]** HARVEST this report's f-items into TODO_LIST/ROADMAP (docs-health)                                                                          | High   | S      | Documentation |
-| 47 | **[S]** Consider centralizing `heartbeatGoroutines` if a second test needs it (now single-use, fine)                                                | Low    | S      | Cleanup       |
-| 48 | **[S]** Host-Chromium http(s) breakage: upstream investigation or fleet fix (browser suite locally dead ~12s-skip)                                  | Medium | L      | Bug           |
-| 49 | **[S]** Decide release cadence policy for chore-only deltas (g1)                                                                                    | Medium | S      | Documentation |
-| 50 | **[S]** Next docs-health pass: re-verify FEATURES/test-count guards after this session's test changes (net zero Test-count change — expected green) | Low    | S      | Documentation |
+| #      | Task                                                                                                                                                | Impact | Effort | Category      |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------ | ------------- |
+| 1      | **[S]** Mechanical buildflow gate: abort Go tooling while buildflow runs (script/hook)                                                              | High   | S      | Quality       |
+| 2      | **[S]** Permanent leak-injection assertion for the heartbeat watchdog (FAIL path CI-executed)                                                       | High   | S      | Quality       |
+| 3      | **[S]** Fix issue #14: `Shutdown()` cancels the Start ctx (pusher lifetime) — API-contract decision needed (g2)                                     | High   | M      | Bug           |
+| 4      | **[S]** `scripts/release-assess.sh` (+ `release-cut.sh`): 3rd hand-rolled ceremony                                                                  | High   | M      | Cleanup       |
+| 5      | **[C]** PR #22 disposition: comment + close-or-keep (needs g3)                                                                                      | Medium | S      | Cleanup       |
+| 6      | **[C]** Adopt cdproto v0.159.0 + prometheus/common v0.73.1 (one vendorHash cycle)                                                                   | Medium | M      | Feature       |
+| 7      | **[C]** Issue #17: triage the nightly fuzz failure (run 38674181389)                                                                                | Medium | M      | Bug           |
+| 8      | **[C]** Issue #23: `data-nonce` on `<html>` — upstream API gap, decide file-vs-wrap                                                                 | Medium | S      | Feature       |
+| 9      | **[S]** Stability soak: new watchdog assertion under repeated full-package `-race`                                                                  | Medium | S      | Quality       |
+| 10     | **[S]** Chaos-load attempt at the original +11 flake (validate tolerance empirically)                                                               | Medium | M      | Quality       |
+| 11     | **[S]** Run `check-changelog.sh` locally on the current Unreleased entry; adopt pre-commit-local habit                                              | Low    | S      | Quality       |
+| 12     | **[S]** Ban `git add -A`: repo-level hook/pre-push check enforcing explicit-path staging                                                            | Medium | S      | Quality       |
+| 13     | **[C]** Watchdog security audit: `workflow_run` + fork interactions                                                                                 | Medium | M      | Quality       |
+| 14     | **[C]** Watchdog self-watch + dedupe watched-workflows list (script array vs gate 11)                                                               | Low    | S      | Quality       |
+| 15     | **[C]** NixOS templ bump — root fix for the generator-skew class (hit again tonight via buildflow fmt)                                              | High   | M      | Bug           |
+| 16     | **[C]** Editor LSP repoint (phantom squiggle from the skewered system templ)                                                                        | Low    | S      | Cleanup       |
+| 17     | **[C]** Release-cut script companion: re-head/Unreleased/footer-links automation                                                                    | Medium | M      | Cleanup       |
+| 18     | **[C]** markdown-lint pass over docs/                                                                                                               | Low    | M      | Quality       |
+| 19     | **[C]** Cold-cache pins-guard test                                                                                                                  | Low    | S      | Quality       |
+| 20     | **[C]** devShell shellcheck + actionlint integration                                                                                                | Low    | S      | Quality       |
+| 21     | **[C]** interrogate lint adoption                                                                                                                   | Low    | S      | Quality       |
+| 22     | **[C]** buildflow rerun baselines (time `rerun-failed-uncached.sh` vs cache greens)                                                                 | Low    | S      | Quality       |
+| 23     | **[C]** Hub boot smoke test in CI                                                                                                                   | Medium | M      | Quality       |
+| 24     | **[C]** Cross-process browser file-lock                                                                                                             | Low    | M      | Quality       |
+| 25     | **[C]** SSE counters + watchdog gauge metrics (ROADMAP §3)                                                                                          | Medium | M      | Feature       |
+| 26     | **[C]** Rate-limit observability metrics (ROADMAP §3)                                                                                               | Medium | M      | Feature       |
+| 27     | **[C]** Per-IP rate limits (ROADMAP §4)                                                                                                             | Low    | L      | Feature       |
+| 28     | **[C]** Request-logging middleware (ROADMAP §4)                                                                                                     | Low    | M      | Feature       |
+| 29     | **[C]** Connection-lifetime jitter (ROADMAP §4)                                                                                                     | Low    | S      | Feature       |
+| 30     | **[C]** Retry-After on connection-limit 503s (ROADMAP §4)                                                                                           | Low    | S      | Feature       |
+| ~~31~~ | ~~**[C]** PVR blocked row~~ resolved — TODO_LIST "Enable private vulnerability reporting" (BLOCKED row, repo-admin action)                          | Low    | L      | Feature       |
+| ~~32~~ | ~~**[C]** CV adoption~~ resolved — TODO_LIST "CV-side adoption: bump to v0.11.0, deploy, verify live page" (BLOCKED row)                            | Low    | L      | Feature       |
+| 33     | **[C]** dnsblockd lockstep                                                                                                                          | Low    | M      | Feature       |
+| 34     | **[C]** Upstream filings (templ-components et al.)                                                                                                  | Low    | M      | Documentation |
+| 35     | **[C]** Em-dash copy decision                                                                                                                       | Low    | S      | Documentation |
+| 36     | **[C]** GOEXPERIMENT decision                                                                                                                       | Low    | S      | Cleanup       |
+| ~~37~~ | ~~**[C]** Compose CI policy~~ resolved — TODO_LIST "Compose-stack CI policy" (BLOCKED row)                                                          | Low    | S      | Documentation |
+| ~~38~~ | ~~**[C]** Tag-bypass policy~~ resolved — TODO_LIST "Tag-ruleset bypass policy" (BLOCKED row)                                                        | Low    | S      | Documentation |
+| 39     | **[C]** Evidence machine contract (badge tooltips machine-readable?)                                                                                | Low    | M      | Feature       |
+| 40     | **[C]** Webhook HMAC signing                                                                                                                        | Medium | M      | Feature       |
+| 41     | **[C]** Fingerprint stability guarantee                                                                                                             | Medium | M      | Feature       |
+| 42     | **[C]** v1.0 compatibility-policy section                                                                                                           | Medium | S      | Documentation |
+| 43     | **[C]** Daemon-commit relabels (hygiene debt in history)                                                                                            | Low    | S      | Cleanup       |
+| 44     | **[C]** Deploy boot-verify                                                                                                                          | Low    | M      | Quality       |
+| 45     | **[C]** Consumer MVS fleet watch (templ-components v1.26/v1.27 drift)                                                                               | Medium | S      | Quality       |
+| 46     | **[S]** HARVEST this report's f-items into TODO_LIST/ROADMAP (docs-health)                                                                          | High   | S      | Documentation |
+| 47     | **[S]** Consider centralizing `heartbeatGoroutines` if a second test needs it (now single-use, fine)                                                | Low    | S      | Cleanup       |
+| 48     | **[S]** Host-Chromium http(s) breakage: upstream investigation or fleet fix (browser suite locally dead ~12s-skip)                                  | Medium | L      | Bug           |
+| 49     | **[S]** Decide release cadence policy for chore-only deltas (g1)                                                                                    | Medium | S      | Documentation |
+| 50     | **[S]** Next docs-health pass: re-verify FEATURES/test-count guards after this session's test changes (net zero Test-count change — expected green) | Low    | S      | Documentation |
 
 ## g) Questions I cannot figure out myself
 

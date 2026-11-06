@@ -1,5 +1,10 @@
 # Status + Brutal Self-Review — Dedup pass: 18 fixture tails → `startDashboardFixture` + pinned clone-baseline gate (2026-10-25, 17:53)
 
+> **Live remainder:** the second-session-during-release policy decision lives in TODO_LIST (Blocked table, row added 2026-11-05).
+
+<!-- session-metadata fact table: Session/Window/Start/End/Gates/Commits rows are facts, not actionable items -->
+<!-- check-rows:ledger -->
+
 |                    |                                                                                                                                                                                                                                                                         |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Session**        | Triggered by user directive READ/UNDERSTAND/RESEARCH/REFLECT, execute-and-verify stepwise, "deduplciate!" — the `deduplicate-code` skill ran art-dupl, every clone group was judged, harmful duplication was extracted, and acceptance was turned into an enforced gate |
@@ -166,7 +171,7 @@ _Provenance tags: [S] observed in this session, [C] carried context from AGENTS/
 **Carried backlog (context only, not researched this session)**
 
 43. [C] v0.12.0 release cadence question from the 14:19 session (open decision).
-44. [C] Second-session-during-release policy question from the 14:19 session (open decision).
+44. ~~[C] Second-session-during-release policy question from the 14:19 session (open decision).~~ resolved — harvested: TODO_LIST Blocked decision row "Second-session-during-release policy" (added 2026-11-05).
 45. [C] Pin-guard: next UI dependency climb still requires dedicated change + green browser suite + same-change guard updates (standing rule).
 46. [C] Federation upstream gaps (no `MarkShuttingDown`, no `SourceStatuses`) — upstream proposals remain unfiled.
 47. [C] `Ready()`-proves-nothing gotcha: startup-gate polling pattern is documented; no action unless a consumer hits it.

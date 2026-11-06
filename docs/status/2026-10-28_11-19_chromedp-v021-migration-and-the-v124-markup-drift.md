@@ -190,7 +190,7 @@ The multiedit that added the `remote` import and `captureScreenshot` reported su
 2. Re-run `scripts/check-ui-pins.sh` and prove exit 0 (note: the current run's `PINS_EXIT` was masked by a pipe — use `set -o pipefail`).
 3. Get one green browser-suite run on the migrated code — on a host whose Chrome can load a URL, or in CI — before calling a3 done.
 4. Recover the daemon commits' intent: `git reset --soft HEAD~3` + one amend with a real message (or a `docs:` commit that carries the rationale).
-5. Push `go-health` `15fad10` after a `nix run .#gates` pass.
+5. ~~Push `go-health` `15fad10` after a `nix run .#gates` pass.~~ done — 15fad10 is on go-health origin/master (verified 2026-11-05).
 6. Add the "v1.24.0 markup delta" paragraph to `scripts/check-ui-pins.sh`'s audit history.
 7. Add a Chrome preflight to `browser_test.go` (env canary + `t.Skipf` with the reason).
 8. Make browser tests skippable without `PATH` gymnastics (`-skip` documented in `AGENTS.md`, or an explicit `GO_HEALTH_DASHBOARD_SKIP_BROWSER=1`).
