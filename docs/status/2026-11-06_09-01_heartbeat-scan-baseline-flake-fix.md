@@ -21,7 +21,7 @@ FAIL    github.com/larsartmann/go-health-dashboard    5.678s
 
 ## 2. Root cause (diagnosis, with the decisive math)
 
-The scan itself was **healthy**. The test's *comparison* was wrong.
+The scan itself was **healthy**. The test's _comparison_ was wrong.
 
 - `heartbeatGoroutines()` (concurrency_test.go:261) scans `runtime.Stack(all)` for the
   `".Heartbeat("` frame of go-sse's `(*Stream).Heartbeat`. That frame still exists in the
@@ -46,12 +46,12 @@ a delta.
 
 `concurrency_test.go` (three regions) + the memory bullet:
 
-| Region | Before | After |
-| --- | --- | --- |
-| Detection phase (was :400-413, now ~:400-427) | `for heartbeatGoroutines() <= baseline` (delta) | presence: break when `live > 0`; blind (§0) fails loudly; tracks `livePeak = max(livePeak, live)` |
-| Drain phase (was :432-437, now ~:432-455) | `now <= baseline+2` (stale snapshot) | `now <= livePeak+2` — ceiling moves with the sibling load actually observed during the live phase |
-| Helper doc (:251-260) | "sibling tests hold at most a couple of live SSE connections" (FALSE — 49 observed) | honest: "absolute count still moves with sibling-test load — 49 → 1 observed — so detection must assert PRESENCE, never a delta over a stale snapshot" |
-| Test doc (:367-374) | "drain back to the sibling-noise floor" | "settle back under the sibling-noise ceiling" |
+| Region                                        | Before                                                                              | After                                                                                                                                                  |
+| --------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Detection phase (was :400-413, now ~:400-427) | `for heartbeatGoroutines() <= baseline` (delta)                                     | presence: break when `live > 0`; blind (§0) fails loudly; tracks `livePeak = max(livePeak, live)`                                                      |
+| Drain phase (was :432-437, now ~:432-455)     | `now <= baseline+2` (stale snapshot)                                                | `now <= livePeak+2` — ceiling moves with the sibling load actually observed during the live phase                                                      |
+| Helper doc (:251-260)                         | "sibling tests hold at most a couple of live SSE connections" (FALSE — 49 observed) | honest: "absolute count still moves with sibling-test load — 49 → 1 observed — so detection must assert PRESENCE, never a delta over a stale snapshot" |
+| Test doc (:367-374)                           | "drain back to the sibling-noise floor"                                             | "settle back under the sibling-noise ceiling"                                                                                                          |
 
 **Deliberately unchanged:** `TestShutdown_HeartbeatGoroutinesExit` keeps its tight
 `baseline+2` slack. Its leak signature is 5 (five clients); widening the envelope to a
@@ -60,17 +60,17 @@ above `baseline+2` inside the 3s drain window) is a real residual, now recorded 
 
 ## 4. Verification matrix
 
-| Check | Command | Result |
-| --- | --- | --- |
-| Frame exists in pin | `rg "func.*Heartbeat" ~/go/pkg/mod/github.com/larsartmann/go-sse@v0.6.2/stream.go` | `(*Stream).Heartbeat` at :246 — pattern valid |
-| Isolated repro (pre-fix) | `go test -race -run TestHeartbeatScan... -count=1 -v` | **PASS 0.04s** → scan healthy, comparison broken |
-| Focused post-fix | same, both heartbeat tests | PASS (0.10s / 0.11s) |
-| **Mutation check** | sed the scan pattern `.Heartbeat(` → `.HeartbeatX(`, run focused | **FAIL 5.07s**: `heartbeat scan went blind: 0 heartbeat goroutines with 1 live subscriber` — discrimination intact |
-| Mutation restored | reverse sed; `rg -c` pattern | exactly 1 occurrence; `git grep HeartbeatX` → none in HEAD |
-| Focused re-run (restored tree) | same test, `-count=1` | PASS (`ok 1.082s`) |
-| **Exact failed gate, uncached** | `BUILDFLOW_NO_RESULT_CACHE=1 buildflow -s test-race` | **✓ 1/1 passed, 1m0s**, 0 failed/skipped |
-| Lint | `nix run .#lint` | 0 issues |
-| Format | `nix fmt` (×2 retry), `gofmt -l concurrency_test.go` | 0 changed, no output |
+| Check                           | Command                                                                            | Result                                                                                                             |
+| ------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Frame exists in pin             | `rg "func.*Heartbeat" ~/go/pkg/mod/github.com/larsartmann/go-sse@v0.6.2/stream.go` | `(*Stream).Heartbeat` at :246 — pattern valid                                                                      |
+| Isolated repro (pre-fix)        | `go test -race -run TestHeartbeatScan... -count=1 -v`                              | **PASS 0.04s** → scan healthy, comparison broken                                                                   |
+| Focused post-fix                | same, both heartbeat tests                                                         | PASS (0.10s / 0.11s)                                                                                               |
+| **Mutation check**              | sed the scan pattern `.Heartbeat(` → `.HeartbeatX(`, run focused                   | **FAIL 5.07s**: `heartbeat scan went blind: 0 heartbeat goroutines with 1 live subscriber` — discrimination intact |
+| Mutation restored               | reverse sed; `rg -c` pattern                                                       | exactly 1 occurrence; `git grep HeartbeatX` → none in HEAD                                                         |
+| Focused re-run (restored tree)  | same test, `-count=1`                                                              | PASS (`ok 1.082s`)                                                                                                 |
+| **Exact failed gate, uncached** | `BUILDFLOW_NO_RESULT_CACHE=1 buildflow -s test-race`                               | **✓ 1/1 passed, 1m0s**, 0 failed/skipped                                                                           |
+| Lint                            | `nix run .#lint`                                                                   | 0 issues                                                                                                           |
+| Format                          | `nix fmt` (×2 retry), `gofmt -l concurrency_test.go`                               | 0 changed, no output                                                                                               |
 
 Evidence caveat: ONE uncached green full-suite run after the fix. The original flake
 depends on shuffle ordering + sibling load; one green run + the deterministic math above
