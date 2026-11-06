@@ -84,11 +84,11 @@ ROADMAP, none silently dropped)_
    `history.go`, dedupe trend/export JSON mapping, `TrendHandler` 503 message,
    `BenchmarkDashboard_PatchRender` rename (verified: it serves full HTML), inline
    `maxRequestsInvalid`.~~ done at `db8621f`
-4. ~~**Testing-gap items** — two flaky `time.Sleep`s in `sse_integration_test.go`
+4. ~~**Testing-gap items** — two flaky `time.Sleep` calls in `sse_integration_test.go`
    (`:265`, `:492` — verified still present), `WithMaxSSEConnections(0)` test,
    probe-not-started SSE test, `style=` patch assertion, sentinel state split.~~ done at `db8621f`
 5. ~~**Upstream work** — PR to templ-components for the StatCard `<dl>` fix (+ goldens),
-   then remove the repo's axe rule-level tolerance.~~ open — TODO_LIST rows for #6 and #7 (added 2026-09-04)
+   then remove the repo's axe rule-level tolerance.~~ resolved — TODO_LIST rows for #6 and #7 (added 2026-09-04)
 6. ~~**Example toggles** — `DEMO_PUBLIC=1`, `DEMO_BASE_PATH=/status`.~~ done at `db8621f`
 7. ~~**Bisectability audit** of `071c251..HEAD` (the `72783fc` wall is documented in
    AGENTS.md; the full 58-commit audit is not done).~~ done 2026-09-04 — 91 commits audited, 86 build; audit archived

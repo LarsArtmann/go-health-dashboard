@@ -142,13 +142,13 @@
 2. ~~**Datastar SDK script in head** — P14.7: Include `datastar.SDKScript` in page `<head>` when SSE mode is active. Not done.~~ Done — `view.templ:67-70`.
 3. ~~**`WithPushMode` option** — P15.3. Not implemented.~~ Done — `dashboard.go:49-51`.
 4. ~~**Q-value sorting in acceptsHTML** — P5.4 specified handling `Accept: application/json;q=1.0, text/html;q=0.1`. Current implementation uses naive string `Contains` which returns HTML for this case (wrong).~~ Partially resolved — content negotiation was removed in the rewrite, then re-added in this session with the same naive approach. See `TODO_LIST.md` for the q-value improvement task.
-5. ~~**`WithCSSPath` option** — No way to override Tailwind CDN with compiled CSS for production.~~ Still open — see `TODO_LIST.md`.
-6. ~~**flake.lock** — Never generated. `nix build` will fail without it.~~ Still open — see `TODO_LIST.md`.
+5. ~~**`WithCSSPath` option** — No way to override Tailwind CDN with compiled CSS for production.~~ done at `ed2b759` — `WithCSSPath` shipped (options.go).
+6. ~~**flake.lock** — Never generated. `nix build` will fail without it.~~ done at `29f3382` — flake.lock committed.
 7. ~~**GOWORK=off in flake.nix** — go-health's flake sets this; I didn't. The workspace `go.work` in `~/projects` will interfere with Nix builds.~~ Done — `flake.nix:77`.
-8. ~~**LICENSE file** — Missing entirely.~~ Exists but contradicts README — see `TODO_LIST.md`.
-9. ~~**.golangci.yml** — Missing.~~ Still open — see `TODO_LIST.md`.
+8. ~~**LICENSE file** — Missing entirely.~~ done at `29f3382` — LICENSE committed; README aligned since.
+9. ~~**.golangci.yml** — Missing.~~ done at `a3ea558` — .golangci.yml committed; lint gates run.
 10. ~~**Version constant** — No exported version string.~~ Done — `dashboard.go:20`.
-11. ~~**govulncheck / gosec** — Never run.~~ Still open — see `TODO_LIST.md`.
+11. ~~**govulncheck / gosec** — Never run.~~ done — `nix run .#vulncheck` wired into the flake apps.
 
 ---
 

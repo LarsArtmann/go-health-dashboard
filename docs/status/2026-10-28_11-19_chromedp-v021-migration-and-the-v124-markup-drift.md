@@ -66,7 +66,7 @@ The browser suite had 108 compile errors across two files (93 + 15) after the pi
 | `chromedp.Evaluate(expr, &out)` / `(expr, nil)`    | 57    | scripted → `evalInto[T]` / `evalDiscard`                    |
 | `chromedp.ByQuery` lookup option                   | 14    | scripted → `chromedp.CSS(...)` selector type                |
 | `chromedp.NewRemoteAllocator`                      | 4     | `remote.NewAllocator` (`remote` moved into the core module) |
-| `chromedp.ListenTarget(ctx, switch on`any`)`       | 1     | rewritten as two `chromedp.Events` iterators                |
+| `chromedp.ListenTarget` (switch on `any`)          | 1     | rewritten as two `chromedp.Events` iterators                |
 | `chromedp.FullScreenshot(&png, 95)`                | 3     | `captureScreenshot(ctx)` helper (`Run` returns `[]byte`)    |
 
 Two small shims carry the shape (`chromedp_eval_test.go`, 36 lines): `evalInto[T]` and `evalDiscard`. `waitForJS` was split into `waitForJS` (wait only, 3 args) and `waitForJSTo[T]` (wait + decode), because the old `res any` parameter cannot express "pointer or nil" once `Evaluate` is generic — seventeen call sites lost a meaningless `, nil`.

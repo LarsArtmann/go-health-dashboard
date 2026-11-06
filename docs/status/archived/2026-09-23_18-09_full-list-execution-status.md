@@ -265,56 +265,56 @@ compiler caught it immediately.
 
 | #  | Task | Impact                                                                                                                                                      |
 | -- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ~~ | 1    | Verify the tip AFTER the parallel session finishes: `nix run .#build` + `.#test` + `.#lint` on `HEAD`                                                       |
-| ~~ | 2    | Push the 35 commits (needs your go-ahead) and confirm CI green on the tip — esp. the shellcheck job and the new gates                                       |
-| ~~ | 3    | File the templ gofumpt issue (draft ready, voice-checked, `docs/upstream/`) — external repo, needs authorization                                            |
-| ~~ | 4    | File the erraudit nolint-audit issues (./... no-op + NEEDED-mismatch) on larsartmann/erraudit — own repo, needs authorization                               |
-| ~~ | 5    | Strip-test the remaining three `//nolint:erraudit` directives (handlers/pusher/webhook) the same way as status.go                                           |
-| ~~ | 6    | Run `nix run .#vulncheck` + `nix run .#coverage` over the final tree (new tests unmeasured)                                                                 |
-| ~~ | 7    | Answer the commit-policy question (g1, asked two sessions running): harness rule vs AGENTS commit-at-first-green — 6 more intent messages lost this session |
-| ~~ | 8    | Compose-stack CI policy decision (g3 below): the e2e boot caught a real Dockerfile break — argues for at least a build-only job                             |
-| ~~ | 9    | HARVEST the 09-23 dedup session's section f into TODO_LIST/ROADMAP (their list is still entombed)                                                           |
-| ~~ | 10   | Kill their known split-brain: `startByteStableScrapeTarget` poll loop vs `waitForTrendSamples`                                                              |
-| ~~ | 11   | Investigate the open dependabot PR behind "Configured Graph Update: go_modules #1588885104"                                                                 |
-| ~~ | 12   | Cut v0.11.0 when you want the hub cadence knob + deploy stack released (`[Unreleased]` is loaded)                                                           |
-| ~~ | 13   | Fleet-replicate `set-tag-protection.sh` to sibling repos (it was built for this)                                                                            |
-| ~~ | 14   | Fleet-replicate the fuzz-registry + templ-pin pre-push checks + shellcheck CI job                                                                           |
-| ~~ | 15   | Re-verify the mobile metadata line against THIS session's render after the parallel session's SSE changes                                                   |
-| ~~ | 16   | Extend the dark-contrast measurement to light mode + badge colors mechanically (script it, don't hand-compute)                                              |
-| ~~ | 17   | Add the M91 latency numbers as a soft regression assert (e.g. avg < 2s) so a Chrome/launcher regression fails loudly                                        |
-| ~~ | 18   | Parameterize the load-test doc baseline into a small table the harness can diff against                                                                     |
-| ~~ | 19   | Alert example: add a second rule draft for `dashboard_pusher_active < 1` (stale-page detection)                                                             |
-| ~~ | 20   | Grafana: consider provisioning a "degraded view" panel set from `dashboard_health_status` banding                                                           |
-| ~~ | 21   | Digest-pin the Dockerfile base bump policy note into dependabot config review (does dependabot update `repo:tag@sha256` pins correctly?)                    |
-| ~~ | 22   | Measure the full verify-dep-bump.sh wall time and record it (operators plan around it)                                                                      |
-| ~~ | 23   | erraudit upstream: propose the strip-and-rerun mode as a built-in (`nolint-audit --verify`) so the NEEDED mismatch class dies                               |
-| ~~ | 24   | templ upstream: check whether master already formats output (pin is v0.3.1020; the issue draft should cite the pinned version explicitly)                   |
-| ~~ | 25   | Add a session-start "verify tip before claiming green" step to the release checklist (this session's d7 class)                                              |
-| ~~ | 26   | Document the `!override` compose port trick in the fleet lessons file (cross-project reusable)                                                              |
-| ~~ | 27   | Record a `references/lessons.md` entry: "pin the toolchain in bulk loops; ambient go lies after a floor bump"                                               |
-| ~~ | 28   | Their f4: extract shared inline-JS consts (`detailsState`, `visibleRows`) in browser_test.go                                                                |
-| ~~ | 29   | Their f5: unify the five bespoke poll loops behind one deadline-parameterized primitive                                                                     |
-| ~~ | 30   | Their f6: replace 250ms settle sleeps with a deterministic initial-patch wait                                                                               |
-| ~~ | 31   | Their f8: split `browser_test.go` (session helpers → own file, ADR-0001 pattern)                                                                            |
-| ~~ | 32   | Their f9: guard the duplicate-route class (`mustHandle` helper that fatals on re-registration)                                                              |
-| ~~ | 33   | Re-run art-dupl at `-t 3` after this session's additions (browser_latency_test.go may have introduced near-duplicates with screenshot_test.go)              |
-| ~~ | 34   | Give `TestMeasureChromeLaunchLatency` a stable machine-tag (skip on CI) so nobody runs it in a shared runner by accident                                    |
-| ~~ | 35   | Compose: add a `docker compose config` lint to CI hygiene (catches YAML drift without Docker)                                                               |
-| ~~ | 36   | Compose: prometheus + grafana data-volume mounts for longer local observation windows (opt-in profile)                                                      |
-| ~~ | 37   | Grafana dashboard JSON: pin panel datasources explicitly (uid "prometheus") instead of inheriting                                                           |
-| ~~ | 38   | deploy/README: add a "what good looks like" annotated screenshot section (panel-by-panel expected values)                                                   |
-| ~~ | 39   | docs/metrics.md: add the hub's federation card (`name/reachable`) to the cardinality table with an example                                                  |
-| ~~ | 40   | ROADMAP: write the explicit support-policy section (criterion 3's named gap)                                                                                |
-| ~~ | 41   | CHANGELOG audit: extend the method to v0.9.0–v0.10.1 (verified only through 0.8.1 + spot checks)                                                            |
-| ~~ | 42   | Bisect audit: scriptify the pinned-toolchain method into `scripts/` so the next extension is one command                                                    |
-| ~~ | 43   | pre-push-checks: add check 7 — FEATURES count includes cmd/health-hub test files (currently only root files are guarded)                                    |
-| ~~ | 44   | Consider `LOADTEST_EVIDENCE=1` knob to toggle evidence explicitly (currently always-on; the knob would make the old-vs-new comparison one-flag)             |
-| ~~ | 45   | Release-check workflow: also verify the Release notes match the tag's CHANGELOG section (draft-drift class from v0.10.x)                                    |
-| ~~ | 46   | set-tag-protection: add a CI drift job running `--check` nightly (the script exists; nothing schedules it)                                                  |
-| ~~ | 47   | AGENTS: fold the "verify tip before claiming green" rule into the parallel-session handshake bullet                                                         |
-| ~~ | 48   | Sweep ROADMAP Open Questions for rows this session made stale (evidence contract wording references HTML-only "today")                                      |
-| ~~ | 49   | Consider exporting the demo stack's prometheus scrape config as a library example (consumers copy-paste from deploy/)                                       |
-| ~~ | 50   | Reserved: triage bucket — revisit when fleet tooling changes (BuildFlow DAG ordering, go-structure-linter pin)                                              |
+| ~~ ~~ | 1    | Verify the tip AFTER the parallel session finishes: `nix run .#build` + `.#test` + `.#lint` on `HEAD`                                                       |
+| ~~ ~~ | 2    | Push the 35 commits (needs your go-ahead) and confirm CI green on the tip — esp. the shellcheck job and the new gates                                       |
+| ~~ ~~ | 3    | File the templ gofumpt issue (draft ready, voice-checked, `docs/upstream/`) — external repo, needs authorization                                            |
+| ~~ ~~ | 4    | File the erraudit nolint-audit issues (./... no-op + NEEDED-mismatch) on larsartmann/erraudit — own repo, needs authorization                               |
+| ~~ ~~ | 5    | Strip-test the remaining three `//nolint:erraudit` directives (handlers/pusher/webhook) the same way as status.go                                           |
+| ~~ ~~ | 6    | Run `nix run .#vulncheck` + `nix run .#coverage` over the final tree (new tests unmeasured)                                                                 |
+| ~~ ~~ | 7    | Answer the commit-policy question (g1, asked two sessions running): harness rule vs AGENTS commit-at-first-green — 6 more intent messages lost this session |
+| ~~ ~~ | 8    | Compose-stack CI policy decision (g3 below): the e2e boot caught a real Dockerfile break — argues for at least a build-only job                             |
+| ~~ ~~ | 9    | HARVEST the 09-23 dedup session's section f into TODO_LIST/ROADMAP (their list is still entombed)                                                           |
+| ~~ ~~ | 10   | Kill their known split-brain: `startByteStableScrapeTarget` poll loop vs `waitForTrendSamples`                                                              |
+| ~~ ~~ | 11   | Investigate the open dependabot PR behind "Configured Graph Update: go_modules #1588885104"                                                                 |
+| ~~ ~~ | 12   | Cut v0.11.0 when you want the hub cadence knob + deploy stack released (`[Unreleased]` is loaded)                                                           |
+| ~~ ~~ | 13   | Fleet-replicate `set-tag-protection.sh` to sibling repos (it was built for this)                                                                            |
+| ~~ ~~ | 14   | Fleet-replicate the fuzz-registry + templ-pin pre-push checks + shellcheck CI job                                                                           |
+| ~~ ~~ | 15   | Re-verify the mobile metadata line against THIS session's render after the parallel session's SSE changes                                                   |
+| ~~ ~~ | 16   | Extend the dark-contrast measurement to light mode + badge colors mechanically (script it, don't hand-compute)                                              |
+| ~~ ~~ | 17   | Add the M91 latency numbers as a soft regression assert (e.g. avg < 2s) so a Chrome/launcher regression fails loudly                                        |
+| ~~ ~~ | 18   | Parameterize the load-test doc baseline into a small table the harness can diff against                                                                     |
+| ~~ ~~ | 19   | Alert example: add a second rule draft for `dashboard_pusher_active < 1` (stale-page detection)                                                             |
+| ~~ ~~ | 20   | Grafana: consider provisioning a "degraded view" panel set from `dashboard_health_status` banding                                                           |
+| ~~ ~~ | 21   | Digest-pin the Dockerfile base bump policy note into dependabot config review (does dependabot update `repo:tag@sha256` pins correctly?)                    |
+| ~~ ~~ | 22   | Measure the full verify-dep-bump.sh wall time and record it (operators plan around it)                                                                      |
+| ~~ ~~ | 23   | erraudit upstream: propose the strip-and-rerun mode as a built-in (`nolint-audit --verify`) so the NEEDED mismatch class dies                               |
+| ~~ ~~ | 24   | templ upstream: check whether master already formats output (pin is v0.3.1020; the issue draft should cite the pinned version explicitly)                   |
+| ~~ ~~ | 25   | Add a session-start "verify tip before claiming green" step to the release checklist (this session's d7 class)                                              |
+| ~~ ~~ | 26   | Document the `!override` compose port trick in the fleet lessons file (cross-project reusable)                                                              |
+| ~~ ~~ | 27   | Record a `references/lessons.md` entry: "pin the toolchain in bulk loops; ambient go lies after a floor bump"                                               |
+| ~~ ~~ | 28   | Their f4: extract shared inline-JS consts (`detailsState`, `visibleRows`) in browser_test.go                                                                |
+| ~~ ~~ | 29   | Their f5: unify the five bespoke poll loops behind one deadline-parameterized primitive                                                                     |
+| ~~ ~~ | 30   | Their f6: replace 250ms settle sleeps with a deterministic initial-patch wait                                                                               |
+| ~~ ~~ | 31   | Their f8: split `browser_test.go` (session helpers → own file, ADR-0001 pattern)                                                                            |
+| ~~ ~~ | 32   | Their f9: guard the duplicate-route class (`mustHandle` helper that fatals on re-registration)                                                              |
+| ~~ ~~ | 33   | Re-run art-dupl at `-t 3` after this session's additions (browser_latency_test.go may have introduced near-duplicates with screenshot_test.go)              |
+| ~~ ~~ | 34   | Give `TestMeasureChromeLaunchLatency` a stable machine-tag (skip on CI) so nobody runs it in a shared runner by accident                                    |
+| ~~ ~~ | 35   | Compose: add a `docker compose config` lint to CI hygiene (catches YAML drift without Docker)                                                               |
+| ~~ ~~ | 36   | Compose: prometheus + grafana data-volume mounts for longer local observation windows (opt-in profile)                                                      |
+| ~~ ~~ | 37   | Grafana dashboard JSON: pin panel datasources explicitly (uid "prometheus") instead of inheriting                                                           |
+| ~~ ~~ | 38   | deploy/README: add a "what good looks like" annotated screenshot section (panel-by-panel expected values)                                                   |
+| ~~ ~~ | 39   | docs/metrics.md: add the hub's federation card (`name/reachable`) to the cardinality table with an example                                                  |
+| ~~ ~~ | 40   | ROADMAP: write the explicit support-policy section (criterion 3's named gap)                                                                                |
+| ~~ ~~ | 41   | CHANGELOG audit: extend the method to v0.9.0–v0.10.1 (verified only through 0.8.1 + spot checks)                                                            |
+| ~~ ~~ | 42   | Bisect audit: scriptify the pinned-toolchain method into `scripts/` so the next extension is one command                                                    |
+| ~~ ~~ | 43   | pre-push-checks: add check 7 — FEATURES count includes cmd/health-hub test files (currently only root files are guarded)                                    |
+| ~~ ~~ | 44   | Consider `LOADTEST_EVIDENCE=1` knob to toggle evidence explicitly (currently always-on; the knob would make the old-vs-new comparison one-flag)             |
+| ~~ ~~ | 45   | Release-check workflow: also verify the Release notes match the tag's CHANGELOG section (draft-drift class from v0.10.x)                                    |
+| ~~ ~~ | 46   | set-tag-protection: add a CI drift job running `--check` nightly (the script exists; nothing schedules it)                                                  |
+| ~~ ~~ | 47   | AGENTS: fold the "verify tip before claiming green" rule into the parallel-session handshake bullet                                                         |
+| ~~ ~~ | 48   | Sweep ROADMAP Open Questions for rows this session made stale (evidence contract wording references HTML-only "today")                                      |
+| ~~ ~~ | 49   | Consider exporting the demo stack's prometheus scrape config as a library example (consumers copy-paste from deploy/)                                       |
+| ~~ ~~ | 50   | Reserved: triage bucket — revisit when fleet tooling changes (BuildFlow DAG ordering, go-structure-linter pin)                                              |
 
 ## g) Questions I can NOT figure out myself
 

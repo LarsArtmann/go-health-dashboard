@@ -53,5 +53,5 @@ implemented, tested, and verified.** Remaining ideas live in `ROADMAP.md`.
   decision notes).
 - ~~Build-tag gating for SSE (BLOCKED on user decision, unchanged —
   requires accepting the jsonv2 requirement, forking go-sse, or gating).~~
-  still BLOCKED — tracked in `TODO_LIST.md` (Blocked table) and ROADMAP
+  decided — GOEXPERIMENT=jsonv2 accepted fleet-wide (GOEXPERIMENT=jsonv2); no gating shipped
   Open Questions; unchanged as of 2026-09-04.

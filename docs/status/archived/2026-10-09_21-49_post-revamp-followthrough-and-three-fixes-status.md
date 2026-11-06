@@ -109,48 +109,48 @@ Ranked by impact. Effort: S <30min, M 30min–2h, L >2h. (HARVEST fuel — most 
 
 | #  | Task | Impact                                                                                                                                                    | Effort  | Category |
 | -- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------- |
-| ~~ | 1    | Touch-tooltips story for evidence badges (#16) — the last v0.11.0 batch item                                                                              | High    | M        |
-| ~~ | 2    | Cut v0.11.0: checklist per TODO_LIST row; tag-then-master; `verify-release.sh`                                                                            | High    | M        |
-| ~~ | 3    | Re-run vulncheck at release; record the 9-stdlib-vuln toolchain decision                                                                                  | High    | S        |
-| ~~ | 4    | Upstream: verify + file StatCard green-tone contrast (#5)                                                                                                 | High    | M        |
-| ~~ | 5    | NEW Upstream: file StatCard value-tone hook (forced `latencyStatCard`)                                                                                    | Medium  | S        |
-| ~~ | 6    | NEW Upstream: file ListNote message/advice hook (forced `timelineNote`)                                                                                   | Medium  | S        |
-| ~~ | 7    | NEW Upstream: file RelativeTime script/attribute conflation (forced `InitialRender`)                                                                      | Medium  | S        |
-| ~~ | 8    | NEW Re-qualify `/health` JSON byte-stability at release incl. the `"off"` caveat                                                                          | High    | S        |
-| ~~ | 9    | README prose audit vs new UI (#9)                                                                                                                         | Medium  | M        |
-| ~~ | 10   | Fix/document harness pill `[hidden]` (#10)                                                                                                                | Medium  | S        |
-| ~~ | 11   | SSE patch payload measurement incl. today's markup (#11)                                                                                                  | Medium  | M        |
-| ~~ | 12   | `BenchmarkHandler_HTMLRendering` delta vs v0.10.2 (#12)                                                                                                   | Medium  | S        |
-| ~~ | 13   | ADR-0003 two-family tone system + dark-mode checklist fold (#13+#32)                                                                                      | Medium  | S        |
-| ~~ | 14   | GroupBySource screenshot + README (#17)                                                                                                                   | Medium  | S        |
-| ~~ | 15   | Hub e2e vs new UI, 2 remotes (#36)                                                                                                                        | Medium  | M        |
-| ~~ | 16   | Axe degraded-variant + dark re-run evidence (#22+#38)                                                                                                     | Medium  | S        |
-| ~~ | 17   | Endpoint-link keyboard reachability (#23)                                                                                                                 | Medium  | S        |
-| ~~ | 18   | Helper coverage: timeline trio + alertSummary grouped VMs (#14+#37)                                                                                       | Low-Med | S        |
-| ~~ | 19   | NEW Route-derived leak-surface enumeration (e2)                                                                                                           | Medium  | M        |
-| ~~ | 20   | NEW Canonical-chain wrapper app (e1)                                                                                                                      | Medium  | M        |
-| ~~ | 21   | Auto-push daemon anomaly before any push (#24)                                                                                                            | Medium  | M        |
-| ~~ | 22   | Capture wrapper script (#42)                                                                                                                              | Low     | S        |
-| ~~ | 23   | BuildFlow divergent-sweep failure mode (#20)                                                                                                              | Medium  | M        |
-| ~~ | 24   | Browser half/half grid at desktop width (#21)                                                                                                             | Low-Med | M        |
-| ~~ | 25   | NEW Check initial-vs-patch pre-JS age text parity once (upstream "2 minutes ago" vs `formatAge` fallback)                                                 | Low     | S        |
-| ~~ | 26   | NEW AGENTS trim to 377-line budget with displacement rule (e7)                                                                                            | Medium  | M        |
-| ~~ | 27   | `datastar.SSEErrorHandling` opt-in complement (#25)                                                                                                       | Low     | M        |
-| ~~ | 28   | CopyButton re-vet on v1.21 (#26, blocked row)                                                                                                             | Low     | M        |
-| ~~ | 29   | Group count badge tones (#28)                                                                                                                             | Low     | S        |
-| ~~ | 30   | Sticky table header (#29)                                                                                                                                 | Low     | M        |
-| ~~ | 31   | Print-style verification (#30)                                                                                                                            | Low     | S        |
-| ~~ | 32   | Dark aggregate screenshot (#31)                                                                                                                           | Low     | S        |
-| ~~ | 33   | `PolledRegion` non-SSE fallback exploration (#34)                                                                                                         | Low     | M        |
-| ~~ | 34   | Icons adoption pattern in consumer notes (#39)                                                                                                            | Low     | S        |
-| ~~ | 35   | `EmptyState` for no-match filter (#40)                                                                                                                    | Low     | S        |
-| ~~ | 36   | Badge transition animation, motion-reduce safe (#41)                                                                                                      | Low     | M        |
-| ~~ | 37   | Collapse-persistence exclusion docs (#45)                                                                                                                 | Low     | S        |
-| ~~ | 38   | Upstream `[hidden]` resilience ask (#47, after #10)                                                                                                       | Low     | M        |
-| ~~ | 39   | `RefreshInterval` in latency tooltip (#48)                                                                                                                | Low     | S        |
-| ~~ | 40   | Archived UI-plan sweep (#49)                                                                                                                              | Low     | S        |
-| ~~ | 41   | `brutal-self-review` on the revamp (#50)                                                                                                                  | Medium  | M        |
-| ~~ | 42   | Existing BLOCKED rows (CV adoption, evidence machine contract, fingerprint stability, tag-ruleset bypass, PVR, BuildFlow skips) — all need your decisions | Medium  | —        |
+| ~~ ~~ | 1    | Touch-tooltips story for evidence badges (#16) — the last v0.11.0 batch item                                                                              | High    | M        |
+| ~~ ~~ | 2    | Cut v0.11.0: checklist per TODO_LIST row; tag-then-master; `verify-release.sh`                                                                            | High    | M        |
+| ~~ ~~ | 3    | Re-run vulncheck at release; record the 9-stdlib-vuln toolchain decision                                                                                  | High    | S        |
+| ~~ ~~ | 4    | Upstream: verify + file StatCard green-tone contrast (#5)                                                                                                 | High    | M        |
+| ~~ ~~ | 5    | NEW Upstream: file StatCard value-tone hook (forced `latencyStatCard`)                                                                                    | Medium  | S        |
+| ~~ ~~ | 6    | NEW Upstream: file ListNote message/advice hook (forced `timelineNote`)                                                                                   | Medium  | S        |
+| ~~ ~~ | 7    | NEW Upstream: file RelativeTime script/attribute conflation (forced `InitialRender`)                                                                      | Medium  | S        |
+| ~~ ~~ | 8    | NEW Re-qualify `/health` JSON byte-stability at release incl. the `"off"` caveat                                                                          | High    | S        |
+| ~~ ~~ | 9    | README prose audit vs new UI (#9)                                                                                                                         | Medium  | M        |
+| ~~ ~~ | 10   | Fix/document harness pill `[hidden]` (#10)                                                                                                                | Medium  | S        |
+| ~~ ~~ | 11   | SSE patch payload measurement incl. today's markup (#11)                                                                                                  | Medium  | M        |
+| ~~ ~~ | 12   | `BenchmarkHandler_HTMLRendering` delta vs v0.10.2 (#12)                                                                                                   | Medium  | S        |
+| ~~ ~~ | 13   | ADR-0003 two-family tone system + dark-mode checklist fold (#13+#32)                                                                                      | Medium  | S        |
+| ~~ ~~ | 14   | GroupBySource screenshot + README (#17)                                                                                                                   | Medium  | S        |
+| ~~ ~~ | 15   | Hub e2e vs new UI, 2 remotes (#36)                                                                                                                        | Medium  | M        |
+| ~~ ~~ | 16   | Axe degraded-variant + dark re-run evidence (#22+#38)                                                                                                     | Medium  | S        |
+| ~~ ~~ | 17   | Endpoint-link keyboard reachability (#23)                                                                                                                 | Medium  | S        |
+| ~~ ~~ | 18   | Helper coverage: timeline trio + alertSummary grouped VMs (#14+#37)                                                                                       | Low-Med | S        |
+| ~~ ~~ | 19   | NEW Route-derived leak-surface enumeration (e2)                                                                                                           | Medium  | M        |
+| ~~ ~~ | 20   | NEW Canonical-chain wrapper app (e1)                                                                                                                      | Medium  | M        |
+| ~~ ~~ | 21   | Auto-push daemon anomaly before any push (#24)                                                                                                            | Medium  | M        |
+| ~~ ~~ | 22   | Capture wrapper script (#42)                                                                                                                              | Low     | S        |
+| ~~ ~~ | 23   | BuildFlow divergent-sweep failure mode (#20)                                                                                                              | Medium  | M        |
+| ~~ ~~ | 24   | Browser half/half grid at desktop width (#21)                                                                                                             | Low-Med | M        |
+| ~~ ~~ | 25   | NEW Check initial-vs-patch pre-JS age text parity once (upstream "2 minutes ago" vs `formatAge` fallback)                                                 | Low     | S        |
+| ~~ ~~ | 26   | NEW AGENTS trim to 377-line budget with displacement rule (e7)                                                                                            | Medium  | M        |
+| ~~ ~~ | 27   | `datastar.SSEErrorHandling` opt-in complement (#25)                                                                                                       | Low     | M        |
+| ~~ ~~ | 28   | CopyButton re-vet on v1.21 (#26, blocked row)                                                                                                             | Low     | M        |
+| ~~ ~~ | 29   | Group count badge tones (#28)                                                                                                                             | Low     | S        |
+| ~~ ~~ | 30   | Sticky table header (#29)                                                                                                                                 | Low     | M        |
+| ~~ ~~ | 31   | Print-style verification (#30)                                                                                                                            | Low     | S        |
+| ~~ ~~ | 32   | Dark aggregate screenshot (#31)                                                                                                                           | Low     | S        |
+| ~~ ~~ | 33   | `PolledRegion` non-SSE fallback exploration (#34)                                                                                                         | Low     | M        |
+| ~~ ~~ | 34   | Icons adoption pattern in consumer notes (#39)                                                                                                            | Low     | S        |
+| ~~ ~~ | 35   | `EmptyState` for no-match filter (#40)                                                                                                                    | Low     | S        |
+| ~~ ~~ | 36   | Badge transition animation, motion-reduce safe (#41)                                                                                                      | Low     | M        |
+| ~~ ~~ | 37   | Collapse-persistence exclusion docs (#45)                                                                                                                 | Low     | S        |
+| ~~ ~~ | 38   | Upstream `[hidden]` resilience ask (#47, after #10)                                                                                                       | Low     | M        |
+| ~~ ~~ | 39   | `RefreshInterval` in latency tooltip (#48)                                                                                                                | Low     | S        |
+| ~~ ~~ | 40   | Archived UI-plan sweep (#49)                                                                                                                              | Low     | S        |
+| ~~ ~~ | 41   | `brutal-self-review` on the revamp (#50)                                                                                                                  | Medium  | M        |
+| ~~ ~~ | 42   | Existing BLOCKED rows (CV adoption, evidence machine contract, fingerprint stability, tag-ruleset bypass, PVR, BuildFlow skips) — all need your decisions | Medium  | —        |
 
 ---
 

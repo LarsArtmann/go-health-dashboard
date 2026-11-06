@@ -217,7 +217,7 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   `browserRunTimeout` instead of failing honestly. `usableChrome`
   (browser_test.go) now runs `probeChromeNetwork` — one
   `chromium --dump-dom` against a loopback `httptest` server, memoized in
-  `chromeNetworkPreflight` — and `t.Skipf`s with the reason in ~12s, so the
+  `chromeNetworkPreflight` — and skips via `t.Skipf` with the reason in ~12s, so the
   whole 19-test suite skips in 12s total. `GO_HEALTH_DASHBOARD_CHROME=` does
   NOT disable the suite (locateChrome falls back to the devShell's Chromium);
   the skip lever there is `-skip`. Eliminated as causes: proxy env/PAC,
@@ -440,7 +440,7 @@ Provides `Probe`, `Response`, `Check`, `Status` (v0.10.0 in go.mod). The dashboa
   `DEMO_ANALYTICS_URL` promoting it to a live `checks.HTTP` battery) +
   `TestBrowser_OffRowContract`
 - `checks` battery package (v0.5.1) — `checks.Disk/Memory/HTTP` are plain
-  `CheckFunc`s, warn-by-default; example rows: `disk-headroom` (pass),
+  `CheckFunc` implementations, warn-by-default; example rows: `disk-headroom` (pass),
   `memory-pressure` (warn with the REAL heap number), `analytics` via
   `checks.HTTP` when configured
 - `NewWithHealthCheck(fn HealthCheckFunc, opts...)` — constructs a probe from
