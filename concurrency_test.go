@@ -249,12 +249,15 @@ func auditWebhookDeliveries(t *testing.T, payloads []string) (bool, bool, bool) 
 // --- Heartbeat goroutine lifetime (plan M84) ---
 
 // heartbeatGoroutines counts goroutines currently running go-sse's
-// per-connection Heartbeat loop. The metric is attributable: sibling tests
-// hold at most a couple of live SSE connections at any instant, so a
-// fixture leaking its own five heartbeats dominates the reading — unlike
-// a process-wide runtime.NumGoroutine baseline, which ~350 parallel
+// per-connection Heartbeat loop. The metric is attributable: a fixture
+// leaking its own five heartbeats dominates the reading, unlike a
+// process-wide runtime.NumGoroutine baseline, which ~350 parallel
 // fixtures turn into noise (the 2026-11-05 CI red read +11 unrelated
-// goroutines as a "leak" while SubscriberCount had already drained to 0).
+// goroutines as a "leak" while SubscriberCount had already drained to
+// 0). The absolute count still moves with sibling-test load — the
+// 2026-11-06 red watched 49 live sibling heartbeats drain to 1
+// mid-window — so detection must assert PRESENCE (a live connection
+// guarantees ≥1), never a delta over a stale snapshot.
 func heartbeatGoroutines() int {
 	buf := make([]byte, 1<<20) //nolint:makezero // runtime.Stack writes up to len, never append
 	for {
@@ -364,8 +367,8 @@ func TestShutdown_HeartbeatGoroutinesExit(t *testing.T) {
 // FAIL-path probe behind the 2026-11-05 flake fix: it proves the attributed
 // heartbeat scan (a) SEES a live connection's heartbeat goroutine while it
 // exists — the leak signature the watchdog must never go blind to — and
-// (b) sees it drain back to the sibling-noise floor after Shutdown plus
-// client close. It is the executable form of the one-off
+// (b) sees the count settle back under the sibling-noise ceiling after
+// Shutdown plus client close. It is the executable form of the one-off
 // before=0/during=1/after=0 probe run during that incident; if the scan's
 // frame match ever regresses, the detection phase fails loudly instead of
 // silently re-becoming the NumGoroutine false-positive class.
@@ -398,14 +401,26 @@ func TestHeartbeatScan_DetectsAndDrainsOneConnection(t *testing.T) {
 	}
 
 	// Detection: the connection's heartbeat goroutine must be visible to
-	// the attributed scan while the connection is live.
+	// the attributed scan while the connection is live. Presence, not a
+	// delta over the pre-connect baseline, is the blindness signature:
+	// the baseline is a stale sibling-noise snapshot (49 live sibling
+	// heartbeats were once captured, draining to 1 mid-window), so a
+	// healthy scan reading 1 for this very connection must not wait for
+	// now > baseline. A blinded frame match reads 0, which fails loudly
+	// in a focused run where this connection is the only heartbeat
+	// source.
 	deadline = time.Now().Add(5 * time.Second)
-	for heartbeatGoroutines() <= baseline {
+	livePeak := heartbeatGoroutines()
+	for {
+		live := heartbeatGoroutines()
+		livePeak = max(livePeak, live)
+		if live > 0 {
+			break
+		}
+
 		if time.Now().After(deadline) {
 			t.Fatalf(
-				"heartbeat scan went blind: baseline %d, now %d with 1 live subscriber — the (*pusher).Heartbeat frame match regressed",
-				baseline,
-				heartbeatGoroutines(),
+				"heartbeat scan went blind: 0 heartbeat goroutines with 1 live subscriber — the (*pusher).Heartbeat frame match regressed",
 			)
 		}
 
@@ -415,18 +430,24 @@ func TestHeartbeatScan_DetectsAndDrainsOneConnection(t *testing.T) {
 	dash.Shutdown()
 	_ = resp.Body.Close()
 
-	// Recovery: back to the sibling-noise floor, as in the watchdog test.
+	// Recovery: back under the sibling-noise ceiling observed while the
+	// connection was live — livePeak already absorbed that noise plus
+	// this connection's own heartbeat, so it moves with the suite's
+	// actual load instead of the stale pre-connect baseline. The strong
+	// leak probe remains the five-connection test, whose leak signature
+	// (5) exceeds the slack (2).
 	deadline = time.Now().Add(3 * time.Second)
 	for {
 		now := heartbeatGoroutines()
-		if dash.SubscriberCount() == 0 && now <= baseline+2 {
+		if dash.SubscriberCount() == 0 && now <= livePeak+2 {
 			break
 		}
 
 		if time.Now().After(deadline) {
 			t.Fatalf(
-				"heartbeat goroutines after shutdown: baseline %d, now %d (subscribers %d) — single-connection heartbeat leak",
+				"heartbeat goroutines after shutdown: baseline %d, live peak %d, now %d (subscribers %d) — single-connection heartbeat leak",
 				baseline,
+				livePeak,
 				now,
 				dash.SubscriberCount(),
 			)
