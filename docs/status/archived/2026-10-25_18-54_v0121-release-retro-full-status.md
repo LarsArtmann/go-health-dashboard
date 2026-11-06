@@ -4,6 +4,7 @@
 
 <!-- session-metadata fact table: rows are facts, not actionable items -->
 <!-- check-rows:ledger -->
+
 |                 |                                                                                                                                                                                                                               |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Session**     | User: "Time for a new release?" → full cut authorized, then "Now you are the only agent" mid-session (inherited the departed dedup session's in-flight state), then this retro demanded                                       |

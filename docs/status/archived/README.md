@@ -79,12 +79,12 @@ moved set (the two metadata fact-tables carry the sanctioned
 
 Status reports → `docs/status/archived/`:
 
-| File (2026 prefix)                                   | Reason everything is resolved                                                                           |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 2026-10-25_17-02 docs-health full audit sweep        | Audit executed same-day (its own manifest below); item 30 closed with the live pkg.go.dev v0.13.2 check |
-| 2026-10-25_17-53 dedup fixture + clone-baseline gate | Dedup pass landed (startDashboardFixture, gate 9); row 44 harvested to TODO_LIST (Blocked table)        |
-| 2026-10-25_18-54 v0.12.1 release retro | Retro of a shipped release; row 3 struck (release-cut.sh delivers the post-edit battery), row 17 harvested to TODO_LIST (go-etag port) |
-| 2026-10-28_19-17 self-review v1.24.0 adoption        | Adoption landed same day (v1.24.0 guard green); loopback-reaping row moot (processes verified gone)     |
+| File (2026 prefix)                                   | Reason everything is resolved                                                                                                          |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-25_17-02 docs-health full audit sweep        | Audit executed same-day (its own manifest below); item 30 closed with the live pkg.go.dev v0.13.2 check                                |
+| 2026-10-25_17-53 dedup fixture + clone-baseline gate | Dedup pass landed (startDashboardFixture, gate 9); row 44 harvested to TODO_LIST (Blocked table)                                       |
+| 2026-10-25_18-54 v0.12.1 release retro               | Retro of a shipped release; row 3 struck (release-cut.sh delivers the post-edit battery), row 17 harvested to TODO_LIST (go-etag port) |
+| 2026-10-28_19-17 self-review v1.24.0 adoption        | Adoption landed same day (v1.24.0 guard green); loopback-reaping row moot (processes verified gone)                                    |
 
 Kept in place (NOT archived — genuinely open work or active references): the
 fifteen remaining unarchived reports, incl. the 2026-11-05 handoffs
