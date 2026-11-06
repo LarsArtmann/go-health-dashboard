@@ -1,3 +1,7 @@
 {
-  "audit_max": 87
+  "audit_max": 87,
+  "cadence": {
+    "max_unarchived": 18,
+    "oldest_days": 21
+  }
 }
