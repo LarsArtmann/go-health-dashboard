@@ -5,7 +5,7 @@ go 1.27
 require (
 	github.com/a-h/templ v0.3.1100
 	github.com/chromedp/cdproto v0.159.1
-	github.com/chromedp/chromedp v0.21.0
+	github.com/chromedp/chromedp v0.22.0
 	github.com/dustin/go-humanize v1.1.0
 	github.com/larsartmann/go-datastar v0.6.2
 	github.com/larsartmann/go-datastar/static v0.6.1
