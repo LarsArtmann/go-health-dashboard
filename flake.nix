@@ -28,6 +28,11 @@
         "aarch64-darwin"
       ];
 
+      # Deployment contract for the hub — generic unit + options; hosts
+      # layer site specifics (reverse proxy, port registries, drift sweeps).
+      # See nix/nixos-module.nix.
+      flake.nixosModules.default = import ./nix/nixos-module.nix;
+
       imports = [
         treefmt-nix.flakeModule
       ];
