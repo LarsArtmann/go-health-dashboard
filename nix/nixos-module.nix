@@ -20,7 +20,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
@@ -90,7 +89,8 @@ in
         Environment = [
           "HEALTH_HUB_ADDR=${cfg.addr}"
           "HEALTH_HUB_REMOTES=${lib.concatStringsSep "," cfg.remotes}"
-        ] ++ lib.optional cfg.trend "HEALTH_HUB_TREND=1";
+        ]
+        ++ lib.optional cfg.trend "HEALTH_HUB_TREND=1";
         Restart = "on-failure";
         RestartSec = "5s";
         MemoryMax = lib.mkDefault "256M";
