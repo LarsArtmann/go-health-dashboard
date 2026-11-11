@@ -29,17 +29,17 @@
 
 ## b) PARTIALLY DONE
 
-1. **Root cause remediation** — nothing; `/run/current-system/sw/bin/templ` is still v0.3.1020. It lives in the NixOS system config, outside this repo; I cannot bump it from here. Until bumped, **every bare `templ generate` will (a) fail on view.templ and (b) silently regenerate the other files with stale output** — exactly what happened on the recurrence. Blocker: external config access. Effort: S once the config repo is known.
-2. **Editor templ LSP** — still stale (same v0.3.1020 class): the phantom `view.templ:168` error persists in project diagnostics. No `.vscode/settings.json` repoint attempted. Effort: S–M (depends on extension, see question g3).
+1. ~~**Root cause remediation** — nothing; `/run/current-system/sw/bin/templ` is still v0.3.1020. It lives in the NixOS system config, outside this repo; I cannot bump it from here. Until bumped, **every bare `templ generate` will (a) fail on view.templ and (b) silently regenerate the other files with stale output** — exactly what happened on the recurrence. Blocker: external config access. Effort: S once the config repo is known.~~ done 2026-11-05 — the NixOS config bump landed (system templ v0.3.1114); bare `templ generate` is also safe via the devShell wrapper
+2. ~~**Editor templ LSP** — still stale (same v0.3.1020 class): the phantom `view.templ:168` error persists in project diagnostics. No `.vscode/settings.json` repoint attempted. Effort: S–M (depends on extension, see question g3).~~ done — root-fixed 2026-11-05 by the templ bump; residual stale diagnostics clear on an LSP restart
    ~~3. **Post-change validation** — build ✓ vet ✓, but the full test suite was never run after the fmt churn touched two test files. Effort: S (one command, ~minutes incl. browser suite in devShell).~~ verified — full test/lint/flake battery green on the restored tree by the 14:19 session (its report a6)
 
 ## c) NOT STARTED
 
-1. **Stamp guard script** — assert every `*_templ.go` `// templ: version:` equals go.mod's tool pin; wire into `scripts/pre-push-checks.sh` + CI (precedent: `check-ui-pins.sh`). Priority: HIGH — today's regression was invisible to every existing gate.
-2. **devShell `templ` wrapper** — shadow the stale binary inside `nix develop` with a proxy to `go tool templ`. Priority: HIGH — makes the sanctioned invocation the lazy one.
-3. **NixOS config templ bump** — the actual root fix. Priority: CRITICAL, external.
+1. ~~**Stamp guard script** — assert every `*_templ.go` `// templ: version:` equals go.mod's tool pin; wire into `scripts/pre-push-checks.sh` + CI (precedent: `check-ui-pins.sh`). Priority: HIGH — today's regression was invisible to every existing gate.~~ done 2026-11-04 — shipped as `scripts/check-templ-stamps.sh` (CI Hygiene + pre-push gate 10)
+2. ~~**devShell `templ` wrapper** — shadow the stale binary inside `nix develop` with a proxy to `go tool templ`. Priority: HIGH — makes the sanctioned invocation the lazy one.~~ done 2026-11-04 — the devShell `templ` wrapper ships
+3. ~~**NixOS config templ bump** — the actual root fix. Priority: CRITICAL, external.~~ done 2026-11-05 in the NixOS config (system templ v0.3.1114)
    ~~4. **Full gates** — `nix run .#test`, `nix run .#lint`, `nix flake check` on the restored tree. Priority: MEDIUM.~~ verified — same session: nix run .#test, .#lint, nix flake check all green (14-19 a6)
-4. **docs/gotchas.md miss #3** — AGENTS.md was extended; `docs/gotchas.md` ("history of the two misses") was not. Priority: LOW-MEDIUM.
+4. ~~**docs/gotchas.md miss #3** — AGENTS.md was extended; `docs/gotchas.md` ("history of the two misses") was not. Priority: LOW-MEDIUM.~~ done — docs/gotchas.md's templ section carries the miss history (the v0.3.1020 stamp saga)
 
 ## d) TOTALLY FUCKED UP
 
@@ -65,9 +65,9 @@
 | ~~6~~  | ~~`nix run .#lint` + `nix flake check` on the restored tree~~ done — lint 0 issues (2026-11-11); the flake builds green in CI's nix-build job | ~~Medium~~ | ~~S~~ | ~~Quality~~ |
 | ~~7~~  | ~~Extend `docs/gotchas.md` templ section with miss #3 (AGENTS.md already updated)~~ done — docs/gotchas.md templ section carries the miss history (the v0.3.1020 stamp saga) | ~~Medium~~ | ~~S~~ | ~~Documentation~~ |
 | ~~8~~  | ~~Check upstream templ for releases beyond v0.3.1070; bump pin deliberately if warranted (dedicated change: bump → generate → fmt → green browser suite, per UI-pin discipline)~~ done — 2026-11-04 — the pin moved deliberately to v0.3.1100 in the paired templ-components v1.27.0 adoption | ~~Medium~~ | ~~M~~ | ~~Maintenance~~ |
-| 9  | HARVEST this (f) into TODO_LIST.md via docs-health — carefully: TODO_LIST was closed out by another session TODAY (`cb2b347`), don't resurrect stale rows                     | Medium   | S                 | Documentation |
-| 10 | After the NixOS bump: re-verify editor diagnostics cleared + one bare `templ generate` round-trip, close the loop                                                             | Medium   | S                 | Bug           |
-| 11 | Consider a daemon-side guard (pre-commit) for stale stamps — likely redundant once #2 lands; decide then                                                                      | Low      | S                 | Quality       |
+| ~~9~~  | ~~HARVEST this (f) into TODO_LIST.md via docs-health — carefully: TODO_LIST was closed out by another session TODAY (`cb2b347`), don't resurrect stale rows~~ done — harvested via the docs-health passes (the 2026-11-04 routing + this 2026-11-11 audit; the surviving items live in TODO_LIST.md/ROADMAP.md) | ~~Medium~~ | ~~S~~ | ~~Documentation~~ |
+| ~~10~~ | ~~After the NixOS bump: re-verify editor diagnostics cleared + one bare `templ generate` round-trip, close the loop~~ done — for the repo half 2026-11-05 (bump + devShell wrapper; bare generate round-trips); the diagnostics half is an editor LSP restart — see the 16-43 report §f22 | ~~Medium~~ | ~~S~~ | ~~Bug~~ |
+| ~~11~~ | ~~Consider a daemon-side guard (pre-commit) for stale stamps — likely redundant once #2 lands; decide then~~ **NOT-DO — decided-against 2026-11-11 — redundant as predicted: the stamp guard (CI Hygiene + pre-push gate 10) plus the 2026-11-05 pre-commit drift guard cover the class.** | ~~Low~~ | ~~S~~ | ~~Quality~~ |
 
 (11 real items; padding to 50 would be brainstorm, not commitments — the honest ceiling for this session's blast radius. ROADMAP candidates: #8, #11.)
 

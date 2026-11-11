@@ -196,6 +196,10 @@ Raw ideas:
   rerun-failed-uncached baseline evidence for the cache-green class; hub
   boot smoke test in CI (container runtime absent locally); cross-process
   browser-test file-lock (fleet-level candidate for the 600s hang class)
+- `nix run .#test`/`.#build` apps: print a loud "browser suite
+  skipped/ran" line so greens are interpretable — the derivation's
+  browser suite always skips (network preflight fails in the sandbox),
+  so a fast green is non-browser greens — harvested 2026-11-11
 
 ### 6. Dashboard UI/UX polish (post-2026-10-09 revamp follow-ups)
 

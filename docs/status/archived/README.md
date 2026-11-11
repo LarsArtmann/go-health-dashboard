@@ -45,6 +45,7 @@ Status reports → `docs/status/archived/`:
 | 2026-10-25_12-26 TODO execution + hardening                     | Addendum: list complete except §g; dispositions inline                           |
 | 2026-10-25_12-27 UI/UX closeout + self-review                   | Push resolved same day; 50-row queue closed/routed                               |
 | 2026-10-25_13-20 TODO closeout + self-review                    | Closeout complete; decision-gated residue routed to standing Blocked rows        |
+| 2026-10-25_13-38 templ CLI version skew (archived 2026-11-11)   | Every blocker landed: stamp guard + devShell wrapper (2026-11-04), NixOS templ bump (2026-11-05), gotchas history; §f 1-11 struck with verdicts |
 
 Planning → `docs/planning/archived/`:
 
@@ -55,10 +56,6 @@ Planning → `docs/planning/archived/`:
 | 2026-10-10_01-44 go-health leverage pareto           | T01-T20 executed (per-item verdicts cite the TODO_LIST T-rows)              |
 
 Kept in place (NOT archived — genuinely open work or active references):
-
-- `docs/status/2026-10-25_13-38_templ-cli-version-skew.md` — open: NixOS templ
-  bump (external), stamp guard, devShell wrapper, editor LSP (its satisfied
-  owed-gates items are annotated inline).
 - `docs/status/2026-10-25_14-19_buildflow-gate-and-11-day-red-ci-status.md` —
   the ACTIVE handoff: v0.12.0 cadence, red-main alerting, remote-state gate,
   dependabot branch, CI nix-build job.
