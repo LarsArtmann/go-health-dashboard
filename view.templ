@@ -36,13 +36,15 @@ func storageKey(data viewModel) string {
 // SDK in head, PageHeader with the live controls, StatCards, and a LiveRegion
 // that auto-connects to the SSE endpoint for real-time health updates.
 templ View(data viewModel) {
+	{{ nonceRootAttrs := rootNonceAttrs(data) }}
 	@layout.Base(layout.PageProps{
-		Title:       data.Title,
-		CSSPath:     data.CSSPath,
-		Favicon:     data.FaviconURL,
-		Nonce:       data.DatastarNonce,
-		HTMXVersion: "", // No HTMX — Datastar handles real-time
-		HeadContent: dashboardHead(data),
+		Title:         data.Title,
+		CSSPath:       data.CSSPath,
+		Favicon:       data.FaviconURL,
+		Nonce:         data.DatastarNonce,
+		HTMLDataAttrs: nonceRootAttrs,
+		HTMXVersion:   "", // No HTMX — Datastar handles real-time
+		HeadContent:   dashboardHead(data),
 	}) {
 		@layout.Container(layout.DefaultContainerProps()) {
 			<div class="py-8">

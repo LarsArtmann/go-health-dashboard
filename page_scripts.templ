@@ -52,17 +52,25 @@ templ themeToggle() {
 // aria-live. Markup only — the event wiring lives in pageBootstrap (the
 // pill's spans sit outside the patched region, so its state survives SSE
 // content updates).
+//
+// Visibility rides the hidden CLASS, not just the attribute: Tailwind
+// display utilities (inline-flex) are author-level declarations that beat
+// the UA stylesheet's [hidden] rule, so an attribute-hidden span with a
+// display class still renders (issue #31). setPillState keeps the
+// attribute in sync as the semantic marker and the e2e state-machine
+// contract, while the hidden/inline-flex class pair is the mechanism CSS
+// actually obeys — the same doctrine as the row filter's data-class:hidden.
 templ connectionPill() {
 	<span class="inline-flex items-center gap-1.5 text-xs font-medium" aria-live="polite">
 		<span id="conn-state-live" class="inline-flex min-w-24 items-center justify-center gap-1.5 text-green-700 dark:text-green-400">
 			<span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
 			Live
 		</span>
-		<span id="conn-state-reconnecting" hidden class="inline-flex min-w-24 items-center justify-center gap-1.5 text-amber-700 dark:text-amber-400">
+		<span id="conn-state-reconnecting" hidden class="hidden min-w-24 items-center justify-center gap-1.5 text-amber-700 dark:text-amber-400">
 			<span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
 			Reconnecting
 		</span>
-		<span id="conn-state-offline" hidden class="inline-flex min-w-24 items-center justify-center gap-1.5 text-red-600 dark:text-red-400">
+		<span id="conn-state-offline" hidden class="hidden min-w-24 items-center justify-center gap-1.5 text-red-600 dark:text-red-400">
 			<span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
 			Offline
 		</span>
@@ -126,7 +134,15 @@ templ pageBootstrap(data viewModel) {
 				function setPillState(state) {
 					states.forEach(function (name) {
 						var el = document.getElementById('conn-state-' + name);
-						if (el) { el.hidden = (name !== state); }
+						if (!el) { return; }
+						var hide = (name !== state);
+						el.hidden = hide;
+						// A display class (inline-flex) defeats the hidden
+						// attribute's UA rule, so the class pair below is
+						// what actually toggles visibility (issue #31);
+						// the attribute stays the semantic marker.
+						el.classList.toggle('hidden', hide);
+						el.classList.toggle('inline-flex', !hide);
 					});
 				}
 				document.addEventListener('datastar-fetch', function (e) {

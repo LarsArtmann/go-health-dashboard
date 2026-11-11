@@ -710,6 +710,19 @@ func filterEmptyAttrs(vm viewModel) templ.Attributes {
 	}
 }
 
+// rootNonceAttrs stamps the CSP nonce as data-nonce onto the <html> root
+// when a nonce is wired (issue #23): the Datastar SDK reads the page nonce
+// from the root element to evaluate its expressions without the new
+// Function path, which a strict CSP forbids. An empty nonce returns nil,
+// so ungated hosts keep a byte-identical page.
+func rootNonceAttrs(data viewModel) templ.Attributes {
+	if data.DatastarNonce == "" {
+		return nil
+	}
+
+	return templ.Attributes{"data-nonce": data.DatastarNonce}
+}
+
 // statusFilterSignal is the Datastar signal the status chips write and every
 // row's hide expression reads. It is deliberately never initialized: an
 // undefined value compares false against both chip values, which is exactly
