@@ -353,6 +353,11 @@ nix run .#health-hub
 go build -o health-hub ./cmd/health-hub
 ```
 
+NixOS hosts can deploy the hub as a systemd service instead:
+`nixosModules.default` exposes `services.health-dashboard` (`enable`,
+`remotes`, and the usual hub knobs), binds loopback by default, and ships
+no state — front it with your own reverse proxy for remote access.
+
 | Variable                | Effect                                                        |
 | ----------------------- | ------------------------------------------------------------- |
 | `HEALTH_HUB_REMOTES`    | Required. `name=url` pairs, e.g. `cv=http://cv:8098/health`   |
@@ -476,10 +481,10 @@ Tested version matrix (`go.mod` is the live source of truth):
 
 | Dependency       | Version | Note                                                                                                   |
 | ---------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| go-health        | v0.4.0  | aggregate needs v0.1.0+; per-check since/duration metadata v0.2.0+; federation + `Status.Rank` v0.4.0+ |
-| templ-components | v1.18.0 | pinned — CI guard + browser-suite re-audit on bumps                                                    |
-| go-datastar      | v0.5.0  | audited SDK bundle; needs CSP `unsafe-eval`                                                            |
-| go-sse           | v0.6.0  | requires `GOEXPERIMENT=jsonv2`                                                                         |
+| go-health        | v0.10.0 | aggregate needs v0.1.0+; per-check metadata v0.2.0+; federation, `SourceStatuses`, `StatusOff`, `StatusSince` all in |
+| templ-components | v1.27.0 | pinned — CI guard + browser-suite re-audit on bumps; paired with templ ≥ v0.3.1100 (generator + runtime) |
+| go-datastar      | v0.6.2  | audited SDK bundle; needs CSP `unsafe-eval` (`static` v0.6.1 for embedded serving)                      |
+| go-sse           | v0.6.2  | requires `GOEXPERIMENT=jsonv2`                                                                         |
 
 ## Upgrading
 
@@ -628,9 +633,11 @@ connection never opens — the page renders, then never updates. The nonce
 must also reach the dashboard's scripts: without `WithNonce`/
 `WithNonceExtractor`, the fixed construction-time nonce will not match a
 per-request policy header and the browser blocks every dashboard script.
-Mount `RecommendedCSP` on the dashboard routes (or compose it with your
-hardening, as `go-taskqueue` does — first header wins, so strip-and-reappend
-rather than add a second header).
+Mount `RecommendedCSP` on the dashboard routes. To harden further,
+`RecommendedCSPStrict(nonce)` additionally pins `frame-ancestors`,
+`form-action`, and `base-uri` to `'none'` — the variant `go-taskqueue`
+used to patch by hand (first header wins, so strip-and-reappend rather
+than add a second header).
 
 **Dependency-graph drift.** Go's minimal-version selection takes the
 HIGHEST templ-components your build requires — if another dependency of
