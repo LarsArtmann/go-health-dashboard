@@ -7,6 +7,7 @@
 ## Scope Line — what this report VERIFIED vs NOT verified
 
 **Verified this session (with artifact)**:
+
 - Full unit + fuzz-seed suite: `nix develop -c go test -count=1 . ./cmd/health-hub` → green (22.1s main package).
 - Browser suite: `go test -run TestBrowser -v` → **22/22 PASS** on nix Chromium 157.0.8103.38, serialized (27s wall).
 - Pill browser probe strengthened: `TestBrowser_ConnectionPill` requires `getComputedStyle(el).display !== "none"` + exactly-one-visible.
@@ -17,8 +18,9 @@
 - Root causes of #29 and #17 read directly from CI run logs (42477461128, 38674181389) before closing.
 
 **NOT verified (and why)**:
+
 - **CI on the new commits** — local master is unpushed (ahead 5); no run exists yet.
-- **Datastar's behavioral no-`new Function` path under strict CSP** — the #23 fix is pinned structurally (attribute renders), not behaviorally (no browser test proves the live region connects under a CSP *without* `unsafe-eval` once the nonce is wired).
+- **Datastar's behavioral no-`new Function` path under strict CSP** — the #23 fix is pinned structurally (attribute renders), not behaviorally (no browser test proves the live region connects under a CSP _without_ `unsafe-eval` once the nonce is wired).
 - **cqrs-htmx's e2e pill assertions** (the #31 reporter's consumer) — sibling repo, not run.
 - **Which browser version changed `[hidden]` UA handling** — measured on THIS host (Chromium 157 honors the attribute over `inline-flex`); the "UA rule changed vs your 156 measurement" claim in the #31 comment is an inference from one mutation experiment, not a sourced fact.
 - Full 60s fuzz campaigns (only seed tests ran; nightly covers campaigns, green 11-10/11-11).
@@ -72,9 +74,10 @@ Nothing destroyed; three near-misses worth naming honestly:
 
 ## f) Up to 50 things to get done next
 
-*(Brainstorm, not commitment — per status-report skill, most items below the top rows are ROADMAP fuel for docs-health HARVEST routing. Items marked ★ are session-fresh; others are repo backlog noticed this session.)*
+_(Brainstorm, not commitment — per status-report skill, most items below the top rows are ROADMAP fuel for docs-health HARVEST routing. Items marked ★ are session-fresh; others are repo backlog noticed this session.)_
 
 **Release path (highest impact)**
+
 1. ★ Push master (owner go-ahead) and watch CI (Build+Test+Hygiene+browser job).
 2. ★ Cut v0.13.3: re-head `[Unreleased]` + `Version` const bump in the same change; `pre-push-checks.sh` gate 0 re-run AFTER the release edits (gate 5 lesson).
 3. ★ Tag push first, then master; `verify-release.sh 0.13.3`; publish draft via `gh release edit --draft=false` after CI green.
@@ -135,9 +138,9 @@ Nothing destroyed; three near-misses worth naming honestly:
 ## g) Three questions I cannot figure out myself
 
 1. **Push + release authorization**: shall I cut **v0.13.3** with these two fixes and push master now (release discipline: tag first, `pre-push-checks.sh`, `verify-release.sh`), or do you want the fixes to ride longer in `[Unreleased]`?
-2. **#23 verification depth**: is the structural data-nonce pin enough, or do you want the behavioral proof — a browser test under a strict CSP *without* `unsafe-eval`, nonce wired, asserting the live region actually connects (proving Datastar skips `new Function`)?
+2. **#23 verification depth**: is the structural data-nonce pin enough, or do you want the behavioral proof — a browser test under a strict CSP _without_ `unsafe-eval`, nonce wired, asserting the live region actually connects (proving Datastar skips `new Function`)?
 3. **Consumer verification**: should I run cqrs-htmx's e2e pill battery against the new markup in its own repo, or do you verify consumers separately as fleet practice?
 
 ---
 
-*Waiting for instructions.*
+_Waiting for instructions._
