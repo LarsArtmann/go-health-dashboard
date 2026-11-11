@@ -373,7 +373,7 @@ Ordered by impact per minute, not by size.
 16. Add the same note to the shared golden-kit docs, since other repos use
     `internal/web/golden`.
 17. Run `nix run .#lint` on the dashboard and fix whatever it finds.
-18. Run DiscordSync's lint on `./internal/web/...`.
+18. ~~Run DiscordSync's lint on `./internal/web/...`.~~ **NOT-DO — decided-against here — DiscordSync-side work; that repo's own templ-components v1.24.0 adoption owns it.**
 19. Reap the two surviving loopback servers (8977, 18999).
 20. Reap the ~40 leaked Chromium processes; add a note if reaping needs a
     different signal than SIGTERM in this shell.
@@ -395,15 +395,15 @@ Ordered by impact per minute, not by size.
     expose a disk check; otherwise close the row as won't-do.
 29. Audit other repos for the same seasonal `MST` normalizer bug (any repo with
     `timestampFormat` + golden files).
-30. Add a timezone-independence test to `internal/web/golden` that renders the
-    same fixture under `TZ=UTC` and `TZ=Europe/Berlin`.
+30. ~~Add a timezone-independence test to `internal/web/golden` that renders the~~ **NOT-DO — decided-against here — DiscordSync's internal/web/golden is that repo's surface.**
+    ~~same fixture under `TZ=UTC` and `TZ=Europe/Berlin`.~~
 31. Add `TZ=UTC` to DiscordSync's test environment so goldens are captured in a
     fixed zone regardless of the normalizer.
 32. Verify the DiscordSync `internal/web/golden` package still compiles against
     the new normalizer under `-race`.
 33. Re-run the DiscordSync full `./internal/web/...` suite (not just snapshots)
     to confirm the zone change broke nothing else.
-34. Same for `./internal/...` in DiscordSync.
+34. ~~Same for `./internal/...` in DiscordSync.~~ **NOT-DO — decided-against here — same: DiscordSync's own adoption row owns its lint surface.**
 35. Extend the go-health evidence table with the two bridge modules' _local_
     builds (currently L1 only).
 36. Add a "how to reproduce this table" command block to

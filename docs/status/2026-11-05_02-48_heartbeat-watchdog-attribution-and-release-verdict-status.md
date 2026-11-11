@@ -98,7 +98,7 @@ Provenance: **[S]** = surfaced by this session; **[C]** = carried from the 01:14
 | 9      | **[S]** Stability soak: new watchdog assertion under repeated full-package `-race`                                                                  | Medium | S      | Quality       |
 | 10     | **[S]** Chaos-load attempt at the original +11 flake (validate tolerance empirically)                                                               | Medium | M      | Quality       |
 | 11     | **[S]** Run `check-changelog.sh` locally on the current Unreleased entry; adopt pre-commit-local habit                                              | Low    | S      | Quality       |
-| 12     | **[S]** Ban `git add -A`: repo-level hook/pre-push check enforcing explicit-path staging                                                            | Medium | S      | Quality       |
+| ~~12~~     | ~~**[S]** Ban `git add -A`: repo-level hook/pre-push check enforcing explicit-path staging~~ done — 2026-11-05 — the pre-commit SWEEP_OK drift guard ships (master-plan M05) | ~~Medium~~ | ~~S~~ | ~~Quality~~ |
 | 13     | **[C]** Watchdog security audit: `workflow_run` + fork interactions                                                                                 | Medium | M      | Quality       |
 | 14     | **[C]** Watchdog self-watch + dedupe watched-workflows list (script array vs gate 11)                                                               | Low    | S      | Quality       |
 | 15     | **[C]** NixOS templ bump — root fix for the generator-skew class (hit again tonight via buildflow fmt)                                              | High   | M      | Bug           |
@@ -131,7 +131,7 @@ Provenance: **[S]** = surfaced by this session; **[C]** = carried from the 01:14
 | 42     | **[C]** v1.0 compatibility-policy section                                                                                                           | Medium | S      | Documentation |
 | 43     | **[C]** Daemon-commit relabels (hygiene debt in history)                                                                                            | Low    | S      | Cleanup       |
 | 44     | **[C]** Deploy boot-verify                                                                                                                          | Low    | M      | Quality       |
-| 45     | **[C]** Consumer MVS fleet watch (templ-components v1.26/v1.27 drift)                                                                               | Medium | S      | Quality       |
+| ~~45~~     | ~~**[C]** Consumer MVS fleet watch (templ-components v1.26/v1.27 drift)~~ done — represented — the standing TODO_LIST Blocked row 'Consumer-side MVS drift watch' owns it (version-tokenized v1.26.0/v1.27.0 on 2026-11-11) | ~~Medium~~ | ~~S~~ | ~~Quality~~ |
 | 46     | **[S]** HARVEST this report's f-items into TODO_LIST/ROADMAP (docs-health)                                                                          | High   | S      | Documentation |
 | 47     | **[S]** Consider centralizing `heartbeatGoroutines` if a second test needs it (now single-use, fine)                                                | Low    | S      | Cleanup       |
 | 48     | **[S]** Host-Chromium http(s) breakage: upstream investigation or fleet fix (browser suite locally dead ~12s-skip)                                  | Medium | L      | Bug           |

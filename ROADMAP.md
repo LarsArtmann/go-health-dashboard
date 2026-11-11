@@ -200,6 +200,10 @@ Raw ideas:
   skipped/ran" line so greens are interpretable — the derivation's
   browser suite always skips (network preflight fails in the sandbox),
   so a fast green is non-browser greens — harvested 2026-11-11
+- Harvested 2026-11-11 (docs-health drain): type the remaining chromedp
+  test helpers (`evalInto` could take a decoder instead of the
+  reflect-free shim); document `Response.Clone`'s nil-map behaviour in
+  the owning library's `types.go` + a test (cross-repo surface)
 
 ### 6. Dashboard UI/UX polish (post-2026-10-09 revamp follow-ups)
 

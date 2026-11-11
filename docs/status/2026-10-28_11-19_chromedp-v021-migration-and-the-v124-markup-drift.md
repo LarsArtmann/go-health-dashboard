@@ -193,14 +193,14 @@ The multiedit that added the `remote` import and `captureScreenshot` reported su
 5. ~~Push `go-health` `15fad10` after a `nix run .#gates` pass.~~ done — 15fad10 is on go-health origin/master (verified 2026-11-05).
 6. Add the "v1.24.0 markup delta" paragraph to `scripts/check-ui-pins.sh`'s audit history.
 7. Add a Chrome preflight to `browser_test.go` (env canary + `t.Skipf` with the reason).
-8. Make browser tests skippable without `PATH` gymnastics (`-skip` documented in `AGENTS.md`, or an explicit `GO_HEALTH_DASHBOARD_SKIP_BROWSER=1`).
+8. ~~Make browser tests skippable without `PATH` gymnastics (`-skip` documented in `AGENTS.md`, or an explicit `GO_HEALTH_DASHBOARD_SKIP_BROWSER=1`).~~ done — 2026-10-28 — the 15-17 session; AGENTS.md's Chrome gotcha names -skip as the skip lever
 9. File the DiscordSync golden row referencing the shared v1.24.0 cause (not as an isolated mime bug).
 10. Write the M04 evidence table, honestly labelled "pin verified remotely / build verified locally on <date>".
 
 **Near term (fleet hygiene)**
 
 11. Re-derive the six consumer builds from scratch (not from the previous session's notes) and record commands + exit codes.
-12. Ask/decide the `cv` vs `CV` canonical-lineage question and push the health adapter work.
+12. ~~Ask/decide the `cv` vs `CV` canonical-lineage question and push the health adapter work.~~ done — closed for this repo — CV-side adoption lives in the standing TODO_LIST Blocked row; the canonical-lineage question rides that bump's conversation
 13. Land the go-taskqueue `NewChecks` port once the pass-detail API question is answered.
 14. Re-run `nix run .#skew` weekly and keep the number at zero; a reappearing stale repo is drift, not a tolerance.
 15. Delete the now-dead `--allow` documentation in `tools/fleet-skew.sh`'s header? (No — it still describes `--allow` correctly; confirm and leave.)
@@ -216,7 +216,7 @@ The multiedit that added the `remote` import and `captureScreenshot` reported su
 22. If the pipe transport is adopted, delete `startHeadlessChrome`'s stderr parsing and the profile-dir retry logic.
 23. Replace `chromedp.Events`+goroutine error collection with `chromedp.WaitEvent` where a single event matters.
 24. Revisit `evalInto`/`evalDiscard`: with `Action[T]` composition, some step lists could return values directly instead of writing through pointers.
-25. Type the test helpers (`waitForJSTo` already is; `evalInto` could take a decoder).
+25. ~~Type the test helpers (`waitForJSTo` already is; `evalInto` could take a decoder).~~ done — routed 2026-11-11 — ROADMAP section 5 carries the helper-typing idea (evalInto decoder variant)
 26. Add a fuzz/property test for the JS-expression builders (`visibleRows`, `detailsState`, `pillState`) so a selector typo fails fast.
 27. Re-examine the 3 failing goldens' _content_ — do we want `role="region"` at all, or should the wrapper use the table's own `aria-label` only?
 28. Upstream: ask templ-components for a changelog entry per markup change, so a sweep can be triaged without regenerating goldens.
@@ -232,7 +232,7 @@ The multiedit that added the `remote` import and `captureScreenshot` reported su
 35. Reconcile the two `cv` clones with a documented canonical path.
 36. Add `go-health`'s pass-detail channel (`Check.Detail`) so `NewChecks` adopters keep their green-row notes.
 37. Revisit `WithCriticalService[T]` naming/behaviour for recorder-renamed keys.
-38. Document `Response.Clone`'s nil-map behaviour in `types.go` + a test.
+38. ~~Document `Response.Clone`'s nil-map behaviour in `types.go` + a test.~~ done — routed 2026-11-11 — ROADMAP section 5 carries it as a cross-repo documentation idea (types.go lives in the dependency, not here)
 39. Add a `WithDeploymentFreshness` helper so consumers stop comparing wall clocks (`CachedResponseFresh` is the seam).
 40. Publish `docs/consumer-verification.md` as the single evidence surface for the adoption wave.
 41. Add CI job that runs the browser suite on a runner with a working Chrome (today's host cannot).
@@ -242,7 +242,7 @@ The multiedit that added the `remote` import and `captureScreenshot` reported su
 45. Reduce `browser_test.go`'s 2452 lines by extracting fixtures (`toggleService`, `provideHealthy`) into a helpers file.
 46. Add a `TestBrowser_*` count assertion so a silently skipped suite is visible (19 expected).
 47. Land the `zz_probe`-style isolation recipe as a documented debugging playbook ("is it me or the host?").
-48. Backfill `docs/status/INDEX.md` with this report.
+48. ~~Backfill `docs/status/INDEX.md` with this report.~~ **NOT-DO — decided-against — docs/status/INDEX.md was never adopted; docs/status/archived/README.md is the manifest serving the index role.**
 49. Verify the fleet skew from a _clean_ environment (no `gh` token) at least once, to exercise the `--source local` path.
 50. Retire the `--allow` mechanism entirely if the backlog stays at zero for a month.
 

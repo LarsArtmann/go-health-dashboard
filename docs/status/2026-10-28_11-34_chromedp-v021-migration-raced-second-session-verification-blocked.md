@@ -95,7 +95,7 @@ At ~10:37–10:41, while I was mid-migration, daemon commits (`5f716da`, `3fa29d
 
 **Documentation debt noticed in passing:**
 28. TODO_LIST row 30 (flake-canary first nightly) — still unverified.
-29. The kept 14-19 report's unrouted §f items (row 32) — still unrouted.
+29. ~~The kept 14-19 report's unrouted §f items (row 32) — still unrouted.~~ done — 2026-11-04 — the 14-19 unrouted §f items were routed (ships closed in TODO/CHANGELOG, the rest to ROADMAP; the routing row's disposition records it)
 30. Screenshot tests assert bytes, not content (row 27) — the new `captureScreenshot` helper makes adding DOM-text assertions cheaper.
 
 ## g) QUESTIONS (cannot figure these out myself)

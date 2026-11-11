@@ -112,7 +112,7 @@
 
 ## f) Next tasks (unowned)
 
-1. Fix + exercise release-draft.yml (TODO row, mechanism documented).
+1. ~~Fix + exercise release-draft.yml (TODO row, mechanism documented).~~ done — 2026-11-04 — the workflow's silent no-op is fixed and exercised (real Draft, run 41894182554); the SECURITY.md freshness check is mirrored into it; AGENTS.md Release discipline records the ceremony
 2. pkg.go.dev Latest-banner confirmation for v0.12.1 (bounded poll).
 3. The standing chromedp / CV / templ-toolchain rows (unchanged priority).
 
