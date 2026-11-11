@@ -43,6 +43,23 @@ forgetting.
   violated the deliberate UI/runtime pins. Pins restored to the v0.13.2 set
   (the sha256s in go.sum included); treat a-h/parse as pinned until templ
   upgrades its own requirement.
+- Connection pill showed all three states at once (#31): the pre-rendered
+  Reconnecting/Offline spans carried Tailwind's `inline-flex` display class
+  alongside the `hidden` attribute, and an author-level display declaration
+  beats the UA stylesheet's `[hidden]` rule — while the browser harness's own
+  compensating `[hidden] { display: none !important; }` rule masked the bug
+  in every local run. Visibility now rides the hidden/inline-flex class pair
+  (the row filter's doctrine); the attribute stays in sync as the semantic
+  marker and the e2e attribute state-machine contract. The browser probe
+  asserts exactly-one-visible state via computed style and the harness CSS no
+  longer carries the compensating rule, so this class of bug cannot hide.
+- `<html>` now carries `data-nonce="<nonce>"` when a CSP nonce is wired (#23):
+  the Datastar SDK reads the page nonce from the root element to evaluate its
+  expressions without the `new Function` path, which a strict CSP forbids.
+  The nonce value was already forwarded to every script tag; only the root
+  stamp was unreachable from both the library's `View()` literal and the
+  consumer. Pages served without a nonce stay byte-identical (nil
+  attributes).
 
 ## [0.13.2] - 2026-11-05
 
