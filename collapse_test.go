@@ -380,6 +380,27 @@ func TestConnectionPill_MarkupAndStates(t *testing.T) {
 		}
 	}
 
+	// The hidden states must ALSO carry the hidden class: Tailwind display
+	// utilities (inline-flex) beat the UA stylesheet's [hidden] attribute
+	// rule, so attribute-only hiding renders all three states at once
+	// (issue #31).
+	for _, id := range []string{"conn-state-reconnecting", "conn-state-offline"} {
+		if !strings.Contains(body, `id="`+id+`" hidden class="hidden min-w-24`) {
+			t.Errorf(
+				"%s should render attribute-hidden and class-hidden (no inline-flex), see issue #31",
+				id,
+			)
+		}
+	}
+	if !strings.Contains(body, `id="conn-state-live" class="inline-flex min-w-24`) {
+		t.Error("conn-state-live should render visible with the inline-flex display class")
+	}
+	if !strings.Contains(body, `el.classList.toggle('hidden', hide)`) {
+		t.Error(
+			"setPillState should toggle the hidden/inline-flex class pair, not just the attribute",
+		)
+	}
+
 	if !strings.Contains(body, "__healthBootstrapInit") {
 		t.Error("pill script should carry its singleton attach guard (shared page bootstrap)")
 	}

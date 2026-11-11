@@ -1011,10 +1011,12 @@ func browserStaticHandlers(t *testing.T, s *probeSetup) {
 // browserStaticHandlers, for tests that register them on a bare mux.
 func browserStaticCSS(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/css")
-	// [hidden] mirrors preflight's rule: the connection pill (and any
-	// data-class:hidden element) toggles visibility via the hidden
-	// attribute, and without this rule all three pill states render at
-	// once in the harness (real deployments load full Tailwind).
+	// The harness deliberately ships NO preflight [hidden] rule: production
+	// compiled CSS doesn't include one either, and Tailwind display utilities
+	// beat the UA stylesheet's [hidden] rule regardless (issue #31 — the
+	// compensating rule this file once carried masked exactly that bug).
+	// Elements that must hide carry the hidden class; the connection pill
+	// keeps the hidden attribute in sync as a semantic marker only.
 	// The body backgrounds mirror production Tailwind (white canvas,
 	// gray-900 under the dark class): without them every background is
 	// transparent and axe-core evaluates contrast against white even in
@@ -1022,8 +1024,7 @@ func browserStaticCSS(w http.ResponseWriter, _ *http.Request) {
 	// against the real dark canvas (found by the degraded-fixture audit,
 	// 2026-10-25).
 	_, _ = w.Write([]byte("body { margin: 0; background-color: #ffffff; }\n" +
-		"html.dark body { background-color: #111827; }\n" +
-		"[hidden] { display: none !important; }"))
+		"html.dark body { background-color: #111827; }"))
 }
 
 func browserStaticJS(w http.ResponseWriter, _ *http.Request) {
@@ -1922,11 +1923,14 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 
 	pillState := `(function () {
 		var states = ["live", "reconnecting", "offline"];
+		var visible = [];
 		for (var i = 0; i < states.length; i++) {
 			var el = document.getElementById("conn-state-" + states[i]);
-			if (el && !el.hidden) { return states[i]; }
+			if (el && !el.hidden && getComputedStyle(el).display !== "none") { visible.push(states[i]); }
 		}
-		return "none";
+		if (visible.length === 0) { return "none"; }
+		if (visible.length > 1) { return "multiple:" + visible.join(","); }
+		return visible[0];
 	})()`
 
 	var state string

@@ -67,7 +67,15 @@
 				function setPillState(state) {
 					states.forEach(function (name) {
 						var el = document.getElementById('conn-state-' + name);
-						if (el) { el.hidden = (name !== state); }
+						if (!el) { return; }
+						var hide = (name !== state);
+						el.hidden = hide;
+						// A display class (inline-flex) defeats the hidden
+						// attribute's UA rule, so the class pair below is
+						// what actually toggles visibility (issue #31);
+						// the attribute stays the semantic marker.
+						el.classList.toggle('hidden', hide);
+						el.classList.toggle('inline-flex', !hide);
 					});
 				}
 				document.addEventListener('datastar-fetch', function (e) {

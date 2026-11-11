@@ -54,6 +54,49 @@ func TestCSP_NonceAppliedToTailwindScript(t *testing.T) {
 	}
 }
 
+func TestCSP_NonceStampedOnHTMLRoot(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t, dashboard.WithNonce("root-nonce-123"))
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+	body := w.Body.String()
+
+	start := strings.Index(body, "<html")
+	if start < 0 {
+		t.Fatal("render should contain an <html> element")
+	}
+
+	end := strings.Index(body[start:], ">")
+	if end < 0 {
+		t.Fatal("render should contain a closed <html> start tag")
+	}
+
+	htmlTag := body[start : start+end+1]
+
+	if !strings.Contains(htmlTag, `data-nonce="root-nonce-123"`) {
+		t.Errorf(
+			"<html> should carry the nonce as data-nonce so Datastar avoids the new Function path under strict CSP (issue #23), got: %s",
+			htmlTag,
+		)
+	}
+}
+
+func TestCSP_NoNonceOmitsRootDataAttrs(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	w := doRequest(t, s.mux, "/health")
+	body := w.Body.String()
+
+	if strings.Contains(body, "data-nonce") {
+		t.Error("page served without a nonce must not carry a data-nonce attribute anywhere")
+	}
+}
+
 func TestCSP_NoNonceRendersWithoutNonce(t *testing.T) {
 	t.Parallel()
 
