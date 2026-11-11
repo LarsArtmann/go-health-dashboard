@@ -40,13 +40,11 @@ Raw ideas:
   `docs/design/2026-09-17_since-fed-timeline-stability-staleness.md`
 - Service grouping by custom tags or labels (not just severity)
 - Aggregate status across multiple instances or clusters
-- Federation: pull health from remote go-health instances via HTTP —
-  **shipped in go-health** (`health/federation`, designed in go-health's
-  `docs/federation-design.md`, unreleased v0.3.0 vehicle): a hub runs
-  `dashboard.New(federation.New(remotes), WithGrouping(GroupBySource))`
-  and gets one card per remote, verified end to end 2026-09-18. This
-  repo's remaining share is consuming the released version (go.mod bump)
-  and a runnable federation example once v0.3.0 is tagged
+- ~~Federation: pull health from remote go-health instances via HTTP~~
+  SHIPPED — go-health's `federation` package released and consumed (go.mod
+  pins v0.10.0), and the runnable example is this repo's `cmd/health-hub`
+  hub binary (flake `packages.health-hub` + the `nixosModules.default`
+  systemd wrapper); nothing left of the original idea
 - `Register` auto-start: wire `Start(ctx)` into the samber/do container
   lifecycle so `Register` + container start needs no manual `Start` call
 
@@ -81,9 +79,10 @@ Raw ideas:
 - Evidence-strip evolution: persistence across restarts (opt-in store),
   machine-readable proven counts, and evidence-based grouping (auto-collapse
   "unproven greens" separately) — posture gated on the Open Question
-- Webhook hardening: HMAC signing (`WithWebhookSecret` → `X-Signature`)
-  and a payload `"schema":1` version field before external consumers
-  freeze the format (see Open Questions)
+- Webhook hardening: ~~HMAC signing~~ SHIPPED as `WithWebhookHMAC`
+  (v0.13.2; `X-Health-Dashboard-Signature: sha256=<hex>` + timestamp
+  headers, stdlib-only); the payload `"schema":1` version field remains
+  open before external consumers freeze the format (see Open Questions)
 - Timeline card fed by service-reported `Check.Since` — designed
   2026-09-17 (hybrid: seed on Start from `Since`, ring for observed
   flips, explicit reported/observed divider); see
@@ -136,7 +135,8 @@ Raw ideas:
 - `go.mod` retract runbook stub (write it before it's needed)
 - Dependabot/renovate for GitHub Action SHA bumps (pins rot); digest-pin
   prometheus/grafana demo images + dependabot for `deploy/docker-compose.yml`
-- Nightly fuzztime budget review (11×60s today — target the hottest target
+- Nightly fuzztime budget review (13×60s today — 12 root + 1 hub target —
+  target the hottest target
   with a longer budget); rehearse the fuzz issue-on-failure path with a
   deliberately failing run
 - Fuzz targets deliberately NOT fuzzed (M94 verdict, 2026-09-17):
@@ -326,14 +326,16 @@ These require user decisions and cannot be resolved by reading code:
 - **GOEXPERIMENT=jsonv2:** Every Go command requires this env var because go-sse
   uses `encoding/json/v2`. Accept it (and document loudly), fork go-sse, or
   build-tag gate the SSE code?
-- **Fingerprint compatibility:** the v0.3.x length-prefix fix changed
-  fingerprint values (one spurious "change" after upgrade if anyone persisted
-  them). Accept + document as-is, or version/stabilize the fingerprint
-  format?
-- **Webhook hardening appetite:** is `Authorization`-header auth enough for
-  your ingests, or do you want HMAC signing (`WithWebhookSecret` →
-  `X-Signature`) and an explicit payload `"schema":1` version field before
-  any external consumer freezes the format?
+- **Fingerprint compatibility — DECIDED 2026-11-05 (M08).** The format IS
+  the versioning decision: the sorted, length-prefixed `name/status/error`
+  serialization is pinned byte-exactly by golden-vector tests; any change
+  to it ships as a declared breaking change (CHANGELOG Compatibility note
+  + minor bump + one-time re-announce). README "Stability" states the
+  guarantee; the v0.3.x length-prefix fix remains the historical precedent.
+- **Webhook hardening appetite — HALF-ANSWERED (v0.13.2).** HMAC signing
+  shipped as `WithWebhookHMAC` alongside `Authorization`-header auth; the
+  remaining appetite question is only the explicit payload `"schema":1`
+  version field before any external consumer freezes the format.
 - **Evidence-strip posture:** the strip shipped default-on and HTML-only
   (counts are non-identifying; proven/unproven is presentation). Do you want
   a machine contract (metrics gauges / trend+export JSON fields) and/or

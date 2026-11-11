@@ -17,8 +17,17 @@ forgetting.
 
 ### Added
 
-- `.docs-gates.json` with `audit_max: 88`: the docs-gates annotate/audit battery
-  is green fleet-wide; the 88-item pre-canon audit backlog (August-era reports)
+- NixOS module for the health-hub federation dashboard:
+  `flake.nixosModules.default` (`nix/nixos-module.nix`) wraps the hub
+  binary in a stateless systemd service configured via
+  `services.health-dashboard` (`enable`, `remotes`, plus the hub knobs).
+  Binds loopback by default — check names and error strings are internal,
+  so the raw port must not reach an unauthenticated network; front it with
+  your own reverse proxy for remote access. Module verified by evaluation
+  + the CI flake build; the unit's boot behavior is pending a smoke test
+  (TODO_LIST).
+- `.docs-gates.json` with `audit_max: 87`: the docs-gates annotate/audit battery
+  is green fleet-wide; the 87-item pre-canon audit backlog (August-era reports)
   is pinned and drains via the TODO_LIST "Drain the docs-gates audit-all
   backlog" row instead of holding the battery red.
 
