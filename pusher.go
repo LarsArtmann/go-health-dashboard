@@ -373,12 +373,18 @@ func msToSeconds(ms int64) float64 {
 // jitterLifetime spreads a connection-lifetime cap over ±10% (M15): the
 // cap exists to rotate long-lived streams, and an un-jittered cap turns
 // every simultaneous connect burst into a synchronized reconnect burst.
+
+// lifetimeJitterPercent is the ± spread around the connection-lifetime
+// cap, in percent.
+const lifetimeJitterPercent = 10
+
 func jitterLifetime(d time.Duration) time.Duration {
 	if d <= 0 {
 		return d
 	}
 
-	spread := d / 10
+	spread := d / lifetimeJitterPercent
 
+	//nolint:gosec // reconnect jitter is load-shaping, not security; crypto/rand buys nothing here
 	return d - spread + time.Duration(rand.Int64N(int64(2*spread)+1))
 }

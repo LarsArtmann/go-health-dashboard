@@ -72,16 +72,16 @@ func TestJitterLifetime(t *testing.T) {
 	seen := make(map[time.Duration]bool)
 
 	for range 200 {
-		j := jitterLifetime(base)
+		jittered := jitterLifetime(base)
 
 		low := base - base/10
 		high := base + base/10
 
-		if j < low || j > high {
-			t.Fatalf("jitterLifetime(%s) = %s, want within [%s, %s]", base, j, low, high)
+		if jittered < low || jittered > high {
+			t.Fatalf("jitterLifetime(%s) = %s, want within [%s, %s]", base, jittered, low, high)
 		}
 
-		seen[j] = true
+		seen[jittered] = true
 	}
 
 	if len(seen) < 10 {
