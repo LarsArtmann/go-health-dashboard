@@ -415,3 +415,53 @@ standing rule, not a one-off:
 - The same lens applies in reverse: a harness that adds styling
   production lacks (Play-CDN-only classes, for example) proves nothing
   about the compiled-CSS deployment.
+
+## Full-file doc rewrites need a row-by-row diff, not a spot check (2026-11-12)
+
+The 2026-11-11 living-docs rebuild rewrote TODO_LIST.md wholesale; a whole-file
+diff review caught the MVS watch row silently DROPPED in the rewrite (restored
+before commit). Spot-checking a handful of lines cannot see a missing row.
+Rule: after any full-file rebuild, diff against the previous version row-by-row
+(git diff with word-diff for prose) and reconcile every removed line against an
+explicit disposition (moved / merged / deliberately deleted). Same discipline
+caught the second miss the same day: a table row's count-bearing claim said
+"49 test files" where the CI gate counts 50 glob files — the recount tool
+(`rg -c`) lists only files WITH matches, and one test file carries only generic
+helpers (chromedp_eval_test.go), so the two counting methods differ by one.
+When a CI gate compares counts, verify the gate's own counting method, not just
+the number.
+
+## grep -L exits 0 when it lists nothing (2026-11-12)
+
+`grep -L` (files WITHOUT matches) is an inverted-conditional trap twice in one
+session: a gate like `grep -L 'pattern' files || fail` PASSES when every file
+matches (empty output, exit 0) AND when no file exists — both look like
+success. In `if grep -L ...` shells, empty-listed success and no-candidates
+success are indistinguishable. Gate scripts that mean "no file may still carry
+the marker" should assert on the COUNT of listed files (`[ -z "$(grep -L ...)"
+]` with the file list verified non-empty first) or use `! grep -q` on the
+complement. Never trust the exit status alone.
+
+## fresh:skip for token-poor status-report items (2026-11-12)
+
+docs-gates freshness heuristics can false-positive on report items whose text
+is too token-poor to date-match (a bare pointer or a one-clause residual).
+The sanctioned escape is an HTML comment `<!-- fresh:skip -->` on the item
+itself (used on the 16-43 report §f item 4) — not editing the item into
+something longer just to satisfy the matcher. Prefer the marker to prose
+inflation; the marker documents that staleness was CONSIDERED.
+
+## Daemon-commit disclosure mapping at the next intent commit (standing)
+
+When the auto-daemon captures session files as `chore:` commits mid-flow,
+the next intent-bearing commit must DISCLOSE the mapping (which daemon
+commit holds which content, verified via `git show`). Recipe in AGENTS.md
+(daemon-race recovery (1)): verify HEAD's daemon commit holds the content,
+then `git commit --amend` carries the full intent message. Worked example
+from 2026-11-12: fixes captured as `1175a09`, LSP raw-regen captured as
+`e6a5d3a`, the amend then relabeled the capture with the canonical
+generate → fmt output. The templ LSP can rewrite `*_templ.go` between a
+fmt and a `git add` — when staging generated files against that race,
+snapshot the formatted bytes into the object DB (`git hash-object -w` +
+`git update-index --cacheinfo`) so the commit content no longer depends on
+the racing worktree.

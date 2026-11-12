@@ -5,6 +5,23 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # chromedp + cdproto minors are API-breaking as a PAIR (v0.16 → v0.21
+    # needed the documented migration; chromedp ships docs/MIGRATION.md per
+    # release and cdproto must move in lockstep). They ride the dedicated
+    # migration ceremony, never a dependabot sweep; patch updates stay open.
+    ignore:
+      - dependency-name: "github.com/chromedp/chromedp"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+      - dependency-name: "github.com/chromedp/cdproto"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+      - dependency-name: "github.com/chromedp/cdproto/proto"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
     groups:
       minor-and-patch:
         update-types:
