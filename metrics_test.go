@@ -1,8 +1,12 @@
 package dashboard_test
 
 import (
+	"context"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"os/exec"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -56,8 +60,13 @@ func TestMetrics_EnabledServesExposition(t *testing.T) {
 		"# TYPE dashboard_health_shutting_down gauge",
 		"dashboard_health_shutting_down 0",
 		"# TYPE dashboard_sse_connections gauge",
+		"# TYPE dashboard_sse_connections_opened_total counter",
+		"dashboard_sse_connections_opened_total 0",
+		"# TYPE dashboard_sse_connections_closed_total counter",
+		"dashboard_sse_connections_closed_total 0",
 		"# TYPE dashboard_pusher_active gauge",
 		"dashboard_pusher_active 1",
+		"# TYPE dashboard_pusher_last_tick_seconds gauge",
 	}
 
 	for _, line := range wantLines {
@@ -383,7 +392,8 @@ func stripVaryingMetrics(body string) string {
 	kept := make([]string, 0, 32)
 
 	for line := range strings.SplitSeq(body, "\n") {
-		if strings.Contains(line, "dashboard_health_check_duration_seconds") {
+		if strings.Contains(line, "dashboard_health_check_duration_seconds") ||
+			strings.Contains(line, "dashboard_pusher_last_tick_seconds") {
 			continue
 		}
 
@@ -474,5 +484,133 @@ func TestMetrics_CheckDurationGaugePublicMode(t *testing.T) {
 	// queue sorts second (check-2) and reports no timing: no series at all.
 	if strings.Contains(body, `last_duration_seconds{check="check-2"`) {
 		t.Errorf("unreported timing must not emit a series in public mode:\n%s", body)
+	}
+}
+
+// TestMetrics_SSEConnectionCounters pins the M13 lifecycle pair: opened
+// counts accepted upgrades, closed counts their ends, and the connections
+// gauge reconciles (opened − closed) once quiescent. The watchdog gauge
+// rides the same scrape: present while a pusher has ticked, absent when it
+// has not (an absent series must never read as 0s-fresh).
+func TestMetrics_SSEConnectionCounters(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t, dashboard.WithMetrics(true))
+	defer s.cleanup()
+
+	srv := httptest.NewServer(s.mux)
+	defer srv.Close()
+
+	metric := func(body, name string) string {
+		for line := range strings.SplitSeq(body, "\n") {
+			if value, ok := strings.CutPrefix(line, name+" "); ok {
+				return value
+			}
+		}
+
+		t.Fatalf("metrics exposition missing %s\nbody:\n%s", name, body)
+
+		return ""
+	}
+
+	metrics := func() map[string]string {
+		rec := httptest.NewRecorder()
+		s.dash.MetricsHandler().
+			ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/health/metrics", nil))
+
+		body := rec.Body.String()
+
+		return map[string]string{
+			"opened":    metric(body, "dashboard_sse_connections_opened_total"),
+			"closed":    metric(body, "dashboard_sse_connections_closed_total"),
+			"active":    metric(body, "dashboard_sse_connections "),
+			"last_tick": metric(body, "dashboard_pusher_last_tick_seconds"),
+		}
+	}
+
+	intOf := func(t *testing.T, m map[string]string, key string) int {
+		t.Helper()
+
+		n, err := strconv.Atoi(m[key])
+		if err != nil {
+			t.Fatalf("%s = %q, want an integer", key, m[key])
+		}
+
+		return n
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL+"/health/sse", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("SSE request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if _, err := io.Copy(io.Discard, io.LimitReader(resp.Body, 1024)); err != nil {
+		t.Fatalf("read initial patch: %v", err)
+	}
+
+	waitUntil(t, 5*time.Second, func() bool {
+		return s.dash.SubscriberCount() == 1
+	})
+
+	m := metrics()
+
+	if got := intOf(t, m, "opened"); got != 1 {
+		t.Errorf("opened = %d, want 1 (one accepted upgrade)", got)
+	}
+
+	if got := intOf(t, m, "closed"); got != 0 {
+		t.Errorf("closed = %d while the subscriber is live, want 0", got)
+	}
+
+	if got := intOf(t, m, "active"); got != 1 {
+		t.Errorf("active gauge = %d, want 1", got)
+	}
+
+	if _, err := time.ParseDuration(m["last_tick"] + "s"); err != nil {
+		t.Errorf("last_tick = %q, want a seconds value (pusher has ticked)", m["last_tick"])
+	}
+
+	// Drop the connection and wait for the server side to notice.
+	cancel()
+
+	waitUntil(t, 5*time.Second, func() bool {
+		return s.dash.SubscriberCount() == 0
+	})
+
+	m = metrics()
+
+	if got := intOf(t, m, "opened"); got != 1 {
+		t.Errorf("opened after disconnect = %d, want 1", got)
+	}
+
+	if got := intOf(t, m, "closed"); got != 1 {
+		t.Errorf("closed after disconnect = %d, want 1", got)
+	}
+
+	if got := intOf(t, m, "active"); got != 0 {
+		t.Errorf("active gauge after disconnect = %d, want 0 (opened − closed)", got)
+	}
+}
+
+// waitUntil polls cond every 25ms until it holds or the deadline expires.
+func waitUntil(t *testing.T, timeout time.Duration, cond func() bool) {
+	t.Helper()
+
+	deadline := time.Now().Add(timeout)
+	for !cond() {
+		if time.Now().After(deadline) {
+			t.Fatal("condition never held within the deadline")
+		}
+
+		time.Sleep(25 * time.Millisecond)
 	}
 }
