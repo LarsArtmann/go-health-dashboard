@@ -1,0 +1,13 @@
+{
+  // Repo style: dprint owns formatting (line width 80 with its own
+  // wrapping), so markdownlint's line-length and format-dupe rules would
+  // only fight it. The defaults below keep the structural rules (heading
+  // hierarchy, duplicate headings, bare URLs) and silence the purely
+  // stylistic ones the fleet formatter already owns.
+  "MD013": false,
+  "MD033": false,
+  "MD034": false,
+  "MD041": false,
+  "MD036": false,
+  "MD047": true
+}

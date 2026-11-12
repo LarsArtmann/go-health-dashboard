@@ -201,6 +201,7 @@
               pkgs.gosec
               pkgs.shellcheck
               pkgs.actionlint
+              pkgs.markdownlint-cli
               pkgs.trash-cli
               pkgs.chromium
             ];
