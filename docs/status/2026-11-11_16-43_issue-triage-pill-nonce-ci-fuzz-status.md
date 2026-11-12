@@ -39,10 +39,10 @@
 
 ## b) PARTIALLY DONE
 
-1. **The fixes are local-only** — ahead 5, unpushed. Consumers (cqrs-htmx per #31; file-and-image-renamer per #23) cannot consume anything. Issues #31/#23 deliberately left OPEN until origin has the fix + green CI.
-2. **Release gap** — v0.13.2 is still the latest tag; two consumer-facing bug fixes sit in `[Unreleased]`. No version bump, no tag, no release draft.
+1. ~~**The fixes are local-only** — ahead 5, unpushed. Consumers (cqrs-htmx per #31; file-and-image-renamer per #23) cannot consume anything. Issues #31/#23 deliberately left OPEN until origin has the fix + green CI.~~ (done at v0.13.3 2026-11-12: pushed through the cut `5e39639`, CI 8/8 green on it, #31/#23 closed with evidence comments)
+2. ~~**Release gap** — v0.13.2 is still the latest tag; two consumer-facing bug fixes sit in `[Unreleased]`. No version bump, no tag, no release draft.~~ (done at v0.13.3 2026-11-12: cut `5e39639`, tag pushed first, verify-release all green, draft auto-produced by the release-draft workflow and published)
 3. **#23 verification depth** — attribute stamp structurally pinned; the behavioral claim (Datastar avoids `new Function` with a root nonce) is upstream-asserted, not browser-proven here.
-4. **Chromium-version claim** — the "UA rule changed" inference needs a source; the comment text stands but the version boundary is unknown.
+4. ~~**Chromium-version claim** — the "UA rule changed" inference needs a source; the comment text stands but the version boundary is unknown.~~ (resolved 2026-11-12: SOURCED — no boundary exists; the spec rule is plain display:none never !important (WebKit bug 152883 rejected it), Chromium html.css carries no [hidden] selector at all; the 157 reading was the harness compensating rule; correction comment posted on #31)
 
 ## c) NOT STARTED
 

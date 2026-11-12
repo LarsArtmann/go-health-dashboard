@@ -47,7 +47,7 @@
 
 ## b) PARTIALLY DONE
 
-1. **The audit's own follow-through** — the gates are green, but the *code* side of the release path is untouched: #32 red, v0.13.3 unc ut, #31/#23 open. The docs now say exactly that (that's the job), but the underlying work is a later session's.
+1. **The audit's own follow-through** — the gates are green, but the _code_ side of the release path is untouched: #32 red, v0.13.3 unc ut, #31/#23 open. The docs now say exactly that (that's the job), but the underlying work is a later session's.
 2. **Living-doc coverage of `docs/` sub-surface** — gotchas.md, integrations.md, metrics.md, release-checklist.md, DOMAIN_LANGUAGE.md, ADRs were existence- and link-checked only; a full VERIFY pass over them was out of scope and not attempted.
 3. **The AGENTS.md pill-bullet correction** — wording fixed, but the underlying claim in the #31 GitHub comment (unsourced "UA rule changed" boundary) is corrected NOWHERE yet except this repo's AGENTS; the comment itself needs the sourced follow-up.
 4. **Today's 16-43 report** — its §f items are now harvested (freshness PASS), but the report file itself is unannotated by design (freshest report = harvest source, not annotate target); it stays unarchived until its release-path items resolve.

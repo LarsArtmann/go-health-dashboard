@@ -143,14 +143,14 @@ if [ -n "$local_commit" ]; then
 	# GitHub-service noise, not the project's CI — the 2026-11-11 failing
 	# /deploy dependabot update sat on an otherwise-green release commit and
 	# failed this gate for nothing. Filter them by event/actor, not name.
-	if ! conclusions=$(gh run list --commit "$local_commit" --json conclusion,event,actor --limit 50 2>/dev/null); then
+	if ! conclusions=$(gh run list --commit "$local_commit" --json conclusion,event --limit 50 2>/dev/null); then
 		conclusions=""
 	fi
 	if [ -z "$conclusions" ]; then
 		bad "could not list CI runs for $local_commit (gh auth? network?)"
 	else
 		runs=$(echo "$conclusions" | jq -r '.[]
-			| select(.event != "dynamic" and .actor.login != "dependabot[bot]")
+			| select(.event != "dynamic")
 			| .conclusion' | grep -o '[a-z_]*')
 		if [ -z "$runs" ]; then
 			bad "no CI runs recorded for $local_commit"
