@@ -133,3 +133,21 @@ Full browser suite (15 tests, serialized, incl. navigation + SSE waits): **~15s 
 - The measurement lives on as the env-guarded
   `TestMeasureChromeLaunchLatency` (skip by default; run it in isolation
   with `GO_HEALTH_DASHBOARD_MEASURE_CHROME=1`).
+
+## Chaos-load validation (M12, 2026-11-12)
+
+Deliberate CPU saturation (stress-ng 0.22.02, 30 of 32 cores, 15-minute
+window) against the wall-clock margins that the 2026-10-11 and 2026-11-11
+flake classes hardened. Host load during the runs: 30+ on 32 cores.
+
+| Run | Scope | Result | Wall |
+| --- | ----- | ------ | ---- |
+| 1 | Full package `-race -count=2` under stress | GREEN | 96s |
+| 2 | Timing-margin set (rate-limit refill 1.3s budget, watchdog floor, pusher-loop lifetime, heartbeat drain) `-race` under stress | GREEN (4/4) | 11s |
+| 3 | Browser suite trio (connection pill, strict-CSP connect, collapse) under stress | GREEN | 8.4s |
+
+Verdict: the hardened margins hold under deliberate CI-class load —
+neither the watchdog-floor class (#32 race job) nor the collapse class
+(#32 browser job) reproduces at 30-core saturation, and the 1.3s
+rate-limit refill budget keeps its slack. The evidence feeds the #32
+flake-under-load verdict: the margins are now proven, not assumed.
