@@ -25,9 +25,9 @@ type perIPRateLimiter struct {
 	window  time.Duration
 }
 
-func newPerIPRateLimiter(max int, window time.Duration) *perIPRateLimiter {
-	if max < 1 {
-		max = 1
+func newPerIPRateLimiter(maxRequests int, window time.Duration) *perIPRateLimiter {
+	if maxRequests < 1 {
+		maxRequests = 1
 	}
 
 	if window <= 0 {
@@ -36,7 +36,7 @@ func newPerIPRateLimiter(max int, window time.Duration) *perIPRateLimiter {
 
 	return &perIPRateLimiter{
 		buckets: make(map[string]*rateLimiter),
-		max:     max,
+		max:     maxRequests,
 		window:  window,
 	}
 }
@@ -145,9 +145,11 @@ func (d *Dashboard) applyRequestLogging(next http.Handler) http.Handler {
 
 // statusRecorder captures the response status for request logging. The
 // default mirrors net/http: a handler that never calls WriteHeader
-// implicitly answered 200.
+// implicitly answered 200. Writes pass through the embedded
+// ResponseWriter unchanged.
 type statusRecorder struct {
 	http.ResponseWriter
+
 	status int
 	wrote  bool
 }
@@ -159,12 +161,6 @@ func (r *statusRecorder) WriteHeader(code int) {
 	}
 
 	r.ResponseWriter.WriteHeader(code)
-}
-
-func (r *statusRecorder) Write(b []byte) (int, error) {
-	r.wrote = true
-
-	return r.ResponseWriter.Write(b)
 }
 
 // Flush forwards so SSE streaming (go-sse heartbeats and patches) keeps

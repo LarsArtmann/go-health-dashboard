@@ -141,44 +141,7 @@ func (d *Dashboard) renderMetrics() string {
 	b.WriteString("# TYPE dashboard_health_shutting_down gauge\n")
 	fmt.Fprintf(&b, "dashboard_health_shutting_down %d\n", boolGauge(resp.ShuttingDown))
 
-	b.WriteString("# HELP dashboard_sse_connections Current number of connected SSE clients.\n")
-	b.WriteString("# TYPE dashboard_sse_connections gauge\n")
-	fmt.Fprintf(&b, "dashboard_sse_connections %d\n", d.SubscriberCount())
-	b.WriteString(
-		"# HELP dashboard_sse_drops_total Cumulative SSE patches dropped because a subscriber buffer was full, counted per full subscriber per broadcast (N stalled clients missing the same patch add N).\n",
-	)
-	b.WriteString("# TYPE dashboard_sse_drops_total counter\n")
-	fmt.Fprintf(&b, "dashboard_sse_drops_total %d\n", d.DroppedPatchCount())
-
-	b.WriteString(
-		"# HELP dashboard_sse_connections_opened_total Cumulative SSE connections accepted since the pusher started (limit-rejected attempts are not counted).\n",
-	)
-	b.WriteString("# TYPE dashboard_sse_connections_opened_total counter\n")
-	fmt.Fprintf(&b, "dashboard_sse_connections_opened_total %d\n", d.SSEConnectionsOpened())
-
-	b.WriteString(
-		"# HELP dashboard_sse_connections_closed_total Cumulative accepted SSE connections that have ended; the dashboard_sse_connections gauge equals opened minus closed while quiescent.\n",
-	)
-	b.WriteString("# TYPE dashboard_sse_connections_closed_total counter\n")
-	fmt.Fprintf(&b, "dashboard_sse_connections_closed_total %d\n", d.SSEConnectionsClosed())
-
-	b.WriteString(
-		"# HELP dashboard_pusher_active Whether the SSE pusher goroutine is running (1) or not (0).\n",
-	)
-	b.WriteString("# TYPE dashboard_pusher_active gauge\n")
-	fmt.Fprintf(&b, "dashboard_pusher_active %d\n", boolGauge(d.push.Load() != nil))
-
-	// Watchdog gauge: seconds since the last broadcast tick — the raw
-	// input HealthCheck compares against 3× the push interval (floored at
-	// 1s, ADR-0005). The series is absent before the first tick and when
-	// no pusher is running: an absent series must not read as 0s-fresh.
-	if elapsed, ok := d.PusherLastTick(); ok {
-		b.WriteString(
-			"# HELP dashboard_pusher_last_tick_seconds Seconds since the SSE pusher's last broadcast tick; staleness threshold is 3x the push interval, floored at 1s.\n",
-		)
-		b.WriteString("# TYPE dashboard_pusher_last_tick_seconds gauge\n")
-		fmt.Fprintf(&b, "dashboard_pusher_last_tick_seconds %g\n", elapsed.Seconds())
-	}
+	d.renderSSERealtimeMetrics(&b)
 
 	if d.latency != nil {
 		d.latency.renderPrometheus(&b)
@@ -337,4 +300,48 @@ func (h *latencyHistogram) renderNamed(b *strings.Builder, name, help string) {
 		float64(h.sum.Load())/float64(microsPerSecond),
 	)
 	fmt.Fprintf(b, "%s_count %d\n", name, h.count.Load())
+}
+
+// renderSSERealtimeMetrics appends the real-time-surface series: the SSE
+// connection lifecycle (gauge + opened/closed counters, M13), the patch
+// drop counter, the pusher-active gauge, and the watchdog tick gauge.
+func (d *Dashboard) renderSSERealtimeMetrics(b *strings.Builder) {
+	b.WriteString("# HELP dashboard_sse_connections Current number of connected SSE clients.\n")
+	b.WriteString("# TYPE dashboard_sse_connections gauge\n")
+	fmt.Fprintf(b, "dashboard_sse_connections %d\n", d.SubscriberCount())
+	b.WriteString(
+		"# HELP dashboard_sse_drops_total Cumulative SSE patches dropped because a subscriber buffer was full, counted per full subscriber per broadcast (N stalled clients missing the same patch add N).\n",
+	)
+	b.WriteString("# TYPE dashboard_sse_drops_total counter\n")
+	fmt.Fprintf(b, "dashboard_sse_drops_total %d\n", d.DroppedPatchCount())
+
+	b.WriteString(
+		"# HELP dashboard_sse_connections_opened_total Cumulative SSE connections accepted since the pusher started (limit-rejected attempts are not counted).\n",
+	)
+	b.WriteString("# TYPE dashboard_sse_connections_opened_total counter\n")
+	fmt.Fprintf(b, "dashboard_sse_connections_opened_total %d\n", d.SSEConnectionsOpened())
+
+	b.WriteString(
+		"# HELP dashboard_sse_connections_closed_total Cumulative accepted SSE connections that have ended; the dashboard_sse_connections gauge equals opened minus closed while quiescent.\n",
+	)
+	b.WriteString("# TYPE dashboard_sse_connections_closed_total counter\n")
+	fmt.Fprintf(b, "dashboard_sse_connections_closed_total %d\n", d.SSEConnectionsClosed())
+
+	b.WriteString(
+		"# HELP dashboard_pusher_active Whether the SSE pusher goroutine is running (1) or not (0).\n",
+	)
+	b.WriteString("# TYPE dashboard_pusher_active gauge\n")
+	fmt.Fprintf(b, "dashboard_pusher_active %d\n", boolGauge(d.push.Load() != nil))
+
+	// Watchdog gauge: seconds since the last broadcast tick — the raw
+	// input HealthCheck compares against 3× the push interval (floored at
+	// 1s, ADR-0005). The series is absent before the first tick and when
+	// no pusher is running: an absent series must not read as 0s-fresh.
+	if elapsed, ok := d.PusherLastTick(); ok {
+		b.WriteString(
+			"# HELP dashboard_pusher_last_tick_seconds Seconds since the SSE pusher's last broadcast tick; staleness threshold is 3x the push interval, floored at 1s.\n",
+		)
+		b.WriteString("# TYPE dashboard_pusher_last_tick_seconds gauge\n")
+		fmt.Fprintf(b, "dashboard_pusher_last_tick_seconds %g\n", elapsed.Seconds())
+	}
 }

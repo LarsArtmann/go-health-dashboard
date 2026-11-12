@@ -249,7 +249,7 @@ func TestPerIPRateLimit_IsolatesAddresses(t *testing.T) {
 	)
 	defer s.cleanup()
 
-	do := func(remote string) *httptest.ResponseRecorder {
+	request := func(remote string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(http.MethodGet, "/health", nil)
 		req.RemoteAddr = remote
 
@@ -259,15 +259,15 @@ func TestPerIPRateLimit_IsolatesAddresses(t *testing.T) {
 		return w
 	}
 
-	if w := do("10.0.0.1:1000"); w.Code != http.StatusOK {
+	if w := request("10.0.0.1:1000"); w.Code != http.StatusOK {
 		t.Fatalf("first request from .1: want 200, got %d", w.Code)
 	}
 
-	if w := do("10.0.0.1:1001"); w.Code != http.StatusOK {
+	if w := request("10.0.0.1:1001"); w.Code != http.StatusOK {
 		t.Fatalf("second request from .1 (new port, same host): want 200, got %d", w.Code)
 	}
 
-	rejected := do("10.0.0.1:1002")
+	rejected := request("10.0.0.1:1002")
 	if rejected.Code != http.StatusTooManyRequests {
 		t.Fatalf("third request from .1: want 429, got %d", rejected.Code)
 	}
@@ -276,7 +276,7 @@ func TestPerIPRateLimit_IsolatesAddresses(t *testing.T) {
 		t.Fatal("429 missing Retry-After")
 	}
 
-	if w := do("10.0.0.2:1000"); w.Code != http.StatusOK {
+	if w := request("10.0.0.2:1000"); w.Code != http.StatusOK {
 		t.Fatalf("first request from .2: want 200 (budgets are per-address), got %d", w.Code)
 	}
 
@@ -297,7 +297,7 @@ func TestPerIPRateLimit_SweepsIdleBuckets(t *testing.T) {
 	s := setupDashboard(t, dashboard.WithPerIPRateLimit(5, 30*time.Millisecond))
 	defer s.cleanup()
 
-	do := func(remote string) int {
+	probe := func(remote string) int {
 		req := httptest.NewRequest(http.MethodGet, "/health", nil)
 		req.RemoteAddr = remote
 
@@ -308,7 +308,7 @@ func TestPerIPRateLimit_SweepsIdleBuckets(t *testing.T) {
 	}
 
 	for i := range 5000 {
-		code := do("10.1." + string(rune('0'+i%10)) + "." + string(rune('0'+i/10%10)) + ":9")
+		code := probe("10.1." + string(rune('0'+i%10)) + "." + string(rune('0'+i/10%10)) + ":9")
 		if code == http.StatusTooManyRequests {
 			t.Fatalf("request %d rejected before exhausting any single budget", i)
 		}
@@ -422,7 +422,7 @@ func TestRequestLogging_PreservesSSEFlush(t *testing.T) {
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	chunk := make([]byte, 1024)
+	chunk := []byte("scan-me: the initial SSE patch must arrive through the logger")
 
 	if _, err := resp.Body.Read(chunk); err != nil {
 		t.Fatalf("read initial patch: %v", err)
