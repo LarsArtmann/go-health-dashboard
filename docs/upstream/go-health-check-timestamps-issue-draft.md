@@ -22,10 +22,10 @@
 ```go
 // types.go (v0.1.3)
 type Check struct {
-	// Status is the health status of this individual check.
-	Status Status `json:"status"`
-	// Error contains the failure message when Status is not pass.
-	Error string `json:"error,omitempty"`
+    // Status is the health status of this individual check.
+    Status Status `json:"status"`
+    // Error contains the failure message when Status is not pass.
+    Error string `json:"error,omitempty"`
 }
 ```
 
@@ -50,15 +50,15 @@ Two optional, additive fields on `Check`:
 
 ```go
 type Check struct {
-	Status Status `json:"status"`
-	Error  string `json:"error,omitempty"`
+    Status Status `json:"status"`
+    Error  string `json:"error,omitempty"`
 
-	// Since is the time the check entered its current status. Zero means
-	// unknown (the service did not report it); consumers must treat zero
-	// as absent, not as a timestamp.
-	Since time.Time `json:"since,omitempty"`
-	// Duration is how long the most recent check execution took.
-	Duration time.Duration `json:"duration,omitempty"`
+    // Since is the time the check entered its current status. Zero means
+    // unknown (the service did not report it); consumers must treat zero
+    // as absent, not as a timestamp.
+    Since time.Time `json:"since,omitempty"`
+    // Duration is how long the most recent check execution took.
+    Duration time.Duration `json:"duration,omitempty"`
 }
 ```
 

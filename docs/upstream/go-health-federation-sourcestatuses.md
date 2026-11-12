@@ -20,11 +20,11 @@ master (`cf1238ca252b`), the drain case folds into the roll-up only:
 
 ```go
 if src.Response.ShuttingDown {
-	shuttingDown = true
+    shuttingDown = true
 }
 ...
 if shuttingDown {
-	status = health.StatusFail
+    status = health.StatusFail
 }
 ```
 

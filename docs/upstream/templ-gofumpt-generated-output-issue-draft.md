@@ -26,15 +26,15 @@ Concrete diffs on real output (this repo's `view_templ.go`, ~1k lines):
 -import "github.com/a-h/templ"
 -import templruntime "github.com/a-h/templ/runtime"
 +
-+	"github.com/a-h/templ"
-+	templruntime "github.com/a-h/templ/runtime"
++    "github.com/a-h/templ"
++    templruntime "github.com/a-h/templ/runtime"
 ```
 
 (import grouping: third-party imports emitted in the stdlib block) and:
 
 ```diff
--		var templ_7745c5c3_Var37 = []any{...}
-+		templ_7745c5c3_Var37 := []any{...}
+-        var templ_7745c5c3_Var37 = []any{...}
++        templ_7745c5c3_Var37 := []any{...}
 ```
 
 (`var x = ...` where gofumpt wants `x := ...`).
