@@ -1934,17 +1934,7 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 		t.Fatalf("inject event recorder: %v", err)
 	}
 
-	pillState := `(function () {
-		var states = ["live", "reconnecting", "offline"];
-		var visible = [];
-		for (var i = 0; i < states.length; i++) {
-			var el = document.getElementById("conn-state-" + states[i]);
-			if (el && !el.hidden && getComputedStyle(el).display !== "none") { visible.push(states[i]); }
-		}
-		if (visible.length === 0) { return "none"; }
-		if (visible.length > 1) { return "multiple:" + visible.join(","); }
-		return visible[0];
-	})()`
+	pillState := browserPillStateJS()
 
 	var state string
 
@@ -1986,6 +1976,26 @@ func TestBrowser_ConnectionPill(t *testing.T) {
 	}
 
 	assertNoBrowserErrors(t, errLog)
+}
+
+// browserPillStateJS is the ONE computed-style visibility probe for the
+// connection pill, shared by every test that asserts pill state. It returns
+// "live"/"reconnecting"/"offline", "none", or "multiple:<names>" when more
+// than one state span is computed-visible — the #31 bug class (a display
+// utility beats the UA stylesheet's [hidden] rule, so the attribute alone
+// lies; visibility must come from getComputedStyle().display).
+func browserPillStateJS() string {
+	return `(function () {
+		var states = ["live", "reconnecting", "offline"];
+		var visible = [];
+		for (var i = 0; i < states.length; i++) {
+			var el = document.getElementById("conn-state-" + states[i]);
+			if (el && !el.hidden && getComputedStyle(el).display !== "none") { visible.push(states[i]); }
+		}
+		if (visible.length === 0) { return "none"; }
+		if (visible.length > 1) { return "multiple:" + visible.join(","); }
+		return visible[0];
+	})()`
 }
 
 // pollPillState polls the connection pill until it reaches one of the wanted
@@ -2738,12 +2748,11 @@ func TestBrowser_StrictCSPNoEvalConnects(t *testing.T) {
 	}
 
 	// The pill's live state proves a patch actually applied and its events
-	// dispatched (it is driven by the SDK's patch-event stream).
-	waitForJS(
-		t,
-		ctx,
-		`document.getElementById("conn-state-live") !== null && document.getElementById("conn-state-live").hidden === false`,
-	)
+	// dispatched (it is driven by the SDK's patch-event stream). The shared
+	// computed-style probe, not a bare `.hidden` check: the #31 bug class
+	// renders all three spans with the attribute visible — exactly what a
+	// weaker assertion would wave through.
+	waitForJS(t, ctx, browserPillStateJS()+` === "live"`)
 
 	// Expression evaluation in nonce mode: the chip's data-on:click writes
 	// the statusFilter signal and its own data-attr:aria-pressed reflects
