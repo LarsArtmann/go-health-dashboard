@@ -362,21 +362,28 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   breaks nolintlint), jscpd's test-scaffolding flags (per-test isolation
   preferred). All report without gating — don't "fix" them into dependency
   additions or API churn. Full resolution state: `docs/gotchas.md`.
-- **art-dupl clone baseline is a pinned pre-push gate (2026-10-25)** —
-  `scripts/pre-push-checks.sh` check 9 runs
-  `art-dupl --type-aware --sort total-tokens -t 5 --ignore-tests .` and
-  fails unless EXACTLY 1 production clone group is shown (the accepted
-  `mapStatusToBadge`/`timelineBadgeType` `display.BadgeType` annotation
-  pair — different business rules, same return type; rationale in
-  `reports/dupl/2026-10-25_art-dupl-baseline.txt`). `--ignore-tests` is
-  deliberate: the ~50 test-scaffolding groups are the documented non-fix
-  above, and gating them would red every new test. Gate parser counts
-  `^found N clones:` markers — art-dupl's trailing summary line changes
-  wording between flag combinations ("Detected X, N shown" vs "Found
-  total N") and under pipefail a no-match grep silently kills the whole
-  script. The 2026-10-25 dedup pass: 18 hand-rolled probe→dash→Start→
-  cleanup fixture tails → `startDashboardFixture` helper; full-suite
-  groups 57 → 53; the evidence-fixture cleanup that forgot
+- **art-dupl clone baseline is a pinned pre-push gate (2026-10-25; MIGRATED
+  2026-11-12 to the tool's native baseline/check CI mode)** — check 9 runs
+  `art-dupl check --type-aware --exclude-pattern "*_test.go"
+  --baseline-path reports/dupl/baseline.art-dupl.json .` and fails on any
+  clone whose hash is NOT in the recorded baseline (0 production groups
+  recorded: the once-accepted `mapStatusToBadge`/`timelineBadgeType`
+  `display.BadgeType` annotation pair no longer registers under the
+  current tool; its rationale stays in
+  `reports/dupl/2026-10-25_art-dupl-baseline.txt` as the ledger). The
+  migration reason: the `dev` build grew output filtering that silently
+  broke the old gate — the parser counted `^found N clones:` shown-group
+  markers, and the tool now suppresses groups ("Detected 53, 0 shown")
+  so a clean tree read as 0 groups and failed against the 1-group
+  expectation; DETECTION was unchanged (the full-suite calibration still
+  reproduces exactly 53 groups). Test scaffolding stays excluded
+  (`--exclude-pattern "*_test.go"`, the successor of `--ignore-tests`):
+  the ~50 test-scaffolding groups are the documented non-fix above, and
+  gating them would red every new test. Mutation-checked 2026-11-12: a
+  synthetic 16-line duplicate pair fails the gate (exit 2), the clean
+  tree exits 0. The 2026-10-25 dedup pass: 18 hand-rolled probe→dash→
+  Start→cleanup fixture tails → `startDashboardFixture` helper;
+  full-suite groups 57 → 53; the evidence-fixture cleanup that forgot
   `probe.Shutdown()` was fixed by the unification.
 - **templ-generate is skip-gated: it races nix source snapshots** — the
   step re-raws `*_templ.go` mid-run and BuildFlow lets nix-evaluating steps

@@ -21,21 +21,28 @@ forgetting.
 
 ### Fixed
 
-- `nixosModules.default` now defaults `services.health-dashboard.package` to
-  this flake's hub package (capture-at-definition), so the documented usage
-  (`enable` + `remotes`) evaluates standalone — previously eval died with
-  "option services.health-dashboard.package accessed but has no value"
-  (found by the 2026-11-12 boot-smoke).
-- `scripts/verify-release.sh` step 5 excludes bot updater runs
-  (`event=dynamic`, e.g. dependabot's per-ecosystem "Update #N" jobs) from
-  the release-commit CI-green check — a failing /deploy dependabot update
-  sat on an otherwise-green release commit and failed the gate for nothing.
-- Pre-push gate 9 (art-dupl clone baseline) migrated to the tool's native
-  `baseline`/`check` CI mode (`reports/dupl/baseline.art-dupl.json`): the
-  `dev` build's output filtering silently broke the old shown-group parser
-  (detection unchanged — the full-suite calibration still reproduces the
-  same 53 groups; "0 shown" was suppression, not absence). Mutation-checked:
-  a synthetic 16-line clone fails the gate, the clean tree passes.
+- Post-cut changelog backfill for three v0.13.3 changes whose entries were
+  omitted at tag time (the code rode the release train via the auto-daemon;
+  the entries were written after the publish) — the released CHANGELOG is
+  otherwise accurate:
+
+  - `nixosModules.default` now defaults `services.health-dashboard.package`
+    to this flake's hub package (capture-at-definition), so the documented
+    usage (`enable` + `remotes`) evaluates standalone — previously eval
+    died with "option services.health-dashboard.package accessed but has
+    no value" (found by the 2026-11-12 boot-smoke).
+  - `scripts/verify-release.sh` step 5 excludes bot updater runs
+    (`event=dynamic`, e.g. dependabot's per-ecosystem "Update #N" jobs)
+    from the release-commit CI-green check — a failing /deploy dependabot
+    update sat on an otherwise-green release commit and failed the gate
+    for nothing (a post-push field-set correction landed after v0.13.3).
+  - Pre-push gate 9 (art-dupl clone baseline) migrated to the tool's
+    native `baseline`/`check` CI mode
+    (`reports/dupl/baseline.art-dupl.json`): the `dev` build's output
+    filtering silently broke the old shown-group parser (detection
+    unchanged — the full-suite calibration still reproduces the same 53
+    groups; "0 shown" was suppression, not absence). Mutation-checked: a
+    synthetic 16-line clone fails the gate, the clean tree passes.
 
 ## [0.13.3] - 2026-11-12
 
