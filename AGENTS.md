@@ -336,7 +336,15 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   `gh release edit <ver> --draft=false` after CI green + verify-release.
   (7) Fixes to released surfaces plan their release IN THE SAME CHANGE —
   the 2026-11-11 gap (two consumer-facing fixes landed in `[Unreleased]`
-  with no cut planned) is what this rule closes.
+  with no cut planned) is what this rule closes. (8) The release battery
+  now watches itself: pre-push gate 12 + CI enforce the watched-workflows
+  drift guard (a new scheduled/master workflow must join
+  `.github/watched-workflows.txt` in the same change), and
+  `verify-release.sh` excludes bot-updater runs (`event=dynamic`, e.g.
+  dependabot's per-ecosystem update jobs) from the release-commit
+  CI-green check — a failing dependabot /deploy run sitting on a green
+  release commit is filtered noise, not a release blocker; the updater's
+  own health rides the compose decision (batch A4).
   War stories: `docs/gotchas.md`.
 - **erraudit blank-identifier policy** — response-writer discards are
   centralized in `writeBody` (handlers.go) with ONE reasoned

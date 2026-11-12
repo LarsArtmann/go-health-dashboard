@@ -17,7 +17,20 @@ forgetting.
 
 ### Added
 
-- Nothing yet.
+- SSE connection lifecycle metrics (`dashboard_sse_connections_opened_total`
+  / `_closed_total`) and the watchdog gauge
+  (`dashboard_pusher_last_tick_seconds`) — operators see live/leak state
+  and can alert before the do.HealthCheck staleness verdict (M13).
+- Rate-limit observability (`dashboard_ratelimit_429_total` +
+  `dashboard_ratelimit_retry_after_seconds`), ±10% jitter on
+  `WithMaxConnectionLifetime` (reconnect herds spread), and `Retry-After`
+  on connection-limit 503s (M14/M15).
+- `WithPerIPRateLimit`: per-remote-address token buckets with the shared
+  limiter's 429 shape and metrics family; RemoteAddr-keyed only, idle
+  buckets swept past 4096 entries (M16).
+- `WithRequestLogging`: opt-in structured slog line per dashboard-owned
+  request (method, path, status, duration, remote addr); probe endpoints
+  stay unlogged (M17).
 
 ### Fixed
 

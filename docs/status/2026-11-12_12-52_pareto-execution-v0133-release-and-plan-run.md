@@ -72,36 +72,36 @@
 
 ## f) Up to 50 things to get done next (ranked; the plan file remains canonical)
 
-1. **Finish T10** (30–45 min): re-run `docs-gates annotate`, fix the remaining `routed`-lead verdicts if any survived the conversion, strike 14-19's 22 §f table rows per-cell, repair the 05-27 `verdict-leads-open` line, re-run the battery to 5/5, commit + push the archive.
-2. T13 CI ergonomics (3 small items, ~30 min).
-3. T14 helper polish + templ LSP restart (~30 min).
-4. T15 docs-gates drain session (annotate the biggest stale cluster; lower `audit_max` 87 → measured).
-5. T16 M13 SSE counters + watchdog gauge in the metrics exposition.
-6. T17 M14+M15 rate-limit observability + lifetime jitter + Retry-After on limit-503s.
-7. T18 M20+M24 shellcheck/actionlint + cold-cache pins-guard test.
-8. T19 M21–M23 markdown-lint + interrogate + rerun-failed-uncached baseline.
-9. T20 M18+M19 compose build-only CI + cross-process browser flock.
-10. T21 M16+M17 per-IP rate limits + request-logging middleware (opt-in).
-11. T22 M12 chaos-load validation (stress-ng under race suite; feeds the #32 verdict).
-12. T23 M30 watchdog hardening (workflow_run/fork audit, self-watch, dedupe via T12's source).
-13. T24 Decision batch A document (six decisions; park for user).
-14. T25 Decision batch B document (eight decisions; park for user).
-15. T26 upstream filings: re-verify the three drafts TODAY per verify-before-filing; file only the authorized ones.
-16. T27 templ-components#37 check → ListNote adoption if shipped.
-17. T28 fleet riders (CV prep, dnsblockd ls-remote, MVS watch polish).
-18. T29 go-etag fragile-grep port (apply the proven grep-chain fix pattern).
-19. T30 AGENTS restructure prep (map what moves to docs/).
-20. T31 standing-blocked documentation pass (BuildFlow pins, relabel-daemon, compose note).
+1. ~~**Finish T10** (30–45 min): re-run `docs-gates annotate`, fix the remaining `routed`-lead verdicts if any survived the conversion, strike 14-19's 22 §f table rows per-cell, repair the 05-27 `verdict-leads-open` line, re-run the battery to 5/5, commit + push the archive.~~ done at `fb042e2` — the archive batch: vocabulary converted to the gate's real marker set (`routed`/`closed`/`answered` are NOT in it), the 25 §f table rows struck per-cell, the 05-27 verdict repaired, battery 5/5, manifest refreshed
+2. ~~T13 CI ergonomics (3 small items, ~30 min).~~ done at `2faa1df` + daemon `eccb35d` — alert bodies resolve failed jobs via `gh run view --json jobs`; Hygiene uploads the fmt-drift diff; test/test-race print the loud RAN/SKIPPED verdict
+3. ~~T14 helper polish + templ LSP restart (~30 min).~~ done at `f75506e` (relabeled daemon `07b5d24`) — `browserPillStateJS` shared probe; the strict-CSP test moved off the weak `.hidden` check; LSP disposition: never started this session + system templ healed 2026-11-05
+4. ~~T15 docs-gates drain session (annotate the biggest stale cluster; lower `audit_max` 87 → measured).~~ done at `d11edbe` + daemon `99ecf1f` — 11-item 2026-08-08 cluster annotated with current-tree evidence, `audit_max` 87→76, two wishes harvested to ROADMAP, CHANGELOG Changed entry
+5. ~~T16 M13 SSE counters + watchdog gauge in the metrics exposition.~~ done at `6f9a539` + daemon `450f9d4`/`e10af6f`/`9ca7fe1` — opened/closed counters + `dashboard_pusher_last_tick_seconds`, e2e over a real SSE connection, docs/metrics.md + README
+6. ~~T17 M14+M15 rate-limit observability + lifetime jitter + Retry-After on limit-503s.~~ done at `9d83f36` + daemon `4aa0a8b`/`4a0cf1f`/`aaa92e3` — 429 counter + Retry-After histogram, ±10% lifetime jitter, Retry-After on limit-503s
+7. ~~T18 M20+M24 shellcheck/actionlint + cold-cache pins-guard test.~~ done at `70aa379` (relabeled daemon `3a64191`; `901212d`/`ca2384c`) — shellcheck + actionlint in devShell, two style findings fixed, cold-cache pins test (mutation-checked), pre-push gates 13/14 + CI Hygiene
+8. ~~T19 M21–M23 markdown-lint + interrogate + rerun-failed-uncached baseline.~~ done at `062a332` — markdown-lint two-pass gate (pre-push 15 + CI), real findings fixed incl. two duplicated CHANGELOG section headings; interrogate = econchick Python docstring tool, deliberate non-adoption; rerun-uncached baseline = gotcha 26
+9. ~~T20 M18+M19 compose build-only CI + cross-process browser flock.~~ done at `f7489b5` — compose-build CI job (decision-safe slice), cross-process browser flock (open-file-description test + two-process smoke), boot-smoke CI design doc
+10. ~~T21 M16+M17 per-IP rate limits + request-logging middleware (opt-in).~~ done at `6315668` + daemon `bb9f0ee`/`24c66de` — WithPerIPRateLimit (RemoteAddr-keyed, sweep at 4096, probe-exempt) + WithRequestLogging (status recorder, SSE flush preserved), tests + README
+11. ~~T22 M12 chaos-load validation (stress-ng under race suite; feeds the #32 verdict).~~ done at `a0d158a` + daemon `3807677` — 30-of-32-core stress-ng: race soak -count=2 green in 96s, timing-margin set green, browser trio green; evidence in docs/research/2026-09-10_benchmarks.md
+12. ~~T23 M30 watchdog hardening (workflow_run/fork audit, self-watch, dedupe via T12's source).~~ done at the same batch — docs/design/2026-11-12_watchdog-security-audit.md; watched-list dedupe + name-collision guard added and mutation-checked; self-watch verified (Master Red Alert is watched)
+13. ~~T24 Decision batch A document (six decisions; park for user).~~ done at `4edfa38` + daemon `f4d818e` — docs/decisions/2026-11-12_decision-batch-a.md, parked per plan design (plus §g1-§g3 appended)
+14. ~~T25 Decision batch B document (eight decisions; park for user).~~ done in the same batch — docs/decisions/2026-11-12_decision-batch-b.md, parked per plan design (nine Blocked rows linked)
+15. ~~T26 upstream filings: re-verify the three drafts TODAY per verify-before-filing; file only the authorized ones.~~ done at daemon `623f727` + `fefc542` — docs/decisions/2026-11-12_upstream-filings-reverification.md: templ draft STALE (clean on v0.3.1100), erraudit VALID (reproduced on 5c841cf), StatCard REFUTED (computed ratios pass the applicable 1.4.11 floor); nothing filed
+16. ~~T27 templ-components#37 check → ListNote adoption if shipped.~~ done at `2321170` — #37 CLOSED but the fix commit (41321644) is UNRELEASED and v1.27.0 predates it; adoption deferred with disposition; the copy-affordance clash is resolved at the current pin (singleton script, nonce omitted when empty)
+17. ~~T28 fleet riders (CV prep, dnsblockd ls-remote, MVS watch polish).~~ done at `f52106e` — dnsblockd unblocked (static/v0.7.0 exists alongside root v0.7.0), CV bump scope drafted on its row, tc doctor sketch recorded (B7)
+18. ~~T29 go-etag fragile-grep port (apply the proven grep-chain fix pattern).~~ done at `4a7f8b9` — go-etag `9f6f71e` pushed direct per that repo's flow, their CI green; the awk filter + loud unresolvable-count failure close both fragile chains
+19. ~~T30 AGENTS restructure prep (map what moves to docs/).~~ done at `35f5c44` — docs/decisions/2026-11-12_agents-restructure-outline.md; target ≈260 lines; executes on the B8 sign-off
+20. ~~T31 standing-blocked documentation pass (BuildFlow pins, relabel-daemon, compose note).~~ done at `27f9db1` + daemon `002dd19` — buildflow pin re-checks on both Blocked rows, relabel-daemon gotcha 27, boot-verify container-runtime dependency note
 21. Bump nixpkgs `go_1_27` to ≥ 1.27.4 (GO-2026-6859) + vendorHash verification (the new TODO row).
 22. Decide §g1 (changelog backfill vs v0.13.4 patch cut).
 23. Give cqrs-htmx's go.work fix a commit/push decision (§g3).
 24. Consider a nix-native Playwright Chromium shim so cqrs-htmx's battery runs on this host.
 25. Close the dependabot /deploy docker-update failure (it breaks verify-release's old semantics — now filtered, but the updater itself still errors; either fix the config or drop the ecosystem per the compose decision batch).
-26. Amend the AGENTS release-discipline rules with the session's two new rules (gate 12 exists now; verify-release ignores bot runs).
-27. Re-run the full battery after T10 lands (pre-push 12-gate + docs-gates 5-gate).
-28. Annotate the master plan M-rows touched today (M08 area: art-dupl migration; M-row hygiene).
-29. Re-check `.docs-gates.json` `audit_max` after T15 and lower it deliberately.
-30. Update FEATURES/CHANGELOG text after the engine tier lands (T16–T23).
+26. ~~Amend the AGENTS release-discipline rules with the session's two new rules (gate 12 exists now; verify-release ignores bot runs).~~ done at this closeout — rule (8) added to the AGENTS release-discipline bullet (watched-workflows drift guard + the verify-release event=dynamic filter)
+27. ~~Re-run the full battery after T10 lands (pre-push 12-gate + docs-gates 5-gate).~~ done at this closeout — the battery ran after T10 and again at closeout (exit 0), catching and fixing real drift en route: SECURITY.md footer, FEATURES count, the art-dupl baseline re-record + the set -e bug in gate 9
+28. ~~Annotate the master plan M-rows touched today (M08 area: art-dupl migration; M-row hygiene).~~ done at `062a332` — master plan M22/M23/M24 rows annotated RESOLVED with evidence
+29. ~~Re-check `.docs-gates.json` `audit_max` after T15 and lower it deliberately.~~ done at `d11edbe` — audit_max lowered 87→76 deliberately; the TODO row and CHANGELOG carry the new count
+30. ~~Update FEATURES/CHANGELOG text after the engine tier lands (T16–T23).~~ done at this closeout — FEATURES recounted (371 funcs / 51 files) and the engine tier's features now sit in `[Unreleased]` Added (metrics families, jitter, Retry-After, WithPerIPRateLimit, WithRequestLogging)
 
 ## g) Three questions I cannot figure out myself
 
