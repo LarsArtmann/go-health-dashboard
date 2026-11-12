@@ -231,6 +231,32 @@ if ! bash scripts/check-watched-workflows.sh; then
 	fail=1
 fi
 
+# 13. Shell hygiene: shellcheck over every repo script. The devShell
+# provides shellcheck; without it (bare host shell) this gate skips with a
+# named reason — CI's Hygiene job is the enforcing copy.
+if command -v shellcheck >/dev/null 2>&1; then
+	script_rc=0
+	for f in scripts/*.sh; do
+		shellcheck -x "$f" || script_rc=1
+	done
+	if [ "$script_rc" -ne 0 ]; then
+		fail=1
+	fi
+else
+	echo "shellcheck not on PATH — skipping gate 13 (CI Hygiene enforces it)"
+fi
+
+# 14. Cold-cache pins-guard behavior (M24): the guard must fail loudly
+# with downloads impossible and self-heal when they are not. Leg 2 skips
+# itself offline; CI's Hygiene job runs the enforcing copy with network.
+if command -v go >/dev/null 2>&1; then
+	if ! bash scripts/test-cold-cache-pins.sh; then
+		fail=1
+	fi
+else
+	echo "go not on PATH — skipping gate 14 (CI Hygiene enforces it)"
+fi
+
 # 11. Remote state (warning-only): red-main and unpushed-work detection.
 # The 11-day red window (2026-10-14→25) and the c0991da red push both
 # happened with all-local-green trees; remote state must be part of the

@@ -255,6 +255,20 @@ jobs:
           go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
           actionlint -color
 
+      # Gate 13 parity: every repo script must pass shellcheck. The desk
+      # pre-push gate skips when shellcheck is absent; CI is the enforcing
+      # copy.
+      - name: shellcheck repo scripts
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q shellcheck
+          for f in scripts/*.sh; do shellcheck -x "$f"; done
+
+      # Gate 14 parity (M24): the pins guard must fail loudly with
+      # downloads impossible and self-heal on a cold-but-servable cache.
+      # CI has network, so both legs run.
+      - name: cold-cache pins-guard behavior
+        run: bash scripts/test-cold-cache-pins.sh
+
       # The generator is pinned by go.mod's tool directive — the drift
       # check below runs it through `go tool`, so no separately installed
       # CLI is needed (the former `go install ...@v0.3.1020` step put a
