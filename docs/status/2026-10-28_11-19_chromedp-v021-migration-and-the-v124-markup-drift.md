@@ -186,40 +186,40 @@ The multiedit that added the `remote` import and `captureScreenshot` reported su
 
 **Immediate (this repo, this branch)**
 
-1. Decide the v1.24.0 question (b2) and apply it: revert to v1.23.0, or regenerate the 7 goldens + update the guard's pin block with the a4 delta.
-2. Re-run `scripts/check-ui-pins.sh` and prove exit 0 (note: the current run's `PINS_EXIT` was masked by a pipe — use `set -o pipefail`).
-3. Get one green browser-suite run on the migrated code — on a host whose Chrome can load a URL, or in CI — before calling a3 done.
-4. Recover the daemon commits' intent: `git reset --soft HEAD~3` + one amend with a real message (or a `docs:` commit that carries the rationale).
+1. ~~Decide the v1.24.0 question (b2) and apply it: revert to v1.23.0, or regenerate the 7 goldens + update the guard's pin block with the a4 delta.~~ decided — v1.24.0 adopted same day (the tenth movement); superseded by v1.27.0 (2026-11-04)
+2. ~~Re-run `scripts/check-ui-pins.sh` and prove exit 0 (note: the current run's `PINS_EXIT` was masked by a pipe — use `set -o pipefail`).~~ done at — the guard runs green in CI Build+Test since the adoption
+3. ~~Get one green browser-suite run on the migrated code — on a host whose Chrome can load a URL, or in CI — before calling a3 done.~~ resolved — host healed 2026-11-06 (Chromium 157); the suite is live (22/22 repeatedly, incl. 2026-11-12)
+4. ~~Recover the daemon commits' intent: `git reset --soft HEAD~3` + one amend with a real message (or a `docs:` commit that carries the rationale).~~ done at — amend-relabel recoveries applied and disclosed in commit messages
 5. ~~Push `go-health` `15fad10` after a `nix run .#gates` pass.~~ done — 15fad10 is on go-health origin/master (verified 2026-11-05).
-6. Add the "v1.24.0 markup delta" paragraph to `scripts/check-ui-pins.sh`'s audit history.
-7. Add a Chrome preflight to `browser_test.go` (env canary + `t.Skipf` with the reason).
+6. ~~Add the "v1.24.0 markup delta" paragraph to `scripts/check-ui-pins.sh`'s audit history.~~ done at — the guard's audit history carries the corrected delta
+7. ~~Add a Chrome preflight to `browser_test.go` (env canary + `t.Skipf` with the reason).~~ done at — the usableChrome/probeChromeNetwork memoized preflight shipped (2026-10-28)
 8. ~~Make browser tests skippable without `PATH` gymnastics (`-skip` documented in `AGENTS.md`, or an explicit `GO_HEALTH_DASHBOARD_SKIP_BROWSER=1`).~~ done — 2026-10-28 — the 15-17 session; AGENTS.md's Chrome gotcha names -skip as the skip lever
-9. File the DiscordSync golden row referencing the shared v1.24.0 cause (not as an isolated mime bug).
-10. Write the M04 evidence table, honestly labelled "pin verified remotely / build verified locally on <date>".
+9. ~~File the DiscordSync golden row referencing the shared v1.24.0 cause (not as an isolated mime bug).~~ routed — DiscordSync's own repo tracks it
+10. ~~Write the M04 evidence table, honestly labelled "pin verified remotely / build verified locally on <date>".~~ routed — fleet riders (T28); the guard's audit history carries the interim evidence
 
 **Near term (fleet hygiene)**
 
-11. Re-derive the six consumer builds from scratch (not from the previous session's notes) and record commands + exit codes.
+11. ~~Re-derive the six consumer builds from scratch (not from the previous session's notes) and record commands + exit codes.~~ routed — fleet riders (T28)
 12. ~~Ask/decide the `cv` vs `CV` canonical-lineage question and push the health adapter work.~~ done — closed for this repo — CV-side adoption lives in the standing TODO_LIST Blocked row; the canonical-lineage question rides that bump's conversation
-13. Land the go-taskqueue `NewChecks` port once the pass-detail API question is answered.
-14. Re-run `nix run .#skew` weekly and keep the number at zero; a reappearing stale repo is drift, not a tolerance.
-15. Delete the now-dead `--allow` documentation in `tools/fleet-skew.sh`'s header? (No — it still describes `--allow` correctly; confirm and leave.)
-16. Promote `#pre-tag` from "proven once in a clone" to "run before every tag", and note the exact command in `CONTRIBUTING.md`.
-17. Add the `.#pre-tag` app to CI as a weekly dry run with a dummy version.
-18. Check whether other templ-components consumers (`timesheets`, `Zlota44`, `webphone`, `projects-management-automation`) have snapshot tests that will drift on v1.24.0.
-19. Archive `docs/status/2026-10-25_*` into `archived/`.
-20. Add this session's lesson ("prove the environment before the code") to the repo's AGENTS.md gotchas.
+13. ~~Land the go-taskqueue `NewChecks` port once the pass-detail API question is answered.~~ routed — M06, gated on the two go-health API gaps recorded there
+14. ~~Re-run `nix run .#skew` weekly and keep the number at zero; a reappearing stale repo is drift, not a tolerance.~~ routed — fleet watch (M29)
+15. ~~Delete the now-dead `--allow` documentation in `tools/fleet-skew.sh`'s header? (No — it still describes `--allow` correctly; confirm and leave.)~~ moot — self-answered in the item: confirmed and left
+16. ~~Promote `#pre-tag` from "proven once in a clone" to "run before every tag", and note the exact command in `CONTRIBUTING.md`.~~ routed — release-flow cadence item (decision batch A)
+17. ~~Add the `.#pre-tag` app to CI as a weekly dry run with a dummy version.~~ routed — release-flow cadence item (decision batch A)
+18. ~~Check whether other templ-components consumers (`timesheets`, `Zlota44`, `webphone`, `projects-management-automation`) have snapshot tests that will drift on v1.24.0.~~ done at — checked in the guard's audit history (DiscordSync's 15 snapshots; timesheets/webphone drift noted in the eleventh/twelfth movement notes)
+19. ~~Archive `docs/status/2026-10-25_*` into `archived/`.~~ done at — 13-38 archived 2026-11-11; 14-19 archives in this same sweep
+20. ~~Add this session's lesson ("prove the environment before the code") to the repo's AGENTS.md gotchas.~~ done at — docs/gotchas.md carries the environment-prove lessons
 
 **Medium term**
 
-21. Reconsider the browser harness: chromedp v0.21's default `ExecAllocator` uses a **pipe**, which sidesteps this machine's IPv6/DevTools-port problem entirely and removes ~60 lines of manual launch code.
-22. If the pipe transport is adopted, delete `startHeadlessChrome`'s stderr parsing and the profile-dir retry logic.
-23. Replace `chromedp.Events`+goroutine error collection with `chromedp.WaitEvent` where a single event matters.
-24. Revisit `evalInto`/`evalDiscard`: with `Action[T]` composition, some step lists could return values directly instead of writing through pointers.
+21. ~~Reconsider the browser harness: chromedp v0.21's default `ExecAllocator` uses a **pipe**, which sidesteps this machine's IPv6/DevTools-port problem entirely and removes ~60 lines of manual launch code.~~ moot — the remote-allocator rig works post-heal; the chromedp bullet documents the current shape; revisit only on regression
+22. ~~If the pipe transport is adopted, delete `startHeadlessChrome`'s stderr parsing and the profile-dir retry logic.~~ moot — not adopted (see the pipe item)
+23. ~~Replace `chromedp.Events`+goroutine error collection with `chromedp.WaitEvent` where a single event matters.~~ routed — test-helper polish backlog (T14/ROADMAP)
+24. ~~Revisit `evalInto`/`evalDiscard`: with `Action[T]` composition, some step lists could return values directly instead of writing through pointers.~~ routed — the chromedp-helper-typing note (ROADMAP, confirmed T14)
 25. ~~Type the test helpers (`waitForJSTo` already is; `evalInto` could take a decoder).~~ done — routed 2026-11-11 — ROADMAP section 5 carries the helper-typing idea (evalInto decoder variant)
-26. Add a fuzz/property test for the JS-expression builders (`visibleRows`, `detailsState`, `pillState`) so a selector typo fails fast.
-27. Re-examine the 3 failing goldens' _content_ — do we want `role="region"` at all, or should the wrapper use the table's own `aria-label` only?
-28. Upstream: ask templ-components for a changelog entry per markup change, so a sweep can be triaged without regenerating goldens.
+26. ~~Add a fuzz/property test for the JS-expression builders (`visibleRows`, `detailsState`, `pillState`) so a selector typo fails fast.~~ moot — deliberate non-adoption (per-test isolation preferred); the selectors are pinned by goldens and behavioral tests
+27. ~~Re-examine the 3 failing goldens' _content_ — do we want `role="region"` at all, or should the wrapper use the table's own `aria-label` only?~~ decided — v1.24.0's semantics documented (23 unnamed role=region wrappers across 7 goldens); v1.27.0 shipped the same shape; no change
+28. ~~Upstream: ask templ-components for a changelog entry per markup change, so a sweep can be triaged without regenerating goldens.~~ routed — upstream drafts row (T26)
 29. Add a `make goldens` (or `nix run .#goldens`) app that regenerates and prints the semantic diff.
 30. Record the golden-drift policy in `docs/adr/` (accept + regenerate is a decision, not a chore).
 

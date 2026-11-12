@@ -350,42 +350,42 @@ DiscordSync (vet on `./internal/web/...` only, no lint).
 
 Ordered by impact per minute, not by size.
 
-1. Decide **adopt vs revert** templ-components v1.24.0 (blocks 2-6).
-2. If adopt: regenerate the 7 dashboard goldens in one commit, review the diff.
-3. If adopt: regenerate DiscordSync's 15 snapshot goldens, review the diff.
-4. If adopt: update `check-ui-pins.sh` pins to v1.24.0 and re-run the guard.
-5. If adopt: visually review the redesigned 404 search field (icon → submit
+1. ~~Decide **adopt vs revert** templ-components v1.24.0 (blocks 2-6).~~ decided — adopted same day (tenth movement); superseded by v1.27.0 (2026-11-04)
+2. ~~If adopt: regenerate the 7 dashboard goldens in one commit, review the diff.~~ done at — regenerated on the adoption; again on v1.27.0
+3. ~~If adopt: regenerate DiscordSync's 15 snapshot goldens, review the diff.~~ moot — DiscordSync's own repo tracks it
+4. ~~If adopt: update `check-ui-pins.sh` pins to v1.24.0 and re-run the guard.~~ done at — in-change with the adoption; guard green since
+5. ~~If adopt: visually review the redesigned 404 search field (icon → submit~~ moot — not rendered in this repo (documented in the audit notes)
    button) in both repos.
-6. If revert: pin back to v1.23.0 in both repos and re-run both suites.
-7. Push the three repos (5 + 1 + 2 commits) once authorized.
-8. `git fetch` + `gh run list` to compare local green with remote CI before
+6. ~~If revert: pin back to v1.23.0 in both repos and re-run both suites.~~ moot — the revert path died with the same-day adoption
+7. ~~Push the three repos (5 + 1 + 2 commits) once authorized.~~ done at — pushed; this repo released through v0.13.3 (2026-11-12)
+8. ~~`git fetch` + `gh run list` to compare local green with remote CI before~~ done at — codified as release-discipline rule 0
    pushing (the release discipline the memory demands).
-9. Add the `CHANGELOG.md` entry for the DiscordSync zone fix.
-10. Add the `CHANGELOG.md` entry for the dashboard's browser-skip change.
-11. Add a `CHANGELOG.md` note in `go-health` for the evidence-doc addition.
-12. Write an automated test for the hub's shutdown sequence (mark → 503 →
+9. ~~Add the `CHANGELOG.md` entry for the DiscordSync zone fix.~~ moot — DiscordSync's own repo
+10. ~~Add the `CHANGELOG.md` entry for the dashboard's browser-skip change.~~ done at — shipped through the v0.13.x cuts
+11. ~~Add a `CHANGELOG.md` note in `go-health` for the evidence-doc addition.~~ done at — their releases carried it
+12. ~~Write an automated test for the hub's shutdown sequence (mark → 503 →~~ resolved — TestFederation_HealthzCapabilityForwarded + the hub's two-phase drain shipped with the go-health v0.8.x adoption
     drain → exit), replacing the `/tmp` smoke script.
-13. Wire `Routes.Healthz` in `cmd/health-hub` (one line + doc rewrite) so a hub
+13. ~~Wire `Routes.Healthz` in `cmd/health-hub` (one line + doc rewrite) so a hub~~ resolved — the capability exists upstream (v0.8.x); the hub-never-overrides-Routes product decision is documented; flips via decision batch
     behind a load balancer gets a combined-traffic endpoint.
-14. Extend the hub test to assert `/livez` 200 → 503 during drain.
-15. Add a `docs/gotchas.md` entry in DiscordSync: "golden normalizers must
+14. ~~Extend the hub test to assert `/livez` 200 → 503 during drain.~~ resolved — same adoption
+15. ~~Add a `docs/gotchas.md` entry in DiscordSync: "golden normalizers must~~ moot — DiscordSync's own repo
     normalize the time zone".
-16. Add the same note to the shared golden-kit docs, since other repos use
+16. ~~Add the same note to the shared golden-kit docs, since other repos use~~ routed — templ-components-side docs
     `internal/web/golden`.
-17. Run `nix run .#lint` on the dashboard and fix whatever it finds.
+17. ~~Run `nix run .#lint` on the dashboard and fix whatever it finds.~~ done at — 0 issues on 2026-11-12
 18. ~~Run DiscordSync's lint on `./internal/web/...`.~~ **NOT-DO — decided-against here — DiscordSync-side work; that repo's own templ-components v1.24.0 adoption owns it.**
-19. Reap the two surviving loopback servers (8977, 18999).
-20. Reap the ~40 leaked Chromium processes; add a note if reaping needs a
+19. ~~Reap the two surviving loopback servers (8977, 18999).~~ moot — the broken-host leak class is gone (healed 2026-11-06)
+20. ~~Reap the ~40 leaked Chromium processes; add a note if reaping needs a~~ moot — same heal; the leak signature is documented in the gotcha
     different signal than SIGTERM in this shell.
-21. Add a host-preflight line to `README`/AGENTS: browser tests self-skip when
+21. ~~Add a host-preflight line to `README`/AGENTS: browser tests self-skip when~~ done at — the browser-test bullets document the preflight and skip semantics
     the host cannot browse.
-22. Consider a `-short`-style env toggle that turns the preflight into an
+22. ~~Consider a `-short`-style env toggle that turns the preflight into an~~ moot — the documented skip lever is -skip; the env-var semantics are documented
     immediate skip (no 12s probe) for CI parity checks.
-23. Add the preflight pattern to the templ-components-adjacent repos that run
+23. ~~Add the preflight pattern to the templ-components-adjacent repos that run~~ routed — fleet riders (T28)
     browser tests (DiscordSync e2e, Zlota44, KeyHolderAI).
-24. Re-measure the dashboard's 7 golden diffs and confirm each is _only_ the
+24. ~~Re-measure the dashboard's 7 golden diffs and confirm each is _only_ the~~ done at — the 23 unnamed role=region wrappers documented per golden
     three component changes (no fourth, unnoticed delta).
-25. Check whether the dashboard renders `display.Table` at all, or whether its
+25. ~~Check whether the dashboard renders `display.Table` at all, or whether its~~ done at — it does; the wrapper shape is documented in the audit notes
     7 goldens drift for a different reason than DiscordSync's 15.
 26. Confirm whether the dashboard uses `errorpage` (the 404 redesign may be
     irrelevant to it).

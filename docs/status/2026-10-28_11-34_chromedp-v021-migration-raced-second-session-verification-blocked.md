@@ -57,34 +57,34 @@ At ~10:37–10:41, while I was mid-migration, daemon commits (`5f716da`, `3fa29d
 
 **Unblock verification (the Pareto 1%):**
 
-1. Diagnose/fix the host's browsing (chromium `--dump-dom` on http URLs hangs; suspect proxy/DNS — same refusal class as the flake nix builds). Everything below depends on this.
-2. Re-run `nix develop -c go test .` on the merged migration; expect the 19 browser tests green under strict CSP.
-3. Re-run the pasted failing step: `buildflow -s test-race --verbose` (dev mode, `--exclude nix-hash-fix --exclude nix-build-verify` locally).
-4. Verify the new `captureScreenshot` helper actually captures (screenshot env-guarded test with `SCREENSHOT_OUTPUT=/tmp/x.png`).
+1. ~~Diagnose/fix the host's browsing (chromium `--dump-dom` on http URLs hangs; suspect proxy/DNS — same refusal class as the flake nix builds). Everything below depends on this.~~ resolved — healed 2026-11-06 (nix-store Chromium 157); every dependent item below unblocked
+2. ~~Re-run `nix develop -c go test .` on the merged migration; expect the 19 browser tests green under strict CSP.~~ resolved — 22/22 green repeatedly, incl. 2026-11-12
+3. ~~Re-run the pasted failing step: `buildflow -s test-race --verbose` (dev mode, `--exclude nix-hash-fix --exclude nix-build-verify` locally).~~ resolved — green buildflow runs 2026-11-04/05
+4. ~~Verify the new `captureScreenshot` helper actually captures (screenshot env-guarded test with `SCREENSHOT_OUTPUT=/tmp/x.png`).~~ done at — executed in the live suite (env-guarded captures)
 
 **The second red: UI pin guard (templ-components v1.23.0 → v1.24.0):**
-5. Decide adopt vs revert (see question 3). If adopt: regen goldens, run full browser suite on v1.24.0, update all four `expected_templ_components*` pins + SDK checks + audit-history comment in `check-ui-pins.sh` IN THE SAME CHANGE.
-6. If revert: `go get templ-components@v1.23.0 …` (five modules), `go mod tidy`, restore goldens, confirm guard green.
-7. Record the v1.24.0 markup delta (scroll-wrapper `role="region"`, CopyButton `tcAnnounceCopy`) in the guard's history comment either way.
-8. Re-check the go-health goldens (the other session found two-repo golden movement — same root cause).
+5. ~~Decide adopt vs revert (see question 3). If adopt: regen goldens, run full browser suite on v1.24.0, update all four `expected_templ_components*` pins + SDK checks + audit-history comment in `check-ui-pins.sh` IN THE SAME CHANGE.~~ decided — adopted same day (tenth movement); superseded by v1.27.0 (2026-11-04)
+6. ~~If revert: `go get templ-components@v1.23.0 …` (five modules), `go mod tidy`, restore goldens, confirm guard green.~~ moot — the revert path died with the same-day adoption
+7. ~~Record the v1.24.0 markup delta (scroll-wrapper `role="region"`, CopyButton `tcAnnounceCopy`) in the guard's history comment either way.~~ done at — the guard's history comment carries it (corrected by the 15-45 session)
+8. ~~Re-check the go-health goldens (the other session found two-repo golden movement — same root cause).~~ done at — the two-repo golden movement is documented in the guard's audit
 
 **Repo hygiene after the race:**
-9. Amend/relabel the migration's intent commit (currently `chore: auto-commit` noise) per AGENTS.md daemon-race recipe #1 — disclosure of the two-session merge.
-10. Update TODO_LIST chromedp row: migration compiled, runtime verification blocked on host; keep the row red until the suite is green.
-11. Update TODO_LIST row 25 (dependabot `minor-and-patch` branch) once the pin decision lands.
-12. AGENTS.md: rewrite the browser-testing patterns section for the v0.21 API (Do/Run[T], CSS selectors, Events iterators, evalInto/evalDiscard wrappers in `chromedp_eval_test.go`).
-13. AGENTS.md gotcha: host-cannot-browse triage (`--dump-dom` first) + `GO_HEALTH_DASHBOARD_CHROME=` does not skip.
-14. Add the browser-suite host preflight (skip-not-hang guard) as its own change.
-15. Make `findChrome` treat empty `GO_HEALTH_DASHBOARD_CHROME` as explicit skip (decide semantics; document).
-16. Sweeper for orphaned test Chromiums (TestMain or script).
-17. Guard script: print the golden-update command + ceremony in its `::error::` output (other session's item; agreed).
+9. ~~Amend/relabel the migration's intent commit (currently `chore: auto-commit` noise) per AGENTS.md daemon-race recipe #1 — disclosure of the two-session merge.~~ done at — amend-relabel applied per recipe (1)
+10. ~~Update TODO_LIST chromedp row: migration compiled, runtime verification blocked on host; keep the row red until the suite is green.~~ done at — rebuilt in the 2026-11-11 audit; the suite is live
+11. ~~Update TODO_LIST row 25 (dependabot `minor-and-patch` branch) once the pin decision lands.~~ resolved — chromedp minors policy 2026-11-12; PR #30 closed on it
+12. ~~AGENTS.md: rewrite the browser-testing patterns section for the v0.21 API (Do/Run[T], CSS selectors, Events iterators, evalInto/evalDiscard wrappers in `chromedp_eval_test.go`).~~ done at — the chromedp v0.21 API bullet ships it
+13. ~~AGENTS.md gotcha: host-cannot-browse triage (`--dump-dom` first) + `GO_HEALTH_DASHBOARD_CHROME=` does not skip.~~ done at — the "A Chrome binary on disk is not a working browser" gotcha
+14. ~~Add the browser-suite host preflight (skip-not-hang guard) as its own change.~~ done at — the memoized usableChrome preflight shipped (2026-10-28), then healed-moot 2026-11-06
+15. ~~Make `findChrome` treat empty `GO_HEALTH_DASHBOARD_CHROME` as explicit skip (decide semantics; document).~~ done at — documented: the env var does NOT disable the suite; the skip lever is -skip
+16. ~~Sweeper for orphaned test Chromiums (TestMain or script).~~ moot — the leak source (broken host, ~95 leaked browsers) is gone; revisit on recurrence
+17. ~~Guard script: print the golden-update command + ceremony in its `::error::` output (other session's item; agreed).~~ done at — the guard's failure output carries the ceremony guidance
 
 **Gates and CI:**
-18. `nix fmt` (generate→fmt order irrelevant; no .templ touched) then `nix run .#lint`.
-19. `nix run .#test-race` full, `nix run .#coverage`, `nix flake check`.
-20. `bash scripts/pre-push-checks.sh` (9 checks incl. art-dupl baseline, fuzz registry).
-21. Confirm master CI's four jobs on the next push (the 11-day-red alerting gap is still open — TODO row 20).
-22. Re-run `bash scripts/check-ui-pins.sh` after the pin decision; it must be part of the same commit.
+18. ~~`nix fmt` (generate→fmt order irrelevant; no .templ touched) then `nix run .#lint`.~~ done at — routine; fmt green on every cut
+19. ~~`nix run .#test-race` full, `nix run .#coverage`, `nix flake check`.~~ done at — routine; green through the v0.13.3 train
+20. ~~`bash scripts/pre-push-checks.sh` (9 checks incl. art-dupl baseline, fuzz registry).~~ done at — the battery is now 12 gates (art-dupl migrated to baseline/check 2026-11-12); green on the cut
+21. ~~Confirm master CI's four jobs on the next push (the 11-day-red alerting gap is still open — TODO row 20).~~ done at — master-red-alert shipped (2026-11-04); master green through v0.13.3
+22. ~~Re-run `bash scripts/check-ui-pins.sh` after the pin decision; it must be part of the same commit.~~ done at — the ceremony held for the v1.24.0 and v1.27.0 adoptions
 
 **chromedp v0.21 follow-ups (nice-to-have, not blockers):**
 23. Consider `chromedp.Console(ctx)` to replace the two hand-rolled Events goroutines in `watchBrowserErrors` (fewer moving parts; keep only if error-type filtering stays exact).
