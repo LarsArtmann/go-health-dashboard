@@ -47,7 +47,10 @@ func TestMetrics_EnabledServesExposition(t *testing.T) {
 		t.Errorf("content-type: want text/plain, got %s", ct)
 	}
 
-	body := w.Body.String()
+	// The watchdog-gauge series only exists once the pusher has completed
+	// its first tick; Start returns before the goroutine's initial
+	// broadcast necessarily ran, so poll instead of racing it.
+	body := waitForMetricsLine(t, s, "# TYPE dashboard_pusher_last_tick_seconds gauge")
 
 	wantLines := []string{
 		"# TYPE dashboard_health_up gauge",
@@ -523,7 +526,7 @@ func TestMetrics_SSEConnectionCounters(t *testing.T) {
 		return map[string]string{
 			"opened":    metric(body, "dashboard_sse_connections_opened_total"),
 			"closed":    metric(body, "dashboard_sse_connections_closed_total"),
-			"active":    metric(body, "dashboard_sse_connections "),
+			"active":    metric(body, "dashboard_sse_connections"),
 			"last_tick": metric(body, "dashboard_pusher_last_tick_seconds"),
 		}
 	}
@@ -609,6 +612,29 @@ func waitUntil(t *testing.T, timeout time.Duration, cond func() bool) {
 	for !cond() {
 		if time.Now().After(deadline) {
 			t.Fatal("condition never held within the deadline")
+		}
+
+		time.Sleep(25 * time.Millisecond)
+	}
+}
+
+// waitForMetricsLine polls the exposition until it contains the wanted
+// line, re-scraping every 25ms; returns the last body either way.
+func waitForMetricsLine(t *testing.T, s *probeSetup, want string) string {
+	t.Helper()
+
+	deadline := time.Now().Add(3 * time.Second)
+
+	var body string
+
+	for {
+		body = doRequest(t, s.mux, "/health/metrics").Body.String()
+		if strings.Contains(body, want) {
+			return body
+		}
+
+		if time.Now().After(deadline) {
+			return body
 		}
 
 		time.Sleep(25 * time.Millisecond)
