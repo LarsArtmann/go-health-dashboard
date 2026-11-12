@@ -4,13 +4,13 @@ go 1.27
 
 require (
 	github.com/a-h/templ v0.3.1100
-	github.com/chromedp/cdproto v0.159.1
-	github.com/chromedp/chromedp v0.21.0
+	github.com/chromedp/cdproto v0.159.2
+	github.com/chromedp/chromedp v0.21.1
 	github.com/dustin/go-humanize v1.1.0
-	github.com/larsartmann/go-datastar v0.6.2
-	github.com/larsartmann/go-datastar/static v0.6.1
+	github.com/larsartmann/go-datastar v0.7.0
+	github.com/larsartmann/go-datastar/static v0.7.0
 	github.com/larsartmann/go-health v0.10.0
-	github.com/larsartmann/go-sse v0.6.2
+	github.com/larsartmann/go-sse v0.7.0
 	github.com/larsartmann/go-sse/ssetest v0.5.0
 	github.com/larsartmann/templ-components v1.27.0
 	github.com/larsartmann/templ-components/datastar v1.27.0
