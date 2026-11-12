@@ -56,6 +56,8 @@ All names carry the `dashboard_` prefix.
 | `dashboard_health_check_duration_seconds`      | histogram | —                 | Batch durations across ticks (see buckets below)      |
 | `dashboard_webhook_deliveries_total`           | counter   | `result`          | Webhook deliveries by result (`ok` / `error`)         |
 | `dashboard_webhook_delivery_duration_seconds`  | histogram | —                 | Webhook delivery duration                             |
+| `dashboard_ratelimit_429_total`                | counter   | —                 | Rate-limit rejections served as 429                   |
+| `dashboard_ratelimit_retry_after_seconds`      | histogram | —                 | Retry-After seconds handed out with 429s              |
 
 Conditional families:
 
@@ -64,6 +66,11 @@ Conditional families:
 - The two `dashboard_webhook_*` families render **only when
   `WithWebhook` is configured**; without a webhook URL they are absent
   from the document entirely.
+- The two `dashboard_ratelimit_*` families render **only when
+  `WithRateLimit` is configured**; the counter reports every 429 and the
+  histogram records the Retry-After seconds each rejection advertised —
+  a climbing counter with growing bucket mass means clients are not
+  backing off (or the budget is simply too small).
 - `dashboard_pusher_last_tick_seconds` renders **only after the pusher's
   first tick** (and while a pusher is running): an absent series means
   "never ticked or not running", deliberately distinct from a fresh `0`.

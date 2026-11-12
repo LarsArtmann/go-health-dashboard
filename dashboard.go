@@ -108,7 +108,7 @@ type Dashboard struct {
 	// ratelimit429Total counts 429 responses handed out by applyRateLimit
 	// and ratelimitRetryAfter histograms the Retry-After seconds served
 	// with them (M14). Both are non-nil exactly when limiter is.
-	ratelimit429Total    atomic.Int64
+	ratelimit429Total   atomic.Int64
 	ratelimitRetryAfter *latencyHistogram
 
 	// started records whether Start has ever been called, so HealthCheck

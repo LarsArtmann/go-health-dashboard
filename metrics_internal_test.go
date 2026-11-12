@@ -85,7 +85,10 @@ func TestJitterLifetime(t *testing.T) {
 	}
 
 	if len(seen) < 10 {
-		t.Errorf("jitter produced only %d distinct values in 200 draws; the spread is too narrow", len(seen))
+		t.Errorf(
+			"jitter produced only %d distinct values in 200 draws; the spread is too narrow",
+			len(seen),
+		)
 	}
 
 	if got := jitterLifetime(0); got != 0 {

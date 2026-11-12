@@ -273,6 +273,8 @@ dashboard_sse_connections_opened_total 41       # accepted since pusher start
 dashboard_sse_connections_closed_total 38       # ended; opened − closed = live
 dashboard_pusher_active 1                       # SSE pusher goroutine health
 dashboard_pusher_last_tick_seconds 0.04         # watchdog: stale past 3x push interval
+dashboard_ratelimit_429_total 7                 # WithRateLimit rejections (opt-in)
+dashboard_ratelimit_retry_after_seconds_bucket{le="1"} 5
 ```
 
 The metrics route is middleware-protected when `WithMiddleware` is set.

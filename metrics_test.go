@@ -648,13 +648,13 @@ func waitForMetricsLine(t *testing.T, s *probeSetup, want string) string {
 func TestMetrics_RateLimitFamily(t *testing.T) {
 	t.Parallel()
 
-	s := setupDashboard(t, dashboard.WithMetrics(true), dashboard.WithRateLimit(5, 10*time.Second))
+	s := setupDashboard(t, dashboard.WithMetrics(true), dashboard.WithRateLimit(2, time.Second))
 	defer s.cleanup()
 
-	// Two /health hits leave three tokens; the third hit is rejected. The
-	// 10s window makes refill negligible on test timescales (no sleeps),
-	// and the spare tokens cover the metrics scrape itself, which the
-	// limiter gates like any dashboard-owned route.
+	// Burn the two-token budget; the third hit is rejected. The metrics
+	// scrape itself is rate-limited like any dashboard-owned route, so
+	// wait out the proven refill margin (the same 1.3s budget
+	// TestRateLimit_RefillsOverTime uses) before scraping.
 	doRequest(t, s.mux, "/health")
 	doRequest(t, s.mux, "/health")
 
@@ -666,6 +666,8 @@ func TestMetrics_RateLimitFamily(t *testing.T) {
 	if rejected.Header().Get("Retry-After") == "" {
 		t.Fatal("429 response missing Retry-After")
 	}
+
+	time.Sleep(1300 * time.Millisecond)
 
 	body := doRequest(t, s.mux, "/health/metrics").Body.String()
 
@@ -692,7 +694,14 @@ func TestMetrics_RateLimitFamily(t *testing.T) {
 	s2 := setupDashboard(t, dashboard.WithMetrics(true))
 	defer s2.cleanup()
 
-	if body := doRequest(t, s2.mux, "/health/metrics").Body.String(); strings.Contains(body, "dashboard_ratelimit_") {
+	if body := doRequest(
+		t,
+		s2.mux,
+		"/health/metrics",
+	).Body.String(); strings.Contains(
+		body,
+		"dashboard_ratelimit_",
+	) {
 		t.Errorf("rate-limit family rendered without WithRateLimit:\n%s", body)
 	}
 }
