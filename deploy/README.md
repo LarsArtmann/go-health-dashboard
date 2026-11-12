@@ -134,3 +134,13 @@ activated rule goes Pending immediately — that is the alert working.
   added the readiness healthchecks, digest pins, and the alert example
   (activated, evaluated `Pending` against the live failing probe, then
   deactivated). Screenshot: `docs/screenshot-grafana.png`.
+
+Boot verification depends on a container runtime on the executing host.
+This workstation currently has none (the 2026-11-12 NixOS-module smoke
+booted the FOD binary directly as a systemd transient unit instead), so a
+compose boot-verify here is a host act (install Docker or Podman) — or
+use the runtime-free alternative documented in
+`docs/design/2026-11-12_hub-boot-smoke-ci-design.md` (Tier 1: boot the
+built binary directly with a dark remote and probe the 503 contract).
+Which tier CI adopts rides the compose-policy decision (decision batch A,
+A4).
