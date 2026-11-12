@@ -58,9 +58,9 @@ else
 		echo "OK   $(echo "$version_order" | wc -l | tr -d ' ') version sections in descending order ($(echo "$version_order" | head -1) … $(echo "$version_order" | tail -1))"
 	else
 		echo "::error::$changelog version sections are out of order. File order:" >&2
-		echo "$version_order" | sed 's/^/       /' >&2
+		echo "$version_order" | awk '{ printf "       %s\n", $0 }' >&2
 		echo "     Expected (descending):" >&2
-		echo "$sorted" | sed 's/^/       /' >&2
+		echo "$sorted" | awk '{ printf "       %s\n", $0 }' >&2
 		fail=1
 	fi
 	if echo "$version_order" | sort | uniq -d | grep -q .; then

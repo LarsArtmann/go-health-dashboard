@@ -199,6 +199,8 @@
               pkgs.gotools
               pkgs.govulncheck
               pkgs.gosec
+              pkgs.shellcheck
+              pkgs.actionlint
               pkgs.trash-cli
               pkgs.chromium
             ];
