@@ -144,6 +144,8 @@ dash := dashboard.New(probe,
     dashboard.WithShutdownDrain(5*time.Second),                // Wait for SSE clients on Shutdown
     dashboard.WithMaxConnectionLifetime(10*time.Minute),       // Recycle long-lived SSE streams
     dashboard.WithRateLimit(100, time.Minute),                 // ONE shared bucket for all dashboard routes (429 beyond)
+    dashboard.WithPerIPRateLimit(30, time.Minute),             // Per-remote-address buckets (fairness for multi-viewer hosts)
+    dashboard.WithRequestLogging(slog.Default()),              // One structured line per dashboard request (opt-in)
     dashboard.WithDescription("Status page for My Service"),   // Meta description + Open Graph tags
     dashboard.WithPublicMode(),                                // Anonymize check names/errors in HTML + metrics
     dashboard.WithDatastarSrc("/static/datastar.js"),          // Self-hosted Datastar SDK (CSP 'self')
@@ -172,6 +174,20 @@ time as tokens accrue at budget/window per second — a denied request
 consumes nothing. `Retry-After` reports the whole seconds until the next
 token (≈ `window/budget` when the bucket is empty: 1s at 100/min, 2s at
 30/min).
+
+`WithPerIPRateLimit` gives **each remote address its own bucket** with the
+same refill semantics and 429 shape; rejections ride the same
+`dashboard_ratelimit_*` metrics family. Addresses are keyed on
+`RemoteAddr` only — proxy headers are deliberately ignored (they are
+attacker-controlled), so front a reverse-proxy deployment with per-client
+fairness at the proxy itself. Idle buckets are swept once the map passes
+4096 entries.
+
+`WithRequestLogging` emits one structured `slog` line per dashboard-owned
+request (method, path, status, duration, remote address) at Info level.
+Opt-in — nil by default logs nothing. Probe endpoints are never logged,
+and the line carries only non-identifying wire facts: no query strings,
+no headers, no check names.
 
 **Probe-cadence observation (ADR-0003):** wire go-health's evaluation hook
 into `Dashboard.Observe` where the probe is built, and trend + evidence

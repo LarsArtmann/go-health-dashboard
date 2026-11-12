@@ -66,8 +66,8 @@ Conditional families:
 - The two `dashboard_webhook_*` families render **only when
   `WithWebhook` is configured**; without a webhook URL they are absent
   from the document entirely.
-- The two `dashboard_ratelimit_*` families render **only when
-  `WithRateLimit` is configured**; the counter reports every 429 and the
+- The two `dashboard_ratelimit_*` families render **only when a rate
+  limiter is configured (`WithRateLimit` or `WithPerIPRateLimit`)**; the counter reports every 429 and the
   histogram records the Retry-After seconds each rejection advertised —
   a climbing counter with growing bucket mass means clients are not
   backing off (or the budget is simply too small).
