@@ -150,7 +150,7 @@ The project has domain-specific vocabulary (Probe, Check, Status, FeedbackType, 
 2. **Remove replace directives** (BLOCKED — needs upstream repos tagged)
 3. **Add SSE change-detection integration test** — start pusher, change health, verify broadcast arrives, verify unchanged does NOT broadcast
 4. **Run `govulncheck ./...`** — `nix run .#vulncheck`
-5. **Run `gosec ./...`** — `nix run .#security`
+5. ~~**Run `gosec ./...`** — `nix run .#security`~~ resolved — the `.#security` app ships as the on-demand runner (flake.nix); CI carries the govulncheck Vulnerability Scan job instead
 
 ### P1 — Should do soon
 
@@ -178,32 +178,32 @@ The project has domain-specific vocabulary (Probe, Check, Status, FeedbackType, 
 
 ### P3 — Nice to have
 
-24. **Add test coverage report** — `nix run .#coverage`
+24. ~~**Add test coverage report** — `nix run .#coverage`~~ done — the `.#coverage` app ships and the pre-cut battery ran it (80.3% vs the 80 floor, 2026-11-12)
 25. **Add CI/CD GitHub Actions workflow**
-26. **Add coverage badge to README**
-27. **Add screenshot to README** — run example, capture browser
+26. ~~**Add coverage badge to README**~~ resolved — routed to ROADMAP theme 4 (coverage badge idea; needs a CI coverage-upload step first)
+27. ~~**Add screenshot to README** — run example, capture browser~~ done — README embeds docs/screenshot.png and docs/screenshot-grouped.png, captured by screenshot_test.go
 28. **Add WebSocket alternative transport**
 29. **Add multi-probe support** — dashboard for multiple services
 30. **Add health history/sparkline** — temporal awareness
 31. **Add service grouping by custom tags** — not just severity
 32. **Add request logging middleware**
 33. **Add embeddable dashboard mode** — mount under sub-path
-34. **Add authentication middleware integration**
-35. **Add Prometheus metrics endpoint**
+34. ~~**Add authentication middleware integration**~~ won't implement — the library accepts WithMiddleware and stays auth-agnostic by design (AGENTS.md; now a ROADMAP non-goal)
+35. ~~**Add Prometheus metrics endpoint**~~ done — WithMetrics + docs/metrics.md ship the hand-rolled exposition 0.0.4 (metrics.go)
 36. **Add incident timeline** — track status changes
-37. **Add status page mode** — public-facing, no internals
+37. ~~**Add status page mode** — public-facing, no internals~~ done — WithPublicMode ships the public-facing mode (publicmode_test.go)
 38. **Add export to JSON/CSV**
-39. **Add OG metadata** — social preview
+39. ~~**Add OG metadata** — social preview~~ resolved — routed to ROADMAP theme 4 (OG/social-preview idea; no consumer has asked)
 40. **Add build-tag gating for SSE** — consumers who only want HTML
 41. **Add `WithHideStatCards` option** — minimal mode
-42. **Add `WithHideService` option** — filter specific services
+42. ~~**Add `WithHideService` option** — filter specific services~~ resolved — the client-side query + status filter chips serve the need (2026-10-25); no consumer asked for server-side hiding
 43. **Add federation** — pull health from remote instances
-44. **Add PDF/print stylesheet**
+44. ~~**Add PDF/print stylesheet**~~ won't implement — ROADMAP marks PDF export out of scope (screenshots covered by env-guarded tests)
 45. **Add fuzzing for Accept header parsing**
 46. **Add fuzzing for health response serialization**
 47. **Add OpenAPI spec for JSON endpoints**
 48. **Add semantic versioning git tags**
-49. **Add Dependabot config**
+49. ~~**Add Dependabot config**~~ done — .github/dependabot.yml ships (the chromedp-minors ignore block landed 2026-11-12)
 50. **Add release process documentation**
 
 ---

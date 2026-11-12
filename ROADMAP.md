@@ -111,6 +111,12 @@ Raw ideas:
   cost) — BLOCKED on the `GOEXPERIMENT=jsonv2` decision (Open Questions)
 - Screenshot or PDF export for incident reports — screenshots are covered by
   env-guarded tests; PDF remains out of scope
+- Coverage badge in the README — needs a CI coverage-upload step first; the
+  `.#coverage` app already produces the profile (harvested 2026-11-12 from the
+  2026-08-08 docs-health audit)
+- OG/social-preview metadata for the `/health` HTML page — nice-to-have; no
+  consumer has asked (harvested 2026-11-12 from the 2026-08-08 docs-health
+  audit)
 - Per-client/per-IP rate limiting option (current `WithRateLimit` is global)
   — harvested 2026-11-04
 - Request-logging middleware option (slog) for dashboard-owned routes —
@@ -321,6 +327,10 @@ Things we are deliberately NOT pursuing and why:
 - **Alternative template engines:** The dashboard is built on templ. Supporting
   html/template or text/template would double the rendering surface for no
   benefit.
+- **In-library authentication:** The dashboard accepts `WithMiddleware` and
+  stays auth-agnostic; authentication is the embedding application's concern,
+  and the library has no users to authenticate against (harvested 2026-11-12
+  from the 2026-08-08 docs-health audit).
 - **Database-backed health history:** The dashboard is a view layer. Historical
   data storage is a separate concern that belongs in the application, not the
   dashboard library. Note: the pusher's in-memory trend ring (`WithTrend`)
