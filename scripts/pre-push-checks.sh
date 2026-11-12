@@ -16,6 +16,7 @@
 #   9. art-dupl accepted-clone baseline (reports/dupl/, go-etag gate pattern)
 #   10. templ stamp guard: committed *_templ.go stamps == go.mod tool pin
 #   11. Remote state: origin fetch + unpushed commits + last master CI
+#   12. watched-workflows drift guard (watchdog single-source completeness)
 #       conclusion (warning-only — the 11-day red window and the c0991da
 #       red push both happened with all-local-green trees)
 #
@@ -218,6 +219,14 @@ fi
 # 10. templ stamp guard (scripts/check-templ-stamps.sh): committed stamps
 # must match go.mod's generator pin — the 2026-10-25 skew incident class.
 if ! bash scripts/check-templ-stamps.sh; then
+	fail=1
+fi
+
+# 12. Watched-workflows drift guard (same script CI Hygiene runs): the
+# watchdog's single source must name every master/scheduled workflow and
+# only real ones — a silently unwatched workflow is the 11-day failure
+# mode recurring at a smaller scale.
+if ! bash scripts/check-watched-workflows.sh; then
 	fail=1
 fi
 

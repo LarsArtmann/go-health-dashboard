@@ -27,7 +27,13 @@ if [ -z "$REPO" ]; then
 	REPO="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
 fi
 
-WORKFLOWS=("CI" "Nightly Flake Canary")
+# The watched list is single-sourced in .github/watched-workflows.txt (the
+# drift guard scripts/check-watched-workflows.sh keeps it complete); do not
+# add workflow names here directly.
+WORKFLOWS=()
+while IFS= read -r line; do
+	WORKFLOWS+=("$line")
+done < <(sed -e 's/#.*//' -e '/^[[:space:]]*$/d' "${GITHUB_WATCHED_WORKFLOWS:-.github/watched-workflows.txt}")
 GREEN_RECENCY_DAYS=3
 
 declare -a RED_WORKFLOW=()

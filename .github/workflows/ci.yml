@@ -263,6 +263,13 @@ jobs:
       - name: templ stamp guard
         run: bash scripts/check-templ-stamps.sh
 
+      # The watchdog's watched list (single source
+      # .github/watched-workflows.txt) must name every master/scheduled
+      # workflow and only real ones — a new scheduled workflow without a
+      # watch would red silently (the 11-day failure mode).
+      - name: watched-workflows drift guard
+        run: bash scripts/check-watched-workflows.sh
+
       # Canonical generated-file form is `go tool templ generate` output
       # AFTER treefmt (gofumpt regroups the templ-generated imports). So the
       # drift check regenerates, formats, and fails on ANY resulting diff:

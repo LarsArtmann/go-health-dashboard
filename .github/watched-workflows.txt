@@ -1,0 +1,17 @@
+# Watched workflows — THE single source for the master watchdog.
+#
+# Consumed by scripts/check-master-green.sh (one line per workflow NAME,
+# exactly as the workflow's `name:` field spells it). scripts/check-
+# watched-workflows.sh is the drift guard: every workflow that triggers on
+# a schedule or on master pushes MUST appear here, and every entry here
+# MUST name a real workflow file. Add a new scheduled/push-triggered
+# workflow → add its name here IN THE SAME CHANGE.
+#
+# Release draft is deliberately absent: it triggers on tags only, so a
+# master-health watchdog watching it would page on tag-time failures that
+# are not master reds.
+CI
+Nightly Flake Canary
+Nightly Fuzz
+Release integrity
+Master Red Alert
