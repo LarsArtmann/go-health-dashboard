@@ -18,6 +18,7 @@ v0.13.4 now (the released CHANGELOG is otherwise accurate; the backfill
 block already sits in `[Unreleased]`).
 
 **Options.**
+
 1. **Batched (status quo + backfill):** chore deltas ride the next real
    release; the standing `[Unreleased]` block accrues them. Cheap, but
    consumers can't pin "the docs/gates state" to a version.
@@ -42,6 +43,7 @@ messages, badge tooltips) and golden-pinned assertions. A mass rewrite
 changes shipped copy and breaks goldens.
 
 **Options.**
+
 1. **Rewrite all shipped strings** to commas/periods/parentheses, update
    goldens in the same change. Clean rule, one mechanical pass + golden
    regen (~1 session).
@@ -64,6 +66,7 @@ also set the env var — a real adoption tax (file-and-image-renamer rides
 it today).
 
 **Options.**
+
 1. **Keep requiring jsonv2** until go-sse drops the dependency; document
    loudly (status quo).
 2. **Build-tag split for SSE** (see batch B, B2) so HTML-only consumers
@@ -86,6 +89,7 @@ design (`docs/design/2026-11-12_hub-boot-smoke-ci-design.md`) scopes three
 tiers.
 
 **Options.**
+
 1. **Build-only (current):** images compile; boots stay manual.
 2. **Tier 1 added:** CI boots the hub binary directly on the runner with a
    dark remote and probes the 503 contract (~15s, no policy weight).
