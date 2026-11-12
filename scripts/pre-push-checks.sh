@@ -191,26 +191,27 @@ if ! run_tool nix run .#lint; then
 	fail=1
 fi
 
-# 9. art-dupl accepted-clone baseline (go-etag gate pattern, 2026-10-25):
-# production-code duplication is pinned at exactly the accepted group count
-# in reports/dupl/. Test scaffolding is excluded (--ignore-tests) because
-# per-test isolation is the documented non-fix — gating it would fight the
-# policy. New production clones must be extracted or the baseline updated
-# deliberately, with rationale, in the same change.
+# 9. art-dupl accepted-clone baseline (go-etag gate pattern, 2026-10-25;
+# migrated 2026-11-12 to the tool's native baseline/check CI mode after the
+# `dev` build grew output filtering that broke the old shown-group parser —
+# detection was unchanged, "0 shown" was suppression, not absence). The
+# hash baseline at reports/dupl/baseline.art-dupl.json pins the accepted
+# set; check reports only clones whose hash is NEW. Test scaffolding is
+# excluded (--exclude-pattern "*_test.go", the successor of --ignore-tests)
+# because per-test isolation is the documented non-fix — gating it would
+# fight the policy. New production clones must be extracted or the
+# baseline re-recorded deliberately, with rationale, in the same change.
 if command -v art-dupl >/dev/null 2>&1; then
 	dupl_out=$(mktemp)
-	run_tool env GOEXPERIMENT=jsonv2 art-dupl --type-aware --sort total-tokens -t 5 --ignore-tests . >"$dupl_out" 2>&1 || {
-		cat "$dupl_out"
-		echo "::error::art-dupl run failed"
-		rm -f "$dupl_out"
-		fail=1
-	}
-	shown=$(grep -cE '^found [0-9]+ clones:' "$dupl_out" || true)
+	run_tool env GOEXPERIMENT=jsonv2 art-dupl check --type-aware --exclude-pattern "*_test.go" --baseline-path reports/dupl/baseline.art-dupl.json . >"$dupl_out" 2>&1
+	dupl_rc=$?
+	cat "$dupl_out"
 	rm -f "$dupl_out"
-	echo "art-dupl production clones: ${shown:-0} groups (baseline: 1)"
-	if [ "${shown:-0}" != "1" ]; then
-		echo "::error::art-dupl shows ${shown:-0} production clone groups (baseline: 1 accepted - see reports/dupl/2026-10-25_art-dupl-baseline.txt). Extract the new duplication or update the accepted baseline deliberately, with rationale, in the same change"
+	if [ "$dupl_rc" -ne 0 ]; then
+		echo "::error::art-dupl found clone groups outside the accepted baseline (reports/dupl/baseline.art-dupl.json; rationale history in reports/dupl/2026-10-25_art-dupl-baseline.txt). Extract the new duplication or re-record the baseline deliberately, with rationale, in the same change"
 		fail=1
+	else
+		echo "art-dupl clone baseline: green (no new production clones)"
 	fi
 else
 	echo "art-dupl not on PATH — skipping clone-baseline gate (install it or run via the devShell)"
