@@ -1,0 +1,1 @@
+Closing as not planned: chromedp minors are API-breaking as a pair with cdproto (v0.16 → v0.21 needed the documented migration — chromedp ships docs/MIGRATION.md per release), so they ride the dedicated migration ceremony, not a dependabot sweep. `.github/dependabot.yml` now ignores chromedp/cdproto major+minor (patch stays open), so this branch won't be re-opened either.
