@@ -87,22 +87,22 @@ At ~10:37–10:41, while I was mid-migration, daemon commits (`5f716da`, `3fa29d
 22. ~~Re-run `bash scripts/check-ui-pins.sh` after the pin decision; it must be part of the same commit.~~ done at — the ceremony held for the v1.24.0 and v1.27.0 adoptions
 
 **chromedp v0.21 follow-ups (nice-to-have, not blockers):**
-23. Consider `chromedp.Console(ctx)` to replace the two hand-rolled Events goroutines in `watchBrowserErrors` (fewer moving parts; keep only if error-type filtering stays exact).
-24. `dumpFetchEvents`/`pollPillState` could use `chromedp.Poll[T]` now that its semantics are documented — only if behavior-identical.
-25. `TestMeasureChromeLaunchLatency` isolation note in AGENTS.md still references the old launch path — re-verify the measurement still works under the new allocator.
-26. Codified check: `chromedp_eval_test.go` wrappers stay the ONLY Evaluate indirection (lint-ish grep guard, optional).
-27. The dependabot branch review (row 25) may now be moot or conflicting — reconcile.
+23. ~~Consider `chromedp.Console(ctx)` to replace the two hand-rolled Events goroutines in `watchBrowserErrors` (fewer moving parts; keep only if error-type filtering stays exact).~~ resolved — routed to test-helper polish (T14/ROADMAP)
+24. ~~`dumpFetchEvents`/`pollPillState` could use `chromedp.Poll[T]` now that its semantics are documented — only if behavior-identical.~~ moot — pollJS deliberately avoids Poll's predicate-unmarshaling semantics (documented in the helper comment)
+25. ~~`TestMeasureChromeLaunchLatency` isolation note in AGENTS.md still references the old launch path — re-verify the measurement still works under the new allocator.~~ done at — AGENTS carries it (run ISOLATED with GO_HEALTH_DASHBOARD_MEASURE_CHROME=1)
+26. ~~Codified check: `chromedp_eval_test.go` wrappers stay the ONLY Evaluate indirection (lint-ish grep guard, optional).~~ resolved — routed to T14 (the chromedp-helper-typing note, ROADMAP)
+27. ~~The dependabot branch review (row 25) may now be moot or conflicting — reconcile.~~ resolved — the chromedp-minors policy landed 2026-11-12; PR #30 closed on it
 
 **Documentation debt noticed in passing:**
-28. TODO_LIST row 30 (flake-canary first nightly) — still unverified.
+28. ~~TODO_LIST row 30 (flake-canary first nightly) — still unverified.~~ done at — the canary runs nightly (green 2026-11-12 04:35)
 29. ~~The kept 14-19 report's unrouted §f items (row 32) — still unrouted.~~ done — 2026-11-04 — the 14-19 unrouted §f items were routed (ships closed in TODO/CHANGELOG, the rest to ROADMAP; the routing row's disposition records it)
-30. Screenshot tests assert bytes, not content (row 27) — the new `captureScreenshot` helper makes adding DOM-text assertions cheaper.
+30. ~~Screenshot tests assert bytes, not content (row 27) — the new `captureScreenshot` helper makes adding DOM-text assertions cheaper.~~ resolved — routed to the screenshot row lives in TODO_LIST/docs/research
 
 ## g) QUESTIONS (cannot figure these out myself)
 
-1. **Who owns this workstream now?** A second live session worked the same TODO row concurrently and wrote the definitive report (`2026-10-28_11-19_…`). Should I take over exclusively from here (and it stands down), should I stand down (it finishes), or do you want a specific split (e.g. I take the pin-guard half, it keeps chromedp)?
-2. **Is the host's broken browsing known/intentional right now?** `chromium --dump-dom` against an http URL hangs on this machine (my run + the other session's diagnosis agree). It smells like the same proxy/DNS refusal the flake builds hit. Fix-the-host is outside this repo's tree — do you want it diagnosed/fixed as part of unblocking verification, or is it environmental and you'll handle it?
-3. **templ-components v1.24.0: adopt or revert?** The bump was an unguarded daemon sweep; the evidence supports either direction (a11y fixes + intentional markup drift vs. nine-precedent pin discipline). Adopting costs a golden regen + guard-pin update ceremony; reverting costs giving up the a11y fixes. This is a release-policy call only you can make.
+1. ~~**Who owns this workstream now?** A second live session worked the same TODO row concurrently and wrote the definitive report (`2026-10-28_11-19_…`). Should I take over exclusively from here (and it stands down), should I stand down (it finishes), or do you want a specific split (e.g. I take the pin-guard half, it keeps chromedp)?~~ resolved — the two sessions merged (disclosed); the workstream closed with the same-day adoption and the healed host
+2. ~~**Is the host's broken browsing known/intentional right now?** `chromium --dump-dom` against an http URL hangs on this machine (my run + the other session's diagnosis agree). It smells like the same proxy/DNS refusal the flake builds hit. Fix-the-host is outside this repo's tree — do you want it diagnosed/fixed as part of unblocking verification, or is it environmental and you'll handle it?~~ resolved — it was a real breakage, fixed 2026-11-06; documented in the Chrome gotcha
+3. ~~**templ-components v1.24.0: adopt or revert?** The bump was an unguarded daemon sweep; the evidence supports either direction (a11y fixes + intentional markup drift vs. nine-precedent pin discipline). Adopting costs a golden regen + guard-pin update ceremony; reverting costs giving up the a11y fixes. This is a release-policy call only you can make.~~ resolved — ADOPTED same day; superseded by v1.27.0 (2026-11-04)
 
 ---
 

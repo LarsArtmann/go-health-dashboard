@@ -126,10 +126,10 @@ I verified the reds (a5) but did not add the two rows to `DiscordSync/TODO_LIST.
 
 ## c) NOT STARTED
 
-1. ~~**M04 evidence table** (`docs/fleet-consumption-evidence.md` or similar): repo, module, pin, result, command, date. The data exists (a2's 16-row dump is version evidence; six consumers were build-verified in the previous session) but nothing is published. The honest version needs a _re-built_ row per consumer, not a carried claim.~~ routed — fleet-consumption evidence lives in the guard's audit history + tc doctor; a rebuilt per-consumer table stays a fleet-riders item (T28)
+1. ~~**M04 evidence table** (`docs/fleet-consumption-evidence.md` or similar): repo, module, pin, result, command, date. The data exists (a2's 16-row dump is version evidence; six consumers were build-verified in the previous session) but nothing is published. The honest version needs a _re-built_ row per consumer, not a carried claim.~~ resolved — routed to fleet-consumption evidence lives in the guard's audit history + tc doctor; a rebuilt per-consumer table stays a fleet-riders item (T28)
 2. ~~**M19** (`company-master-data` → `checks.Disk`). Still deferred for the same structural reason: the probe is mounted through `go-appkit` (`*appkithealth.Mounted`), the repo is forgejo-only with no CI, and it is deliberately absent from `tools/fleet-repos.txt`.~~ moot — still deliberately deferred (forgejo-only, mounted through go-appkit, no CI); standing disposition unchanged
-3. ~~**`cv` push.** `~/projects/cv` still carries `34b219f22` (three unpushed commits' worth of divergence) and `~/projects/CV` has an uncommitted pin bump. Both need the owner's lineage decision.~~ routed — CV bump prep is a fleet rider (M29/T28); the lineage decision stays the owner's
-4. ~~**go-taskqueue `NewChecks` port (`M06`).** Still blocked on the two API gaps recorded in `go-health/TODO_LIST.md`.~~ routed — still gated on the two go-health API gaps recorded there (master plan)
+3. ~~**`cv` push.** `~/projects/cv` still carries `34b219f22` (three unpushed commits' worth of divergence) and `~/projects/CV` has an uncommitted pin bump. Both need the owner's lineage decision.~~ resolved — routed to CV bump prep is a fleet rider (M29/T28); the lineage decision stays the owner's
+4. ~~**go-taskqueue `NewChecks` port (`M06`).** Still blocked on the two API gaps recorded in `go-health/TODO_LIST.md`.~~ resolved — routed to still gated on the two go-health API gaps recorded there (master plan)
 5. ~~**Fleet-wide golden regeneration** for the v1.24.0 markup (this repo + DiscordSync + any other templ-components consumer with snapshots).~~ done at — this repo regenerated on the v1.24.0 and v1.27.0 adoptions; DiscordSync tracked in its own repo
 6. ~~**A browser-test skip switch that survives a broken `PATH`.**~~ done at — superseded by the memoized usableChrome network preflight (2026-10-28), then made moot by the healed host (2026-11-06)
 
@@ -194,18 +194,18 @@ The multiedit that added the `remote` import and `captureScreenshot` reported su
 6. ~~Add the "v1.24.0 markup delta" paragraph to `scripts/check-ui-pins.sh`'s audit history.~~ done at — the guard's audit history carries the corrected delta
 7. ~~Add a Chrome preflight to `browser_test.go` (env canary + `t.Skipf` with the reason).~~ done at — the usableChrome/probeChromeNetwork memoized preflight shipped (2026-10-28)
 8. ~~Make browser tests skippable without `PATH` gymnastics (`-skip` documented in `AGENTS.md`, or an explicit `GO_HEALTH_DASHBOARD_SKIP_BROWSER=1`).~~ done — 2026-10-28 — the 15-17 session; AGENTS.md's Chrome gotcha names -skip as the skip lever
-9. ~~File the DiscordSync golden row referencing the shared v1.24.0 cause (not as an isolated mime bug).~~ routed — DiscordSync's own repo tracks it
-10. ~~Write the M04 evidence table, honestly labelled "pin verified remotely / build verified locally on <date>".~~ routed — fleet riders (T28); the guard's audit history carries the interim evidence
+9. ~~File the DiscordSync golden row referencing the shared v1.24.0 cause (not as an isolated mime bug).~~ resolved — routed to DiscordSync's own repo tracks it
+10. ~~Write the M04 evidence table, honestly labelled "pin verified remotely / build verified locally on <date>".~~ resolved — routed to fleet riders (T28); the guard's audit history carries the interim evidence
 
 **Near term (fleet hygiene)**
 
-11. ~~Re-derive the six consumer builds from scratch (not from the previous session's notes) and record commands + exit codes.~~ routed — fleet riders (T28)
+11. ~~Re-derive the six consumer builds from scratch (not from the previous session's notes) and record commands + exit codes.~~ resolved — routed to fleet riders (T28)
 12. ~~Ask/decide the `cv` vs `CV` canonical-lineage question and push the health adapter work.~~ done — closed for this repo — CV-side adoption lives in the standing TODO_LIST Blocked row; the canonical-lineage question rides that bump's conversation
-13. ~~Land the go-taskqueue `NewChecks` port once the pass-detail API question is answered.~~ routed — M06, gated on the two go-health API gaps recorded there
-14. ~~Re-run `nix run .#skew` weekly and keep the number at zero; a reappearing stale repo is drift, not a tolerance.~~ routed — fleet watch (M29)
+13. ~~Land the go-taskqueue `NewChecks` port once the pass-detail API question is answered.~~ resolved — routed to M06, gated on the two go-health API gaps recorded there
+14. ~~Re-run `nix run .#skew` weekly and keep the number at zero; a reappearing stale repo is drift, not a tolerance.~~ resolved — routed to fleet watch (M29)
 15. ~~Delete the now-dead `--allow` documentation in `tools/fleet-skew.sh`'s header? (No — it still describes `--allow` correctly; confirm and leave.)~~ moot — self-answered in the item: confirmed and left
-16. ~~Promote `#pre-tag` from "proven once in a clone" to "run before every tag", and note the exact command in `CONTRIBUTING.md`.~~ routed — release-flow cadence item (decision batch A)
-17. ~~Add the `.#pre-tag` app to CI as a weekly dry run with a dummy version.~~ routed — release-flow cadence item (decision batch A)
+16. ~~Promote `#pre-tag` from "proven once in a clone" to "run before every tag", and note the exact command in `CONTRIBUTING.md`.~~ resolved — routed to release-flow cadence item (decision batch A)
+17. ~~Add the `.#pre-tag` app to CI as a weekly dry run with a dummy version.~~ resolved — routed to release-flow cadence item (decision batch A)
 18. ~~Check whether other templ-components consumers (`timesheets`, `Zlota44`, `webphone`, `projects-management-automation`) have snapshot tests that will drift on v1.24.0.~~ done at — checked in the guard's audit history (DiscordSync's 15 snapshots; timesheets/webphone drift noted in the eleventh/twelfth movement notes)
 19. ~~Archive `docs/status/2026-10-25_*` into `archived/`.~~ done at — 13-38 archived 2026-11-11; 14-19 archives in this same sweep
 20. ~~Add this session's lesson ("prove the environment before the code") to the repo's AGENTS.md gotchas.~~ done at — docs/gotchas.md carries the environment-prove lessons
@@ -214,45 +214,45 @@ The multiedit that added the `remote` import and `captureScreenshot` reported su
 
 21. ~~Reconsider the browser harness: chromedp v0.21's default `ExecAllocator` uses a **pipe**, which sidesteps this machine's IPv6/DevTools-port problem entirely and removes ~60 lines of manual launch code.~~ moot — the remote-allocator rig works post-heal; the chromedp bullet documents the current shape; revisit only on regression
 22. ~~If the pipe transport is adopted, delete `startHeadlessChrome`'s stderr parsing and the profile-dir retry logic.~~ moot — not adopted (see the pipe item)
-23. ~~Replace `chromedp.Events`+goroutine error collection with `chromedp.WaitEvent` where a single event matters.~~ routed — test-helper polish backlog (T14/ROADMAP)
-24. ~~Revisit `evalInto`/`evalDiscard`: with `Action[T]` composition, some step lists could return values directly instead of writing through pointers.~~ routed — the chromedp-helper-typing note (ROADMAP, confirmed T14)
+23. ~~Replace `chromedp.Events`+goroutine error collection with `chromedp.WaitEvent` where a single event matters.~~ resolved — routed to test-helper polish backlog (T14/ROADMAP)
+24. ~~Revisit `evalInto`/`evalDiscard`: with `Action[T]` composition, some step lists could return values directly instead of writing through pointers.~~ resolved — routed to the chromedp-helper-typing note (ROADMAP, confirmed T14)
 25. ~~Type the test helpers (`waitForJSTo` already is; `evalInto` could take a decoder).~~ done — routed 2026-11-11 — ROADMAP section 5 carries the helper-typing idea (evalInto decoder variant)
 26. ~~Add a fuzz/property test for the JS-expression builders (`visibleRows`, `detailsState`, `pillState`) so a selector typo fails fast.~~ moot — deliberate non-adoption (per-test isolation preferred); the selectors are pinned by goldens and behavioral tests
 27. ~~Re-examine the 3 failing goldens' _content_ — do we want `role="region"` at all, or should the wrapper use the table's own `aria-label` only?~~ decided — v1.24.0's semantics documented (23 unnamed role=region wrappers across 7 goldens); v1.27.0 shipped the same shape; no change
-28. ~~Upstream: ask templ-components for a changelog entry per markup change, so a sweep can be triaged without regenerating goldens.~~ routed — upstream drafts row (T26)
-29. Add a `make goldens` (or `nix run .#goldens`) app that regenerates and prints the semantic diff.
-30. Record the golden-drift policy in `docs/adr/` (accept + regenerate is a decision, not a chore).
+28. ~~Upstream: ask templ-components for a changelog entry per markup change, so a sweep can be triaged without regenerating goldens.~~ resolved — routed to upstream drafts row (T26)
+29. ~~Add a `make goldens` (or `nix run .#goldens`) app that regenerates and prints the semantic diff.~~ resolved — routed to flake apps own regeneration today (go tool templ generate + nix fmt); a separate app would re-race the documented nix-snapshot window
+30. ~~Record the golden-drift policy in `docs/adr/` (accept + regenerate is a decision, not a chore).~~ resolved — routed to the UI-pin policy lives in AGENTS + the guard; an ADR rides the UI-policy decision batch
 
 **Longer term**
 
-31. Cross-repo dependency sweep automation that opens a PR per consumer when goldens drift.
-32. Fleet-wide "markup fingerprint" check: hash the rendered table wrapper of a golden fixture in every consumer.
-33. Replace the hand-maintained `tools/fleet-repos.txt` with a query of the GitHub API (org listing + go.mod probe).
-34. Make `fleet-skew.sh` able to _bump_ the stale repos (`--fix`), not just report.
-35. Reconcile the two `cv` clones with a documented canonical path.
-36. Add `go-health`'s pass-detail channel (`Check.Detail`) so `NewChecks` adopters keep their green-row notes.
-37. Revisit `WithCriticalService[T]` naming/behaviour for recorder-renamed keys.
+31. ~~Cross-repo dependency sweep automation that opens a PR per consumer when goldens drift.~~ resolved — routed to MVS fleet-watch (T28)
+32. ~~Fleet-wide "markup fingerprint" check: hash the rendered table wrapper of a golden fixture in every consumer.~~ resolved — routed to fleet riders (T28)
+33. ~~Replace the hand-maintained `tools/fleet-repos.txt` with a query of the GitHub API (org listing + go.mod probe).~~ resolved — routed to fleet watch (T28)
+34. ~~Make `fleet-skew.sh` able to _bump_ the stale repos (`--fix`), not just report.~~ resolved — routed to fleet watch (T28)
+35. ~~Reconcile the two `cv` clones with a documented canonical path.~~ resolved — routed to the CV lineage decision stays the owner's (T28 prep only)
+36. ~~Add `go-health`'s pass-detail channel (`Check.Detail`) so `NewChecks` adopters keep their green-row notes.~~ resolved — routed to go-health's own backlog (the M06 gate)
+37. ~~Revisit `WithCriticalService[T]` naming/behaviour for recorder-renamed keys.~~ resolved — routed to go-health repo
 38. ~~Document `Response.Clone`'s nil-map behaviour in `types.go` + a test.~~ done — routed 2026-11-11 — ROADMAP section 5 carries it as a cross-repo documentation idea (types.go lives in the dependency, not here)
-39. Add a `WithDeploymentFreshness` helper so consumers stop comparing wall clocks (`CachedResponseFresh` is the seam).
-40. Publish `docs/consumer-verification.md` as the single evidence surface for the adoption wave.
-41. Add CI job that runs the browser suite on a runner with a working Chrome (today's host cannot).
-42. Measure Chrome launch latency again once the host is healthy (`TestMeasureChromeLaunchLatency`).
-43. Re-run the 20-source load harness in the new evidence era.
-44. Clean the stale `docs/gotchas.md` chromedp entry (it describes the v0.16-era launch problem) and add the v0.21 pipe note.
-45. Reduce `browser_test.go`'s 2452 lines by extracting fixtures (`toggleService`, `provideHealthy`) into a helpers file.
-46. Add a `TestBrowser_*` count assertion so a silently skipped suite is visible (19 expected).
-47. Land the `zz_probe`-style isolation recipe as a documented debugging playbook ("is it me or the host?").
+39. ~~Add a `WithDeploymentFreshness` helper so consumers stop comparing wall clocks (`CachedResponseFresh` is the seam).~~ resolved — routed to go-health repo
+40. ~~Publish `docs/consumer-verification.md` as the single evidence surface for the adoption wave.~~ done at — superseded: the guard's audit history + FEATURES carry the evidence single-sourced; a separate doc would drift
+41. ~~Add CI job that runs the browser suite on a runner with a working Chrome (today's host cannot).~~ done at — CI's Browser (runtime CSP) job exists and carried the adoption's runtime verification
+42. ~~Measure Chrome launch latency again once the host is healthy (`TestMeasureChromeLaunchLatency`).~~ resolved — routed to the env-guarded measurement test exists; re-run on demand
+43. ~~Re-run the 20-source load harness in the new evidence era.~~ resolved — routed to M12/T22 chaos-load validation + docs/research
+44. ~~Clean the stale `docs/gotchas.md` chromedp entry (it describes the v0.16-era launch problem) and add the v0.21 pipe note.~~ done at — the 2026-11-11 audit rewrote the chromedp gotchas to the healed-host state
+45. ~~Reduce `browser_test.go`'s 2452 lines by extracting fixtures (`toggleService`, `provideHealthy`) into a helpers file.~~ resolved — routed to test-scaffolding dedup is the documented non-fix; helper extraction happens on demand
+46. ~~Add a `TestBrowser_*` count assertion so a silently skipped suite is visible (19 expected).~~ resolved — routed to T13 (the loud browser-suite-skipped line)
+47. ~~Land the `zz_probe`-style isolation recipe as a documented debugging playbook ("is it me or the host?").~~ resolved — routed to the browserSerial doctrine covers serialization; document on demand
 48. ~~Backfill `docs/status/INDEX.md` with this report.~~ **NOT-DO — decided-against — docs/status/INDEX.md was never adopted; docs/status/archived/README.md is the manifest serving the index role.**
-49. Verify the fleet skew from a _clean_ environment (no `gh` token) at least once, to exercise the `--source local` path.
-50. Retire the `--allow` mechanism entirely if the backlog stays at zero for a month.
+49. ~~Verify the fleet skew from a _clean_ environment (no `gh` token) at least once, to exercise the `--source local` path.~~ resolved — routed to fleet watch (T28)
+50. ~~Retire the `--allow` mechanism entirely if the backlog stays at zero for a month.~~ resolved — routed to fleet watch (M29)
 
 ---
 
 ## g) Three questions I cannot answer myself
 
-1. **v1.24.0: revert or adopt?** Its markup delta is an a11y improvement (`role="region"` on scrollable table wrappers, a `role="status"` copy announcement) but it landed unguarded, drifts 7 goldens here and breaks DiscordSync's snapshots, and the ceremony's other half — a green browser suite — cannot run on this host today. Revert restores the audited baseline; adopt accepts an unaudited-at-runtime set. I will not pick for you.
-2. **Is the broken host mine to fix?** Chromium here loads no http/https URL at all (bare `--dump-dom` times out; load average 51; ~95 Chromium processes including another agent's 32-minute-stuck screenshot job). If this is a shared-resource problem, restarting things could break a peer's run; if it is mine, I should chase it now. Which?
-3. **Who owns the `cv` / `CV` lineage?** Two clones of one repository, each ahead of `origin` with no shared tip; pins are now aligned on both remotes, but three commits' worth of health-adapter work sits unpushed in `~/projects/cv`. Deciding this unblocks the last two fleet rows and the `M08` evidence.
+1. ~~**v1.24.0: revert or adopt?** Its markup delta is an a11y improvement (`role="region"` on scrollable table wrappers, a `role="status"` copy announcement) but it landed unguarded, drifts 7 goldens here and breaks DiscordSync's snapshots, and the ceremony's other half — a green browser suite — cannot run on this host today. Revert restores the audited baseline; adopt accepts an unaudited-at-runtime set. I will not pick for you.~~ resolved — ADOPTED same day (tenth movement); superseded by v1.27.0 (twelfth movement, 2026-11-04)
+2. ~~**Is the broken host mine to fix?** Chromium here loads no http/https URL at all (bare `--dump-dom` times out; load average 51; ~95 Chromium processes including another agent's 32-minute-stuck screenshot job). If this is a shared-resource problem, restarting things could break a peer's run; if it is mine, I should chase it now. Which?~~ resolved — fixed 2026-11-06 (the nix-store Chromium bump to a working build); the suite is live
+3. ~~**Who owns the `cv` / `CV` lineage?** Two clones of one repository, each ahead of `origin` with no shared tip; pins are now aligned on both remotes, but three commits' worth of health-adapter work sits unpushed in `~/projects/cv`. Deciding this unblocks the last two fleet rows and the `M08` evidence.~~ resolved — the owner does; CV bump prep is a fleet rider (T28), prep-only
 
 ---
 

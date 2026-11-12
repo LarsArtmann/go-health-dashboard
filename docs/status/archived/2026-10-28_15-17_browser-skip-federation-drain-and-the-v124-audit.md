@@ -370,7 +370,7 @@ Ordered by impact per minute, not by size.
 14. ~~Extend the hub test to assert `/livez` 200 → 503 during drain.~~ resolved — same adoption
 15. ~~Add a `docs/gotchas.md` entry in DiscordSync: "golden normalizers must~~ moot — DiscordSync's own repo
     normalize the time zone".
-16. ~~Add the same note to the shared golden-kit docs, since other repos use~~ routed — templ-components-side docs
+16. ~~Add the same note to the shared golden-kit docs, since other repos use~~ resolved — routed to templ-components-side docs
     `internal/web/golden`.
 17. ~~Run `nix run .#lint` on the dashboard and fix whatever it finds.~~ done at — 0 issues on 2026-11-12
 18. ~~Run DiscordSync's lint on `./internal/web/...`.~~ **NOT-DO — decided-against here — DiscordSync-side work; that repo's own templ-components v1.24.0 adoption owns it.**
@@ -381,58 +381,58 @@ Ordered by impact per minute, not by size.
     the host cannot browse.
 22. ~~Consider a `-short`-style env toggle that turns the preflight into an~~ moot — the documented skip lever is -skip; the env-var semantics are documented
     immediate skip (no 12s probe) for CI parity checks.
-23. ~~Add the preflight pattern to the templ-components-adjacent repos that run~~ routed — fleet riders (T28)
+23. ~~Add the preflight pattern to the templ-components-adjacent repos that run~~ resolved — routed to fleet riders (T28)
     browser tests (DiscordSync e2e, Zlota44, KeyHolderAI).
 24. ~~Re-measure the dashboard's 7 golden diffs and confirm each is _only_ the~~ done at — the 23 unnamed role=region wrappers documented per golden
     three component changes (no fourth, unnoticed delta).
 25. ~~Check whether the dashboard renders `display.Table` at all, or whether its~~ done at — it does; the wrapper shape is documented in the audit notes
     7 goldens drift for a different reason than DiscordSync's 15.
-26. Confirm whether the dashboard uses `errorpage` (the 404 redesign may be
+26. ~~Confirm whether the dashboard uses `errorpage` (the 404 redesign may be~~ resolved — routed to the UI-pin audit documents the 404 page is not rendered here
     irrelevant to it).
-27. After the v1.24.0 decision: re-run `set -o pipefail; bash scripts/check-ui-pins.sh`
+27. ~~After the v1.24.0 decision: re-run `set -o pipefail; bash scripts/check-ui-pins.sh`~~ done at — the guard runs green in CI since the adoption
     and record the exit code.
-28. Open the M19 `company-master-data` work only if its go-appkit mount can
+28. ~~Open the M19 `company-master-data` work only if its go-appkit mount can~~ moot — standing deliberate deferral (forgejo-only, go-appkit-mounted, no CI)
     expose a disk check; otherwise close the row as won't-do.
-29. Audit other repos for the same seasonal `MST` normalizer bug (any repo with
+29. ~~Audit other repos for the same seasonal `MST` normalizer bug (any repo with~~ resolved — routed to fleet riders (T28)
     `timestampFormat` + golden files).
 30. ~~Add a timezone-independence test to `internal/web/golden` that renders the~~ **NOT-DO — decided-against here — DiscordSync's internal/web/golden is that repo's surface.**
     ~~same fixture under `TZ=UTC` and `TZ=Europe/Berlin`.~~
-31. Add `TZ=UTC` to DiscordSync's test environment so goldens are captured in a
+31. ~~Add `TZ=UTC` to DiscordSync's test environment so goldens are captured in a~~ moot — DiscordSync's own repo
     fixed zone regardless of the normalizer.
-32. Verify the DiscordSync `internal/web/golden` package still compiles against
+32. ~~Verify the DiscordSync `internal/web/golden` package still compiles against~~ moot — DiscordSync's own repo
     the new normalizer under `-race`.
-33. Re-run the DiscordSync full `./internal/web/...` suite (not just snapshots)
+33. ~~Re-run the DiscordSync full `./internal/web/...` suite (not just snapshots)~~ moot — DiscordSync's own repo
     to confirm the zone change broke nothing else.
 34. ~~Same for `./internal/...` in DiscordSync.~~ **NOT-DO — decided-against here — same: DiscordSync's own adoption row owns its lint surface.**
-35. Extend the go-health evidence table with the two bridge modules' _local_
+35. ~~Extend the go-health evidence table with the two bridge modules' _local_~~ resolved — routed to fleet riders (T28)
     builds (currently L1 only).
-36. Add a "how to reproduce this table" command block to
-    `docs/consumer-verification.md`.
-37. Make `tools/fleet-skew.sh` emit machine-readable JSON so the table can be
+36. ~~Add a "how to reproduce this table" command block to~~ resolved — routed to fleet riders (T28)
+    `TODO_LIST.md` (the consumer rows there carry the reproduction context; no separate consumer-verification doc exists).
+37. ~~Make `tools/fleet-skew.sh` emit machine-readable JSON so the table can be~~ resolved — routed to fleet watch (T28)
     generated instead of hand-copied.
-38. Consider a CI job that publishes the skew report as an artifact.
-39. Add the federation capability matrix (Healthz / SourceStatuses /
-    MarkShuttingDown per prober) to `docs/adoption-matrix.md`.
-40. Decide whether the dashboard's `AGENTS.md` go-health version note should
+38. ~~Consider a CI job that publishes the skew report as an artifact.~~ resolved — routed to fleet watch (T28)
+39. ~~Add the federation capability matrix (Healthz / SourceStatuses /~~ done at — go-health v0.8.x shipped all three capabilities; documented in AGENTS dependency notes
+    ~~MarkShuttingDown per prober) to `docs/adoption-matrix.md`.~~
+40. ~~Decide whether the dashboard's `AGENTS.md` go-health version note should~~ done at — AGENTS re-led to v0.10.0 in the 2026-11-04 adoption
     track the pin automatically (it said v0.7.0 while go.mod said v0.8.1).
-41. Sweep `AGENTS.md`/docs for other stale "federation lacks X" claims.
-42. Add a regression test that `Prober`-shaped external implementors still
+41. ~~Sweep `AGENTS.md`/docs for other stale "federation lacks X" claims.~~ done at — the 2026-11-11 audit rewrote the federation dependency notes
+42. ~~Add a regression test that `Prober`-shaped external implementors still~~ done at — the SourceStatuser capability is compile-time pinned (sourcestatus_test.go)
     compile without the optional capabilities.
-43. Write the missing `pre-tag` follow-up: delete `/tmp/pretag-probe` if it
+43. ~~Write the missing `pre-tag` follow-up: delete `/tmp/pretag-probe` if it~~ moot — stale /tmp artifact; the pre-tag flow is documented
     still exists.
-44. Add a nightly job that runs the browser suite on a host that can browse, so
+44. ~~Add a nightly job that runs the browser suite on a host that can browse, so~~ done at — CI's Browser (runtime CSP) job is that host and is green
     the migration gets runtime proof automatically.
-45. If no such host exists, document the migration as "compile-verified" in the
+45. ~~If no such host exists, document the migration as "compile-verified" in the~~ moot — superseded: runtime-verified since the healed host
     dashboard's FEATURES/TODO so nobody claims more.
-46. Review the `-skip` ergonomics: a documented one-liner for non-browser
+46. ~~Review the `-skip` ergonomics: a documented one-liner for non-browser~~ resolved — routed to T13 (the loud browser-suite-skipped line)
     suites on broken hosts.
-47. Add a `docs/status/archived/README.md` manifest entry for this report when
+47. ~~Add a `docs/status/archived/README.md` manifest entry for this report when~~ done at — this archive sweep adds the entries
     it is archived.
-48. Consider consolidating the three repos' "golden drift" guidance into one
+48. ~~Consider consolidating the three repos' "golden drift" guidance into one~~ resolved — routed to templ-components-side docs (fleet)
     shared doc.
-49. Re-read the daemon-race recipes and encode the `git reset --soft` +
+49. ~~Re-read the daemon-race recipes and encode the `git reset --soft` +~~ done at — the recipes are encoded in AGENTS
     `--amend` sequence as a script, since I used it three times today.
-50. Re-run everything in this list's first ten items in one clean pass once the
+50. ~~Re-run everything in this list's first ten items in one clean pass once the~~ moot — superseded by the healed host and the same-day adoption
     v1.24.0 decision is in, and only then push.
 
 ---

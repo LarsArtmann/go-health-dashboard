@@ -58,8 +58,11 @@ Planning → `docs/planning/archived/`:
 Kept in place (NOT archived — genuinely open work or active references):
 
 - `docs/status/2026-10-25_14-19_buildflow-gate-and-11-day-red-ci-status.md` —
-  the ACTIVE handoff: v0.12.0 cadence, red-main alerting, remote-state gate,
-  dependabot branch, CI nix-build job.
+  archived 2026-11-12 (no longer the active handoff): red-main alerting
+  shipped (master-red-alert, 2026-11-04, single-sourced 2026-11-12), the
+  remote-state gate shipped (pre-push gate 11), the dependabot branch line
+  closed on the chromedp-minors policy (2026-11-12), the CI nix-build job
+  runs; the cadence question rides decision batch A.
 - `docs/planning/2026-10-25_07-52_ui-ux-batch-closeout-and-queue.md` — active
   queue: T24 (chromedp) and T27 (v0.12.0) remain open.
 - `docs/design/2026-09-17_*`, `docs/research/2026-*` — historical design and
@@ -79,6 +82,11 @@ Status reports → `docs/status/archived/`:
 
 | File (2026 prefix)                                   | Reason everything is resolved                                                                                                          |
 | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-28_11-19 chromedp v0.21 migration + v1.24 markup drift   | Adopted same day (tenth movement, superseded by v1.27.0); host healed 2026-11-06 so runtime verification closed; §g questions answered inline                                             |
+| 2026-10-28_11-34 chromedp migration raced + second session       | Same arc: adoption + heal closed every thread; daemon-commit recovery applied and disclosed                                                                                                |
+| 2026-10-28_15-17 browser-skip + federation drain + v1.24 audit   | Preflight shipped then made moot by the heal; hub drain/Healthz capabilities shipped with go-health v0.8.x; goldens regenerated twice                                                       |
+| 2026-10-28_15-45 v1.24 adopted, guard green, backwards audit     | The ceremony-deviation note closed when the host healed (suite live, 22/22); TODO row 25 resolved by the 2026-11-12 dependabot policy                                                      |
+| 2026-10-25_14-19 buildflow gate + 11-day red CI                  | Every §b/§c/§f item done-at/routed (master-red-alert, gate 11, Nix build job, #30 policy); §f22 AGENTS-size rides the decision batches; the active-handoff label retired                    |
 | 2026-10-25_17-02 docs-health full audit sweep        | Audit executed same-day (its own manifest below); item 30 closed with the live pkg.go.dev v0.13.2 check                                |
 | 2026-10-25_17-53 dedup fixture + clone-baseline gate | Dedup pass landed (startDashboardFixture, gate 9); row 44 harvested to TODO_LIST (Blocked table)                                       |
 | 2026-10-25_18-54 v0.12.1 release retro               | Retro of a shipped release; row 3 struck (release-cut.sh delivers the post-edit battery), row 17 harvested to TODO_LIST (go-etag port) |

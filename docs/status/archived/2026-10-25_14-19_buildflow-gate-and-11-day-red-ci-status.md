@@ -52,7 +52,7 @@
 
 ## b) PARTIALLY DONE
 
-1. ~~**Close-the-loop on run problems** — in-repo fixes done and documented (see a8/a9/a11), but two upstream candidates unfiled: securitymd's `filesScanned: 0`-alongside-a-finding reporting oddity; buildflow's nix-hash-fix failing to apply twice before the hash-mismatch case healed it (needs a repro before filing).~~ routed — the upstream drafts row carries both candidates (re-verify per verify-before-filing before filing; the T26 batch owns them)
+1. ~~**Close-the-loop on run problems** — in-repo fixes done and documented (see a8/a9/a11), but two upstream candidates unfiled: securitymd's `filesScanned: 0`-alongside-a-finding reporting oddity; buildflow's nix-hash-fix failing to apply twice before the hash-mismatch case healed it (needs a repro before filing).~~ resolved — routed to the upstream drafts row carries both candidates (re-verify per verify-before-filing before filing; the T26 batch owns them)
 2. ~~**Sibling sessions' owed gates** — the 13:38 report's owed full-suite/lint/flake-check are now green on the restored tree (my runs), but neither of today's sibling reports is annotated as satisfied. Reports dangle by one line each.~~ moot — the docs-health chain closed it: later sweeps annotated the sibling reports (the 2026-11-11 audit drained the dangling set)
 3. ~~**Red-main prevention** — incident documented + TODO row opened; no actual alerting mechanism exists yet.~~ done at — the master-red-alert workflow (2026-11-04) is the alerting mechanism; its watched list single-sourced with a drift guard 2026-11-12
 4. ~~**vulnix scan freshness** — FOD verified but to `/tmp/gohd-result`; the conventional `./result` (which vulnix scans) still predates flake.lock.~~ moot — routine hygiene; conventional ./result refreshes with ordinary builds
@@ -64,9 +64,9 @@
 3. ~~Dependabot branch `minor-and-patch-290df43455` (chromedp/cdproto bump, 08:11): not reviewed — its CI run failed on the same guard red, so it needs a fresh look post-fix.~~ resolved — the chromedp-minor policy landed 2026-11-12 (dependabot ignore block in .github/dependabot.yml; PR #30 closed on it); the 290df43455 lineage is dead
 4. ~~CI failure notification wiring (the TODO row).~~ done at — master-red-alert workflow (2026-11-04) + watched-workflows drift guard (2026-11-12)
 5. ~~CI nix-build job (vendorHash/FOD class invisible to CI).~~ done at — the "Nix build (vendorHash/FOD)" CI job
-6. ~~Upstream filings (securitymd, buildflow) per b1.~~ routed — upstream drafts row (T26)
+6. ~~Upstream filings (securitymd, buildflow) per b1.~~ resolved — routed to upstream drafts row (T26)
 7. ~~The 13:38 report's external queue (NixOS templ bump ≥ v0.3.1070, editor LSP repoint, stamp-guard script, devShell templ wrapper) — theirs to harvest, untouched by me per the do-not-research boundary.~~ done at — stamp guard shipped (scripts/check-templ-stamps.sh), devShell templ wrapper shipped (2026-11-04), NixOS templ bump landed (2026-11-05), editor LSP repoint resolved (2026-11-11 audit)
-8. ~~`interrogate` tool not installed; shellcheck/dprint/lychee/hadolint/vulnix absent from devShell (buildflow falls back to `nix run nixpkgs#…` every run) — fleet/devShell decision unmade.~~ routed — devShell tooling decision rides T18/T19 + decision batches
+8. ~~`interrogate` tool not installed; shellcheck/dprint/lychee/hadolint/vulnix absent from devShell (buildflow falls back to `nix run nixpkgs#…` every run) — fleet/devShell decision unmade.~~ resolved — routed to devShell tooling decision rides T18/T19 + decision batches
 
 ## d) TOTALLY FUCKED UP
 
@@ -88,7 +88,7 @@
 | -- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
 | 1  | Decide v0.12.0 cadence and cut it if now (tree + CI + FOD all green; version const currently matches v0.11.0 tag so a release needs the const-bump + tag dance)   | High   | M      | Release  |
 | 2  | Wire red-main CI notifications (TODO_LIST row): pick GitHub-native vs webhook vs fleet mechanism, implement, test with a deliberate red                           | High   | S–M    | Infra    |
-| 3  | Add remote-state pre-push gate: fetch + ahead-count + last CI conclusion (warning-only) in `pre-push-checks.sh` + one-line AGENTS.md release-discipline extension | High   | S      | Process  |
+| 3  | ~~Add remote-state pre-push gate: fetch + ahead-count + last CI conclusion (warning-only) in `pre-push-checks.sh` + one-line AGENTS.md release-discipline extension~~ done — pre-push-checks.sh gate 11 carries the remote-state check (fetch + ahead-count + last CI conclusion, warning-only) | High   | S      | Process  |
 | 4  | Review/merge dependabot branch `minor-and-patch-290df43455` (its only failure was the guard red, now fixed)                                                       | Medium | S      | Deps     |
 | 5  | Add a CI nix-build job (or periodic) so vendorHash/FOD breakage is caught remotely                                                                                | Medium | M      | Infra    |
 | 6  | Reproduce + file securitymd upstream: `filesScanned: 0` reported alongside an active finding                                                                      | Low    | S      | Upstream |

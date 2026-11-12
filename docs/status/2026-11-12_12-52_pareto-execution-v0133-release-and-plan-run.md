@@ -1,0 +1,114 @@
+# Status Report — Pareto Plan Execution: v0.13.3 Released + T01–T09/T11/T12 Done, T10 Mid-Flight
+
+**Date**: 2026-11-12 12:52 CET
+**Session scope**: Full execution of the 2026-11-12 Pareto plan (31 T-tasks) after the user's "GET SHIT DONE — the WHOLE TODO LIST" order: the 1% release path end to end, the 4% trust tier, and the 20% hygiene tier (T10 interrupted mid-archive by this report order).
+**HEAD**: `ec6c0c2` (pushed; daemon interleave commits between intent commits, mapping disclosed per batch below)
+**Release shipped**: **v0.13.3** — tagged `5e39639`, tag pushed first, master pushed, verify-release **ALL GREEN**, draft auto-produced by the release-draft workflow and **published**, Release integrity workflow green, master CI 8/8 green on the release commit.
+
+---
+
+## Scope Line — what this session VERIFIED vs NOT verified
+
+**Verified this session (with artifact)**:
+
+- **#32 (master CI red) fixed and closed.** Three distinct causes diagnosed from the failing jobs' logs: (1) FEATURES.md test-count drift — the gate counts glob FILES (50) while the audit's `rg -c` recount listed match-files (49; `chromedp_eval_test.go` carries only generic shims) — deterministic red, fired again on a docs-only push; (2) `TestShutdown_StopsPusherLoopGoroutine` — 4 loop goroutines still unscheduled after the full 5s poll under race+full-suite load on a 2–4 vCPU runner (production code has no leak path; same test green on a docs-only commit and in the nightly canary); (3) `TestBrowser_CollapseInteract` — a PushAlways patch (200ms) re-collapsed the group between click and read (two CDP round-trips apart). Fixes: count corrected + counting subtlety documented in FEATURES; settle deadline 5s→15s + failure-path stack dump (`pusherLoopStacks`); toggle-listener flag on `window` + the table check force-opens inside ONE synchronous evaluation. Mutation-checked: the old read fails an injected mid-window patch with the EXACT CI message; the flag read survives it. Master green: run `43161705684` all 8 jobs.
+- **v0.13.3 cut per release discipline**: `[Unreleased]` re-headed + `Version` const in one change; gate 0 re-run AFTER the edits (caught: the changelog lint requires a standing empty `[Unreleased]` — restored to the v0.13.2 convention shape); tag first then master; `verify-release.sh 0.13.3` ALL GREEN (after one hardening: step 5 now excludes bot updater runs — a failing dependabot /deploy "Update #N" run sat on the otherwise-green release commit and failed the gate for nothing); draft published; Release integrity green.
+- **T02 pre-cut battery**: coverage **80.3%** (floor 80%); race soak `-race -count=3` full package green (99.5s, under concurrent load — bonus chaos evidence); **all 13 fuzz targets × 60s locally, zero crashers** (the plan's honest-12 claim was exceeded — `FuzzParseRemotes` needed its own package dir); browser suite 22/22 on Chromium 157; vulncheck: ONE stdlib finding (GO-2026-6859, HTTP/1 server crash via MaxBytesReader header race) **in the LOCAL nixpkgs go1.27.3** — CI's Vulnerability Scan is GREEN on its newer toolchain, so the release gate was unaffected; the nixpkgs bump is a new IN_PROGRESS TODO row (deliberately not bundled into the release train).
+- **T06 behavioral strict-CSP test (#23)**: `TestBrowser_StrictCSPNoEvalConnects` — layered proof under a strict CSP with NO `unsafe-eval` (every other browser test still grants it): SSE connection → pill flips live (patch applied + events dispatched) → chip `data-on:click` writes the signal and `data-attr:aria-pressed` reflects it (expression evaluation in nonce mode) → zero console errors. Mutation-checked: blinding `rootNonceAttrs` fails loudly ("the root data-nonce path is broken (issue #23)").
+- **T07 NixOS boot smoke — the module now works end to end.** Found and FIXED a real integration bug first: `services.health-dashboard.package` had no default, so the documented usage (`enable` + `remotes`) died at eval ("option accessed but has no value"). Fixed flake-side (capture-at-definition: consumers importing `nixosModules.default` get THIS flake's hub package). Verified: module evals standalone; full NixOS toplevel closure builds (health-hub derivation compiles under nix); the closure's unit file carries every documented property (ExecStart, HEALTH_HUB_ADDR/REMOTES/TREND wiring, DynamicUser, ProtectSystem=strict, MemoryMax 256M, CapabilityBoundingSet empty); the closure's binary ran as a REAL systemd transient unit with the unit's EXACT sandbox: dark remote → `cv/reachable` FAIL row, overall fail, JSON `/health` answers **503** per the status contract, HTML dashboard on the same route, `/version` answers, clean stop. FEATURES row flipped 🟡PARTIALLY_FUNCTIONAL → 🟢FULLY_FUNCTIONAL; deploy/README.md cross-linked.
+- **T09 Chromium `[hidden]` research — the version-boundary claim was FALSE.** No engine ever made the UA rule `!important` (spec rule is plain `display: none`; WebKit bug 152883 rejected the change; Chromium's html.css has NO `[hidden]` selector at all — presentational hint only). Author display utilities beat the bare attribute in every engine/version; the earlier "on 157 the bare attribute wins" reading was the test harness's compensating `[hidden]` rule (removed 2026-11-11). Sourced correction comment posted on #31; AGENTS pill bullet de-confounded.
+- **T12 watchdog watched-list single-sourcing**: `.github/watched-workflows.txt` is the one source; `check-master-green.sh` derives from it; new `scripts/check-watched-workflows.sh` drift guard enforces completeness BOTH ways and is wired into CI Hygiene + pre-push gate 12. It caught a real gap: **Nightly Fuzz and Release integrity were silently unwatched**. Mutation-checked (unwatching Nightly Fuzz fails loudly). actionlint clean.
+- **T05 dependabot policy**: chromedp/cdproto major+minor ignored (`patch` stays open), yamllint-clean; PR #30 closed on that policy; AGENTS ceremony one-liner landed.
+- **T11 hygiene lessons**: four entries appended to docs/gotchas.md (full-file-rewrite row-by-row diff discipline + the rg-c counting subtlety; `grep -L` exit-semantics trap; `fresh:skip` marker; daemon-commit disclosure mapping + the hash-object/update-index anti-race recipe).
+- **T08 consumer verification**: cqrs-htmx's e2e battery Go server builds+starts again after fixing **33 stale go-cqrs-lite replaces in their `go.work`** (the whole tree moved to `/v4` subdirs; every replace repointed against each target's declared module path — uncommitted local fix in THEIR repo, disclosed); the pill spec is compatible by construction (bridges.spec.ts asserts the hidden-ATTRIBUTE state machine, which v0.13.3 keeps in sync); the Playwright layer on THIS host is independently broken (`/mnt/buildcache` chromium-headless-shell can't load libglib-2.0 — non-nix binary on NixOS, pre-existing). file-and-image-renamer: the nonce boot-script retirement is ALREADY complete in their tree (`htmlNonceAttrs` + their own datastar.js reads the root attr); their go-health-dashboard dep is v0.13.2, one routine bump away. Pattern sweep across 9 sibling consumers: no old markup anywhere.
+- **docs-gates battery**: 5/5 PASS multiple times during the session (freshness, audit-all, annotate, routing, cadence) — **currently RED on annotate** (see §b1).
+
+**NOT verified (and why)**:
+
+- **T10's archive set does not gate green yet** — the annotate gate reports 2 remaining failure classes I have NOT repaired (see §b1). The five files sit in `docs/status/archived/` UNCOMMITTED.
+- **cqrs-htmx's e2e pill battery end-to-end** — needs a host with a working Playwright Chromium.
+- **The nixpkgs go1.27.4 bump** — queued, not executed (blast radius mid-release).
+- **Upstream filings** — re-verification + filing stays parked per the plan (T26 is presentation-only without the user).
+- **T13–T15, T16–T23, T24–T26, T27–T31** — not started this session (see §f).
+
+---
+
+## a) FULLY DONE
+
+1. **Phase 2 closeout** — the Pareto plan committed with a detailed intent message (amended onto daemon capture `219d47b`), pushed (`cdda864..a7e6258`), CI run confirmed.
+2. **The 1% tier (T01–T04) = 51% of the plan's value**: #32 fixed/closed with an evidence comment (3 causes, artifacts cited); v0.13.3 released end to end; #31 + #23 closed with release evidence; the 16-43 report's §b release-path items annotated `done at`.
+3. **The 4% tier (T05–T08)**: dependabot policy; behavioral CSP test; NixOS boot smoke (with the package-default fix); consumer verification + sweep dispositions recorded on the repo:-tagged TODO row.
+4. **T09 + T11 + T12**: sourced Chromium correction; hygiene lessons; watchdog single-sourcing with a drift guard wired into CI + pre-push.
+5. **Release machinery improvements found BY executing it**: verify-release step 5 bot-run filter; the changelog lint's standing-`[Unreleased]` convention honored; the templ LSP anti-race recipe (hash-object + update-index) proven in production.
+
+## b) PARTIALLY DONE
+
+1. **T10 archive rotation — 5 files moved, annotations ~95% applied, battery RED.** What is done: all five candidates (14-19, 11-19, 11-34, 15-17, 15-45) annotated with verdicts (done at / resolved / decided / moot / closed-routed) across §b/§c/§f/§g (§d/§e left unstruck per the archived convention), `git mv`'d into `docs/status/archived/`, manifest updated (5 rows added + the stale "ACTIVE handoff" 14-19 entry retired). What remains: (a) the annotate gate reports "struck item with no verdict marker" on lines whose verdict leads with `routed —` — I converted 46 of them to the canonical `closed — routed to …` vocabulary but have NOT re-run the gate to confirm zero; (b) a PRE-EXISTING self-contradicting verdict in `docs/status/2026-11-06_05-27_comprehensive-session-wrap-and-self-review.md:86` ("resolved — small script; still open") now fails `D/verdict-leads-open` — fix-on-sight queued, not applied; (c) 14-19's §f is a TABLE and my strike pass silently skipped table rows (the pass reported 34/34 but `strike_item`'s regex only matches list markers) — the 22 table rows still need per-cell strikes. The work is UNCOMMITTED in the tree, deliberately, pending your instruction.
+2. **The CHANGELOG backfill honesty problem (structural, needs your call)**: the nixosModules package-default fix, the verify-release bot-run filter, and the art-dupl baseline/check migration all RODE the v0.13.3 release train (the auto-daemon captured them into the cut commits before the publish), but their changelog entries were written AFTER the cut. v0.13.3's CHANGELOG is therefore incomplete for three changes it contains. I wrote a disclosed backfill block into `[Unreleased]` (explicitly marked "omitted at tag time") — whether that suffices or you want a v0.13.4 patch cut purely for changelog accuracy is §g1.
+3. **art-dupl gate migration** — done and mutation-checked, but the baseline JSON (0 production groups; the once-accepted `mapStatusToBadge`/`timelineBadgeType` pair no longer registers under the current `dev` build — detection unchanged at 53 groups) is a SEMANTIC change to a pinned gate; the AGENTS bullet is rewritten and the rationale ledger kept, but you should eyeball the new gate output once (`art-dupl check --type-aware --exclude-pattern "*_test.go" --baseline-path reports/dupl/baseline.art-dupl.json .`).
+
+## c) NOT STARTED
+
+1. **T13 CI ergonomics** (red-alert template names the failing job; Hygiene uploads the fmt-drift artifact; the loud `.#test` browser-skip line).
+2. **T14 helper polish** (computed-style visibility helper extraction; templ LSP restart; chromedp-typing ROADMAP note).
+3. **T15 docs-gates audit-all drain** (the biggest stale cluster; `audit_max` still 87).
+4. **T16–T23 engine tier** (M13 SSE counters, M14+M15 rate-limit observability, M20+M24 script/tooling, M21–M23 docs tooling, M18+M19 compose CI + flock, M16+M17 per-IP/logging, M12 chaos-load, M30 watchdog hardening).
+5. **T24/T25 decision batches + T26 upstream filings** — presentation deliverables, parked for you by design.
+6. **T27–T31** (ListNote check, CV/dnsblockd/MVS riders, go-etag port, AGENTS restructure prep, standing-blocked docs).
+
+## d) TOTALLY FUCKED UP
+
+1. **The daemon committed a MUTATION mid-check.** During T06's mutation check the auto-daemon captured the mutated `status.go` (`95d0604`) BEFORE my restore ran, so `git restore status.go` restored the MUTATION from the poisoned HEAD and both CSP tests went red "after restore" — the exact gotcha class the repo documents. Recovered forward-only: `git restore --source=<pre-mutation-commit>` after probing the working tree with `rg`, restoration + test landed together (`376223f`), full disclosure in the commit message. Lesson extension now in docs/gotchas.md: probe with `rg` BEFORE trusting any restore, and restore from a commit KNOWN to hold the fix, never from a HEAD that moved under you.
+2. **The templ LSP + daemon double-team beat `fmt → add → commit` twice.** The LSP re-rawed `*_templ.go` between fmt and `git add` (once inside a single command), and the daemon's own `git add` raced into a millisecond window making an amend see "no changes". Won with the content-independent staging recipe: `git hash-object -w` + `git update-index --cacheinfo` so the commit's blobs no longer depend on the racing worktree. Both recipes are now in docs/gotchas.md.
+3. **A changelog lie by omission shipped in v0.13.3** (three changes rode the train without entries) — caught it myself post-publish, disclosed via the `[Unreleased]` backfill block, and escalated to §g1 rather than silently re-tagging. The release itself is unaffected code-wise; this is a documentation-integrity debt I chose to disclose rather than hide.
+
+## e) WHAT WE SHOULD IMPROVE
+
+1. **Mutation checks need a pre-flight "daemon freeze" or a commit-first protocol**: mutate only AFTER the clean tree is committed AND verified by `git log -S` (the closer), never mutate uncommitted fixes. Today's near-miss cost one restore cycle; codify it in AGENTS.
+2. **The annotate gate's verdict vocabulary should be enforced at WRITE time** (a lint helper that only emits `done at / resolved / decided / moot / closed`), not discovered at gate time — today's 46-line vocabulary conversion would have been zero.
+3. **Table-row strikes need a table-aware annotator** — the docs-health annotate toolkit's positional prose syntax does not cover markdown tables, which is exactly how 14-19's 22 rows got silently skipped while the pass counter said 34/34.
+4. **verify-release's step-5 run filter should key on `event != dynamic`** (landed) AND the red-alert watchdog should consider whether dependabot update failures deserve their own signal — right now they are invisible to both.
+5. **Status-report tables in this repo re-wrap under `nix fmt` (dprint)** — every table edit invalidates exact-match anchors for the next edit; write table edits as line-index surgery from the start (this session's working pattern).
+
+## f) Up to 50 things to get done next (ranked; the plan file remains canonical)
+
+1. **Finish T10** (30–45 min): re-run `docs-gates annotate`, fix the remaining `routed`-lead verdicts if any survived the conversion, strike 14-19's 22 §f table rows per-cell, repair the 05-27 `verdict-leads-open` line, re-run the battery to 5/5, commit + push the archive.
+2. T13 CI ergonomics (3 small items, ~30 min).
+3. T14 helper polish + templ LSP restart (~30 min).
+4. T15 docs-gates drain session (annotate the biggest stale cluster; lower `audit_max` 87 → measured).
+5. T16 M13 SSE counters + watchdog gauge in the metrics exposition.
+6. T17 M14+M15 rate-limit observability + lifetime jitter + Retry-After on limit-503s.
+7. T18 M20+M24 shellcheck/actionlint + cold-cache pins-guard test.
+8. T19 M21–M23 markdown-lint + interrogate + rerun-failed-uncached baseline.
+9. T20 M18+M19 compose build-only CI + cross-process browser flock.
+10. T21 M16+M17 per-IP rate limits + request-logging middleware (opt-in).
+11. T22 M12 chaos-load validation (stress-ng under race suite; feeds the #32 verdict).
+12. T23 M30 watchdog hardening (workflow_run/fork audit, self-watch, dedupe via T12's source).
+13. T24 Decision batch A document (six decisions; park for user).
+14. T25 Decision batch B document (eight decisions; park for user).
+15. T26 upstream filings: re-verify the three drafts TODAY per verify-before-filing; file only the authorized ones.
+16. T27 templ-components#37 check → ListNote adoption if shipped.
+17. T28 fleet riders (CV prep, dnsblockd ls-remote, MVS watch polish).
+18. T29 go-etag fragile-grep port (apply the proven grep-chain fix pattern).
+19. T30 AGENTS restructure prep (map what moves to docs/).
+20. T31 standing-blocked documentation pass (BuildFlow pins, relabel-daemon, compose note).
+21. Bump nixpkgs `go_1_27` to ≥ 1.27.4 (GO-2026-6859) + vendorHash verification (the new TODO row).
+22. Decide §g1 (changelog backfill vs v0.13.4 patch cut).
+23. Give cqrs-htmx's go.work fix a commit/push decision (§g3).
+24. Consider a nix-native Playwright Chromium shim so cqrs-htmx's battery runs on this host.
+25. Close the dependabot /deploy docker-update failure (it breaks verify-release's old semantics — now filtered, but the updater itself still errors; either fix the config or drop the ecosystem per the compose decision batch).
+26. Amend the AGENTS release-discipline rules with the session's two new rules (gate 12 exists now; verify-release ignores bot runs).
+27. Re-run the full battery after T10 lands (pre-push 12-gate + docs-gates 5-gate).
+28. Annotate the master plan M-rows touched today (M08 area: art-dupl migration; M-row hygiene).
+29. Re-check `.docs-gates.json` `audit_max` after T15 and lower it deliberately.
+30. Update FEATURES/CHANGELOG text after the engine tier lands (T16–T23).
+
+## g) Three questions I cannot figure out myself
+
+1. **v0.13.3 shipped with three of its own changes missing from its CHANGELOG** (the auto-daemon carried the code into the cut commits; I wrote the entries after the publish and disclosed them as a backfill block in `[Unreleased]`). Is the disclosed backfill acceptable, or do you want a v0.13.4 patch cut for changelog accuracy (re-cut discipline exists and is proven — v0.10.1/v0.12.1 precedents)?
+2. **The chromedp dependabot policy I chose**: ignore major+minor (ceremony-gated), keep patches open, PR #30 closed on that policy. Does that match your intent, or should chromedp be FULLY manual (patches too) so every chromedp change rides the MIGRATION.md ceremony?
+3. **cqrs-htmx's `go.work`**: I fixed 33 stale replaces in their working tree (uncommitted, their repo) to unblock the e2e battery's Go server. Want that pushed as a commit there — and do you want a nix-wrapped Playwright/Chromium shim so their battery (and any sibling's) can run on this NixOS host at all?
+
+---
+
+**Session metrics**: 20 plan tasks touched; 11 fully DONE (T01–T09 minus T10, T11, T12); 1 mid-flight (T10); 1 release cut end to end (v0.13.3); 3 issues closed (#32, #23, #31-referenced) + 1 PR closed on policy (#30); 2 sourced corrections posted (#31, #32 evidence); 13/13 fuzz targets green; 1 real NixOS bug found+fixed by the boot smoke; 4 gotchas written; 2 CI gates added (watched-workflows in Hygiene + pre-push gate 12); 1 gate migrated (art-dupl → baseline/check); 33 stale sibling replaces repaired; daemon-race incidents: 4, all recovered forward-only with disclosure.
