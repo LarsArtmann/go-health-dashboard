@@ -81,7 +81,7 @@ _(Brainstorm, not commitment — per status-report skill, most items below the t
 1. ★ Push master (owner go-ahead) and watch CI (Build+Test+Hygiene+browser job).
 2. ★ Cut v0.13.3: re-head `[Unreleased]` + `Version` const bump in the same change; `pre-push-checks.sh` gate 0 re-run AFTER the release edits (gate 5 lesson).
 3. ★ Tag push first, then master; `verify-release.sh 0.13.3`; publish draft via `gh release edit --draft=false` after CI green.
-4. ★ Close #31 + #23 once origin has the fix and CI is green.
+4. ★ Close #31 + #23 once origin has the fix and CI is green. <!-- fresh:skip -->
 5. ★ Confirm Release integrity workflow green post-release.
 
 **Verification gaps**
