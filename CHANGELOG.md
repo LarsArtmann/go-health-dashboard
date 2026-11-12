@@ -44,6 +44,15 @@ forgetting.
     groups; "0 shown" was suppression, not absence). Mutation-checked: a
     synthetic 16-line clone fails the gate, the clean tree passes.
 
+### Changed
+
+- `.docs-gates.json` `audit_max` lowered 87 → 76 (2026-11-12 drain): the
+  eleven-item open cluster in the 2026-08-08 docs-health-audit report is
+  annotated resolved / won't-implement with current-tree evidence (gosec
+  app, coverage floor run, README screenshots, metrics, public mode,
+  dependabot config; auth and PDF as documented non-goals), and the two
+  live wishes (coverage badge, OG metadata) are harvested into ROADMAP.
+
 ## [0.13.3] - 2026-11-12
 
 ### Added
