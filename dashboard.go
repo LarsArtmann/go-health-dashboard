@@ -105,6 +105,12 @@ type Dashboard struct {
 	// webhookStats accumulates delivery outcomes for the metrics endpoint.
 	webhookStats *webhookDeliveryStats
 
+	// ratelimit429Total counts 429 responses handed out by applyRateLimit
+	// and ratelimitRetryAfter histograms the Retry-After seconds served
+	// with them (M14). Both are non-nil exactly when limiter is.
+	ratelimit429Total    atomic.Int64
+	ratelimitRetryAfter *latencyHistogram
+
 	// started records whether Start has ever been called, so HealthCheck
 	// can distinguish "never started" from "shut down" (both have a nil
 	// pusher pointer).
@@ -172,6 +178,7 @@ func New(probe Prober, opts ...Option) *Dashboard {
 
 	if cfg.RateLimitRequests > 0 && cfg.RateLimitWindow > 0 {
 		d.limiter = newRateLimiter(cfg.RateLimitRequests, cfg.RateLimitWindow)
+		d.ratelimitRetryAfter = newLatencyHistogram()
 	}
 
 	return d

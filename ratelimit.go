@@ -78,13 +78,18 @@ func (d *Dashboard) applyRateLimit(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !limiter.Allow() {
-			w.Header().Set("Retry-After", strconv.Itoa(limiter.retryAfter()))
+			// One retry value per rejection: the header, the JSON body, and
+			// the observability record (M14) must agree.
+			retry := limiter.retryAfter()
+			w.Header().Set("Retry-After", strconv.Itoa(retry))
+			d.ratelimit429Total.Add(1)
+			d.ratelimitRetryAfter.observe(float64(retry))
 
 			if wantsJSON(r) {
 				body, err := json.Marshal(
 					rateLimitBody{
 						Error:      "dashboard: rate limit exceeded",
-						RetryAfter: limiter.retryAfter(),
+						RetryAfter: retry,
 					},
 					json.Deterministic(true),
 				)
