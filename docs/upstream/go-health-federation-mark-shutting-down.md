@@ -78,7 +78,7 @@ the one surface the caller cannot reach into.
 
 ## Evidence commands:
 
-```
+```text
 go-health@v0.5.1: rg -n "MarkShuttingDown|draining" federation/  → 0 hits
 live hub: SIGTERM with an SSE client held; /readyz polled through the
 drain → all 200, listener closes at end of grace window

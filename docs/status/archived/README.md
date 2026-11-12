@@ -70,7 +70,7 @@ Kept in place (NOT archived — genuinely open work or active references):
 
 ---
 
-# Archive Manifest — 2026-11-05 docs-gates repair sweep
+## Archive Manifest — 2026-11-05 docs-gates repair sweep
 
 Three reports archived while bringing the docs-gates battery green (annotate
 matrix + audit-all dispositions + cadence archive ritual). Eligibility gates

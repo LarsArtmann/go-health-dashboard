@@ -47,8 +47,7 @@ registry, templ-pin, and lint formulas (lint added 2026-10-11 after
 three sessions where the desk gate went green while CI's Lint job
 would have caught findings). It exists so a stale count, pin, or lint
 finding is discovered AT THE DESK, not by CI after tagging (the
-v0.8.0→v0.8.1 incident: the drift guard that failed CI is its check
-#1).
+v0.8.0→v0.8.1 incident: the drift guard that failed CI is its check 1).
 
 Pipes are banned on gates: run `cmd > log 2>&1; rc=$?` and read `rc` —
 `nix flake check | tail; echo $?` once reported tail's exit code on a

@@ -257,7 +257,7 @@ breaks liveness and readiness gates.
 Enable `WithMetrics(true)` and scrape `/health/metrics` (text exposition
 format 0.0.4, zero extra dependencies):
 
-```
+```text
 dashboard_health_up 1                           # 1 when overall status is pass
 dashboard_health_status 2                       # 2 pass, 1 warn, 0 fail, -1 unknown
 dashboard_health_check{check="postgres",status="pass"} 1
@@ -605,7 +605,7 @@ mux.Handle("GET /health", http.HandlerFunc(func(w http.ResponseWriter, r *http.R
 
 which produces:
 
-```
+```text
 default-src 'self';
 script-src 'self' 'nonce-<nonce>' 'unsafe-eval';
 style-src 'self';

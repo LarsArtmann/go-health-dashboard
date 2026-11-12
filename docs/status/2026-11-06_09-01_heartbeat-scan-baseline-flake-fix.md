@@ -11,7 +11,7 @@
 
 ## 1. The failure, verbatim
 
-```
+```text
 -test.shuffle 1793939803806892336
 --- FAIL: TestHeartbeatScan_DetectsAndDrainsOneConnection (5.21s)
     concurrency_test.go:405: heartbeat scan went blind: baseline 49, now 1 with 1 live subscriber — the (*pusher).Heartbeat frame match regressed

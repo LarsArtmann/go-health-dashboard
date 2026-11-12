@@ -64,7 +64,7 @@ forgetting.
   Binds loopback by default — check names and error strings are internal,
   so the raw port must not reach an unauthenticated network; front it with
   your own reverse proxy for remote access. Module verified by evaluation
-  + the CI flake build; the unit's boot behavior is pending a smoke test
+  plus the CI flake build; the unit's boot behavior is pending a smoke test
   (TODO_LIST).
 - `.docs-gates.json` with `audit_max: 87`: the docs-gates annotate/audit battery
   is green fleet-wide; the 87-item pre-canon audit backlog (August-era reports)
@@ -234,7 +234,6 @@ templ-components v1.27.0 + templ v0.3.1100 pairing, go-health v0.10.0
 ### Fixed
 
 - Nothing yet.
-
 
 ## [0.13.0] - 2026-11-04
 

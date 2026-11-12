@@ -32,7 +32,7 @@ Uses `flake.nix` with `flake-parts` + `treefmt-nix`.
 
 Single-package library (`dashboard`) with these source files:
 
-```
+```text
 doc.go           — Package doc comment
 status.go        — Status mapping (health.Status → BadgeType, FeedbackType, text), viewModel, checkRow, checkGroup, groupChecks, rowsToTableRows, fingerprintChecks, statusValue
 routes.go        — Routes struct (Dashboard, SSE, Favicon, Liveness, Readiness, Startup, Metrics), DefaultRoutes()

@@ -1,13 +1,17 @@
 {
-  // Repo style: dprint owns formatting (line width 80 with its own
-  // wrapping), so markdownlint's line-length and format-dupe rules would
-  // only fight it. The defaults below keep the structural rules (heading
-  // hierarchy, duplicate headings, bare URLs) and silence the purely
-  // stylistic ones the fleet formatter already owns.
+  // Live-docs lint. Conventions this repo deliberately keeps:
+  // - MD013 off: dprint (treefmt) owns line width and re-wraps.
+  // - MD024 siblings_only: Keep-a-Changelog repeats Added/Changed/Fixed per
+  //   release; only same-parent duplicates are real mistakes.
+  // - MD029 off: historical status/planning reports carry load-bearing
+  //   continuous numbering (their file names and cross-references cite
+  //   §-item numbers); renumbering would corrupt references.
+  // - MD026 off: colon-terminated headings are fleet style ("Notes:").
+  // - MD041 off: README opens with badges before the title.
+  // Archived report dirs carry their own relaxed config (annotate-only).
   "MD013": false,
-  "MD033": false,
-  "MD034": false,
-  "MD041": false,
-  "MD036": false,
-  "MD047": true
+  "MD024": { "siblings_only": true },
+  "MD029": false,
+  "MD026": false,
+  "MD041": false
 }
