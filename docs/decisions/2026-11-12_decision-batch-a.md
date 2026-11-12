@@ -104,6 +104,7 @@ with `bypass: never` — even repository admins cannot re-tag without
 deleting the ruleset. The v0.12.1 re-cut needed exactly that dance.
 
 **Options.**
+
 1. **Keep `never` (status quo):** forced re-tags are impossible; a re-cut
    uses a new patch number (v0.10.1, v0.12.1 precedent).
 2. **Admin bypass:** repository-admin as a bypass actor for emergencies.
@@ -122,6 +123,7 @@ recovery recipes. Currently each session self-coordinates via handshake
 (`git log`, `ls docs/status/ | tail`) but no rule says STOP.
 
 **Options.**
+
 1. **Release exclusivity:** once a release train starts (gate 0 green →
    tag pushed), other sessions in this repo stand down or stay
    docs-only until the release completes and CI is green.
