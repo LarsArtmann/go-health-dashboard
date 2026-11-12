@@ -550,31 +550,6 @@ new gates, and a fixture dedup that shrank the test surface by 235 lines.
   the `ProberHealthchecker` capability (go-health's `Probe.HealthCheck`
   shape), the `do.HealthCheck` cascade also hears the fleet's roll-up
   verdict; pusher-state errors keep precedence.
-
-### Changed
-
-- **go-health v0.5.1 → v0.7.0.** Picks up the unified aggregate/federation
-  merge core and the federation rank-tie roll-up fix (a remote document
-  with top-level `off` no longer flips the hub roll-up out of the frozen
-  pass/warn/fail enum; the fold is order-independent). The breaking
-  `WithGETOnly` removal is a non-event here (zero usages). No exported
-  dashboard API changed.
-- **Dashboard UI revamp on templ-components v1.21.0.** The header renders
-  through `display.PageHeader` (gains `flex-wrap` on narrow viewports), the
-  stat cards carry icon tiles with semantic tones, the overall-status banner
-  answers "how bad?" with a scale line ("1 of 3 services reporting issues."),
-  the export/trend/metrics links wear inline glyphs, the status-change
-  timeline rows became direction glyph + SM badge, the empty state explains
-  how checks appear, and the theme toggle has a visible keyboard-focus ring.
-  The Health Trend and Status Changes cards share a half/half grid when both
-  have content and render full-width alone (a lone half-width sparkline was
-  caught on the README recapture and pinned by `TestTrendTimelineLayout`).
-  Stat-card tones deliberately stay in the blue/purple families: upstream's
-  green icon tile renders `text-green-600`, which fails the page-wide
-  WCAG scan in `TestRender_ContrastSafeStatusColors`.
-
-### Added
-
 - `templ-components/icons` promoted to a direct dependency (stat-card and
   timeline glyphs) at the audited v1.21.0 pin.
 - **Reactive latency stat card.** The Check Latency value text grades the
@@ -605,6 +580,28 @@ new gates, and a fixture dedup that shrank the test surface by 235 lines.
   instance uptime), so the anti-fingerprint stance follows the audience
   switch. While wiring this, the public-mode patch path was found to skip
   anonymization entirely — see Fixed.
+
+### Changed
+
+- **go-health v0.5.1 → v0.7.0.** Picks up the unified aggregate/federation
+  merge core and the federation rank-tie roll-up fix (a remote document
+  with top-level `off` no longer flips the hub roll-up out of the frozen
+  pass/warn/fail enum; the fold is order-independent). The breaking
+  `WithGETOnly` removal is a non-event here (zero usages). No exported
+  dashboard API changed.
+- **Dashboard UI revamp on templ-components v1.21.0.** The header renders
+  through `display.PageHeader` (gains `flex-wrap` on narrow viewports), the
+  stat cards carry icon tiles with semantic tones, the overall-status banner
+  answers "how bad?" with a scale line ("1 of 3 services reporting issues."),
+  the export/trend/metrics links wear inline glyphs, the status-change
+  timeline rows became direction glyph + SM badge, the empty state explains
+  how checks appear, and the theme toggle has a visible keyboard-focus ring.
+  The Health Trend and Status Changes cards share a half/half grid when both
+  have content and render full-width alone (a lone half-width sparkline was
+  caught on the README recapture and pinned by `TestTrendTimelineLayout`).
+  Stat-card tones deliberately stay in the blue/purple families: upstream's
+  green icon tile renders `text-green-600`, which fails the page-wide
+  WCAG scan in `TestRender_ContrastSafeStatusColors`.
 
 ### Fixed
 
@@ -639,6 +636,24 @@ new gates, and a fixture dedup that shrank the test surface by 235 lines.
 
 - **`go` directive back to minor form (`go 1.27`)** — the fleet supply-side de-poisoning (go-version-auto-configure campaign, 2026-10-03): the patch-form floor `1.27.1` re-poisoned every consumer's `go` directive through MVS. Pins moved to the clean generation in the same motion: go-sse v0.6.2, go-datastar v0.6.2. Proxy `.mod` verified post-push. Render goldens regenerated (templ/Tailwind class-order and a `tabindex` attribute from the dependency drift — no semantic change; reviewed line-by-line). Also carries the previously-Unreleased items below.
 
+- The devShell banner prints to stderr, keeping `nix develop -c <tool>`
+  stdout parseable; `check-ui-pins.sh` self-selects the correct Go (probe
+  plus devShell fallback) instead of requiring a devShell-internal run.
+- `verify-dep-bump.sh` reads the coverage floor from `ci.yml` (single
+  source), retries the fmt dirty-tree check once to ride out auto-daemon
+  races, and runs the coverage parse through `nix develop -c`.
+- The compose demo stack digest-pins its images (dependabot `docker`
+  ecosystem entries for `/` and `/deploy`), gates Grafana on a Prometheus
+  readiness healthcheck, and its Dockerfile base now matches go.mod's
+  1.27.1 floor.
+- Bumped go-health to v0.4.1 (its floor lowered to minor form) and
+  settled this repo's `go` directive at `go 1.27` via
+  go-version-auto-configure's gate-verified fix; deleted the now-obsolete
+  `scripts/check-go-directive.sh` guard and its CI wiring (Build + Test
+  jobs). `who-forces` confirms no dependency forces a higher floor; the
+  go-mod-normalize downgrade class is fixed upstream (gvac v0.2.0+
+  dependency-floor gate).
+
 ### Added
 
 - `HEALTH_HUB_PUSH_INTERVAL` for the `health-hub` binary: the SSE push
@@ -667,26 +682,6 @@ new gates, and a fixture dedup that shrank the test surface by 235 lines.
   flake/CI/scripts; CI's build job runs `shellcheck` over all gate scripts.
 - Package-doc examples for the two most-asked option combinations:
   webhook + public mode, and `WithBasePath` sub-path mounting.
-
-### Changed
-
-- The devShell banner prints to stderr, keeping `nix develop -c <tool>`
-  stdout parseable; `check-ui-pins.sh` self-selects the correct Go (probe
-  plus devShell fallback) instead of requiring a devShell-internal run.
-- `verify-dep-bump.sh` reads the coverage floor from `ci.yml` (single
-  source), retries the fmt dirty-tree check once to ride out auto-daemon
-  races, and runs the coverage parse through `nix develop -c`.
-- The compose demo stack digest-pins its images (dependabot `docker`
-  ecosystem entries for `/` and `/deploy`), gates Grafana on a Prometheus
-  readiness healthcheck, and its Dockerfile base now matches go.mod's
-  1.27.1 floor.
-- Bumped go-health to v0.4.1 (its floor lowered to minor form) and
-  settled this repo's `go` directive at `go 1.27` via
-  go-version-auto-configure's gate-verified fix; deleted the now-obsolete
-  `scripts/check-go-directive.sh` guard and its CI wiring (Build + Test
-  jobs). `who-forces` confirms no dependency forces a higher floor; the
-  go-mod-normalize downgrade class is fixed upstream (gvac v0.2.0+
-  dependency-floor gate).
 
 ### Fixed
 

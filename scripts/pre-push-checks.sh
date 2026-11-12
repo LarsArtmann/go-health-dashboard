@@ -257,6 +257,17 @@ else
 	echo "go not on PATH — skipping gate 14 (CI Hygiene enforces it)"
 fi
 
+# 15. Markdown lint (M21): live docs against the root conventions, the two
+# archived report dirs against their annotate-only relaxation. The devShell
+# ships markdownlint-cli; without it this gate skips with a named reason.
+if command -v markdownlint >/dev/null 2>&1; then
+	if ! bash scripts/check-markdown.sh; then
+		fail=1
+	fi
+else
+	echo "markdownlint not on PATH — skipping gate 15 (run via the devShell; CI Hygiene enforces it)"
+fi
+
 # 11. Remote state (warning-only): red-main and unpushed-work detection.
 # The 11-day red window (2026-10-14→25) and the c0991da red push both
 # happened with all-local-green trees; remote state must be part of the

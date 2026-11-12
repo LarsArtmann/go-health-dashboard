@@ -48,7 +48,7 @@ both lists and still tries to bind the taken port.)
 
 ## Layout
 
-```
+```text
 deploy/
 ├── docker-compose.yml            # three services, digest-pinned images
 ├── prometheus.yml                # 5s scrape of dashboard:8080/health/metrics

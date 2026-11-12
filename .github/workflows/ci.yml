@@ -269,6 +269,13 @@ jobs:
       - name: cold-cache pins-guard behavior
         run: bash scripts/test-cold-cache-pins.sh
 
+      # Gate 15 parity (M21): live docs against the root conventions; the
+      # archived report dirs run their annotate-only relaxation.
+      - name: markdown lint
+        run: |
+          npm install -g markdownlint-cli
+          bash scripts/check-markdown.sh
+
       # The generator is pinned by go.mod's tool directive — the drift
       # check below runs it through `go tool`, so no separately installed
       # CLI is needed (the former `go install ...@v0.3.1020` step put a

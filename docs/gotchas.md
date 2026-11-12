@@ -465,3 +465,16 @@ fmt and a `git add` — when staging generated files against that race,
 snapshot the formatted bytes into the object DB (`git hash-object -w` +
 `git update-index --cacheinfo`) so the commit content no longer depends on
 the racing worktree.
+
+## 26. buildflow's failed-only empty contract (2026-11-12)
+
+`scripts/rerun-failed-uncached.sh` (BUILDFLOW_NO_RESULT_CACHE=1 +
+`buildflow --failed-only`) is the ONLY sanctioned re-run path for a failed
+buildflow step. Baseline verified live (T19/M23): when the last recorded
+run has NO failed steps, buildflow rejects the invocation loudly
+(`[Rejection:pipeline.failed_only_empty]` — "drop --failed-only to run
+everything") instead of silently no-oping, and exits 0. That rejection is
+the healthy shape: a re-run of a green tree means the operator wanted a
+full run and should say so. The 2026-10-30 cache-green incident (a failed
+test-race step "passing" in ~6s from cache) is the failure mode this
+contract prevents recurring.
