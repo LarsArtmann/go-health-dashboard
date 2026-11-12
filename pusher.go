@@ -58,6 +58,13 @@ type pusher struct {
 	// clients missing the same patch increment it N times. Exposed via
 	// DroppedPatchCount / dashboard_sse_drops_total.
 	dropTotal atomic.Int64
+	// openedTotal/closedTotal count SSE connection lifecycles (M13): opened
+	// counts every accepted upgrade; closed counts every exit AFTER the
+	// upgrade, so limit-rejected attempts appear in neither. Quiescent
+	// invariant: the connections gauge equals opened − closed. Exposed via
+	// dashboard_sse_connections_{opened,closed}_total.
+	openedTotal atomic.Int64
+	closedTotal atomic.Int64
 	history   *historyBuffer
 	evidence  *evidenceLog
 	ttl       int
@@ -287,7 +294,11 @@ func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	push.connections.Add(1)
-	defer push.connections.Add(-1)
+	push.openedTotal.Add(1)
+	defer func() {
+		push.connections.Add(-1)
+		push.closedTotal.Add(1)
+	}()
 
 	stream := sse.NewStream(w, r)
 	defer func() { _ = stream.Close() }() //nolint:erraudit // SSE handler exit; the client is disconnecting, close errors are unactionable

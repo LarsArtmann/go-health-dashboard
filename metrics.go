@@ -35,8 +35,16 @@ const prometheusContentType = "text/plain; version=0.0.4; charset=utf-8"
 //	dashboard_health_latency_ms      wall-clock time of last check batch
 //	dashboard_health_shutting_down   1 when the probe is shutting down
 //	dashboard_sse_connections        current SSE client count
+//	dashboard_sse_connections_opened_total
+//	                                 cumulative accepted SSE connections
+//	dashboard_sse_connections_closed_total
+//	                                 cumulative ended SSE connections
 //	dashboard_sse_drops_total        cumulative per-subscriber patch drops
 //	dashboard_pusher_active          1 when the SSE pusher is running
+//	dashboard_pusher_last_tick_seconds
+//	                                 seconds since the pusher's last tick;
+//	                                 the watchdog's raw input (stale past
+//	                                 3× the push interval, floored at 1s)
 //
 // Name reservation: `…_check_duration_seconds*` is the histogram family;
 // the per-check gauge deliberately uses `…_check_last_duration_seconds`
@@ -139,10 +147,34 @@ func (d *Dashboard) renderMetrics() string {
 	fmt.Fprintf(&b, "dashboard_sse_drops_total %d\n", d.DroppedPatchCount())
 
 	b.WriteString(
+		"# HELP dashboard_sse_connections_opened_total Cumulative SSE connections accepted since the pusher started (limit-rejected attempts are not counted).\n",
+	)
+	b.WriteString("# TYPE dashboard_sse_connections_opened_total counter\n")
+	fmt.Fprintf(&b, "dashboard_sse_connections_opened_total %d\n", d.SSEConnectionsOpened())
+
+	b.WriteString(
+		"# HELP dashboard_sse_connections_closed_total Cumulative accepted SSE connections that have ended; the dashboard_sse_connections gauge equals opened minus closed while quiescent.\n",
+	)
+	b.WriteString("# TYPE dashboard_sse_connections_closed_total counter\n")
+	fmt.Fprintf(&b, "dashboard_sse_connections_closed_total %d\n", d.SSEConnectionsClosed())
+
+	b.WriteString(
 		"# HELP dashboard_pusher_active Whether the SSE pusher goroutine is running (1) or not (0).\n",
 	)
 	b.WriteString("# TYPE dashboard_pusher_active gauge\n")
 	fmt.Fprintf(&b, "dashboard_pusher_active %d\n", boolGauge(d.push.Load() != nil))
+
+	// Watchdog gauge: seconds since the last broadcast tick — the raw
+	// input HealthCheck compares against 3× the push interval (floored at
+	// 1s, ADR-0005). The series is absent before the first tick and when
+	// no pusher is running: an absent series must not read as 0s-fresh.
+	if elapsed, ok := d.PusherLastTick(); ok {
+		b.WriteString(
+			"# HELP dashboard_pusher_last_tick_seconds Seconds since the SSE pusher's last broadcast tick; staleness threshold is 3x the push interval, floored at 1s.\n",
+		)
+		b.WriteString("# TYPE dashboard_pusher_last_tick_seconds gauge\n")
+		fmt.Fprintf(&b, "dashboard_pusher_last_tick_seconds %g\n", elapsed.Seconds())
+	}
 
 	if d.latency != nil {
 		d.latency.renderPrometheus(&b)

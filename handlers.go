@@ -168,6 +168,49 @@ func (d *Dashboard) DroppedPatchCount() int64 {
 	return 0
 }
 
+// SSEConnectionsOpened returns the cumulative number of SSE connections
+// accepted since the pusher started. Limit-rejected attempts are not
+// counted (they never became streams). Returns 0 when the pusher has not
+// been started.
+func (d *Dashboard) SSEConnectionsOpened() int64 {
+	if p := d.push.Load(); p != nil {
+		return p.openedTotal.Load()
+	}
+
+	return 0
+}
+
+// SSEConnectionsClosed returns the cumulative number of accepted SSE
+// connections that have ended (client disconnect, lifetime cap, or pusher
+// shutdown). Quiescent invariant: SubscriberCount equals opened minus
+// closed. Returns 0 when the pusher has not been started.
+func (d *Dashboard) SSEConnectionsClosed() int64 {
+	if p := d.push.Load(); p != nil {
+		return p.closedTotal.Load()
+	}
+
+	return 0
+}
+
+// PusherLastTick returns the time since the pusher's last broadcast tick,
+// and whether any tick has happened at all. This is the watchdog's raw
+// input (HealthCheck flags staleness past 3× the push interval, floored at
+// 1s — ADR-0005); the metric surfaces it so operators can alert on the
+// threshold of their choice. ok=false when the pusher is not running.
+func (d *Dashboard) PusherLastTick() (time.Duration, bool) {
+	p := d.push.Load()
+	if p == nil {
+		return 0, false
+	}
+
+	last := p.lastBroadcast.Load()
+	if last == 0 {
+		return 0, false
+	}
+
+	return time.Since(time.Unix(0, last)), true
+}
+
 // buildData constructs the viewModel from the probe's cached response.
 // When a NonceExtractor is configured, the nonce is read per-request;
 // otherwise the fixed construction-time Nonce is used.
