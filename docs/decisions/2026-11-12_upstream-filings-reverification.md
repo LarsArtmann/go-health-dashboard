@@ -42,6 +42,7 @@ TODO row + ADR-0006 framing: "Upstream's green tile ships `text-green-600`,
 which fails WCAG on white and locks every consumer out of the green tone."
 
 **Re-verification 2026-11-12:**
+
 - The upstream source DOES ship it (templ-components
   `display/card_templ.go:782`, `StatToneGreen` →
   `text-green-600 dark:text-green-400`) — the source claim stands.
