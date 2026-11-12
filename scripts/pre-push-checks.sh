@@ -203,8 +203,11 @@ fi
 # baseline re-recorded deliberately, with rationale, in the same change.
 if command -v art-dupl >/dev/null 2>&1; then
 	dupl_out=$(mktemp)
-	run_tool env GOEXPERIMENT=jsonv2 art-dupl check --type-aware --exclude-pattern "*_test.go" --baseline-path reports/dupl/baseline.art-dupl.json . >"$dupl_out" 2>&1
-	dupl_rc=$?
+	dupl_rc=0
+	# run_tool may legitimately fail here (art-dupl exits 2 on new clones
+	# — that IS the finding); capture the code instead of letting set -e
+	# abort before the findings are even printed.
+	run_tool env GOEXPERIMENT=jsonv2 art-dupl check --type-aware --exclude-pattern "*_test.go" --baseline-path reports/dupl/baseline.art-dupl.json . >"$dupl_out" 2>&1 || dupl_rc=$?
 	cat "$dupl_out"
 	rm -f "$dupl_out"
 	if [ "$dupl_rc" -ne 0 ]; then
