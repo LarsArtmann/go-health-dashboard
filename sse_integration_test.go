@@ -875,3 +875,41 @@ func TestSSE_PatchesContainNoInlineScripts(t *testing.T) {
 		}
 	}
 }
+
+// The connection-limit 503 carries Retry-After pointing at the client
+// retry interval (falling back to the push interval), so rejected browsers
+// back off instead of hammering a saturated cap (M15 companion).
+func TestWithMaxSSEConnections_Limit503CarriesRetryAfter(t *testing.T) {
+	t.Parallel()
+
+	svc := &toggleService{}
+	svc.healthy.Store(true)
+
+	server, _, cleanup := setupSSEServer(
+		t,
+		50*time.Millisecond,
+		svc,
+		dashboard.WithMaxSSEConnections(1),
+		dashboard.WithRetryInterval(3*time.Second),
+	)
+	defer cleanup()
+
+	first, stream := connectSSE(t, server)
+	defer func() { _ = first.Body.Close() }()
+
+	stream.waitFor(t, func(ssetest.Event) bool { return true }, 2*time.Second)
+
+	rejected, err := http.Get(server.URL + "/health/sse")
+	if err != nil {
+		t.Fatalf("second connect: %v", err)
+	}
+	defer func() { _ = rejected.Body.Close() }()
+
+	if rejected.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("second connect: want 503, got %d", rejected.StatusCode)
+	}
+
+	if got := rejected.Header.Get("Retry-After"); got != "3" {
+		t.Errorf("Retry-After = %q, want \"3\" (the WithRetryInterval value)", got)
+	}
+}

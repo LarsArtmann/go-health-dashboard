@@ -45,6 +45,10 @@ const prometheusContentType = "text/plain; version=0.0.4; charset=utf-8"
 //	                                 seconds since the pusher's last tick;
 //	                                 the watchdog's raw input (stale past
 //	                                 3× the push interval, floored at 1s)
+//	dashboard_ratelimit_429_total (WithRateLimit)
+//	                                 rate-limit rejections served as 429
+//	dashboard_ratelimit_retry_after_seconds_bucket{le=...}
+//	                                 Retry-After seconds handed out with 429s
 //
 // Name reservation: `…_check_duration_seconds*` is the histogram family;
 // the per-check gauge deliberately uses `…_check_last_duration_seconds`
@@ -198,6 +202,18 @@ func (d *Dashboard) renderMetrics() string {
 		d.webhookStats.duration.renderNamed(&b,
 			"dashboard_webhook_delivery_duration_seconds",
 			"Webhook delivery duration.",
+		)
+	}
+
+	if d.limiter != nil && d.ratelimitRetryAfter != nil {
+		b.WriteString(
+			"# HELP dashboard_ratelimit_429_total Rate-limit rejections served with HTTP 429 (WithRateLimit).\n",
+		)
+		b.WriteString("# TYPE dashboard_ratelimit_429_total counter\n")
+		fmt.Fprintf(&b, "dashboard_ratelimit_429_total %d\n", d.ratelimit429Total.Load())
+		d.ratelimitRetryAfter.renderNamed(&b,
+			"dashboard_ratelimit_retry_after_seconds",
+			"Retry-After seconds handed out with 429 responses.",
 		)
 	}
 

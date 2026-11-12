@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 	"math"
+	"math/rand/v2"
 	"net/http"
 	"strconv"
 	"sync"
@@ -256,11 +257,22 @@ func (p *pusher) shouldBroadcast(resp health.Response) bool {
 }
 
 // atCapacity reports (and writes) the 503 shown when the SSE connection
-// limit is configured and already reached.
+// limit is configured and already reached. The 503 carries Retry-After
+// pointing at the client retry interval (falling back to the push
+// interval): the cap frees through client churn, not a fixed outage, so
+// the hint tells rejected browsers when a reconnect has a real chance —
+// and spaces the herd that arrives when one connection ends.
 func (p *pusher) atCapacity(w http.ResponseWriter) bool {
 	if p.maxConns <= 0 || p.connections.Load() < int64(p.maxConns) {
 		return false
 	}
+
+	wait := p.retry
+	if wait <= 0 {
+		wait = p.interval
+	}
+
+	w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(wait.Seconds()))))
 
 	http.Error(w, "dashboard: too many SSE connections", http.StatusServiceUnavailable)
 
@@ -321,7 +333,10 @@ func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
 	var lifetime <-chan time.Time
 
 	if push.maxLifetime > 0 {
-		timer := time.NewTimer(push.maxLifetime)
+		// Jitter (M15): ±10% around the cap so a cohort of clients that
+		// connected together does not reconnect as a synchronized herd
+		// when the cap fires.
+		timer := time.NewTimer(jitterLifetime(push.maxLifetime))
 		defer timer.Stop()
 
 		lifetime = timer.C
@@ -353,4 +368,17 @@ func msToSeconds(ms int64) float64 {
 	const millisPerSecond = 1000
 
 	return float64(ms) / millisPerSecond
+}
+
+// jitterLifetime spreads a connection-lifetime cap over ±10% (M15): the
+// cap exists to rotate long-lived streams, and an un-jittered cap turns
+// every simultaneous connect burst into a synchronized reconnect burst.
+func jitterLifetime(d time.Duration) time.Duration {
+	if d <= 0 {
+		return d
+	}
+
+	spread := d / 10
+
+	return d - spread + time.Duration(rand.Int64N(int64(2*spread)+1))
 }

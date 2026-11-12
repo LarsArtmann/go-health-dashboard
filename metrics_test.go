@@ -640,3 +640,72 @@ func waitForMetricsLine(t *testing.T, s *probeSetup, want string) string {
 		time.Sleep(25 * time.Millisecond)
 	}
 }
+
+// TestMetrics_RateLimitFamily pins the M14 observability pair: every 429
+// increments dashboard_ratelimit_429_total, and the Retry-After seconds
+// served with it land in the histogram family. Both render only when
+// WithRateLimit is configured.
+func TestMetrics_RateLimitFamily(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t, dashboard.WithMetrics(true), dashboard.WithRateLimit(5, 10*time.Second))
+	defer s.cleanup()
+
+	// Two /health hits leave three tokens; the third hit is rejected. The
+	// 10s window makes refill negligible on test timescales (no sleeps),
+	// and the spare tokens cover the metrics scrape itself, which the
+	// limiter gates like any dashboard-owned route.
+	doRequest(t, s.mux, "/health")
+	doRequest(t, s.mux, "/health")
+
+	rejected := doRequest(t, s.mux, "/health")
+	if rejected.Code != http.StatusTooManyRequests {
+		t.Fatalf("third request: want 429, got %d", rejected.Code)
+	}
+
+	if rejected.Header().Get("Retry-After") == "" {
+		t.Fatal("429 response missing Retry-After")
+	}
+
+	body := doRequest(t, s.mux, "/health/metrics").Body.String()
+
+	value, ok := findLineValue(body, "dashboard_ratelimit_429_total ")
+	if !ok {
+		t.Fatalf("exposition missing dashboard_ratelimit_429_total\n%s", body)
+	}
+
+	if n, err := strconv.Atoi(strings.TrimSpace(value)); err != nil || n != 1 {
+		t.Errorf("dashboard_ratelimit_429_total = %q, want 1", value)
+	}
+
+	for _, want := range []string{
+		"# TYPE dashboard_ratelimit_429_total counter",
+		"# TYPE dashboard_ratelimit_retry_after_seconds histogram",
+		`dashboard_ratelimit_retry_after_seconds_count 1`,
+	} {
+		if !strings.Contains(body, want+"\n") {
+			t.Errorf("exposition missing %q\n%s", want, body)
+		}
+	}
+
+	// Without WithRateLimit the whole family stays absent.
+	s2 := setupDashboard(t, dashboard.WithMetrics(true))
+	defer s2.cleanup()
+
+	if body := doRequest(t, s2.mux, "/health/metrics").Body.String(); strings.Contains(body, "dashboard_ratelimit_") {
+		t.Errorf("rate-limit family rendered without WithRateLimit:\n%s", body)
+	}
+}
+
+// findLineValue returns the value part of the first exposition line with
+// the given prefix (the external-package twin of the internal
+// findMetricLine).
+func findLineValue(body, prefix string) (string, bool) {
+	for line := range strings.SplitSeq(body, "\n") {
+		if value, ok := strings.CutPrefix(line, prefix); ok {
+			return value, true
+		}
+	}
+
+	return "", false
+}

@@ -60,3 +60,35 @@ func TestLatencyHistogram_ObservePlacesBuckets(t *testing.T) {
 		t.Errorf("count: want 1, got %d", got)
 	}
 }
+
+// TestJitterLifetime pins the M15 spread: values stay within ±10% of the
+// cap, zero stays zero, and the spread actually varies (an un-jittered
+// cap reconnects herds).
+func TestJitterLifetime(t *testing.T) {
+	t.Parallel()
+
+	const base = time.Minute
+
+	seen := make(map[time.Duration]bool)
+
+	for range 200 {
+		j := jitterLifetime(base)
+
+		low := base - base/10
+		high := base + base/10
+
+		if j < low || j > high {
+			t.Fatalf("jitterLifetime(%s) = %s, want within [%s, %s]", base, j, low, high)
+		}
+
+		seen[j] = true
+	}
+
+	if len(seen) < 10 {
+		t.Errorf("jitter produced only %d distinct values in 200 draws; the spread is too narrow", len(seen))
+	}
+
+	if got := jitterLifetime(0); got != 0 {
+		t.Errorf("jitterLifetime(0) = %s, want 0", got)
+	}
+}
