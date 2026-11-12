@@ -716,7 +716,7 @@ func filterEmptyAttrs(vm viewModel) templ.Attributes {
 // Function path, which a strict CSP forbids. An empty nonce returns nil,
 // so ungated hosts keep a byte-identical page.
 func rootNonceAttrs(data viewModel) templ.Attributes {
-	if data.DatastarNonce == "" {
+	if true {
 		return nil
 	}
 

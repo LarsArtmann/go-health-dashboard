@@ -2675,3 +2675,81 @@ func TestBrowser_AccessibilityDegraded(t *testing.T) {
 
 	assertNoBrowserErrors(t, errLog)
 }
+
+// TestBrowser_StrictCSPNoEvalConnects pins the #23 behavioral contract end
+// to end: under a strict CSP whose script-src carries NO 'unsafe-eval'
+// (every other browser test here still grants it for the SDK's legacy
+// Function-constructor path), the page must still connect, patch, and
+// evaluate data-* expressions. The SDK reads its nonce from the root
+// data-nonce attribute (#23) and compiles expressions without
+// new Function; a structural pin (the attribute renders —
+// TestCSP_NonceStampedOnHTMLRoot) cannot catch an upstream SDK regression
+// that reintroduces Function compilation, and this test can: without the
+// root-nonce path the bundle throws GenerateExpression during init and
+// the connection never opens. The proof is layered — SSE subscriber
+// (connection), the connection pill flipping live (a patch actually
+// applied and its events dispatched), a filter chip's data-on:click
+// handler writing its signal and data-attr:aria-pressed reflecting it
+// (expression evaluation in nonce mode) — plus a zero-console-error
+// assertion that would surface any residual eval attempt.
+func TestBrowser_StrictCSPNoEvalConnects(t *testing.T) {
+	t.Parallel()
+
+	const nonce = "browser-strict-csp-noeval"
+
+	s := setupDashboard(t,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithDatastarSrc("/static/datastar.js"),
+		dashboard.WithPushMode(dashboard.PushAlways),
+		dashboard.WithPushInterval(200*time.Millisecond),
+	)
+	defer s.cleanup()
+
+	s.mux.HandleFunc("/static/app.css", browserStaticCSS)
+	s.mux.HandleFunc("/static/datastar.js", browserStaticJS)
+
+	noEval := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Security-Policy",
+				"default-src 'self'; "+
+					"script-src 'self' 'nonce-"+nonce+"'; "+
+					"style-src 'self'; "+
+					"img-src 'self' data:; "+
+					"connect-src 'self'; "+
+					"font-src 'self'; "+
+					"object-src 'none'; "+
+					"base-uri 'self'")
+			next.ServeHTTP(w, r)
+		})
+	}
+
+	session := startBrowserSessionOn(t, s.dash, noEval(s.mux), "")
+	ctx, errLog := session.ctx, session.errLog
+
+	deadline := time.Now().Add(15 * time.Second)
+	for s.dash.SubscriberCount() == 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("Datastar SDK never connected under the no-unsafe-eval CSP — the root data-nonce path is broken (issue #23)")
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	// The pill's live state proves a patch actually applied and its events
+	// dispatched (it is driven by the SDK's patch-event stream).
+	waitForJS(t, ctx,
+		`document.getElementById("conn-state-live") !== null && document.getElementById("conn-state-live").hidden === false`)
+
+	// Expression evaluation in nonce mode: the chip's data-on:click writes
+	// the statusFilter signal and its own data-attr:aria-pressed reflects
+	// it — both compile through the root-nonce path, not the Function
+	// constructor.
+	if err := chromedp.Do(ctx, chromedp.Click(chromedp.ID("status-filter-problems"))); err != nil {
+		t.Fatalf("click problems chip: %v", err)
+	}
+
+	waitForJS(t, ctx,
+		`document.getElementById("status-filter-problems") !== null && document.getElementById("status-filter-problems").getAttribute("aria-pressed") === "true"`)
+
+	assertNoBrowserErrors(t, errLog)
+}
