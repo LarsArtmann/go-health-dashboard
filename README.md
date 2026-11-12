@@ -269,7 +269,10 @@ dashboard_health_check_duration_seconds_sum 0.42
 dashboard_health_check_duration_seconds_count 96
 dashboard_health_shutting_down 0
 dashboard_sse_connections 3                     # live dashboard viewers
+dashboard_sse_connections_opened_total 41       # accepted since pusher start
+dashboard_sse_connections_closed_total 38       # ended; opened − closed = live
 dashboard_pusher_active 1                       # SSE pusher goroutine health
+dashboard_pusher_last_tick_seconds 0.04         # watchdog: stale past 3x push interval
 ```
 
 The metrics route is middleware-protected when `WithMiddleware` is set.

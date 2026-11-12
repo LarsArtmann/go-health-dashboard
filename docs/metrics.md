@@ -49,7 +49,10 @@ All names carry the `dashboard_` prefix.
 | `dashboard_health_latency_ms`                  | gauge     | —                 | Wall-clock time of the last check batch, milliseconds |
 | `dashboard_health_shutting_down`               | gauge     | —                 | 1 once the probe is marked for shutdown               |
 | `dashboard_sse_connections`                    | gauge     | —                 | Currently connected SSE clients                       |
+| `dashboard_sse_connections_opened_total`       | counter   | —                 | SSE connections accepted since pusher start           |
+| `dashboard_sse_connections_closed_total`       | counter   | —                 | Accepted SSE connections that have ended              |
 | `dashboard_pusher_active`                      | gauge     | —                 | 1 while the SSE pusher goroutine is running           |
+| `dashboard_pusher_last_tick_seconds`           | gauge     | —                 | Seconds since the pusher's last tick (see below)      |
 | `dashboard_health_check_duration_seconds`      | histogram | —                 | Batch durations across ticks (see buckets below)      |
 | `dashboard_webhook_deliveries_total`           | counter   | `result`          | Webhook deliveries by result (`ok` / `error`)         |
 | `dashboard_webhook_delivery_duration_seconds`  | histogram | —                 | Webhook delivery duration                             |
@@ -61,6 +64,9 @@ Conditional families:
 - The two `dashboard_webhook_*` families render **only when
   `WithWebhook` is configured**; without a webhook URL they are absent
   from the document entirely.
+- `dashboard_pusher_last_tick_seconds` renders **only after the pusher's
+  first tick** (and while a pusher is running): an absent series means
+  "never ticked or not running", deliberately distinct from a fresh `0`.
 
 ## Encoding details
 
@@ -107,5 +113,16 @@ and `_count` series are emitted per the format.
   refreshes all gauges and observes the histogram once.
 - `dashboard_pusher_active == 0` with `dashboard_health_up == 1` means
   the page is stale by definition (no pusher → no patches): alert on it.
+- `dashboard_sse_connections_opened_total −
+  dashboard_sse_connections_closed_total` is the live client count while
+  quiescent; `dashboard_sse_connections` diverging from it means a
+  connection is mid-teardown. A closed counter climbing while opened
+  stays flat is the reconnect-churn signature (proxy timeouts, lifetime
+  caps, client restarts).
+- `dashboard_pusher_last_tick_seconds` is the watchdog's raw input:
+  `HealthCheck` flags the pusher stale past 3× the push interval (floored
+  at 1s, ADR-0005). Alert slightly below that if you want your monitoring
+  to beat the do.HealthCheck verdict; treat `absent` as a distinct state
+  from `0`.
 - See `deploy/` for a working Grafana dashboard provisioned against
   these series, including a commented threshold-alert example.

@@ -65,10 +65,10 @@ type pusher struct {
 	// dashboard_sse_connections_{opened,closed}_total.
 	openedTotal atomic.Int64
 	closedTotal atomic.Int64
-	history   *historyBuffer
-	evidence  *evidenceLog
-	ttl       int
-	ticks     int
+	history     *historyBuffer
+	evidence    *evidenceLog
+	ttl         int
+	ticks       int
 
 	mu              sync.Mutex
 	lastStatus      health.Status
@@ -295,6 +295,7 @@ func (d *Dashboard) sseHandler(w http.ResponseWriter, r *http.Request) {
 
 	push.connections.Add(1)
 	push.openedTotal.Add(1)
+
 	defer func() {
 		push.connections.Add(-1)
 		push.closedTotal.Add(1)
