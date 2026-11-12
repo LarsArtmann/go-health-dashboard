@@ -139,13 +139,19 @@ fi
 # 6. CI green on the release commit.
 step "5. CI green on release commit"
 if [ -n "$local_commit" ]; then
-	if ! conclusions=$(gh run list --commit "$local_commit" --json conclusion --limit 50 2>/dev/null); then
+	# Bot updater runs (dependabot's event=dynamic "Update #N" jobs) are
+	# GitHub-service noise, not the project's CI — the 2026-11-11 failing
+	# /deploy dependabot update sat on an otherwise-green release commit and
+	# failed this gate for nothing. Filter them by event/actor, not name.
+	if ! conclusions=$(gh run list --commit "$local_commit" --json conclusion,event,actor --limit 50 2>/dev/null); then
 		conclusions=""
 	fi
 	if [ -z "$conclusions" ]; then
 		bad "could not list CI runs for $local_commit (gh auth? network?)"
 	else
-		runs=$(echo "$conclusions" | grep -o '"conclusion":"[^"]*"' | cut -d'"' -f4)
+		runs=$(echo "$conclusions" | jq -r '.[]
+			| select(.event != "dynamic" and .actor.login != "dependabot[bot]")
+			| .conclusion' | grep -o '[a-z_]*')
 		if [ -z "$runs" ]; then
 			bad "no CI runs recorded for $local_commit"
 		elif echo "$runs" | grep -qvE '^(success|skipped|neutral)$'; then
@@ -153,7 +159,7 @@ if [ -n "$local_commit" ]; then
 			echo "$runs" | sed 's/^/       run: /'
 			bad "CI on $local_commit has non-green runs (expected success/skipped/neutral only)"
 		else
-			ok "all CI runs green ($(echo "$runs" | wc -l | tr -d ' ') runs)"
+			ok "all CI runs green ($(echo "$runs" | wc -l | tr -d ' ') runs, bot updater runs excluded)"
 		fi
 	fi
 else
