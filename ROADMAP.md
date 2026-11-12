@@ -338,8 +338,8 @@ These require user decisions and cannot be resolved by reading code:
   the versioning decision: the sorted, length-prefixed `name/status/error`
   serialization is pinned byte-exactly by golden-vector tests; any change
   to it ships as a declared breaking change (CHANGELOG Compatibility note
-  + minor bump + one-time re-announce). README "Stability" states the
-  guarantee; the v0.3.x length-prefix fix remains the historical precedent.
+  - minor bump + one-time re-announce). README "Stability" states the
+    guarantee; the v0.3.x length-prefix fix remains the historical precedent.
 - **Webhook hardening appetite — HALF-ANSWERED (v0.13.2).** HMAC signing
   shipped as `WithWebhookHMAC` alongside `Authorization`-header auth; the
   remaining appetite question is only the explicit payload `"schema":1`
