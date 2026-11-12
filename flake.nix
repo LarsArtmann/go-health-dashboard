@@ -31,7 +31,20 @@
       # Deployment contract for the hub — generic unit + options; hosts
       # layer site specifics (reverse proxy, port registries, drift sweeps).
       # See nix/nixos-module.nix.
-      flake.nixosModules.default = import ./nix/nixos-module.nix;
+      #
+      # The package default is injected HERE, not in the module file, and
+      # capture-at-definition makes it THIS flake's hub package: a consumer
+      # importing `inputs.go-health-dashboard.nixosModules.default` gets
+      # go-health-dashboard's build, not their own, so the documented usage
+      # (enable + remotes) evaluates without naming a package. Found by the
+      # 2026-11-12 boot-smoke: without it, eval dies on "option
+      # services.health-dashboard.package accessed but has no value".
+      flake.nixosModules.default =
+        { pkgs, ... }:
+        {
+          imports = [ (import ./nix/nixos-module.nix) ];
+          services.health-dashboard.package = self.packages.${pkgs.system}.default;
+        };
 
       imports = [
         treefmt-nix.flakeModule
