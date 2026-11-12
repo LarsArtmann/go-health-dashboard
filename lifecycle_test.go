@@ -312,6 +312,30 @@ func pusherLoopGoroutines() int {
 	return count
 }
 
+// pusherLoopStacks returns the full stack dumps of every goroutine whose
+// stack mentions (*pusher).start — the failure-path diagnostic for
+// TestShutdown_StopsPusherLoopGoroutine, so a red names WHERE the surviving
+// loops are stuck instead of just how many.
+func pusherLoopStacks() string {
+	buf := make([]byte, 1<<20) //nolint:makezero // runtime.Stack writes up to len, never append
+	for {
+		n := runtime.Stack(buf, true)
+		if n < len(buf) {
+			break
+		}
+		buf = make([]byte, 2*len(buf)) //nolint:makezero // ditto — grow the stack dump window
+	}
+
+	var kept []string
+	for goroutine := range strings.SplitSeq(string(buf), "\n\n") {
+		if strings.Contains(goroutine, "(*pusher).start") {
+			kept = append(kept, goroutine)
+		}
+	}
+
+	return strings.Join(kept, "\n\n")
+}
+
 // TestShutdown_StopsPusherLoopGoroutine pins the issue-#14 fix: Shutdown
 // must end the push loop even though the ctx passed to Start stays live.
 // Discrimination comes from cycle amplification rather than exact identity:
@@ -345,13 +369,24 @@ func TestShutdown_StopsPusherLoopGoroutine(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 
-	deadline := time.Now().Add(5 * time.Second)
+	// 15s, not 5s: on 2-4 vCPU race-instrumented runners under the full
+	// suite's parallel load (~350 fixtures), exited-loop reaping and final
+	// scheduling can lag multiple seconds (run 43061375783: baseline 0,
+	// now 4, at 5.35s). A real +8 leak is permanent, so only the deadline
+	// grows — the slack stays sibling-noise-sized.
+	const settleDeadline = 15 * time.Second
+
+	deadline := time.Now().Add(settleDeadline)
 	for {
 		now := pusherLoopGoroutines()
 		if now <= baseline+2 {
 			return
 		}
 		if time.Now().After(deadline) {
+			if stacks := pusherLoopStacks(); stacks != "" {
+				t.Logf("surviving pusher-loop goroutine stacks (diagnostic):\n%s", stacks)
+			}
+
 			t.Fatalf(
 				"push loop goroutines after %d Start/Shutdown cycles: baseline %d, now %d — loops leak across Shutdown (issue #14)",
 				cycles,

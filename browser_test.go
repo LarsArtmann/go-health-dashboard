@@ -1457,30 +1457,43 @@ func TestBrowser_CollapseInteract(t *testing.T) {
 		t.Fatalf("healthy group should start collapsed, got %q", state)
 	}
 
+	// PushAlways patches every 200ms and each patch re-collapses the group
+	// (the server-derived default proven at the bottom), so the click and
+	// the state read must not sit two CDP round-trips apart: under runner
+	// load a patch lands inside that window and the read sees "closed" even
+	// though the click worked (run 43061375783). A pre-installed toggle
+	// listener records the expansion on `window`, which patch-replaced
+	// content cannot touch; waiting on the flag proves the click toggled
+	// the group no matter how many patches interleave.
+	const armToggleProbe = `window.__collapseSawOpen = false;
+	document.addEventListener("toggle", function (e) {
+		if (e.target && e.target.tagName === "DETAILS" && e.target.open) {
+			window.__collapseSawOpen = true;
+		}
+	}, true);`
+
+	if err := chromedp.Do(ctx, evalDiscard(armToggleProbe)); err != nil {
+		t.Fatalf("arm toggle probe: %v", err)
+	}
+
 	if err := chromedp.Do(ctx, chromedp.Click(chromedp.CSS("details summary"))); err != nil {
 		t.Fatalf("click summary: %v", err)
 	}
 
-	if err := chromedp.Do(ctx, evalInto(detailsState, &state)); err != nil {
-		t.Fatalf("browser evaluate after click: %v", err)
-	}
+	waitForJS(t, ctx, `window.__collapseSawOpen === true`)
 
-	if state != "open" {
-		t.Fatalf("healthy group should be expanded after clicking the summary, got %q", state)
-	}
+	// A patch may already have re-collapsed the group, so the table check
+	// force-opens and inspects inside ONE synchronous evaluation — a patch
+	// task cannot interleave with synchronous JS.
+	const expandedTableVisible = `(function () {
+		var d = document.querySelector("details");
+		if (!d) return false;
+		if (!d.open) d.open = true;
+		var tb = d.querySelector("table");
+		return !!tb && tb.offsetParent !== null;
+	})()`
 
-	var tableVisible bool
-
-	if err := chromedp.Do(ctx, evalInto(
-		`document.querySelector("details table") !== null && document.querySelector("details table").offsetParent !== null`,
-		&tableVisible,
-	)); err != nil {
-		t.Fatalf("browser evaluate table: %v", err)
-	}
-
-	if !tableVisible {
-		t.Error("service table inside the expanded group should be visible")
-	}
+	waitForJS(t, ctx, expandedTableVisible)
 
 	// The next SSE patch (PushAlways, 200ms) replaces #health-region with a
 	// fresh server-side render, which re-collapses the group. This is the
