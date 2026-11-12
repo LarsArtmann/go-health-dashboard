@@ -38,13 +38,19 @@ fi
 # available in the CI runner.
 declare -A should_watch=()
 declare -A real_names=()
+name_seen_at=()
 for f in .github/workflows/*.yml; do
 	name="$(sed -n 's/^name:[[:space:]]*//p' "$f" | head -1)"
 	if [ -z "$name" ]; then
 		echo "::error::$f has no name: field"
 		exit 1
 	fi
+	if [ -n "${real_names[$name]:-}" ]; then
+		echo "::error::two workflow files declare the name \"${name}\" (${real_names[$name]} and $f) — the watchdog would watch one entry for two run streams and neither guard view could tell them apart"
+		exit_code=1
+	fi
 	real_names["$name"]="$f"
+	name_seen_at+=("$name")
 
 	trigger=""
 	if grep -q '^on:' "$f" && awk '/^on:/{on=1;next} on&&/^[^ \t#]/{on=0} on' "$f" | grep -qE 'schedule:|branches: \[master\]|branches: \[master,|branches: \[.*, master\]'; then
@@ -56,6 +62,22 @@ for f in .github/workflows/*.yml; do
 done
 
 exit_code=0
+
+# Duplicate watched entries: the list is a set; a duplicate means someone
+# appended without reading — the drift guard treats it as drift too.
+for w in "${watched[@]}"; do
+	count=0
+	for other in "${watched[@]}"; do
+		if [ "$other" = "$w" ]; then
+			count=$((count + 1))
+		fi
+	done
+	if [ "$count" -gt 1 ]; then
+		echo "::error::$watched_file lists \"${w}\" ${count} times — the watched list is a set"
+		exit_code=1
+	fi
+done
+
 for name in "${!should_watch[@]}"; do
 	found=""
 	for w in "${watched[@]}"; do
