@@ -24,18 +24,18 @@ At ~10:37–10:41, while I was mid-migration, daemon commits (`5f716da`, `3fa29d
 
 ## b) PARTIALLY DONE
 
-1. **Browser-suite verification of the migrated tree.** One full-suite run (600s timeout, hung) and one isolated run (90s, hung). Root cause per the other session's report: the host's Chromium cannot browse at all (`chromium --dump-dom` on a bare URL hangs — plausibly the same proxy/DNS refusal this machine shows in nix builds). The migration is compile-proven, not runtime-proven. Nothing about the suite's behavior under v0.21 is verified.
-2. **UI pin guard re-audit.** Research done (above); pins NOT updated (guard still expects v1.23.0 → CI stays red by design). The mandated ceremony (green browser suite on v1.24.0 → update pins in same change) is blocked on (b1) and on the adopt-vs-revert decision.
-3. **`buildflow -s test-race` re-run (the pasted failing step).** Not re-run: it would re-hang on the browser suite for the same host reason. Unit-only verification (`go vet`) done; `go test` without browser tests not done.
+1. ~~**Browser-suite verification of the migrated tree.** One full-suite run (600s timeout, hung) and one isolated run (90s, hung). Root cause per the other session's report: the host's Chromium cannot browse at all (`chromium --dump-dom` on a bare URL hangs — plausibly the same proxy/DNS refusal this machine shows in nix builds). The migration is compile-proven, not runtime-proven. Nothing about the suite's behavior under v0.21 is verified.~~ resolved — host healed 2026-11-06; the suite runs LIVE again (22/22 repeatedly, incl. 2026-11-12)
+2. ~~**UI pin guard re-audit.** Research done (above); pins NOT updated (guard still expects v1.23.0 → CI stays red by design). The mandated ceremony (green browser suite on v1.24.0 → update pins in same change) is blocked on (b1) and on the adopt-vs-revert decision.~~ done at — v1.24.0 adopted same day with the guard updated in-change; superseded by v1.27.0 (2026-11-04)
+3. ~~**`buildflow -s test-race` re-run (the pasted failing step).** Not re-run: it would re-hang on the browser suite for the same host reason. Unit-only verification (`go vet`) done; `go test` without browser tests not done.~~ moot — the hang was the host-Chromium breakage; the healed host re-ran everything green
 
 ## c) NOT STARTED
 
-1. TODO_LIST row updates (the chromedp row still describes the suite as dead; it now compiles but is unverifiable here).
-2. AGENTS.md notes for the v0.21 API (browser-test patterns section, gotcha about host browsing).
-3. Lint/format gates (`nix run .#lint`, `nix fmt`, buildflow dev-mode run).
-4. Screenshot-capture path runtime verification (`captureScreenshot` helper is new, never executed).
-5. `pre-push-checks.sh` full gate sweep.
-6. Guard audit-history comment for v1.24.0 markup drift (item 2 of the other session's improvement list — agreed, not done).
+1. ~~TODO_LIST row updates (the chromedp row still describes the suite as dead; it now compiles but is unverifiable here).~~ done at — the 2026-11-11 audit rebuilt TODO_LIST; the chromedp row reflects the live suite
+2. ~~AGENTS.md notes for the v0.21 API (browser-test patterns section, gotcha about host browsing).~~ done at — AGENTS carries the chromedp v0.21 API-migration bullet (evalInto/evalDiscard, Do/Run, remote.NewAllocator)
+3. ~~Lint/format gates (`nix run .#lint`, `nix fmt`, buildflow dev-mode run).~~ done at — routine-gated since; lint 0 issues on 2026-11-12
+4. ~~Screenshot-capture path runtime verification (`captureScreenshot` helper is new, never executed).~~ done at — captureScreenshot executed in the live browser suite (env-guarded captures 2026-11-11)
+5. ~~`pre-push-checks.sh` full gate sweep.~~ done at — the battery runs at every push; 8/8-style green on the v0.13.3 cut (2026-11-12)
+6. ~~Guard audit-history comment for v1.24.0 markup drift (item 2 of the other session's improvement list — agreed, not done).~~ done at — the guard's audit history carries the corrected delta (the 15-45 session fixed the backwards prose)
 
 ## d) TOTALLY FUCKED UP (own it)
 

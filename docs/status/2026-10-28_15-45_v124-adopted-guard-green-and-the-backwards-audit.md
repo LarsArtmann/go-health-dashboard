@@ -80,7 +80,7 @@ the goldens commit disclosed), per the documented recovery recipe.
 
 ## b) PARTIALLY DONE
 
-### b1. chromedp v0.21 runtime verification — still not proven locally
+~~### b1. chromedp v0.21 runtime verification — still not proven locally~~ resolved — the CEREMONY DEVIATION is closed: host healed 2026-11-06 and the local browser suite runs green (22/22 incl. 2026-11-12); TODO row unblocked and the suite is LIVE
 
 Re-probed this session: the host's Chromium still cannot complete an http
 load (`TestBrowser_CSPCleanRuntime` self-skips in 12s with the reason).
@@ -89,7 +89,7 @@ browser half could not run; CI's browser job (own Chrome) carries runtime
 verification, and a red there means a one-change revert of pins + go.mod.
 TODO_LIST row 32 stays BLOCKED and accurate.
 
-### b2. TODO row 25 (dependabot `minor-and-patch-290df43455`)
+~~### b2. TODO row 25 (dependabot `minor-and-patch-290df43455`)~~ resolved — chromedp/cdproto minors now ignored by dependabot (2026-11-12); the branch lineage closed with PR #30 on policy
 
 chromedp v0.21.0 + cdproto v0.158.4 are already in go.mod (the migration
 subsumes the branch's bump); the branch is superseded, but closing a
@@ -99,9 +99,9 @@ remote branch is a push-adjacent action — left for the owner.
 
 ## c) NOT STARTED / OWNED ELSEWHERE
 
-1. DiscordSync's v1.24.0 adoption (15 snapshot regens + its 404 visual
+1. ~~DiscordSync's v1.24.0 adoption (15 snapshot regens + its 404 visual~~ moot — that repo's own change (same cause, same ceremony); tracked there
    review) — that repo's own change; same cause, same ceremony.
-2. Pushing this repo (10+ commits ahead) and verifying CI's browser job
+2. ~~Pushing this repo (10+ commits ahead) and verifying CI's browser job~~ done at — pushed and long since released through v0.13.3 (2026-11-12); CI's browser job green on the adoption
    goes green on the adoption — awaiting authorization per release
    discipline.
 

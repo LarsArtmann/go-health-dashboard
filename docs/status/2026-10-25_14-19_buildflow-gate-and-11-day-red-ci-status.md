@@ -52,21 +52,21 @@
 
 ## b) PARTIALLY DONE
 
-1. **Close-the-loop on run problems** — in-repo fixes done and documented (see a8/a9/a11), but two upstream candidates unfiled: securitymd's `filesScanned: 0`-alongside-a-finding reporting oddity; buildflow's nix-hash-fix failing to apply twice before the hash-mismatch case healed it (needs a repro before filing).
-2. **Sibling sessions' owed gates** — the 13:38 report's owed full-suite/lint/flake-check are now green on the restored tree (my runs), but neither of today's sibling reports is annotated as satisfied. Reports dangle by one line each.
-3. **Red-main prevention** — incident documented + TODO row opened; no actual alerting mechanism exists yet.
-4. **vulnix scan freshness** — FOD verified but to `/tmp/gohd-result`; the conventional `./result` (which vulnix scans) still predates flake.lock.
+1. ~~**Close-the-loop on run problems** — in-repo fixes done and documented (see a8/a9/a11), but two upstream candidates unfiled: securitymd's `filesScanned: 0`-alongside-a-finding reporting oddity; buildflow's nix-hash-fix failing to apply twice before the hash-mismatch case healed it (needs a repro before filing).~~ routed — the upstream drafts row carries both candidates (re-verify per verify-before-filing before filing; the T26 batch owns them)
+2. ~~**Sibling sessions' owed gates** — the 13:38 report's owed full-suite/lint/flake-check are now green on the restored tree (my runs), but neither of today's sibling reports is annotated as satisfied. Reports dangle by one line each.~~ moot — the docs-health chain closed it: later sweeps annotated the sibling reports (the 2026-11-11 audit drained the dangling set)
+3. ~~**Red-main prevention** — incident documented + TODO row opened; no actual alerting mechanism exists yet.~~ done at — the master-red-alert workflow (2026-11-04) is the alerting mechanism; its watched list single-sourced with a drift guard 2026-11-12
+4. ~~**vulnix scan freshness** — FOD verified but to `/tmp/gohd-result`; the conventional `./result` (which vulnix scans) still predates flake.lock.~~ moot — routine hygiene; conventional ./result refreshes with ordinary builds
 
 ## c) NOT STARTED
 
-1. v0.12.0 release: not cut (cadence question still unanswered; tree is now fully green and releasable).
-2. Second-session T13+ ownership question: unanswered; their in-flight files (`cmd/measure-patch`, `trend.go`/`dashboard.go` changes, test sweep) sit in history unreviewed by me.
-3. Dependabot branch `minor-and-patch-290df43455` (chromedp/cdproto bump, 08:11): not reviewed — its CI run failed on the same guard red, so it needs a fresh look post-fix.
-4. CI failure notification wiring (the TODO row).
-5. CI nix-build job (vendorHash/FOD class invisible to CI).
-6. Upstream filings (securitymd, buildflow) per b1.
-7. The 13:38 report's external queue (NixOS templ bump ≥ v0.3.1070, editor LSP repoint, stamp-guard script, devShell templ wrapper) — theirs to harvest, untouched by me per the do-not-research boundary.
-8. `interrogate` tool not installed; shellcheck/dprint/lychee/hadolint/vulnix absent from devShell (buildflow falls back to `nix run nixpkgs#…` every run) — fleet/devShell decision unmade.
+1. ~~v0.12.0 release: not cut (cadence question still unanswered; tree is now fully green and releasable).~~ done at — v0.12.x and v0.13.x shipped after this; the cadence question now rides decision batch A (T24 of the 2026-11-12 Pareto plan)
+2. ~~Second-session T13+ ownership question: unanswered; their in-flight files (`cmd/measure-patch`, `trend.go`/`dashboard.go` changes, test sweep) sit in history unreviewed by me.~~ moot — the second session's trend/watchdog work shipped in v0.13.2 (M02/M05); later sessions reviewed the history
+3. ~~Dependabot branch `minor-and-patch-290df43455` (chromedp/cdproto bump, 08:11): not reviewed — its CI run failed on the same guard red, so it needs a fresh look post-fix.~~ resolved — the chromedp-minor policy landed 2026-11-12 (dependabot ignore block in .github/dependabot.yml; PR #30 closed on it); the 290df43455 lineage is dead
+4. ~~CI failure notification wiring (the TODO row).~~ done at — master-red-alert workflow (2026-11-04) + watched-workflows drift guard (2026-11-12)
+5. ~~CI nix-build job (vendorHash/FOD class invisible to CI).~~ done at — the "Nix build (vendorHash/FOD)" CI job
+6. ~~Upstream filings (securitymd, buildflow) per b1.~~ routed — upstream drafts row (T26)
+7. ~~The 13:38 report's external queue (NixOS templ bump ≥ v0.3.1070, editor LSP repoint, stamp-guard script, devShell templ wrapper) — theirs to harvest, untouched by me per the do-not-research boundary.~~ done at — stamp guard shipped (scripts/check-templ-stamps.sh), devShell templ wrapper shipped (2026-11-04), NixOS templ bump landed (2026-11-05), editor LSP repoint resolved (2026-11-11 audit)
+8. ~~`interrogate` tool not installed; shellcheck/dprint/lychee/hadolint/vulnix absent from devShell (buildflow falls back to `nix run nixpkgs#…` every run) — fleet/devShell decision unmade.~~ routed — devShell tooling decision rides T18/T19 + decision batches
 
 ## d) TOTALLY FUCKED UP
 

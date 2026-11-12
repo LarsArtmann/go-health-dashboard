@@ -193,7 +193,7 @@ unpushed, tree-identical commits.
 
 ## b) PARTIALLY DONE
 
-### b1. chromedp v0.21 migration — compile-verified, not runtime-verified
+~~### b1. chromedp v0.21 migration — compile-verified, not runtime-verified~~ resolved — host healed 2026-11-06; every browser test has executed under v0.21+ repeatedly (22/22 incl. 2026-11-12)
 
 `go vet ./...` exits 0 across all 108 formerly broken call sites
 (`evalInto`/`evalDiscard` shims, `remote.NewAllocator`, the `Do`/`Run` split,
@@ -202,7 +202,7 @@ browser test has executed its body on this host, so CSP cleanliness, live SSE
 patching, axe and keyboard behaviour under v0.21 are **unproven**. It is
 honest to call this "compile-verified only" — nothing more.
 
-### b2. The v1.24.0 decision is fully prepared but not taken
+~~### b2. The v1.24.0 decision is fully prepared but not taken~~ done at — adopted hours later (the tenth movement); superseded by v1.27.0 (twelfth movement, 2026-11-04)
 
 Evidence is complete (a4), blast radius is measured (7 goldens here, 15
 snapshots there), and the guard is red by design. What is missing is the
@@ -236,19 +236,19 @@ because pushing was not authorized either.
 
 ## c) NOT STARTED
 
-1. **M19** `company-master-data` → `checks.Disk` — still deliberately
+1. ~~**M19** `company-master-data` → `checks.Disk` — still deliberately~~ moot — still deliberately deferred (forgejo-only, go-appkit-mounted, no CI)
    deferred (forgejo-only, mounted through go-appkit, no CI).
-2. **`Routes.Healthz` in `cmd/health-hub`.** The capability now exists
+2. ~~**`Routes.Healthz` in `cmd/health-hub`.** The capability now exists~~ resolved — go-health v0.8.x gave federation Healthz() and the hub can wire it; the product decision (hub never overrides Routes) stands documented — a decision-batch item
    upstream and one line would give the hub a combined-traffic endpoint, but
    `newServeMux`'s doc comment explicitly says the hub never overrides Routes,
    so it is a product decision plus a doc rewrite. Flagged, not done.
-3. **A hub-level test for the drain.** I proved `/livez` 503s on drain at the
+3. ~~**A hub-level test for the drain.** I proved `/livez` 503s on drain at the~~ resolved — TestFederation_HealthzCapabilityForwarded + the hub's drainObservation window shipped with go-health v0.8.x adoption; the hub drain runs in the two-phase stop
    library level (`TestFederation_HealthzCapabilityForwarded`) and proved the
    hub's `/readyz` behaviour by a manual smoke run, but `cmd/health-hub` has no
    automated test for the shutdown sequence — the smoke script lived in `/tmp`
    and is gone.
-4. **Runtime verification of the chromedp migration** (blocked, b1).
-5. **Auditing the 7 drifted dashboard goldens** for anything beyond
+4. ~~**Runtime verification of the chromedp migration** (blocked, b1).~~ resolved — healed host; suite live
+5. ~~**Auditing the 7 drifted dashboard goldens** for anything beyond~~ done at — goldens regenerated on the v1.24.0 adoption (23 role=region wrappers documented), again on v1.27.0
    regeneration (e.g. does moving `aria-label` onto the `<table>` change what
    our own evidence tooltips/live regions assert?).
 6. **CHANGELOG entries.** DiscordSync's own convention says completed work is

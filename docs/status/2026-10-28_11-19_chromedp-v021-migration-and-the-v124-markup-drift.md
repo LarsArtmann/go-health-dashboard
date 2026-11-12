@@ -101,11 +101,11 @@ In this repo that drifts **7 golden files** and fails 3 tests (`TestGoldenRender
 
 ## b) PARTIALLY DONE
 
-### b1. The migration is compile-verified but **not** runtime-verified
+~~### b1. The migration is compile-verified but **not** runtime-verified~~ resolved — the host healed 2026-11-06 (Chromium 156→157); 22/22 browser suite green repeatedly since, incl. 2026-11-12 on Chromium 157
 
 `go vet` is clean and the API mapping is right by construction, but no browser test has executed the new code. Everything below in (d1) explains why. Claiming "migrated" without runtime proof is exactly the class of statement this repo's own history warns about.
 
-### b2. The UI-pin decision is prepared but not applied
+~~### b2. The UI-pin decision is prepared but not applied~~ done at — v1.24.0 ADOPTED the same day (the tenth movement), then v1.27.0 (the twelfth movement, 2026-11-04); pins updated in the same changes with audited drift
 
 Two defensible end states:
 
@@ -114,7 +114,7 @@ Two defensible end states:
 
 I have the evidence for both and applied neither.
 
-### b3. `go-health`'s skew commit is unpushed
+~~### b3. `go-health`'s skew commit is unpushed~~ done at — go-health v0.9.0/v0.10.0 adopted 2026-11-04
 
 `15fad10` is one commit ahead of `origin/master`. It is small and self-contained (allow-file deletion, workflow comment, TODO row) but until it is pushed the fleet's zero-skew state is recorded only locally.
 
@@ -126,12 +126,12 @@ I verified the reds (a5) but did not add the two rows to `DiscordSync/TODO_LIST.
 
 ## c) NOT STARTED
 
-1. **M04 evidence table** (`docs/fleet-consumption-evidence.md` or similar): repo, module, pin, result, command, date. The data exists (a2's 16-row dump is version evidence; six consumers were build-verified in the previous session) but nothing is published. The honest version needs a _re-built_ row per consumer, not a carried claim.
-2. **M19** (`company-master-data` → `checks.Disk`). Still deferred for the same structural reason: the probe is mounted through `go-appkit` (`*appkithealth.Mounted`), the repo is forgejo-only with no CI, and it is deliberately absent from `tools/fleet-repos.txt`.
-3. **`cv` push.** `~/projects/cv` still carries `34b219f22` (three unpushed commits' worth of divergence) and `~/projects/CV` has an uncommitted pin bump. Both need the owner's lineage decision.
-4. **go-taskqueue `NewChecks` port (`M06`).** Still blocked on the two API gaps recorded in `go-health/TODO_LIST.md`.
-5. **Fleet-wide golden regeneration** for the v1.24.0 markup (this repo + DiscordSync + any other templ-components consumer with snapshots).
-6. **A browser-test skip switch that survives a broken `PATH`.**
+1. ~~**M04 evidence table** (`docs/fleet-consumption-evidence.md` or similar): repo, module, pin, result, command, date. The data exists (a2's 16-row dump is version evidence; six consumers were build-verified in the previous session) but nothing is published. The honest version needs a _re-built_ row per consumer, not a carried claim.~~ routed — fleet-consumption evidence lives in the guard's audit history + tc doctor; a rebuilt per-consumer table stays a fleet-riders item (T28)
+2. ~~**M19** (`company-master-data` → `checks.Disk`). Still deferred for the same structural reason: the probe is mounted through `go-appkit` (`*appkithealth.Mounted`), the repo is forgejo-only with no CI, and it is deliberately absent from `tools/fleet-repos.txt`.~~ moot — still deliberately deferred (forgejo-only, mounted through go-appkit, no CI); standing disposition unchanged
+3. ~~**`cv` push.** `~/projects/cv` still carries `34b219f22` (three unpushed commits' worth of divergence) and `~/projects/CV` has an uncommitted pin bump. Both need the owner's lineage decision.~~ routed — CV bump prep is a fleet rider (M29/T28); the lineage decision stays the owner's
+4. ~~**go-taskqueue `NewChecks` port (`M06`).** Still blocked on the two API gaps recorded in `go-health/TODO_LIST.md`.~~ routed — still gated on the two go-health API gaps recorded there (master plan)
+5. ~~**Fleet-wide golden regeneration** for the v1.24.0 markup (this repo + DiscordSync + any other templ-components consumer with snapshots).~~ done at — this repo regenerated on the v1.24.0 and v1.27.0 adoptions; DiscordSync tracked in its own repo
+6. ~~**A browser-test skip switch that survives a broken `PATH`.**~~ done at — superseded by the memoized usableChrome network preflight (2026-10-28), then made moot by the healed host (2026-11-06)
 
 ---
 
