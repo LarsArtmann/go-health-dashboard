@@ -6,6 +6,14 @@ A three-container demo: the example dashboard, Prometheus scraping its
 contract end to end — the panels execute against a live scrape, not
 mocked data (verified 2026-09-23; see `docs/screenshot-grafana.png`).
 
+This compose stack is the DEMO shape (an in-process probe behind the
+example server). The DEPLOYMENT shape — the federated hub as a NixOS
+service — lives in [`../nix/nixos-module.nix`](../nix/nixos-module.nix): `flake.nixosModules.default`
+(`services.health-dashboard`, boot-verified 2026-11-12, see FEATURES).
+Use the module when you want one dashboard over every go-health endpoint
+you already run; use this stack when you want the metrics contract on a
+scratch machine.
+
 ## Run it
 
 ```bash
