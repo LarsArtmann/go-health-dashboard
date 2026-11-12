@@ -478,3 +478,18 @@ the healthy shape: a re-run of a green tree means the operator wanted a
 full run and should say so. The 2026-10-30 cache-green incident (a failed
 test-race step "passing" in ~6s from cache) is the failure mode this
 contract prevents recurring.
+
+## 27. The relabel-daemon standing pattern (2026-11-12, exercised twice this session)
+
+When an intent message must ride a commit the daemon already created and
+PUSHED (the daemon beat the intent commit), the sanctioned relabel is:
+(1) `git show` the daemon commit and verify it holds your content
+byte-for-byte; (2) `git commit --amend` carries the full intent message
+PLUS a daemon-disclosure line naming the relabeled hash and "no rebase";
+(3) `git push --force-with-lease origin master` — lease-protected, so a
+concurrent remote move fails the push instead of clobbering it. Plain
+`--force` stays banned (fleet doctrine), rebasing a daemon commit away
+stays banned, and the disclosure line is what makes the history honest:
+a reader sees the intent message AND knows the capture was the daemon's.
+This session's worked examples: 07b5d24 → f75506e (T14, browser helper
+extraction) and 3a64191 → 70aa379 (T18, devShell tooling batch).
