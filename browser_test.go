@@ -16,9 +16,9 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"syscall"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"testing"
 	"time"
 
@@ -199,20 +199,20 @@ const browserHostLockFile = "go-health-dashboard-browser-serial.lock"
 func lockBrowserHost(t *testing.T) func() {
 	t.Helper()
 
-	f, err := os.OpenFile(filepath.Join(os.TempDir(), browserHostLockFile),
+	lockFile, err := os.OpenFile(filepath.Join(os.TempDir(), browserHostLockFile),
 		os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
 		t.Fatalf("browser host lock open: %v", err)
 	}
 
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
-		_ = f.Close()
+	if err := syscall.Flock(int(lockFile.Fd()), syscall.LOCK_EX); err != nil {
+		_ = lockFile.Close()
 		t.Fatalf("browser host lock: %v", err)
 	}
 
 	return func() {
-		_ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
-		_ = f.Close()
+		_ = syscall.Flock(int(lockFile.Fd()), syscall.LOCK_UN)
+		_ = lockFile.Close()
 	}
 }
 

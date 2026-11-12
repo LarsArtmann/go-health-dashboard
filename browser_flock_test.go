@@ -14,6 +14,8 @@ import (
 // descriptions). Pins the M19 mechanism: held → non-blocking contender
 // refuses; released → contender acquires.
 func TestBrowserHostLock_SerializesAcrossDescriptions(t *testing.T) {
+	t.Parallel()
+
 	lockPath := filepath.Join(os.TempDir(), browserHostLockFile)
 
 	release := lockBrowserHost(t)
