@@ -240,11 +240,27 @@
             test = mkApp "test" "Regenerate templ output and run the full test suite" [ goPkg ] ''
               go tool templ generate
               GOEXPERIMENT=jsonv2 go test ./... -count=1 "$@"
+              # Loud browser-suite verdict: per-test SKIP lines scroll by
+              # quietly and a green run says nothing about whether the 22
+              # browser tests executed at all (the 2026-10-28 Chrome incident
+              # burned a full timeout cycle before anyone asked). Config-truth
+              # signal: devShell runs carry GO_HEALTH_DASHBOARD_CHROME, so the
+              # suite ran unless the in-test preflight skipped a broken host.
+              if [ -n "''${GO_HEALTH_DASHBOARD_CHROME:-}" ] && [ -x "''${GO_HEALTH_DASHBOARD_CHROME}" ]; then
+                echo ">>> browser suite: RAN (GO_HEALTH_DASHBOARD_CHROME=''${GO_HEALTH_DASHBOARD_CHROME}; the in-test preflight may still skip a broken host)"
+              else
+                echo ">>> browser suite: SKIPPED (GO_HEALTH_DASHBOARD_CHROME unset — run inside 'nix develop' to exercise the browser suite)"
+              fi
             '';
 
             test-race = mkApp "test-race" "Run the test suite under the race detector" [ goPkg ] ''
               go tool templ generate
               GOEXPERIMENT=jsonv2 go test ./... -race -count=1 "$@"
+              if [ -n "''${GO_HEALTH_DASHBOARD_CHROME:-}" ] && [ -x "''${GO_HEALTH_DASHBOARD_CHROME}" ]; then
+                echo ">>> browser suite: RAN (GO_HEALTH_DASHBOARD_CHROME=''${GO_HEALTH_DASHBOARD_CHROME})"
+              else
+                echo ">>> browser suite: SKIPPED (GO_HEALTH_DASHBOARD_CHROME unset — run inside 'nix develop' to exercise the browser suite)"
+              fi
             '';
 
             build = mkApp "build" "Regenerate templ output and compile all packages" [ goPkg ] ''
