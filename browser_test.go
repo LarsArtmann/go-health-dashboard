@@ -12,9 +12,11 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
+	"syscall"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -182,6 +184,38 @@ var browserSerial sync.Mutex
 // other test launches Chrome concurrently.
 var lastChromeLaunch atomic.Int64
 
+// browserHostLockFile is the cross-process serialization lock (M19,
+// 2026-11-12): browserSerial only serializes goroutines of ONE test
+// process, but the host runs many agent/test processes at once — the
+// 2026-10-28 incident class was ~95 leaked Chromium processes from
+// concurrent sessions competing for the same CPU. An flock on this file
+// held for each browser session's lifetime makes any process' browser
+// tests take turns, exactly mirroring the in-process mutex semantics.
+const browserHostLockFile = "go-health-dashboard-browser-serial.lock"
+
+// lockBrowserHost takes the cross-process flock and returns its release
+// func. Blocking flock: waiters queue in arrival order like the in-process
+// mutex; the session timeout (45s announce) bounds any single holder.
+func lockBrowserHost(t *testing.T) func() {
+	t.Helper()
+
+	f, err := os.OpenFile(filepath.Join(os.TempDir(), browserHostLockFile),
+		os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		t.Fatalf("browser host lock open: %v", err)
+	}
+
+	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
+		_ = f.Close()
+		t.Fatalf("browser host lock: %v", err)
+	}
+
+	return func() {
+		_ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+		_ = f.Close()
+	}
+}
+
 // startHeadlessChrome launches Chrome manually with a concrete DevTools port
 // and returns the websocket debugger URL parsed from stderr. chromedp's own
 // launcher queries the debugger over 127.0.0.1, which hangs when Chrome
@@ -193,6 +227,11 @@ func startHeadlessChrome(t *testing.T, chromePath string) (string, func()) {
 	launchedAt := time.Now()
 
 	browserSerial.Lock()
+	releaseHost := lockBrowserHost(t)
+	release := func() {
+		releaseHost()
+		browserSerial.Unlock()
+	}
 
 	// t.TempDir cleanup races Chrome's renderer children, which keep writing
 	// into the profile after the browser process exits — removal is retried
@@ -200,7 +239,7 @@ func startHeadlessChrome(t *testing.T, chromePath string) (string, func()) {
 	//nolint:usetesting // see above
 	profileDir, err := os.MkdirTemp("", "go-health-dashboard-chrome-")
 	if err != nil {
-		browserSerial.Unlock()
+		release()
 
 		t.Fatalf("chrome profile dir: %v", err)
 	}
@@ -220,7 +259,7 @@ func startHeadlessChrome(t *testing.T, chromePath string) (string, func()) {
 	}
 
 	if err := cmd.Start(); err != nil {
-		browserSerial.Unlock()
+		release()
 
 		t.Fatalf("chrome start: %v", err)
 	}
@@ -243,7 +282,7 @@ func startHeadlessChrome(t *testing.T, chromePath string) (string, func()) {
 	// and keep writing into the profile, so removal retries briefly before
 	// giving up (the OS temp dir is the final safety net).
 	stopChrome := func() {
-		defer browserSerial.Unlock()
+		defer release()
 
 		_ = cmd.Process.Signal(os.Interrupt)
 		_ = cmd.Wait()
@@ -263,14 +302,14 @@ func startHeadlessChrome(t *testing.T, chromePath string) (string, func()) {
 			_ = cmd.Process.Kill()
 			_ = cmd.Wait()
 			_ = os.RemoveAll(profileDir)
-			browserSerial.Unlock()
+			release()
 
 			t.Fatal("chrome did not announce a DevTools websocket within 45s")
 		case line, ok := <-lines:
 			if !ok {
 				_ = cmd.Wait()
 				_ = os.RemoveAll(profileDir)
-				browserSerial.Unlock()
+				release()
 
 				t.Fatal("chrome exited before announcing a DevTools websocket")
 			}
