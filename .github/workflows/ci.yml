@@ -279,9 +279,20 @@ jobs:
           go tool templ generate ./...
           nix fmt
           if ! git diff --exit-code; then
+            git diff > fmt-drift.diff
             echo "::error::go tool templ generate + nix fmt produced diffs — commit the result of 'go tool templ generate' followed by 'nix fmt'"
             exit 1
           fi
+
+      # The raw drift diff rides along as an artifact so the fix is
+      # mechanical: download, apply, commit — no local regeneration needed.
+      - name: Upload fmt-drift diff
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fmt-drift
+          path: fmt-drift.diff
+          if-no-files-found: ignore
 
       - name: nix flake check
         run: nix flake check

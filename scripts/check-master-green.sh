@@ -41,10 +41,22 @@ declare -a RED_STALE=()
 
 for wf in "${WORKFLOWS[@]}"; do
 	json="$(gh run list --repo "$REPO" --workflow "$wf" --branch master \
-		--status completed --limit 1 --json name,conclusion,createdAt,url 2>/dev/null || echo '[]')"
+		--status completed --limit 1 --json name,conclusion,createdAt,url,databaseId 2>/dev/null || echo '[]')"
 	conclusion="$(echo "$json" | jq -r '.[0].conclusion // ""')"
 	if [ "$conclusion" = "failure" ]; then
-		RED_WORKFLOW+=("$(echo "$json" | jq -r '.[0] | "- \(.name): latest master run failed at \(.createdAt) — \(.url)"')")
+		# Name the failing job(s) in the alert body — the run URL alone
+		# forces every reader to click through and expand the jobs list.
+		run_id="$(echo "$json" | jq -r '.[0].databaseId // ""')"
+		jobs=""
+		if [ -n "$run_id" ]; then
+			jobs="$(gh run view "$run_id" --repo "$REPO" --json jobs \
+				--jq '[.jobs[] | select(.conclusion == "failure") | .name] | join(", ")' 2>/dev/null || echo '')"
+		fi
+		job_line=""
+		if [ -n "$jobs" ]; then
+			job_line=" — failing job(s): $jobs"
+		fi
+		RED_WORKFLOW+=("$(echo "$json" | jq -r '.[0] | "- \(.name): latest master run failed at \(.createdAt) — \(.url)"')$job_line")
 	fi
 done
 
