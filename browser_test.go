@@ -2730,15 +2730,20 @@ func TestBrowser_StrictCSPNoEvalConnects(t *testing.T) {
 	deadline := time.Now().Add(15 * time.Second)
 	for s.dash.SubscriberCount() == 0 {
 		if time.Now().After(deadline) {
-			t.Fatal("Datastar SDK never connected under the no-unsafe-eval CSP — the root data-nonce path is broken (issue #23)")
+			t.Fatal(
+				"Datastar SDK never connected under the no-unsafe-eval CSP — the root data-nonce path is broken (issue #23)",
+			)
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
 
 	// The pill's live state proves a patch actually applied and its events
 	// dispatched (it is driven by the SDK's patch-event stream).
-	waitForJS(t, ctx,
-		`document.getElementById("conn-state-live") !== null && document.getElementById("conn-state-live").hidden === false`)
+	waitForJS(
+		t,
+		ctx,
+		`document.getElementById("conn-state-live") !== null && document.getElementById("conn-state-live").hidden === false`,
+	)
 
 	// Expression evaluation in nonce mode: the chip's data-on:click writes
 	// the statusFilter signal and its own data-attr:aria-pressed reflects
@@ -2748,8 +2753,11 @@ func TestBrowser_StrictCSPNoEvalConnects(t *testing.T) {
 		t.Fatalf("click problems chip: %v", err)
 	}
 
-	waitForJS(t, ctx,
-		`document.getElementById("status-filter-problems") !== null && document.getElementById("status-filter-problems").getAttribute("aria-pressed") === "true"`)
+	waitForJS(
+		t,
+		ctx,
+		`document.getElementById("status-filter-problems") !== null && document.getElementById("status-filter-problems").getAttribute("aria-pressed") === "true"`,
+	)
 
 	assertNoBrowserErrors(t, errLog)
 }
