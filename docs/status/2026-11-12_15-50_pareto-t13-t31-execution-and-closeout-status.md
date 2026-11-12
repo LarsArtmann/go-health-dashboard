@@ -53,9 +53,9 @@
    `dashboard_ratelimit_429_total` + Retry-After histogram (ONE retry value
    per rejection feeding header, JSON body, and metrics — the old code
    called retryAfter() twice), ±10% lifetime jitter (`jitterLifetime`, range
-   + spread tested), Retry-After on connection-limit 503s (retry interval,
-   push-interval fallback), lint findings fixed (magic 10 → constant, gosec
-   nolint with reason).
+   - spread tested), Retry-After on connection-limit 503s (retry interval,
+     push-interval fallback), lint findings fixed (magic 10 → constant, gosec
+     nolint with reason).
 7. **T18 M20+M24** (`70aa379` relabeled from `3a64191`): shellcheck +
    actionlint in the devShell, two SC2001 style findings fixed in
    check-changelog.sh, and `scripts/test-cold-cache-pins.sh` — which caught

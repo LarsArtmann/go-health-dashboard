@@ -63,8 +63,8 @@ ban (this dashboard keeps its own safer palette).
 
 ## Filing state (F121)
 
-| Draft | Verdict | Filed? |
-| ----- | ------- | ------ |
-| templ gofumpt | STALE | No — retired |
-| erraudit nolint-audit | Valid | No — awaits authorization |
-| StatCard contrast | REFUTED | No — row closes as refuted |
+| Draft                 | Verdict | Filed?                     |
+| --------------------- | ------- | -------------------------- |
+| templ gofumpt         | STALE   | No — retired               |
+| erraudit nolint-audit | Valid   | No — awaits authorization  |
+| StatCard contrast     | REFUTED | No — row closes as refuted |

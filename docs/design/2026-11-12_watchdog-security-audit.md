@@ -6,14 +6,14 @@ check, and the watched-list dedupe (plan T23/M30).
 
 ## workflow_run / fork security (F105)
 
-| Surface | Finding | Verdict |
-| ------- | ------- | ------- |
-| Trigger | `workflow_run` on CI completed, `branches: [master]` | SAFE — fork PR runs never carry the master branch ref, so fork activity cannot trigger the watchdog |
-| Permissions | `actions: read` + `issues: write` | LEAST-PRIVILEGE — exactly what `gh run list` + issue create need; no contents/pull-requests |
-| Checkout | Pinned SHA (`v7.0.1`), `persist-credentials: false` | SAFE — no credential persists into the script step |
-| Script source | `scripts/check-master-green.sh` checked out from the master tip | INHERENT — the workflow's event checks out the default branch, so the executed guard is always master-tested content |
-| Injection | Watched names enter `gh run list --workflow "$wf"` quoted; issue bodies interpolate API results via jq, not shell eval | SAFE — no unquoted expansion; names are repo-controlled content |
-| GITHUB_TOKEN | Ephemeral, repo-scoped | SAFE |
+| Surface       | Finding                                                                                                                | Verdict                                                                                                              |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Trigger       | `workflow_run` on CI completed, `branches: [master]`                                                                   | SAFE — fork PR runs never carry the master branch ref, so fork activity cannot trigger the watchdog                  |
+| Permissions   | `actions: read` + `issues: write`                                                                                      | LEAST-PRIVILEGE — exactly what `gh run list` + issue create need; no contents/pull-requests                          |
+| Checkout      | Pinned SHA (`v7.0.1`), `persist-credentials: false`                                                                    | SAFE — no credential persists into the script step                                                                   |
+| Script source | `scripts/check-master-green.sh` checked out from the master tip                                                        | INHERENT — the workflow's event checks out the default branch, so the executed guard is always master-tested content |
+| Injection     | Watched names enter `gh run list --workflow "$wf"` quoted; issue bodies interpolate API results via jq, not shell eval | SAFE — no unquoted expansion; names are repo-controlled content                                                      |
+| GITHUB_TOKEN  | Ephemeral, repo-scoped                                                                                                 | SAFE                                                                                                                 |
 
 ## Self-watch (F106)
 
