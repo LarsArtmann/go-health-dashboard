@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -123,6 +124,20 @@ type Config struct {
 	// limiting (default). Probe endpoints are never limited.
 	RateLimitRequests int
 	RateLimitWindow   time.Duration
+
+	// PerIPRateLimitRequests and PerIPRateLimitWindow configure a
+	// per-remote-address token bucket (WithPerIPRateLimit). Zero disables
+	// (default). Keyed on RemoteAddr only — never proxy headers — so a
+	// reverse-proxy deployment that wants per-client fairness should gate
+	// at the proxy or pass real client addresses through WithMiddleware.
+	PerIPRateLimitRequests int
+	PerIPRateLimitWindow   time.Duration
+
+	// RequestLogger, when non-nil, receives one structured log line per
+	// dashboard-owned request (method, path, status, duration, remote
+	// address) at Info level (WithRequestLogging). Nil (default) logs
+	// nothing. Probe endpoints are never logged.
+	RequestLogger *slog.Logger
 
 	// WebhookURL receives a JSON status snapshot on every health-state
 	// transition (change-only, independent of PushMode). Empty disables the
@@ -270,6 +285,32 @@ func WithRateLimit(maxRequests int, window time.Duration) Option {
 		c.RateLimitRequests = maxRequests
 		c.RateLimitWindow = window
 	}
+}
+
+// WithPerIPRateLimit caps dashboard-owned routes per remote address: each
+// RemoteAddr gets its own token bucket (bursts up to maxRequests, refilling
+// at maxRequests per window); excess requests receive 429 with a
+// Retry-After header, exactly like the shared WithRateLimit. Rejections
+// feed the same dashboard_ratelimit_* metrics family. Addresses are keyed
+// on RemoteAddr only — proxy headers are deliberately ignored, since they
+// are attacker-controlled; front a proxy deployment with per-client
+// fairness at the proxy itself. Stale per-address buckets are swept once
+// the map exceeds 4096 entries (idle for a full window). Kubernetes probe
+// endpoints are never limited.
+func WithPerIPRateLimit(maxRequests int, window time.Duration) Option {
+	return func(c *Config) {
+		c.PerIPRateLimitRequests = maxRequests
+		c.PerIPRateLimitWindow = window
+	}
+}
+
+// WithRequestLogging logs one structured line per dashboard-owned request
+// (method, path, status, duration, remote address) at Info level. Opt-in:
+// nil (default) logs nothing. Probe endpoints are never logged, and the
+// line carries only non-identifying wire facts (no query strings, no
+// headers, no check names).
+func WithRequestLogging(logger *slog.Logger) Option {
+	return func(c *Config) { c.RequestLogger = logger }
 }
 
 // WithDescription sets the meta description and Open Graph tags for the

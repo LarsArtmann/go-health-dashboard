@@ -1,11 +1,15 @@
 package dashboard_test
 
 import (
+	"bytes"
+	"context"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	dashboard "github.com/larsartmann/go-health-dashboard"
 )
@@ -227,5 +231,200 @@ func TestMiddleware_WithoutMiddlewareRoutesStayOpen(t *testing.T) {
 		if w.Code != http.StatusOK {
 			t.Errorf("%s: want 200 without middleware, got %d", route, w.Code)
 		}
+	}
+}
+
+// --- Per-IP rate limiting (M16) -----------------------------------------
+
+// Per-IP limiting must isolate addresses: exhausting one IP's budget never
+// touches another's, unlike the shared WithRateLimit bucket. Ports don't
+// split the budget (the key is the host), and rejections feed the same
+// ratelimit metrics family as the shared limiter (M14).
+func TestPerIPRateLimit_IsolatesAddresses(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t,
+		dashboard.WithMetrics(true),
+		dashboard.WithPerIPRateLimit(2, time.Second),
+	)
+	defer s.cleanup()
+
+	do := func(remote string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
+		req.RemoteAddr = remote
+
+		w := httptest.NewRecorder()
+		s.mux.ServeHTTP(w, req)
+
+		return w
+	}
+
+	if w := do("10.0.0.1:1000"); w.Code != http.StatusOK {
+		t.Fatalf("first request from .1: want 200, got %d", w.Code)
+	}
+
+	if w := do("10.0.0.1:1001"); w.Code != http.StatusOK {
+		t.Fatalf("second request from .1 (new port, same host): want 200, got %d", w.Code)
+	}
+
+	rejected := do("10.0.0.1:1002")
+	if rejected.Code != http.StatusTooManyRequests {
+		t.Fatalf("third request from .1: want 429, got %d", rejected.Code)
+	}
+
+	if rejected.Header().Get("Retry-After") == "" {
+		t.Fatal("429 missing Retry-After")
+	}
+
+	if w := do("10.0.0.2:1000"); w.Code != http.StatusOK {
+		t.Fatalf("first request from .2: want 200 (budgets are per-address), got %d", w.Code)
+	}
+
+	// The rejection rode the shared M14 family (counter + histogram both
+	// present because WithMetrics is on and a limiter is configured).
+	metrics := doRequest(t, s.mux, "/health/metrics").Body.String()
+	if !strings.Contains(metrics, "dashboard_ratelimit_429_total 1\n") {
+		t.Errorf("metrics missing the per-IP rejection:\n%s", metrics)
+	}
+}
+
+// The per-address map must not grow without bound: addresses beyond the
+// sweep threshold with idle buckets are evicted, and an evicted address
+// simply gets a fresh bucket.
+func TestPerIPRateLimit_SweepsIdleBuckets(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t, dashboard.WithPerIPRateLimit(5, 30*time.Millisecond))
+	defer s.cleanup()
+
+	do := func(remote string) int {
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
+		req.RemoteAddr = remote
+
+		w := httptest.NewRecorder()
+		s.mux.ServeHTTP(w, req)
+
+		return w.Code
+	}
+
+	for i := range 5000 {
+		code := do("10.1." + string(rune('0'+i%10)) + "." + string(rune('0'+i/10%10)) + ":9")
+		if code == http.StatusTooManyRequests {
+			t.Fatalf("request %d rejected before exhausting any single budget", i)
+		}
+	}
+}
+
+// Probes stay exempt from per-IP limiting: the kubelet cannot authenticate,
+// and gating breaks liveness.
+func TestPerIPRateLimit_ProbesExempt(t *testing.T) {
+	t.Parallel()
+
+	s := setupDashboard(t, dashboard.WithPerIPRateLimit(1, time.Second))
+	defer s.cleanup()
+
+	for range 5 {
+		req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+		req.RemoteAddr = "10.9.9.9:1"
+
+		w := httptest.NewRecorder()
+		s.mux.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("healthz with per-IP limiter exhausted elsewhere: want 200, got %d", w.Code)
+		}
+	}
+}
+
+// --- Request logging (M17) ----------------------------------------------
+
+// WithRequestLogging emits one structured line per dashboard-owned request
+// carrying method, path, status, and duration; it stays off by default and
+// never logs probe endpoints.
+func TestRequestLogging_RecordsDashboardRequests(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	s := setupDashboard(t, dashboard.WithRequestLogging(slog.New(slog.NewTextHandler(&buf, nil))))
+	defer s.cleanup()
+
+	doRequest(t, s.mux, "/health")
+
+	line := buf.String()
+	for _, want := range []string{"method=GET", "path=/health", "status=200", "duration="} {
+		if !strings.Contains(line, want) {
+			t.Errorf("log line missing %q: %s", want, line)
+		}
+	}
+
+	buf.Reset()
+
+	doRequest(t, s.mux, "/healthz")
+
+	if buf.Len() != 0 {
+		t.Errorf("probe endpoints must not be logged, got: %s", buf.String())
+	}
+}
+
+// Rejections are logged too (the logger wraps the limiters), and the
+// recorded status is the 429 the client actually received.
+func TestRequestLogging_RecordsRejections(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	s := setupDashboard(t,
+		dashboard.WithRequestLogging(slog.New(slog.NewTextHandler(&buf, nil))),
+		dashboard.WithRateLimit(1, time.Second),
+	)
+	defer s.cleanup()
+
+	doRequest(t, s.mux, "/health")
+
+	rejected := doRequest(t, s.mux, "/health")
+	if rejected.Code != http.StatusTooManyRequests {
+		t.Fatalf("second request: want 429, got %d", rejected.Code)
+	}
+
+	if !strings.Contains(buf.String(), "status=429") {
+		t.Errorf("log line missing the rejection status: %s", buf.String())
+	}
+}
+
+// SSE streaming must keep flushing through the logging recorder (the
+// pusher's patches and heartbeats flush incrementally).
+func TestRequestLogging_PreservesSSEFlush(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	s := setupDashboard(t,
+		dashboard.WithRequestLogging(slog.New(slog.NewTextHandler(&buf, nil))),
+		dashboard.WithMetrics(true),
+	)
+	defer s.cleanup()
+
+	srv := httptest.NewServer(s.mux)
+	defer srv.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL+"/health/sse", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("SSE connect: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	chunk := make([]byte, 1024)
+
+	if _, err := resp.Body.Read(chunk); err != nil {
+		t.Fatalf("read initial patch: %v", err)
 	}
 }

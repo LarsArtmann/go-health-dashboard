@@ -85,28 +85,7 @@ func (d *Dashboard) applyRateLimit(next http.Handler) http.Handler {
 			d.ratelimit429Total.Add(1)
 			d.ratelimitRetryAfter.observe(float64(retry))
 
-			if wantsJSON(r) {
-				body, err := json.Marshal(
-					rateLimitBody{
-						Error:      "dashboard: rate limit exceeded",
-						RetryAfter: retry,
-					},
-					json.Deterministic(true),
-				)
-				if err != nil {
-					http.Error(w, "dashboard: rate limit exceeded", http.StatusTooManyRequests)
-
-					return
-				}
-
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusTooManyRequests)
-				writeBody(w, body)
-
-				return
-			}
-
-			http.Error(w, "dashboard: rate limit exceeded", http.StatusTooManyRequests)
+			serveRateLimited(w, r, retry)
 
 			return
 		}
@@ -121,4 +100,32 @@ func (d *Dashboard) applyRateLimit(next http.Handler) http.Handler {
 type rateLimitBody struct {
 	Error      string `json:"error"`
 	RetryAfter int    `json:"retry_after"`
+}
+
+// serveRateLimited answers a rejection: JSON body for JSON-negotiating
+// clients (the retry_after field mirrors the Retry-After header), plain
+// text otherwise. Both limiter kinds (shared and per-IP) share the shape.
+func serveRateLimited(w http.ResponseWriter, r *http.Request, retry int) {
+	if wantsJSON(r) {
+		body, err := json.Marshal(
+			rateLimitBody{
+				Error:      "dashboard: rate limit exceeded",
+				RetryAfter: retry,
+			},
+			json.Deterministic(true),
+		)
+		if err != nil {
+			http.Error(w, "dashboard: rate limit exceeded", http.StatusTooManyRequests)
+
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		writeBody(w, body)
+
+		return
+	}
+
+	http.Error(w, "dashboard: rate limit exceeded", http.StatusTooManyRequests)
 }

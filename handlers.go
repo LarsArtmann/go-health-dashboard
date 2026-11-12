@@ -280,23 +280,23 @@ func (d *Dashboard) buildData(r *http.Request) viewModel {
 func (d *Dashboard) RegisterRoutes(mux *http.ServeMux) {
 	routes := d.cfg.Routes
 
-	mux.Handle(routes.Dashboard, d.wrap(d.applyRateLimit(d.Handler())))
-	mux.Handle(routes.SSE, d.wrap(d.applyRateLimit(d.SSEHandler())))
+	mux.Handle(routes.Dashboard, d.wrap(d.gated(d.Handler())))
+	mux.Handle(routes.SSE, d.wrap(d.gated(d.SSEHandler())))
 
 	if routes.Favicon != "" {
-		mux.Handle(routes.Favicon, d.wrap(d.applyRateLimit(d.FaviconHandler())))
+		mux.Handle(routes.Favicon, d.wrap(d.gated(d.FaviconHandler())))
 	}
 
 	if d.cfg.MetricsEnabled && routes.Metrics != "" {
-		mux.Handle(routes.Metrics, d.wrap(d.applyRateLimit(d.MetricsHandler())))
+		mux.Handle(routes.Metrics, d.wrap(d.gated(d.MetricsHandler())))
 	}
 
 	if d.cfg.TrendSamples > 0 && routes.Trend != "" {
-		mux.Handle(routes.Trend, d.wrap(d.applyRateLimit(d.TrendHandler())))
+		mux.Handle(routes.Trend, d.wrap(d.gated(d.TrendHandler())))
 	}
 
 	if d.cfg.TrendSamples > 0 && routes.Export != "" {
-		mux.Handle(routes.Export, d.wrap(d.applyRateLimit(d.ExportHandler())))
+		mux.Handle(routes.Export, d.wrap(d.gated(d.ExportHandler())))
 	}
 
 	if d.cfg.Introspection && routes.Introspect != "" {
@@ -338,6 +338,13 @@ func (d *Dashboard) wrap(h http.Handler) http.Handler {
 	}
 
 	return d.cfg.Middleware(h)
+}
+
+// gated chains the opt-in dashboard-route guards around a handler:
+// request logging (outermost, so rejections are logged too) → per-IP rate
+// limit → shared rate limit → handler. Probe endpoints bypass all three.
+func (d *Dashboard) gated(h http.Handler) http.Handler {
+	return d.applyRequestLogging(d.applyPerIPRateLimit(d.applyRateLimit(h)))
 }
 
 // embeddedSDKHandler serves the pinned Datastar SDK bundle from the

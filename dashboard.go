@@ -91,8 +91,11 @@ type Dashboard struct {
 	cfg     Config
 	push    atomic.Pointer[pusher]
 	limiter *rateLimiter
-	latency *latencyHistogram
-	notify  *webhookNotifier
+	// perIPLimiter gates dashboard-owned routes per remote address
+	// (WithPerIPRateLimit); nil unless configured.
+	perIPLimiter *perIPRateLimiter
+	latency      *latencyHistogram
+	notify       *webhookNotifier
 
 	// history and evidence are the presentation-state ingest buffers,
 	// owned by the Dashboard (not the pusher) so probe-cadence observations
@@ -179,6 +182,14 @@ func New(probe Prober, opts ...Option) *Dashboard {
 	if cfg.RateLimitRequests > 0 && cfg.RateLimitWindow > 0 {
 		d.limiter = newRateLimiter(cfg.RateLimitRequests, cfg.RateLimitWindow)
 		d.ratelimitRetryAfter = newLatencyHistogram()
+	}
+
+	if cfg.PerIPRateLimitRequests > 0 && cfg.PerIPRateLimitWindow > 0 {
+		d.perIPLimiter = newPerIPRateLimiter(cfg.PerIPRateLimitRequests, cfg.PerIPRateLimitWindow)
+
+		if d.ratelimitRetryAfter == nil {
+			d.ratelimitRetryAfter = newLatencyHistogram()
+		}
 	}
 
 	return d
