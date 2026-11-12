@@ -172,7 +172,12 @@ go_list() {
 fail=0
 check_pin() {
 	local module="$1" expected="$2"
-	actual=$(go_list "$module" | awk '{print $2}')
+	# || true: on a cold cache with downloads fully blocked the version
+	# query itself cannot resolve — the guard must still reach its own
+	# loud ::error:: path below (empty actual mismatches the pin) instead
+	# of dying on the raw tool error under set -e (caught by the
+	# cold-cache behavior test, 2026-11-12).
+	actual=$(go_list "$module" | awk '{print $2}') || true
 	if [[ "$actual" == "$expected" ]]; then
 		echo "OK  $module $actual"
 	else

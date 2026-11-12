@@ -29,7 +29,12 @@ trap cleanup EXIT
 leg1_out="$scratch/leg1.log"
 
 # --- Leg 1: download impossible → loud failure --------------------------
-if GOMODCACHE="$scratch/off" GOPROXY=off bash scripts/check-ui-pins.sh >"$leg1_out" 2>&1; then
+# GOVCS=off is required alongside GOPROXY=off: this host carries
+# GOPRIVATE=github.com/larsartmann/*, and with the proxy off the go
+# command falls back to DIRECT git VCS for those modules (observed
+# 2026-11-12) — without GOVCS=off the "offline" leg would secretly
+# download and pass.
+if GOMODCACHE="$scratch/off" GOPROXY=off GOVCS='*:off' bash scripts/check-ui-pins.sh >"$leg1_out" 2>&1; then
 	echo "::error::check-ui-pins.sh PASSED with an empty GOMODCACHE and GOPROXY=off — the guard passed on missing evidence; the cold-cache loud-failure path is dead"
 	exit 1
 fi
