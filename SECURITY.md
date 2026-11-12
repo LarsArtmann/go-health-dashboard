@@ -48,4 +48,4 @@ do not test against deployments you do not own.
 
 ---
 
-_Maintained with [securitymd](https://github.com/LarsArtmann/securitymd). Last updated: 2026-11-05._
+_Maintained with [securitymd](https://github.com/LarsArtmann/securitymd). Last updated: 2026-11-12._
