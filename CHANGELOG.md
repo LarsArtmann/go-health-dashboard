@@ -13,6 +13,12 @@ sit sandwiched between two released sections — at tag time it ships into the
 cut or its contents wait for the next one; decide explicitly, never by
 forgetting.
 
+## [Unreleased]
+
+### Added
+
+- Nothing yet.
+
 ## [0.13.3] - 2026-11-12
 
 ### Added
