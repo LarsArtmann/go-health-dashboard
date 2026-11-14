@@ -73,10 +73,11 @@ forgetting.
   rate-limit constructors share one clamp floor, the public-mode metric
   label is one method, `parsePushInterval` delegates to `parseTimeout`,
   the demo binaries share `internal/env.GetOrDefault`, the four operator
-  endpoint links render through one templ component, and the evidence
-  fixture folds with go-health's own `Status.Rank`. The only rendered
-  delta is three dropped inter-anchor spaces inside a flex-gap container
-  (verified byte-diffed old vs new); no wire contract changed.
+  endpoint links render through one templ component driven by a derived
+  link list, and the evidence fixture folds with go-health's own
+  `Status.Rank`. The only rendered delta is three dropped inter-anchor
+  spaces inside a flex-gap container (verified byte-diffed old vs new);
+  no wire contract changed.
 
 ## [0.13.3] - 2026-11-12
 

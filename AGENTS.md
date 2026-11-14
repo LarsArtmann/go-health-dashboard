@@ -403,11 +403,16 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   reuses `sortedCheckNames`, shared `normalizeRateLimit` clamp (both
   rate-limit constructors), `checkMetricLabel` (public-mode metric label),
   `parsePushInterval` delegates to `parseTimeout`, demo binaries share
-  `internal/env.GetOrDefault`, four operator endpoint links render through
-  one `endpointLink` templ component (the entire rendered delta is three
-  dropped inter-anchor spaces inside a flex-gap container — byte-diffed,
-  99.99% equal), and the evidence fixture folds with go-health's own
-  `Status.Rank` instead of a hand-rolled switch. No wire contract changed.
+  `internal/env.GetOrDefault`, the four operator endpoint links render
+  through one `endpointLink` templ component driven by a derived link list
+  (`endpointLinksFor` → single render loop; the golden battery caught and
+  fixed a dead `?format=csv` link when the route is unset — the CSV href
+  must be gated by an `Enabled` flag, not URL-non-empty), and the evidence
+  fixture folds with go-health's own `Status.Rank` instead of a
+  hand-rolled switch. No wire contract changed; render equivalence was
+  verified by fixed-SHA worktree byte-diffs at each step — the only
+  delta against the pre-pass page is three dropped inter-anchor spaces
+  inside a flex-gap container (visual: none).
 - **templ-generate is skip-gated: it races nix source snapshots** — the
   step re-raws `*_templ.go` mid-run and BuildFlow lets nix-evaluating steps
   snapshot during the raw window, poisoning the treefmt check
