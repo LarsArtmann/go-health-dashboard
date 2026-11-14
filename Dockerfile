@@ -4,7 +4,7 @@
 # `go mod download` with "go.mod requires go >= ..." (hit 2026-09-23: the
 # compose stack had never been booted since the floor moved). When bumping
 # go.mod's floor, move this pin in the same change.
-FROM golang:1.27.1-alpine@sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414 AS build
+FROM golang:1.27.4-alpine@sha256:0a5f7fe796599ff487605987432e7619ae45beeb2fba4c2ce0b907879932aebf AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
