@@ -22,24 +22,20 @@ func respWithChecks(statuses map[string]health.Status) health.Response {
 }
 
 // worstOf rolls per-check statuses up the way go-health does: fail beats
-// warn beats pass; off keeps the floor (pass-tier, v0.5.1).
+// warn beats pass; off keeps the floor (pass-tier, v0.5.1). It folds with
+// go-health's own [health.Status.Rank] — the same comparison the library's
+// merge sites use — so fixtures cannot drift from the library's severity
+// order.
 func worstOf(statuses map[string]health.Status) health.Status {
-	status := health.StatusPass
+	worst := health.StatusPass
 
 	for _, s := range statuses {
-		switch s {
-		case health.StatusFail:
-			return health.StatusFail
-		case health.StatusWarn:
-			status = health.StatusWarn
-		case health.StatusPass:
-			// pass keeps the floor
-		case health.StatusOff:
-			// off keeps the floor
+		if s.Rank() < worst.Rank() {
+			worst = s
 		}
 	}
 
-	return status
+	return worst
 }
 
 func TestEvidenceLog_ObservesNonPass(t *testing.T) {
