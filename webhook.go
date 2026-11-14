@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -74,11 +73,7 @@ type webhookNotifier struct {
 	public     bool
 	client     *http.Client
 
-	mu              sync.Mutex
-	lastStatus      health.Status
-	lastFingerprint string
-	announced       bool
-
+	changes  changeDetector
 	inFlight atomic.Int64
 }
 
@@ -118,22 +113,9 @@ type webhookCheck struct {
 // Called from the push loop; never blocks on network I/O. The URL is
 // deliberately never logged — it may embed a bearer secret.
 func (n *webhookNotifier) fireOnChange(resp health.Response) {
-	fp := fingerprintChecks(resp.Checks)
-
-	n.mu.Lock()
-	if n.announced && resp.Status == n.lastStatus && fp == n.lastFingerprint {
-		n.mu.Unlock()
-
-		return
+	if n.changes.changed(resp) {
+		go n.post(resp)
 	}
-
-	n.lastStatus = resp.Status
-	n.lastFingerprint = fp
-
-	n.announced = true
-	n.mu.Unlock()
-
-	go n.post(resp)
 }
 
 // post delivers the snapshot. Failures are silent by contract: the endpoint

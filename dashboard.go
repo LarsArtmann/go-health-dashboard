@@ -382,18 +382,25 @@ type ProberHealthchecker interface {
 // presentation state. With the hook wired, trend and evidence sample at
 // probe cadence; the pusher keeps its own tick ingest, so adjacent samples
 // agree (both paths read the same evaluated state).
-func (d *Dashboard) Observe(resp health.Response) {
-	now := time.Now()
-
-	if d.evidence != nil {
-		d.evidence.observe(resp, now)
+// recordEvaluation feeds one evaluated response into the presentation
+// buffers: the evidence log accrues non-pass observations and the trend
+// ring records a sample. Both ingest paths — Dashboard.Observe at probe
+// cadence (ADR-0003) and the pusher's per-tick ingest — share this body so
+// adjacent samples agree regardless of which path observed the state.
+func recordEvaluation(evidence *evidenceLog, history *historyBuffer, resp health.Response, now time.Time) {
+	if evidence != nil {
+		evidence.observe(resp, now)
 	}
 
-	if d.history != nil {
-		d.history.record(sample{
+	if history != nil {
+		history.record(sample{
 			At:     now,
 			Value:  statusValue(resp.Status),
 			Status: string(resp.Status),
 		})
 	}
+}
+
+func (d *Dashboard) Observe(resp health.Response) {
+	recordEvaluation(d.evidence, d.history, resp, time.Now())
 }

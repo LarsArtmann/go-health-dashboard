@@ -71,9 +71,10 @@ type pusher struct {
 	ttl         int
 	ticks       int
 
-	mu              sync.Mutex
-	lastStatus      health.Status
-	lastFingerprint string
+	// mu guards ticks, the TTL counter advanced by shouldBroadcast on the
+	// push loop goroutine.
+	mu      sync.Mutex
+	changes changeDetector
 }
 
 // newPusher creates a pusher that broadcasts at the dashboard's configured
@@ -131,17 +132,7 @@ func (p *pusher) broadcast() {
 	// Evidence accrues BEFORE change detection, on every tick, so the
 	// observational record stays complete even in PushOnChange mode (same
 	// discipline as the trend ring).
-	if p.evidence != nil {
-		p.evidence.observe(resp, now)
-	}
-
-	if p.history != nil {
-		p.history.record(sample{
-			At:     now,
-			Value:  statusValue(resp.Status),
-			Status: string(resp.Status),
-		})
-	}
+	recordEvaluation(p.evidence, p.history, resp, now)
 
 	if p.dashboard.latency != nil {
 		p.dashboard.latency.observe(msToSeconds(resp.TotalLatencyMs))
@@ -229,31 +220,25 @@ func (p *pusher) shouldBroadcast(resp health.Response) bool {
 		return true
 	}
 
-	fp := fingerprintChecks(resp.Checks)
+	shouldSend := p.changes.changed(resp)
 
 	p.mu.Lock()
 	defer p.mu.Unlock()
-
-	if resp.Status != p.lastStatus || fp != p.lastFingerprint {
-		p.lastStatus = resp.Status
-		p.lastFingerprint = fp
-		p.ticks = 0
-
-		return true
-	}
 
 	// PushOnChangeTTL: re-assert the unchanged state every n-th tick so
 	// clients that missed an event self-heal.
 	if p.ttl > 0 {
 		p.ticks++
 		if p.ticks >= p.ttl {
-			p.ticks = 0
-
-			return true
+			shouldSend = true
 		}
 	}
 
-	return false
+	if shouldSend {
+		p.ticks = 0
+	}
+
+	return shouldSend
 }
 
 // atCapacity reports (and writes) the 503 shown when the SSE connection
