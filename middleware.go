@@ -26,13 +26,7 @@ type perIPRateLimiter struct {
 }
 
 func newPerIPRateLimiter(maxRequests int, window time.Duration) *perIPRateLimiter {
-	if maxRequests < 1 {
-		maxRequests = 1
-	}
-
-	if window <= 0 {
-		window = time.Second
-	}
+	maxRequests, window = normalizeRateLimit(maxRequests, window)
 
 	return &perIPRateLimiter{
 		buckets: make(map[string]*rateLimiter),

@@ -52,6 +52,7 @@ import (
 
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	"github.com/larsartmann/go-health-dashboard/internal/env"
 	"github.com/larsartmann/go-health-dashboard/pkg/version"
 	"github.com/larsartmann/go-health/aggregate"
 	"github.com/larsartmann/go-health/checks"
@@ -111,7 +112,7 @@ func main() {
 	mux := http.NewServeMux()
 	dash.RegisterRoutes(mux)
 
-	addr := ":" + envOrDefault("PORT", "8080")
+	addr := ":" + env.GetOrDefault("PORT", "8080")
 	log.Printf(
 		"dashboard: http://localhost%s/health (build %s)",
 		addr,
@@ -489,7 +490,7 @@ func buildOptions() []dashboard.Option {
 
 	if os.Getenv("DEMO_METRICS") != "" {
 		opts = append(opts, dashboard.WithMetrics(true))
-		log.Printf("metrics: http://localhost%s/health/metrics", ":"+envOrDefault("PORT", "8080"))
+		log.Printf("metrics: http://localhost%s/health/metrics", ":"+env.GetOrDefault("PORT", "8080"))
 	}
 
 	if token := os.Getenv("DEMO_AUTH"); token != "" {
@@ -673,14 +674,6 @@ func registerService(injector do.Injector, name string, svc healthChecker) {
 }
 
 // --- Mock services ---.
-
-func envOrDefault(key, defaultVal string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-
-	return defaultVal
-}
 
 type alwaysHealthy struct{}
 

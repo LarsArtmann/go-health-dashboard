@@ -1023,13 +1023,7 @@ func (row checkRow) displayName() string {
 // semantics and must ship with a CHANGELOG note and a minor-version bump —
 // never as a silent refactor.
 func fingerprintChecks(checks map[string]health.Check) string {
-	keys := make([]string, 0, len(checks))
-
-	for k := range checks {
-		keys = append(keys, k)
-	}
-
-	sort.Strings(keys)
+	keys := sortedCheckNames(checks)
 
 	var buf []byte
 

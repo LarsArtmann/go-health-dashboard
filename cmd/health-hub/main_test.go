@@ -10,6 +10,7 @@ import (
 
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	"github.com/larsartmann/go-health-dashboard/internal/env"
 	healthfederation "github.com/larsartmann/go-health/federation"
 )
 
@@ -256,12 +257,12 @@ func TestOptionsFromEnv(t *testing.T) {
 func TestEnvOrDefault(t *testing.T) {
 	t.Setenv(portEnvVar, "9090")
 
-	if got := envOrDefault(portEnvVar, "8080"); got != "9090" {
-		t.Fatalf("envOrDefault with a set variable = %q, want %q", got, "9090")
+	if got := env.GetOrDefault(portEnvVar, "8080"); got != "9090" {
+		t.Fatalf("GetOrDefault with a set variable = %q, want %q", got, "9090")
 	}
 
-	if got := envOrDefault(addrEnvVar, ":8080"); got != ":8080" {
-		t.Fatalf("envOrDefault with an unset variable = %q, want the fallback %q", got, ":8080")
+	if got := env.GetOrDefault(addrEnvVar, ":8080"); got != ":8080" {
+		t.Fatalf("GetOrDefault with an unset variable = %q, want the fallback %q", got, ":8080")
 	}
 }
 

@@ -369,19 +369,6 @@ type ProberHealthchecker interface {
 	HealthCheck(ctx context.Context) error
 }
 
-// Observe ingests one probe evaluation into the trend ring and the evidence
-// log — the ingest seam for go-health's WithEvaluationHook (ADR-0003).
-// Wire it where the probe is constructed:
-//
-//	health.WithEvaluationHook(dash.Observe)
-//
-// or, when the probe must be built before the dashboard exists, through a
-// nil-safe forwarding closure. Observe is safe for concurrent use, no-ops
-// when the corresponding buffer is unset (no WithTrend), and never touches
-// the wire contracts (JSON, webhook, metrics) — it feeds the HTML-only
-// presentation state. With the hook wired, trend and evidence sample at
-// probe cadence; the pusher keeps its own tick ingest, so adjacent samples
-// agree (both paths read the same evaluated state).
 // recordEvaluation feeds one evaluated response into the presentation
 // buffers: the evidence log accrues non-pass observations and the trend
 // ring records a sample. Both ingest paths — Dashboard.Observe at probe
@@ -401,6 +388,19 @@ func recordEvaluation(evidence *evidenceLog, history *historyBuffer, resp health
 	}
 }
 
+// Observe ingests one probe evaluation into the trend ring and the evidence
+// log — the ingest seam for go-health's WithEvaluationHook (ADR-0003).
+// Wire it where the probe is constructed:
+//
+//	health.WithEvaluationHook(dash.Observe)
+//
+// or, when the probe must be built before the dashboard exists, through a
+// nil-safe forwarding closure. Observe is safe for concurrent use, no-ops
+// when the corresponding buffer is unset (no WithTrend), and never touches
+// the wire contracts (JSON, webhook, metrics) — it feeds the HTML-only
+// presentation state. With the hook wired, trend and evidence sample at
+// probe cadence; the pusher keeps its own tick ingest, so adjacent samples
+// agree (both paths read the same evaluated state).
 func (d *Dashboard) Observe(resp health.Response) {
 	recordEvaluation(d.evidence, d.history, resp, time.Now())
 }

@@ -90,10 +90,7 @@ func (d *Dashboard) renderMetrics() string {
 	for i, name := range sortedCheckNames(resp.Checks) {
 		check := resp.Checks[name]
 
-		label := name
-		if d.cfg.PublicMode {
-			label = fmt.Sprintf("check-%d", i+1)
-		}
+		label := d.checkMetricLabel(name, i)
 
 		fmt.Fprintf(&b, "dashboard_health_check{check=\"%s\",status=\"%s\"} %d\n",
 			escapeLabelValue(label),
@@ -118,10 +115,7 @@ func (d *Dashboard) renderMetrics() string {
 			continue
 		}
 
-		label := name
-		if d.cfg.PublicMode {
-			label = fmt.Sprintf("check-%d", i+1)
-		}
+		label := d.checkMetricLabel(name, i)
 
 		fmt.Fprintf(&b, "dashboard_health_check_last_duration_seconds{check=\"%s\"} %g\n",
 			escapeLabelValue(label),
@@ -184,7 +178,9 @@ func (d *Dashboard) renderMetrics() string {
 }
 
 // sortedCheckNames returns the check names in deterministic order so
-// successive scrapes produce byte-identical output.
+// successive scrapes produce byte-identical output and change-detection
+// fingerprints stay stable. Consumers: the metrics series loops and
+// fingerprintChecks.
 func sortedCheckNames(checks map[string]health.Check) []string {
 	names := make([]string, 0, len(checks))
 	for name := range checks {
@@ -194,6 +190,17 @@ func sortedCheckNames(checks map[string]health.Check) []string {
 	sort.Strings(names)
 
 	return names
+}
+
+// checkMetricLabel renders the label for a check metric series: the real
+// check name, or a stable anonymous index in public mode. The index follows
+// the sorted-name iteration so both series agree per check in public mode.
+func (d *Dashboard) checkMetricLabel(name string, i int) string {
+	if d.cfg.PublicMode {
+		return fmt.Sprintf("check-%d", i+1)
+	}
+
+	return name
 }
 
 // boolGauge maps a boolean to the Prometheus gauge convention 1/0.

@@ -67,6 +67,7 @@ import (
 
 	health "github.com/larsartmann/go-health"
 	dashboard "github.com/larsartmann/go-health-dashboard"
+	"github.com/larsartmann/go-health-dashboard/internal/env"
 	"github.com/larsartmann/go-health-dashboard/pkg/version"
 	healthfederation "github.com/larsartmann/go-health/federation"
 )
@@ -175,12 +176,7 @@ func parsePushInterval(raw string) (time.Duration, error) {
 		return 0, nil
 	}
 
-	interval, err := time.ParseDuration(raw)
-	if err != nil || interval <= 0 {
-		return 0, fmt.Errorf("%w, got %q", errNonPositiveTimeout, raw)
-	}
-
-	return interval, nil
+	return parseTimeout(raw)
 }
 
 // resolvedPushInterval renders the effective push cadence for the startup
@@ -239,7 +235,7 @@ func run() error {
 
 	mux := newServeMux(dash)
 
-	addr := envOrDefault(addrEnvVar, ":"+envOrDefault(portEnvVar, defaultPort))
+	addr := env.GetOrDefault(addrEnvVar, ":"+env.GetOrDefault(portEnvVar, defaultPort))
 
 	log.Printf(
 		"health-hub: serving /health on %s (build %s, %d remotes, fetch timeout %s, push interval %s)",
@@ -592,12 +588,4 @@ func parseRemoteEntry(i int, entry string, seen map[string]bool) (healthfederati
 	}
 
 	return healthfederation.Remote{Name: name, URL: rawURL}, nil
-}
-
-func envOrDefault(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-
-	return fallback
 }

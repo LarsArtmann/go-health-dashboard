@@ -22,6 +22,21 @@ type rateLimiter struct {
 // newRateLimiter allows bursts up to maxRequests, refilling continuously at
 // maxRequests per window.
 func newRateLimiter(maxRequests int, window time.Duration) *rateLimiter {
+	maxRequests, window = normalizeRateLimit(maxRequests, window)
+
+	return &rateLimiter{
+		tokens: float64(maxRequests),
+		max:    float64(maxRequests),
+		refill: float64(maxRequests) / window.Seconds(),
+		last:   time.Now(),
+	}
+}
+
+// normalizeRateLimit clamps configured rate-limit parameters to their safe
+// floors: fewer than one request per window would admit nothing, and a
+// non-positive window would never refill. Both rate-limit constructors
+// pass configuration through here so the limiters share one floor.
+func normalizeRateLimit(maxRequests int, window time.Duration) (int, time.Duration) {
 	if maxRequests < 1 {
 		maxRequests = 1
 	}
@@ -30,12 +45,7 @@ func newRateLimiter(maxRequests int, window time.Duration) *rateLimiter {
 		window = time.Second
 	}
 
-	return &rateLimiter{
-		tokens: float64(maxRequests),
-		max:    float64(maxRequests),
-		refill: float64(maxRequests) / window.Seconds(),
-		last:   time.Now(),
-	}
+	return maxRequests, window
 }
 
 // Allow consumes one token, reporting whether the request is admitted.
