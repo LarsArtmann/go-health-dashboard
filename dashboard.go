@@ -374,7 +374,12 @@ type ProberHealthchecker interface {
 // ring records a sample. Both ingest paths — Dashboard.Observe at probe
 // cadence (ADR-0003) and the pusher's per-tick ingest — share this body so
 // adjacent samples agree regardless of which path observed the state.
-func recordEvaluation(evidence *evidenceLog, history *historyBuffer, resp health.Response, now time.Time) {
+func recordEvaluation(
+	evidence *evidenceLog,
+	history *historyBuffer,
+	resp health.Response,
+	now time.Time,
+) {
 	if evidence != nil {
 		evidence.observe(resp, now)
 	}

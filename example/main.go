@@ -490,7 +490,10 @@ func buildOptions() []dashboard.Option {
 
 	if os.Getenv("DEMO_METRICS") != "" {
 		opts = append(opts, dashboard.WithMetrics(true))
-		log.Printf("metrics: http://localhost%s/health/metrics", ":"+env.GetOrDefault("PORT", "8080"))
+		log.Printf(
+			"metrics: http://localhost%s/health/metrics",
+			":"+env.GetOrDefault("PORT", "8080"),
+		)
 	}
 
 	if token := os.Getenv("DEMO_AUTH"); token != "" {

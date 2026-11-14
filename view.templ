@@ -195,26 +195,14 @@ templ dashboardContent(data viewModel) {
 	if data.ExportURL != "" || data.TrendURL != "" || data.MetricsURL != "" {
 		<p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs">
 			if data.ExportURL != "" {
-				<a class={ endpointLinkClass } href={ data.ExportURL + "?format=csv" }>
-					@icons.Icon(icons.Download, "h-3.5 w-3.5")
-					Export CSV
-				</a>
-				<a class={ endpointLinkClass } href={ data.ExportURL }>
-					@icons.Icon(icons.Download, "h-3.5 w-3.5")
-					Export JSON
-				</a>
+				@endpointLink(data.ExportURL+"?format=csv", icons.Download, "Export CSV")
+				@endpointLink(data.ExportURL, icons.Download, "Export JSON")
 			}
 			if data.TrendURL != "" {
-				<a class={ endpointLinkClass } href={ data.TrendURL }>
-					@icons.Icon(icons.ArrowTrendingUp, "h-3.5 w-3.5")
-					Trend JSON
-				</a>
+				@endpointLink(data.TrendURL, icons.ArrowTrendingUp, "Trend JSON")
 			}
 			if data.MetricsURL != "" {
-				<a class={ endpointLinkClass } href={ data.MetricsURL }>
-					@icons.Icon(icons.Chart, "h-3.5 w-3.5")
-					Metrics
-				</a>
+				@endpointLink(data.MetricsURL, icons.Chart, "Metrics")
 			}
 		</p>
 	}
@@ -621,8 +609,18 @@ templ headerActions(data viewModel) {
 	</div>
 }
 
+// endpointLink renders one operator endpoint anchor (export, trend,
+// metrics): the shared link class, a sized icon, and the label. The four
+// call sites in dashboardContent stay in lockstep through this component.
+templ endpointLink(href string, icon icons.Name, label string) {
+	<a class={ endpointLinkClass } href={ href }>
+		@icons.Icon(icon, "h-3.5 w-3.5")
+		{ label }
+	</a>
+}
+
 // endpointLinkClass styles the operator endpoint links (export, trend,
-// metrics). One shared declaration keeps the four render sites in lockstep.
+// metrics). One shared declaration keeps the render sites in lockstep.
 const endpointLinkClass = "inline-flex items-center gap-1 font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-700 dark:hover:text-blue-300"
 
 // timelineBadgeType maps a timeline entry to its badge style: a transition
