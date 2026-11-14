@@ -192,20 +192,7 @@ templ dashboardContent(data viewModel) {
 			@infoDisclosure(evidenceTooltip)
 		</p>
 	}
-	if data.ExportURL != "" || data.TrendURL != "" || data.MetricsURL != "" {
-		<p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-			if data.ExportURL != "" {
-				@endpointLink(data.ExportURL+"?format=csv", icons.Download, "Export CSV")
-				@endpointLink(data.ExportURL, icons.Download, "Export JSON")
-			}
-			if data.TrendURL != "" {
-				@endpointLink(data.TrendURL, icons.ArrowTrendingUp, "Trend JSON")
-			}
-			if data.MetricsURL != "" {
-				@endpointLink(data.MetricsURL, icons.Chart, "Metrics")
-			}
-		</p>
-	}
+	@endpointLinks(data)
 	if hasProblems(data) {
 		<p class="mt-2 text-sm">
 			<a href="#group-problems" class="font-medium text-red-600 underline decoration-red-300 underline-offset-2 hover:text-red-700 dark:text-red-400 dark:decoration-red-700 dark:hover:text-red-300">
@@ -610,13 +597,59 @@ templ headerActions(data viewModel) {
 }
 
 // endpointLink renders one operator endpoint anchor (export, trend,
-// metrics): the shared link class, a sized icon, and the label. The four
-// call sites in dashboardContent stay in lockstep through this component.
-templ endpointLink(href string, icon icons.Name, label string) {
-	<a class={ endpointLinkClass } href={ href }>
+// metrics): the shared link class, a sized icon, and the label. The render
+// loop in endpointLinks stays in lockstep through this component.
+templ endpointLink(url string, icon icons.Name, label string) {
+	<a class={ endpointLinkClass } href={ url }>
 		@icons.Icon(icon, "h-3.5 w-3.5")
 		{ label }
 	</a>
+}
+
+// endpointLinkItem is one operator endpoint link: URL, icon, label.
+type endpointLinkItem struct {
+	URL     string
+	Icon    icons.Name
+	Label   string
+	Enabled bool
+}
+
+// endpointLinksFor derives the operator link list from the view model:
+// export CSV, export JSON, trend JSON, metrics. Entries whose route is
+// unset are skipped, so disabled features surface no dead links.
+func endpointLinksFor(data viewModel) []endpointLinkItem {
+	candidates := []endpointLinkItem{
+		{URL: data.ExportURL + "?format=csv", Icon: icons.Download, Label: "Export CSV", Enabled: data.ExportURL != ""},
+		{URL: data.ExportURL, Icon: icons.Download, Label: "Export JSON", Enabled: data.ExportURL != ""},
+		{URL: data.TrendURL, Icon: icons.ArrowTrendingUp, Label: "Trend JSON", Enabled: data.TrendURL != ""},
+		{URL: data.MetricsURL, Icon: icons.Chart, Label: "Metrics", Enabled: data.MetricsURL != ""},
+	}
+
+	links := make([]endpointLinkItem, 0, len(candidates))
+
+	for _, link := range candidates {
+		if link.Enabled {
+			links = append(links, link)
+		}
+	}
+
+	return links
+}
+
+// endpointLinks renders the operator endpoint row: one flex row of anchor
+// links derived from the view model's configured routes. Renders nothing
+// when no operator route is configured.
+templ endpointLinks(data viewModel) {
+	{{
+		links := endpointLinksFor(data)
+	}}
+	if len(links) > 0 {
+		<p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+			for _, link := range links {
+				@endpointLink(link.URL, link.Icon, link.Label)
+			}
+		</p>
+	}
 }
 
 // endpointLinkClass styles the operator endpoint links (export, trend,

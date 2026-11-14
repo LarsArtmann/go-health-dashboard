@@ -65,6 +65,18 @@ forgetting.
   app, coverage floor run, README screenshots, metrics, public mode,
   dependabot config; auth and PDF as documented non-goals), and the two
   live wishes (coverage badge, OG metadata) are harvested into ROADMAP.
+- Internal deduplication pass drove the aggressive `-t 2` clone scan to
+  zero with no behavior change: the SSE pusher and the webhook notifier
+  share one `changeDetector` (the status+fingerprint transition rule),
+  both evaluation-ingest paths share one recording helper,
+  `fingerprintChecks` reuses the metrics' sorted-name helper, both
+  rate-limit constructors share one clamp floor, the public-mode metric
+  label is one method, `parsePushInterval` delegates to `parseTimeout`,
+  the demo binaries share `internal/env.GetOrDefault`, the four operator
+  endpoint links render through one templ component, and the evidence
+  fixture folds with go-health's own `Status.Rank`. The only rendered
+  delta is three dropped inter-anchor spaces inside a flex-gap container
+  (verified byte-diffed old vs new); no wire contract changed.
 
 ## [0.13.3] - 2026-11-12
 
