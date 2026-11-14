@@ -76,3 +76,8 @@ result-*
 
 example/example
 /health-hub
+
+# The owner global git ignore ships a bare `env/` pattern (virtualenv
+# convention) that silently excluded internal/env/ — re-include it, or
+# cmd/health-hub imports a package that never reaches the remote.
+!internal/env/
