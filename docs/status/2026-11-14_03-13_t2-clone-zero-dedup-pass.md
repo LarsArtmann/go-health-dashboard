@@ -8,14 +8,14 @@
 
 **VERIFIED this session (fresh command output, not remembered claims):**
 
-| Claim | Verified by |
-| --- | --- |
-| 10→0 clone groups at `-t 2` | re-ran the user's exact art-dupl command; summary parsed: Total Clones 0, Shown 0, Production 0, Test 0 (182 groups suppressed by the tool's own filtering) |
-| Baseline gate stays green | `art-dupl check --type-aware --exclude-pattern "*_test.go" --baseline-path reports/dupl/baseline.art-dupl.json .` → exit 0, "No new clones detected" |
-| Full suite green | `nix develop -c go test ./...` → root `ok 145.482s` (includes 24 browser tests, none skipped — confirmed via `-run TestBrowser -v` grep: 24 `--- PASS`), health-hub `ok`, pkg/version `ok` |
-| Lint clean | `nix run .#lint` → `0 issues` (run twice; second run after the final view.templ change, delayed until an external `buildflow --fail-on error` run in this repo finished) |
-| Render equivalence | fixed-SHA git worktree byte-diffs at each templ step: original→component = 3 dropped inter-anchor spaces; component→data-driven loop = BYTE-IDENTICAL; goldens byte-identical after the final fix |
-| Build/vet | `go build ./...` + `go vet ./...` clean |
+| Claim                       | Verified by                                                                                                                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 10→0 clone groups at `-t 2` | re-ran the user's exact art-dupl command; summary parsed: Total Clones 0, Shown 0, Production 0, Test 0 (182 groups suppressed by the tool's own filtering)                                       |
+| Baseline gate stays green   | `art-dupl check --type-aware --exclude-pattern "*_test.go" --baseline-path reports/dupl/baseline.art-dupl.json .` → exit 0, "No new clones detected"                                              |
+| Full suite green            | `nix develop -c go test ./...` → root `ok 145.482s` (includes 24 browser tests, none skipped — confirmed via `-run TestBrowser -v` grep: 24 `--- PASS`), health-hub `ok`, pkg/version `ok`        |
+| Lint clean                  | `nix run .#lint` → `0 issues` (run twice; second run after the final view.templ change, delayed until an external `buildflow --fail-on error` run in this repo finished)                          |
+| Render equivalence          | fixed-SHA git worktree byte-diffs at each templ step: original→component = 3 dropped inter-anchor spaces; component→data-driven loop = BYTE-IDENTICAL; goldens byte-identical after the final fix |
+| Build/vet                   | `go build ./...` + `go vet ./...` clean                                                                                                                                                           |
 
 **NOT verified (gaps, ranked by risk):**
 
@@ -132,9 +132,9 @@
 ## g) Three Questions I Cannot Figure Out Myself
 
 1. **Commit & push intent**: everything sits in ~8 daemon `chore:` commits with no intent message, and you haven't said "commit". Do you want a deliberate squash/intent commit for the dedup pass (requires `SWEEP_OK=1` since `view_templ.go` is staged), pushed and CI-watched — or is daemon capture the intended record for internal refactors like this?
-2. **Suppressed groups**: your command shows 10 actionable groups and suppresses 182. I drove the actionable set to zero and never looked inside the suppressed population. Is "zero" defined as *shown groups = 0* (done), or do you want the 182 audited too — and if so, at what threshold/flags do you consider that population contract-relevant?
+2. **Suppressed groups**: your command shows 10 actionable groups and suppresses 182. I drove the actionable set to zero and never looked inside the suppressed population. Is "zero" defined as _shown groups = 0_ (done), or do you want the 182 audited too — and if so, at what threshold/flags do you consider that population contract-relevant?
 3. **Permanent coverage appetite**: the four operator endpoint links still have no committed test or golden (I proved equivalence only for this session). Adding a golden + render test pins them but adds a 7th golden file to the UI-pin drift surface you audit on every templ-components bump. Do you want that pin added, or do you deliberately keep unconfigured-route rendering out of the golden set?
 
 ---
 
-*End of report — waiting for instructions.*
+_End of report — waiting for instructions._
