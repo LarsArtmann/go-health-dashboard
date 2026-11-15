@@ -5,17 +5,27 @@
 # remotes), one card per remote (GroupBySource); a dark remote renders a
 # "name/reachable" FAIL row instead of silently freezing at its last state.
 #
-# Stateless: no StateDirectory, no secrets — the hub is merge-on-read;
-# its only memory is the in-process trend ring (opt-in via `trend`).
-# Binds loopback by default: go-health documents expose internal check
-# names and error strings, so the raw port must not reach an unauthenticated
-# network — front it with your own reverse proxy for remote access.
+# Stateless: no StateDirectory — the hub is merge-on-read; its only memory
+# is the in-process trend ring (opt-in via `trend`) and the HMAC-sealed
+# session cookie when `oidc` is on. Binds loopback by default: go-health
+# documents expose internal check names and error strings, so the raw port
+# must not reach an unauthenticated network — front it with your own
+# reverse proxy, or turn on the native OIDC login (`oidc`) for a public
+# vhost behind TLS.
 #
 # Usage:
 #   imports = [ inputs.go-health-dashboard.nixosModules.default ];
 #   services.health-dashboard = {
 #     enable = true;
 #     remotes = [ "cv=http://127.0.0.1:8098/health" ];
+#     oidc = {
+#       issuer = "https://auth.example.com";
+#       clientId = "health";
+#       redirectUrl = "https://health.example.com/oidc/callback";
+#       group = "viewers";              # optional membership gate
+#       clientSecretFile = "/run/credentials/health-dashboard.service/client-secret";
+#       sessionSecretFile = "/run/agenix/health-session-secret";
+#     };
 #   };
 {
   config,
@@ -24,6 +34,30 @@
 }:
 let
   cfg = config.services.health-dashboard;
+
+  oidcCreds = lib.optionals (cfg.oidc != null) [
+    "client-secret=${cfg.oidc.clientSecretFile}"
+    "session-secret=${cfg.oidc.sessionSecretFile}"
+  ];
+
+  oidcEnv = lib.optionals (cfg.oidc != null) [
+    "HEALTH_HUB_OIDC_ISSUER=${cfg.oidc.issuer}"
+    "HEALTH_HUB_OIDC_CLIENT_ID=${cfg.oidc.clientId}"
+    "HEALTH_HUB_OIDC_REDIRECT_URL=${cfg.oidc.redirectUrl}"
+    "HEALTH_HUB_OIDC_GROUP=${cfg.oidc.group}"
+    "HEALTH_HUB_OIDC_SESSION_TTL=${cfg.oidc.sessionTtl}"
+    "HEALTH_HUB_OIDC_CLIENT_SECRET_FILE=/run/credentials/health-dashboard.service/client-secret"
+    "HEALTH_HUB_OIDC_SESSION_SECRET_FILE=/run/credentials/health-dashboard.service/session-secret"
+  ];
+
+  # The OIDC egress fence: when the deployment pins egress CIDRs the unit
+  # allows loopback plus exactly those — a co-hosted issuer behind
+  # split-horizon DNS otherwise resolves to the host's OWN public address
+  # and a loopback-only default silently drops every discovery call.
+  egressFence = lib.optionalAttrs (cfg.oidc != null && cfg.oidc.egressCidrs != [ ]) {
+    IPAddressAllow = [ "localhost" ] ++ cfg.oidc.egressCidrs;
+    IPAddressDeny = "any";
+  };
 in
 {
   options.services.health-dashboard = {
@@ -66,6 +100,88 @@ in
         persistence, no wire-contract change.
       '';
     };
+
+    oidc = lib.mkOption {
+      type = lib.types.nullOr (
+        lib.types.submodule {
+          options = {
+            issuer = lib.mkOption {
+              type = lib.types.str;
+              description = "OIDC issuer base URL (no trailing slash; must equal the discovery document's issuer byte-for-byte).";
+            };
+
+            clientId = lib.mkOption {
+              type = lib.types.str;
+              description = "Confidential client id registered at the issuer.";
+            };
+
+            redirectUrl = lib.mkOption {
+              type = lib.types.str;
+              description = "Absolute callback URL (scheme + host + /oidc/callback) registered at the issuer.";
+            };
+
+            group = lib.mkOption {
+              type = lib.types.str;
+              default = "";
+              description = ''
+                Optional group the identity must carry (id_token groups
+                claim, userinfo fallback). Empty disables the gate —
+                then the issuer-side client restriction is the only
+                membership check.
+              '';
+            };
+
+            sessionTtl = lib.mkOption {
+              type = lib.types.str;
+              default = "12h";
+              description = "Session lifetime (a duration string the binary parses).";
+            };
+
+            clientSecretFile = lib.mkOption {
+              type = lib.types.str;
+              description = ''
+                Path to the confidential client secret (LoadCredential
+                `client-secret`; read once at startup, so rotation is a
+                unit restart).
+              '';
+            };
+
+            sessionSecretFile = lib.mkOption {
+              type = lib.types.str;
+              description = ''
+                Path to the cookie HMAC key, at least 16 bytes
+                (LoadCredential `session-secret`).
+              '';
+            };
+
+            egressCidrs = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
+              default = [ ];
+              description = ''
+                When non-empty, the unit's egress is fenced to loopback
+                plus exactly these CIDRs (IPAddressAllow/Deny). Pin the
+                issuer's address when it sits behind split-horizon DNS on
+                the same host — the DNS answer is then the host's own
+                public address, which a loopback-only fence silently
+                drops. Kubelet probes and the wrapped remotes stay
+                reachable on loopback either way.
+              '';
+              example = [ "203.0.113.10/32" ];
+            };
+          };
+        }
+      );
+      default = null;
+      description = ''
+        Native OpenID Connect login. When non-null every
+        dashboard-owned surface (HTML, SSE, favicon, metrics) requires a
+        session cookie; /oidc/login starts the authorization-code + PKCE
+        S256 dance, JSON-negotiating unauthenticated requests get a clean
+        401, and the kubelet probes (/healthz, /readyz, /startupz) stay
+        public. Null (default) keeps the hub auth-free — fine for a
+        loopback bind behind your own reverse proxy.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -83,14 +199,17 @@ in
       startLimitIntervalSec = 300;
       serviceConfig = {
         Type = "simple";
-        # Stateless network daemon: no home, no state dir, no secrets.
+        # Stateless network daemon: no home, no state dir; the only
+        # secrets are the LoadCredential pair an OIDC deployment reads.
         DynamicUser = true;
         ExecStart = lib.getExe cfg.package;
         Environment = [
           "HEALTH_HUB_ADDR=${cfg.addr}"
           "HEALTH_HUB_REMOTES=${lib.concatStringsSep "," cfg.remotes}"
         ]
-        ++ lib.optional cfg.trend "HEALTH_HUB_TREND=1";
+        ++ lib.optional cfg.trend "HEALTH_HUB_TREND=1"
+        ++ oidcEnv;
+        LoadCredential = oidcCreds;
         Restart = "on-failure";
         RestartSec = "5s";
         MemoryMax = lib.mkDefault "256M";
@@ -108,7 +227,8 @@ in
           "AF_INET6"
           "AF_UNIX"
         ];
-      };
+      }
+      // egressFence;
     };
   };
 }

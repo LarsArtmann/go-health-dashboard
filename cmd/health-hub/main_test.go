@@ -1,8 +1,11 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -528,5 +531,136 @@ func wantConfigEveryKnob(t *testing.T, cfg hubConfig) {
 
 	if cfg.httpProxy != "http://proxy.lan:3128" {
 		t.Errorf("httpProxy = %q, want trimmed URL", cfg.httpProxy)
+	}
+}
+
+func TestOIDCOptionFromEnv_DisabledByDefault(t *testing.T) {
+	opt, err := oidcOptionFromEnv()
+	if err != nil {
+		t.Fatalf("disabled oidc errored: %v", err)
+	}
+
+	if opt != nil {
+		t.Fatal("without an issuer the hub must stay auth-free (nil option)")
+	}
+}
+
+func TestOIDCOptionFromEnv_RequiresBothSecrets(t *testing.T) {
+	dir := t.TempDir()
+	clientSecret := filepath.Join(dir, "client-secret")
+
+	if err := os.WriteFile(clientSecret, []byte("stub-client-secret-value"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv(oidcIssuerEnvVar, "https://auth.example.test")
+	t.Setenv(oidcClientIDEnvVar, "health")
+	t.Setenv(oidcSecretFileVar, clientSecret)
+	t.Setenv(oidcSessionFileVar, filepath.Join(dir, "missing-session-secret"))
+	t.Setenv(oidcRedirectEnvVar, "https://health.example.test/oidc/callback")
+
+	if _, err := oidcOptionFromEnv(); err == nil {
+		t.Fatal("a missing session-secret file must fail the startup")
+	}
+}
+
+func TestOIDCOptionFromEnv_EmptySecretFileFails(t *testing.T) {
+	dir := t.TempDir()
+	clientSecret := filepath.Join(dir, "client-secret")
+
+	if err := os.WriteFile(clientSecret, []byte("  \n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv(oidcIssuerEnvVar, "https://auth.example.test")
+	t.Setenv(oidcSecretFileVar, clientSecret)
+
+	_, err := oidcOptionFromEnv()
+	if err == nil {
+		t.Fatal("an empty secret file must fail the startup")
+	}
+
+	if !errors.Is(err, errEmptySecretFile) {
+		t.Fatalf("err = %v, want errEmptySecretFile", err)
+	}
+}
+
+func TestOIDCOptionFromEnv_HappyPathTrimsAndValidates(t *testing.T) {
+	dir := t.TempDir()
+	clientSecret := filepath.Join(dir, "client-secret")
+	sessionSecret := filepath.Join(dir, "session-secret")
+
+	if err := os.WriteFile(clientSecret, []byte(" stub-client-secret \n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	// 24 bytes with surrounding whitespace: the trimmed value must pass
+	// the session-secret length floor.
+	if err := os.WriteFile(sessionSecret, []byte(" 0123456789abcdef01234567 \n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv(oidcIssuerEnvVar, " https://auth.example.test ")
+	t.Setenv(oidcClientIDEnvVar, "health")
+	t.Setenv(oidcSecretFileVar, clientSecret)
+	t.Setenv(oidcSessionFileVar, sessionSecret)
+	t.Setenv(oidcRedirectEnvVar, "https://health.example.test/oidc/callback")
+	t.Setenv(oidcGroupEnvVar, "pbx-health")
+	t.Setenv(oidcTTLEnvVar, "8h")
+
+	opt, err := oidcOptionFromEnv()
+	if err != nil {
+		t.Fatalf("happy path errored: %v", err)
+	}
+
+	if opt == nil {
+		t.Fatal("a fully configured issuer must produce the option")
+	}
+}
+
+// TestServeMuxOIDCProbesStayPublic pins the deployment-critical split
+// at the mux level: with the native login on, the kubelet probe routes
+// answer WITHOUT a session while the dashboard redirects to the login.
+func TestServeMuxOIDCProbesStayPublic(t *testing.T) {
+	t.Parallel()
+
+	dash := dashboard.New(stubProber{}, dashboard.WithOIDC(dashboard.OIDCConfig{
+		Issuer:        "https://auth.example.test",
+		ClientID:      "health",
+		ClientSecret:  "stub-client-secret",
+		RedirectURL:   "https://health.example.test/oidc/callback",
+		SessionSecret: []byte("0123456789abcdef0123456789"),
+	}))
+	mux := newServeMux(dash)
+
+	server := httptest.NewServer(mux)
+	t.Cleanup(server.Close)
+
+	client := &http.Client{
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	for _, probe := range []string{"/healthz", "/readyz", "/startupz"} {
+		resp, err := client.Get(server.URL + probe)
+		if err != nil {
+			t.Fatalf("probe %s: %v", probe, err)
+		}
+		resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("probe %s answered %d without a session, want 200", probe, resp.StatusCode)
+		}
+	}
+
+	resp, err := client.Get(server.URL + "/health")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	if resp.StatusCode != http.StatusTemporaryRedirect {
+		t.Errorf("dashboard answered %d without a session, want the login redirect", resp.StatusCode)
 	}
 }

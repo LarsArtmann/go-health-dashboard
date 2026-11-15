@@ -247,6 +247,15 @@ func run() error {
 		optionsFromEnv()...,
 	)
 
+	opt, err := oidcOptionFromEnv()
+	if err != nil {
+		return err
+	}
+
+	if opt != nil {
+		opts = append(opts, opt)
+	}
+
 	if cfg.pushInterval != 0 {
 		opts = append(opts, dashboard.WithPushInterval(cfg.pushInterval))
 	}
@@ -547,6 +556,76 @@ func optionsFromEnv() []dashboard.Option {
 	}
 
 	return opts
+}
+
+// oidcOptionFromEnv builds the native-login option from the
+// HEALTH_HUB_OIDC_* environment. A hub without an issuer stays
+// auth-free (the loopback-only default posture); a hub WITH one fails
+// fast on any missing piece — a half-configured login is a broken
+// login. Both secret files are read once here, at startup, so a
+// rotation is a unit restart and credential values never travel the
+// environment.
+func oidcOptionFromEnv() (dashboard.Option, error) {
+	issuer := strings.TrimSpace(os.Getenv(oidcIssuerEnvVar))
+	if issuer == "" {
+		return nil, nil
+	}
+
+	clientSecret, err := readSecretFile(os.Getenv(oidcSecretFileVar))
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", oidcSecretFileVar, err)
+	}
+
+	sessionSecret, err := readSecretFile(os.Getenv(oidcSessionFileVar))
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", oidcSessionFileVar, err)
+	}
+
+	cfg := dashboard.OIDCConfig{
+		Issuer:        issuer,
+		ClientID:      strings.TrimSpace(os.Getenv(oidcClientIDEnvVar)),
+		ClientSecret:  clientSecret,
+		RedirectURL:   strings.TrimSpace(os.Getenv(oidcRedirectEnvVar)),
+		Group:         strings.TrimSpace(os.Getenv(oidcGroupEnvVar)),
+		SessionSecret: []byte(sessionSecret),
+		CookieSecure:  os.Getenv(oidcInsecureVar) == "",
+	}
+
+	if raw := strings.TrimSpace(os.Getenv(oidcTTLEnvVar)); raw != "" {
+		ttl, err := parseTimeout(raw)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", oidcTTLEnvVar, err)
+		}
+
+		cfg.SessionTTL = ttl
+	}
+
+	if err := dashboard.ValidateOIDC(cfg); err != nil {
+		return nil, fmt.Errorf("oidc configuration: %w", err)
+	}
+
+	opt := dashboard.WithOIDC(cfg)
+	log.Printf("oidc: native login on (issuer %s, client %s)", cfg.Issuer, cfg.ClientID)
+
+	return opt, nil
+}
+
+var errEmptySecretFile = errors.New("points at an empty or missing file (LoadCredential-style paths land under /run/credentials/<unit>/)")
+
+// readSecretFile reads one whitespace-trimmed secret value; empty
+// content is an error, not a silent empty credential.
+func readSecretFile(path string) (string, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	value := strings.TrimSpace(string(raw))
+	if value == "" {
+		return "", errEmptySecretFile
+	}
+
+	return value, nil
 }
 
 // parseRemotes turns "name=url,name=url" into federation remotes. Every

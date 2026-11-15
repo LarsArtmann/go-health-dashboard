@@ -174,6 +174,16 @@ func WithOIDC(cfg OIDCConfig) Option {
 	}
 }
 
+// ValidateOIDC checks an OIDCConfig the way WithOIDC will — binaries
+// that read configuration from the environment call this BEFORE the
+// option ever reaches New, so a misconfiguration surfaces as a clean
+// startup error instead of the option-time panic.
+func ValidateOIDC(cfg OIDCConfig) error {
+	_, err := newOIDCMiddleware(cfg)
+
+	return err
+}
+
 // newOIDCMiddleware validates the configuration and returns the wired
 // middleware. Every failure is an option-time error so a broken setup
 // never reaches first traffic.
