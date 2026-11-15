@@ -88,6 +88,31 @@ const (
 	oidcRandomBytes = 32
 )
 
+// oidcErr* login-failure codes are separate from these Go-side config
+// sentinels: the codes render on the error page, the sentinels wrap into
+// startup errors.
+var (
+	errOIDCIssuerURL       = errors.New("issuer must be an absolute http(s) URL without a trailing slash")
+	errOIDCClientID        = errors.New("client id is required")
+	errOIDCClientSecret    = errors.New("client secret is required (the native login is a confidential client)")
+	errOIDCRedirectURL     = errors.New("redirect URL must be absolute http(s)")
+	errOIDCSessionSecret   = errors.New("session secret is too short")
+	errOIDCNoKeyForKid     = errors.New("the issuer's JWKS carries no RSA key for the token's kid")
+	errOIDCDiscoveryDown   = errors.New("discovery unavailable")
+	errOIDCJWKSEmpty       = errors.New("the JWKS carries no usable RSA keys")
+	errOIDCIssuerStatus    = errors.New("issuer answered a non-200 status")
+	errOIDCNoUserinfo      = errors.New("no userinfo endpoint")
+	errOIDCUserinfoStatus  = errors.New("userinfo answered a non-200 status")
+	errOIDCUnsupportedAlg  = errors.New("unsupported id_token algorithm (only RS256)")
+	errOIDCSignature       = errors.New("id_token signature does not verify")
+	errOIDCNotAJWS         = errors.New("id_token is not a three-part JWS")
+	errOIDCIssuerMismatch  = errors.New("id_token issuer does not match the configured issuer")
+	errOIDCAudience        = errors.New("id_token audience does not include the client")
+	errOIDCTokenExpired    = errors.New("id_token is expired")
+	errOIDCNonceMismatch   = errors.New("id_token nonce does not match the login attempt")
+	errOIDCWeakModulus     = errors.New("JWK modulus is below the minimum bit length")
+)
+
 // Typed login-failure codes, rendered on the error page and stable for
 // monitoring (the sso_error family other dashboards in this fleet use).
 const (
@@ -164,13 +189,13 @@ type OIDCConfig struct {
 // (WithMiddleware never wraps them). Configuration is validated up
 // front — a malformed OIDC setup fails New loudly, not the first login.
 func WithOIDC(cfg OIDCConfig) Option {
-	return func(c *Config) {
+	return func(target *Config) {
 		mw, err := newOIDCMiddleware(cfg)
 		if err != nil {
 			panic(fmt.Sprintf("dashboard.WithOIDC: %v", err))
 		}
 
-		c.Middleware = mw
+		target.Middleware = mw
 	}
 }
 
@@ -204,31 +229,30 @@ func newOIDCMiddleware(cfg OIDCConfig) (func(http.Handler) http.Handler, error) 
 
 // normalizeOIDCConfig fills defaults and validates the required fields.
 func normalizeOIDCConfig(cfg OIDCConfig) (OIDCConfig, error) {
-	issuer, err := url.Parse(cfg.Issuer)
-	if cfg.Issuer == "" || err != nil || issuer.Host == "" || (issuer.Scheme != "http" && issuer.Scheme != "https") {
-		return OIDCConfig{}, fmt.Errorf("issuer must be an absolute http(s) URL, got %q", cfg.Issuer)
+	if err := validateAbsoluteHTTPURL(cfg.Issuer, errOIDCIssuerURL); err != nil {
+		return OIDCConfig{}, fmt.Errorf("%w (and no trailing slash), got %q", err, cfg.Issuer)
 	}
 
 	if strings.HasSuffix(cfg.Issuer, "/") {
-		return OIDCConfig{}, errors.New("issuer must not carry a trailing slash")
+		return OIDCConfig{}, fmt.Errorf("%w: %q", errOIDCIssuerURL, cfg.Issuer)
 	}
 
 	if cfg.ClientID == "" {
-		return OIDCConfig{}, errors.New("client id is required")
+		return OIDCConfig{}, errOIDCClientID
 	}
 
 	if cfg.ClientSecret == "" {
-		return OIDCConfig{}, errors.New("client secret is required (the native login is a confidential client)")
+		return OIDCConfig{}, errOIDCClientSecret
 	}
 
-	redirect, err := url.Parse(cfg.RedirectURL)
-	if cfg.RedirectURL == "" || err != nil || redirect.Host == "" || (redirect.Scheme != "http" && redirect.Scheme != "https") {
-		return OIDCConfig{}, fmt.Errorf("redirect URL must be absolute http(s), got %q", cfg.RedirectURL)
+	if err := validateAbsoluteHTTPURL(cfg.RedirectURL, errOIDCRedirectURL); err != nil {
+		return OIDCConfig{}, fmt.Errorf("%w, got %q", err, cfg.RedirectURL)
 	}
 
 	if len(cfg.SessionSecret) < oidcMinSessionSecretBytes {
 		return OIDCConfig{}, fmt.Errorf(
-			"session secret must be at least %d bytes, got %d",
+			"%w: need at least %d bytes, got %d",
+			errOIDCSessionSecret,
 			oidcMinSessionSecretBytes,
 			len(cfg.SessionSecret),
 		)
@@ -237,6 +261,16 @@ func normalizeOIDCConfig(cfg OIDCConfig) (OIDCConfig, error) {
 	cfg = withOIDCDefaults(cfg)
 
 	return cfg, nil
+}
+
+// validateAbsoluteHTTPURL checks one required http(s) URL.
+func validateAbsoluteHTTPURL(raw string, sentinel error) error {
+	parsed, err := url.Parse(raw)
+	if raw == "" || err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		return sentinel
+	}
+
+	return nil
 }
 
 // withOIDCDefaults fills the defaulted fields of an already-validated
@@ -386,6 +420,9 @@ func (o *oidcLogin) handleLogin(w http.ResponseWriter, r *http.Request) {
 	query.Set("code_challenge_method", "S256")
 	authorize.RawQuery = query.Encode()
 
+	//nolint:gosec // G124: the Secure flag is configuration (false only
+	// for documented plain-HTTP local development); HttpOnly + Lax ride
+	// unconditionally.
 	http.SetCookie(w, &http.Cookie{
 		Name:     oidcAttemptCookieName,
 		Value:    o.seal(oidcAttempt{State: state, Nonce: nonce, Verifier: verifier, Expires: o.clock().Add(oidcAttemptTTL).Unix()}),
@@ -486,7 +523,7 @@ func (o *oidcLogin) claimsFromIssuer(w http.ResponseWriter, ctx context.Context,
 			return oidcClaims{}, false
 		}
 
-		claims.merge(fallback)
+		claims = mergeClaims(claims, fallback)
 	}
 
 	return claims, true
@@ -514,6 +551,9 @@ func (o *oidcLogin) grantSession(w http.ResponseWriter, claims oidcClaims) bool 
 	}
 
 	http.SetCookie(w, o.expiredCookie(oidcAttemptCookieName))
+	//nolint:gosec // G124: the Secure flag is configuration (false only
+	// for documented plain-HTTP local development); HttpOnly + Lax ride
+	// unconditionally.
 	http.SetCookie(w, &http.Cookie{
 		Name:     oidcSessionCookieName,
 		Value:    o.seal(oidcSession{Subject: claims.Subject, Email: claims.Email, Expires: o.clock().Add(o.cfg.SessionTTL).Unix()}),
@@ -556,7 +596,7 @@ func (o *oidcLogin) exchange(ctx context.Context, code, verifier string) (oidcTo
 		return oidcTokens{}, oidcErrExchange
 	}
 
-	defer resp.Body.Close() //nolint:errcheck // read-side close after the bounded read
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, oidcMaxIssuerBody))
 	if err != nil || resp.StatusCode != http.StatusOK {
@@ -623,7 +663,7 @@ func (o *oidcLogin) jwksFor(ctx context.Context, kid string) (*rsa.PublicKey, er
 
 	key := o.jwks[kid]
 	if key == nil {
-		return nil, fmt.Errorf("no RSA key for kid %q in the issuer's JWKS", kid)
+		return nil, fmt.Errorf("%w: %q", errOIDCNoKeyForKid, kid)
 	}
 
 	return key, nil
@@ -634,7 +674,7 @@ func (o *oidcLogin) fetchJWKS(ctx context.Context) error {
 	if o.jwksURI == "" {
 		disco, errCode := o.discovery(ctx)
 		if errCode != "" {
-			return errors.New("discovery unavailable")
+			return errOIDCDiscoveryDown
 		}
 
 		o.jwksURI = disco.JWKSURI
@@ -674,7 +714,7 @@ func (o *oidcLogin) fetchJWKS(ctx context.Context) error {
 	}
 
 	if len(keys) == 0 {
-		return errors.New("the JWKS carries no usable RSA keys")
+		return errOIDCJWKSEmpty
 	}
 
 	o.jwks = keys
@@ -688,23 +728,28 @@ func (o *oidcLogin) fetchJWKS(ctx context.Context) error {
 func (o *oidcLogin) fetchJSON(ctx context.Context, target string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("building the issuer request: %w", err)
 	}
 
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := o.httpClient().Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("calling the issuer: %w", err)
 	}
 
-	defer resp.Body.Close() //nolint:errcheck // read-side close after the bounded read
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("issuer answered %s", resp.Status)
+		return nil, fmt.Errorf("%w: %s", errOIDCIssuerStatus, resp.Status)
 	}
 
-	return io.ReadAll(io.LimitReader(resp.Body, oidcMaxIssuerBody))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, oidcMaxIssuerBody))
+	if err != nil {
+		return nil, fmt.Errorf("reading the issuer response: %w", err)
+	}
+
+	return body, nil
 }
 
 // userinfo fetches the profile claims with the access token — the
@@ -712,35 +757,35 @@ func (o *oidcLogin) fetchJSON(ctx context.Context, target string) ([]byte, error
 func (o *oidcLogin) userinfo(ctx context.Context, accessToken string) (oidcClaims, error) {
 	disco, errCode := o.discovery(ctx)
 	if errCode != "" || disco.UserinfoEndpoint == "" {
-		return oidcClaims{}, errors.New("no userinfo endpoint")
+		return oidcClaims{}, errOIDCNoUserinfo
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, disco.UserinfoEndpoint, nil)
 	if err != nil {
-		return oidcClaims{}, err
+		return oidcClaims{}, fmt.Errorf("building the userinfo request: %w", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
 	resp, err := o.httpClient().Do(req)
 	if err != nil {
-		return oidcClaims{}, err
+		return oidcClaims{}, fmt.Errorf("calling userinfo: %w", err)
 	}
 
-	defer resp.Body.Close() //nolint:errcheck // read-side close after the bounded read
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, oidcMaxIssuerBody))
 	if err != nil {
-		return oidcClaims{}, err
+		return oidcClaims{}, fmt.Errorf("reading the userinfo response: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return oidcClaims{}, fmt.Errorf("userinfo answered %s", resp.Status)
+		return oidcClaims{}, fmt.Errorf("%w: %s", errOIDCUserinfoStatus, resp.Status)
 	}
 
 	var claims oidcClaims
 	if err := json.Unmarshal(body, &claims); err != nil {
-		return oidcClaims{}, err
+		return oidcClaims{}, fmt.Errorf("parsing the userinfo document: %w", err)
 	}
 
 	return claims, nil

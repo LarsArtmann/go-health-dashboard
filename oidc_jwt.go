@@ -7,9 +7,9 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
+	"slices"
 	"strings"
 )
 
@@ -23,7 +23,7 @@ func (o *oidcLogin) verifyIDToken(ctx context.Context, raw, expectedNonce string
 	}
 
 	if header.Algorithm != oidcJWTAlgorithm {
-		return oidcClaims{}, fmt.Errorf("unsupported id_token algorithm %q (only RS256)", header.Algorithm)
+		return oidcClaims{}, fmt.Errorf("%w: %q", errOIDCUnsupportedAlg, header.Algorithm)
 	}
 
 	key, err := o.jwksFor(ctx, header.KeyID)
@@ -33,7 +33,7 @@ func (o *oidcLogin) verifyIDToken(ctx context.Context, raw, expectedNonce string
 
 	digest := sha256.Sum256(signed)
 	if err := rsa.VerifyPKCS1v15(key, crypto.SHA256, digest[:], signature); err != nil {
-		return oidcClaims{}, errors.New("signature does not verify")
+		return oidcClaims{}, fmt.Errorf("%w: %v", errOIDCSignature, err)
 	}
 
 	claims, err := decodeClaims(payload)
@@ -60,7 +60,7 @@ type jwtHeader struct {
 func splitJWT(raw string) (jwtHeader, []byte, []byte, []byte, error) {
 	parts := strings.Split(raw, ".")
 	if len(parts) != jwtParts {
-		return jwtHeader{}, nil, nil, nil, errors.New("id_token is not a three-part JWS")
+		return jwtHeader{}, nil, nil, nil, errOIDCNotAJWS
 	}
 
 	headerBytes, err := decodeSegment(parts[0])
@@ -92,19 +92,19 @@ func splitJWT(raw string) (jwtHeader, []byte, []byte, []byte, error) {
 // configuration and the login attempt.
 func (o *oidcLogin) checkClaims(claims oidcClaims, expectedNonce string) error {
 	if claims.Issuer != o.cfg.Issuer {
-		return fmt.Errorf("id_token issuer %q does not match %q", claims.Issuer, o.cfg.Issuer)
+		return fmt.Errorf("%w: %q vs %q", errOIDCIssuerMismatch, claims.Issuer, o.cfg.Issuer)
 	}
 
-	if !claims.audienceHas(o.cfg.ClientID) {
-		return fmt.Errorf("id_token audience does not include client %q", o.cfg.ClientID)
+	if !claims.Audience.has(o.cfg.ClientID) {
+		return fmt.Errorf("%w: %q", errOIDCAudience, o.cfg.ClientID)
 	}
 
 	if claims.Expiry <= o.clock().Add(-oidcClockSkew).Unix() {
-		return errors.New("id_token is expired")
+		return errOIDCTokenExpired
 	}
 
 	if expectedNonce == "" || claims.Nonce != expectedNonce {
-		return errors.New("id_token nonce does not match the login attempt")
+		return errOIDCNonceMismatch
 	}
 
 	return nil
@@ -137,61 +137,47 @@ func (a *oidcAudience) UnmarshalJSON(raw []byte) error {
 }
 
 func (a oidcAudience) has(clientID string) bool {
-	for _, aud := range a {
-		if aud == clientID {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(a, clientID)
 }
 
 // oidcClaims is the subset of the id_token/userinfo payload the login
 // reads.
 type oidcClaims struct {
-	Issuer          string        `json:"iss"`
-	Subject         string        `json:"sub"`
-	Audience        oidcAudience  `json:"aud"`
-	Expiry          int64         `json:"exp"`
-	Nonce           string        `json:"nonce"`
-	Email           string        `json:"email"`
-	EmailVerified   bool          `json:"email_verified"`
-	Groups          []string      `json:"groups"`
-	PreferredName   string        `json:"preferred_username"`
-}
-
-func (c oidcClaims) audienceHas(clientID string) bool {
-	return c.Audience.has(clientID)
+	Issuer        string       `json:"iss"`
+	Subject       string       `json:"sub"`
+	Audience      oidcAudience `json:"aud"`
+	Expiry        int64        `json:"exp"`
+	Nonce         string       `json:"nonce"`
+	Email         string       `json:"email"`
+	EmailVerified bool         `json:"email_verified"`
+	Groups        []string     `json:"groups"`
+	PreferredName string       `json:"preferred_username"`
 }
 
 func (c oidcClaims) hasGroup(group string) bool {
-	for _, granted := range c.Groups {
-		if granted == group {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(c.Groups, group)
 }
 
-// merge fills only the MISSING profile claims from a userinfo fallback
-// — present token claims always win.
-func (c *oidcClaims) merge(fallback oidcClaims) {
-	if c.Email == "" {
-		c.Email = fallback.Email
+// mergeClaims fills only the MISSING profile claims from a userinfo
+// fallback — present token claims always win.
+func mergeClaims(claims, fallback oidcClaims) oidcClaims {
+	if claims.Email == "" {
+		claims.Email = fallback.Email
 	}
 
-	if !c.EmailVerified && fallback.EmailVerified {
-		c.EmailVerified = fallback.EmailVerified
+	if !claims.EmailVerified && fallback.EmailVerified {
+		claims.EmailVerified = fallback.EmailVerified
 	}
 
-	if c.Groups == nil {
-		c.Groups = fallback.Groups
+	if claims.Groups == nil {
+		claims.Groups = fallback.Groups
 	}
 
-	if c.PreferredName == "" {
-		c.PreferredName = fallback.PreferredName
+	if claims.PreferredName == "" {
+		claims.PreferredName = fallback.PreferredName
 	}
+
+	return claims
 }
 
 func decodeClaims(payload []byte) (oidcClaims, error) {
@@ -222,7 +208,7 @@ func oidcRSAKey(modulus, exponent string) (*rsa.PublicKey, error) {
 	}
 
 	if key.N.BitLen() < oidcMinRSABits {
-		return nil, fmt.Errorf("JWK modulus is %d bits (minimum %d)", key.N.BitLen(), oidcMinRSABits)
+		return nil, fmt.Errorf("%w: %d vs %d", errOIDCWeakModulus, key.N.BitLen(), oidcMinRSABits)
 	}
 
 	return key, nil
@@ -232,5 +218,10 @@ func oidcRSAKey(modulus, exponent string) (*rsa.PublicKey, error) {
 const oidcMinRSABits = 2048
 
 func decodeSegment(segment string) ([]byte, error) {
-	return base64.RawURLEncoding.DecodeString(segment)
+	decoded, err := base64.RawURLEncoding.DecodeString(segment)
+	if err != nil {
+		return nil, fmt.Errorf("decoding a base64url segment: %w", err)
+	}
+
+	return decoded, nil
 }

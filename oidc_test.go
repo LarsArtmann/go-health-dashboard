@@ -281,7 +281,9 @@ func bigToIntBytes(value int) []byte {
 
 func writeJSON(w http.ResponseWriter, value any) {
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(value)
+	if err := json.NewEncoder(w).Encode(value); err != nil {
+		panic(fmt.Sprintf("encoding stub JSON: %v", err))
+	}
 }
 
 // --- configuration validation -------------------------------------------
@@ -492,16 +494,16 @@ func TestOIDC_FailureTaxonomy(t *testing.T) {
 		},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			stub := newStubIssuer(t)
-			if tc.stub != nil {
-				tc.stub(stub)
+			if tt.stub != nil {
+				tt.stub(stub)
 			}
 
-			login, handler := newTestMiddleware(t, stub, tc.mutate)
+			login, handler := newTestMiddleware(t, stub, tt.mutate)
 
 			// Drive to the callback, then inspect the served page: every
 			// failure mode must render its typed code in-place.
@@ -526,12 +528,12 @@ func TestOIDC_FailureTaxonomy(t *testing.T) {
 			recorder = httptest.NewRecorder()
 			handler.ServeHTTP(recorder, callback)
 
-			if recorder.Code != tc.code {
-				t.Fatalf("callback answered %d, want %d: %s", recorder.Code, tc.code, recorder.Body.String())
+			if recorder.Code != tt.code {
+				t.Fatalf("callback answered %d, want %d: %s", recorder.Code, tt.code, recorder.Body.String())
 			}
 
-			if !strings.Contains(recorder.Body.String(), tc.want) {
-				t.Fatalf("error page lacks the code %q: %s", tc.want, recorder.Body.String())
+			if !strings.Contains(recorder.Body.String(), tt.want) {
+				t.Fatalf("error page lacks the code %q: %s", tt.want, recorder.Body.String())
 			}
 		})
 	}

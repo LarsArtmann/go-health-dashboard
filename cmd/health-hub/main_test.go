@@ -535,13 +535,15 @@ func wantConfigEveryKnob(t *testing.T, cfg hubConfig) {
 }
 
 func TestOIDCOptionFromEnv_DisabledByDefault(t *testing.T) {
-	opt, err := oidcOptionFromEnv()
+	t.Parallel()
+
+	opts, err := oidcOptionsFromEnv()
 	if err != nil {
 		t.Fatalf("disabled oidc errored: %v", err)
 	}
 
-	if opt != nil {
-		t.Fatal("without an issuer the hub must stay auth-free (nil option)")
+	if len(opts) != 0 {
+		t.Fatal("without an issuer the hub must stay auth-free (no options)")
 	}
 }
 
@@ -559,7 +561,7 @@ func TestOIDCOptionFromEnv_RequiresBothSecrets(t *testing.T) {
 	t.Setenv(oidcSessionFileVar, filepath.Join(dir, "missing-session-secret"))
 	t.Setenv(oidcRedirectEnvVar, "https://health.example.test/oidc/callback")
 
-	if _, err := oidcOptionFromEnv(); err == nil {
+	if _, err := oidcOptionsFromEnv(); err == nil {
 		t.Fatal("a missing session-secret file must fail the startup")
 	}
 }
@@ -575,7 +577,7 @@ func TestOIDCOptionFromEnv_EmptySecretFileFails(t *testing.T) {
 	t.Setenv(oidcIssuerEnvVar, "https://auth.example.test")
 	t.Setenv(oidcSecretFileVar, clientSecret)
 
-	_, err := oidcOptionFromEnv()
+	_, err := oidcOptionsFromEnv()
 	if err == nil {
 		t.Fatal("an empty secret file must fail the startup")
 	}
@@ -608,13 +610,13 @@ func TestOIDCOptionFromEnv_HappyPathTrimsAndValidates(t *testing.T) {
 	t.Setenv(oidcGroupEnvVar, "pbx-health")
 	t.Setenv(oidcTTLEnvVar, "8h")
 
-	opt, err := oidcOptionFromEnv()
+	opts, err := oidcOptionsFromEnv()
 	if err != nil {
 		t.Fatalf("happy path errored: %v", err)
 	}
 
-	if opt == nil {
-		t.Fatal("a fully configured issuer must produce the option")
+	if len(opts) != 1 {
+		t.Fatal("a fully configured issuer must produce exactly the oidc option")
 	}
 }
 

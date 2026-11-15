@@ -108,19 +108,19 @@ const (
 	sseDrainEnvVar     = "HEALTH_HUB_SSE_DRAIN"
 	clientCAEnvVar     = "HEALTH_HUB_CLIENT_TLS_CA"
 	proxyEnvVar        = "HEALTH_HUB_HTTP_PROXY"
-	portEnvVar         = "PORT"
-	addrEnvVar         = "HEALTH_HUB_ADDR"
+	portEnvVar = "PORT"
+	addrEnvVar = "HEALTH_HUB_ADDR"
 
-	oidcIssuerEnvVar    = "HEALTH_HUB_OIDC_ISSUER"
-	oidcClientIDEnvVar  = "HEALTH_HUB_OIDC_CLIENT_ID"
-	oidcSecretFileVar   = "HEALTH_HUB_OIDC_CLIENT_SECRET_FILE"
-	oidcSessionFileVar  = "HEALTH_HUB_OIDC_SESSION_SECRET_FILE"
-	oidcRedirectEnvVar  = "HEALTH_HUB_OIDC_REDIRECT_URL"
-	oidcGroupEnvVar     = "HEALTH_HUB_OIDC_GROUP"
-	oidcTTLEnvVar       = "HEALTH_HUB_OIDC_SESSION_TTL"
-	oidcInsecureVar     = "HEALTH_HUB_OIDC_COOKIE_INSECURE"
+	oidcIssuerEnvVar   = "HEALTH_HUB_OIDC_ISSUER"          //nolint:gosec // G101: an env-var NAME, never a value
+	oidcClientIDEnvVar = "HEALTH_HUB_OIDC_CLIENT_ID"
+	oidcSecretFileVar  = "HEALTH_HUB_OIDC_CLIENT_SECRET_FILE" //nolint:gosec // G101: an env-var NAME, never a value
+	oidcSessionFileVar = "HEALTH_HUB_OIDC_SESSION_SECRET_FILE"
+	oidcRedirectEnvVar = "HEALTH_HUB_OIDC_REDIRECT_URL"
+	oidcGroupEnvVar    = "HEALTH_HUB_OIDC_GROUP"
+	oidcTTLEnvVar      = "HEALTH_HUB_OIDC_SESSION_TTL"
+	oidcInsecureVar    = "HEALTH_HUB_OIDC_COOKIE_INSECURE"
 
-	shutdownGrace      = 10 * time.Second
+	shutdownGrace    = 10 * time.Second
 	readHeaderTimeout  = 5 * time.Second
 	defaultFetchExpiry = 5 * time.Second
 	startupGate        = 15 * time.Second
@@ -242,28 +242,15 @@ func run() error {
 		return err
 	}
 
-	opts := append(
-		[]dashboard.Option{dashboard.WithGrouping(dashboard.GroupBySource)},
-		optionsFromEnv()...,
-	)
-
-	opt, err := oidcOptionFromEnv()
+	configOptions, err := buildOptions(cfg)
 	if err != nil {
 		return err
 	}
 
-	if opt != nil {
-		opts = append(opts, opt)
-	}
-
-	if cfg.pushInterval != 0 {
-		opts = append(opts, dashboard.WithPushInterval(cfg.pushInterval))
-	}
-
-	if cfg.sseDrain > 0 {
-		opts = append(opts, dashboard.WithShutdownDrain(cfg.sseDrain))
-		log.Printf("sse drain: graceful SSE drain window %s on shutdown", cfg.sseDrain)
-	}
+	opts := append(
+		[]dashboard.Option{dashboard.WithGrouping(dashboard.GroupBySource)},
+		configOptions...,
+	)
 
 	dash := dashboard.New(fed, opts...)
 
@@ -537,9 +524,34 @@ func parseTimeout(raw string) (time.Duration, error) {
 	return expiry, nil
 }
 
-// optionsFromEnv assembles the optional dashboard features from the
-// environment so a hub deployment turns capabilities on without code
-// changes. Values are validated before any reaches a log line.
+// buildOptions assembles the optional dashboard features from the
+// environment and the parsed config so a hub deployment turns
+// capabilities on without code changes. Values are validated before
+// any reaches a log line.
+func buildOptions(cfg hubConfig) ([]dashboard.Option, error) {
+	opts := optionsFromEnv()
+
+	oidcOpts, err := oidcOptionsFromEnv()
+	if err != nil {
+		return nil, err
+	}
+
+	opts = append(opts, oidcOpts...)
+
+	if cfg.pushInterval != 0 {
+		opts = append(opts, dashboard.WithPushInterval(cfg.pushInterval))
+	}
+
+	if cfg.sseDrain > 0 {
+		opts = append(opts, dashboard.WithShutdownDrain(cfg.sseDrain))
+		log.Printf("sse drain: graceful SSE drain window %s on shutdown", cfg.sseDrain)
+	}
+
+	return opts, nil
+}
+
+// optionsFromEnv assembles the toggle-style dashboard features (trend,
+// metrics) from the environment.
 func optionsFromEnv() []dashboard.Option {
 	var opts []dashboard.Option
 
@@ -558,14 +570,14 @@ func optionsFromEnv() []dashboard.Option {
 	return opts
 }
 
-// oidcOptionFromEnv builds the native-login option from the
+// oidcOptionsFromEnv builds the native-login option from the
 // HEALTH_HUB_OIDC_* environment. A hub without an issuer stays
-// auth-free (the loopback-only default posture); a hub WITH one fails
-// fast on any missing piece — a half-configured login is a broken
-// login. Both secret files are read once here, at startup, so a
-// rotation is a unit restart and credential values never travel the
-// environment.
-func oidcOptionFromEnv() (dashboard.Option, error) {
+// auth-free (the loopback-only default posture) and answers an empty
+// slice; a hub WITH one fails fast on any missing piece — a
+// half-configured login is a broken login. Both secret files are read
+// once here, at startup, so a rotation is a unit restart and
+// credential values never travel the environment.
+func oidcOptionsFromEnv() ([]dashboard.Option, error) {
 	issuer := strings.TrimSpace(os.Getenv(oidcIssuerEnvVar))
 	if issuer == "" {
 		return nil, nil
@@ -607,17 +619,19 @@ func oidcOptionFromEnv() (dashboard.Option, error) {
 	opt := dashboard.WithOIDC(cfg)
 	log.Printf("oidc: native login on (issuer %s, client %s)", cfg.Issuer, cfg.ClientID)
 
-	return opt, nil
+	return []dashboard.Option{opt}, nil
 }
 
 var errEmptySecretFile = errors.New("points at an empty or missing file (LoadCredential-style paths land under /run/credentials/<unit>/)")
 
 // readSecretFile reads one whitespace-trimmed secret value; empty
-// content is an error, not a silent empty credential.
+// content is an error, not a silent empty credential. The path comes
+// from the unit's own Environment line (root-owned configuration), not
+// from any request data.
 func readSecretFile(path string) (string, error) {
-	raw, err := os.ReadFile(path)
+	raw, err := os.ReadFile(path) //nolint:gosec // G703: unit-provided config path, never request data
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("reading the secret file: %w", err)
 	}
 
 	value := strings.TrimSpace(string(raw))

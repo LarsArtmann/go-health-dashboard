@@ -98,6 +98,8 @@ func cutLastDot(value string) (string, string, bool) {
 // expiredCookie builds a same-name cookie that clears the browser's
 // copy.
 func (o *oidcLogin) expiredCookie(name string) *http.Cookie {
+	//nolint:gosec // G124: the clearing cookie carries no value; the
+	// Secure flag is configuration, HttpOnly + Lax ride unconditionally.
 	return &http.Cookie{
 		Name:     name,
 		Value:    "",
