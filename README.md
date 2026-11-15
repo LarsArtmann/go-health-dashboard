@@ -412,22 +412,22 @@ submodule wiring the native login incl. LoadCredentials and an optional
 egress fence), binds loopback by default, and ships no state — front it
 with your own reverse proxy for remote access, or turn `oidc` on.
 
-| Variable                | Effect                                                        |
-| ----------------------- | ------------------------------------------------------------- |
-| `HEALTH_HUB_REMOTES`    | Required. `name=url` pairs, e.g. `cv=http://cv:8098/health`   |
-| `HEALTH_HUB_TIMEOUT=5s` | Per-fetch deadline for each remote                            |
-| `HEALTH_HUB_TREND=1`    | Trend sparkline + timeline card                               |
-| `HEALTH_HUB_METRICS=1`  | Prometheus text at `/health/metrics`                          |
-| `PORT=8080`             | Listen port (default 8080)                                    |
-| `HEALTH_HUB_ADDR=...`   | Full listen address, overrides `PORT` (e.g. `127.0.0.1:8103`) |
-| `HEALTH_HUB_OIDC_ISSUER` | Turns the native OIDC login ON (all five OIDC vars together) |
-| `HEALTH_HUB_OIDC_CLIENT_ID` | Confidential client id at the issuer                        |
-| `HEALTH_HUB_OIDC_CLIENT_SECRET_FILE` | Client secret file, read once at startup (fail-fast) |
-| `HEALTH_HUB_OIDC_SESSION_SECRET_FILE` | Cookie HMAC key file (>= 16 bytes), read once at startup |
-| `HEALTH_HUB_OIDC_REDIRECT_URL` | Registered callback (`https://host/oidc/callback`)       |
-| `HEALTH_HUB_OIDC_GROUP` | Optional group gate (id_token/userinfo `groups` claim)         |
-| `HEALTH_HUB_OIDC_SESSION_TTL=12h` | Optional session lifetime                              |
-| `HEALTH_HUB_OIDC_COOKIE_INSECURE=1` | Dev only: drop the cookie Secure flag                  |
+| Variable                              | Effect                                                        |
+| ------------------------------------- | ------------------------------------------------------------- |
+| `HEALTH_HUB_REMOTES`                  | Required. `name=url` pairs, e.g. `cv=http://cv:8098/health`   |
+| `HEALTH_HUB_TIMEOUT=5s`               | Per-fetch deadline for each remote                            |
+| `HEALTH_HUB_TREND=1`                  | Trend sparkline + timeline card                               |
+| `HEALTH_HUB_METRICS=1`                | Prometheus text at `/health/metrics`                          |
+| `PORT=8080`                           | Listen port (default 8080)                                    |
+| `HEALTH_HUB_ADDR=...`                 | Full listen address, overrides `PORT` (e.g. `127.0.0.1:8103`) |
+| `HEALTH_HUB_OIDC_ISSUER`              | Turns the native OIDC login ON (all five OIDC vars together)  |
+| `HEALTH_HUB_OIDC_CLIENT_ID`           | Confidential client id at the issuer                          |
+| `HEALTH_HUB_OIDC_CLIENT_SECRET_FILE`  | Client secret file, read once at startup (fail-fast)          |
+| `HEALTH_HUB_OIDC_SESSION_SECRET_FILE` | Cookie HMAC key file (>= 16 bytes), read once at startup      |
+| `HEALTH_HUB_OIDC_REDIRECT_URL`        | Registered callback (`https://host/oidc/callback`)            |
+| `HEALTH_HUB_OIDC_GROUP`               | Optional group gate (id_token/userinfo `groups` claim)        |
+| `HEALTH_HUB_OIDC_SESSION_TTL=12h`     | Optional session lifetime                                     |
+| `HEALTH_HUB_OIDC_COOKIE_INSECURE=1`   | Dev only: drop the cookie Secure flag                         |
 
 Remote URLs are never logged verbatim (userinfo is redacted), and every
 misconfiguration fails fast with the offending entry named.
