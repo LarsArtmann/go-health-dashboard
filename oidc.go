@@ -92,25 +92,29 @@ const (
 // sentinels: the codes render on the error page, the sentinels wrap into
 // startup errors.
 var (
-	errOIDCIssuerURL       = errors.New("issuer must be an absolute http(s) URL without a trailing slash")
-	errOIDCClientID        = errors.New("client id is required")
-	errOIDCClientSecret    = errors.New("client secret is required (the native login is a confidential client)")
-	errOIDCRedirectURL     = errors.New("redirect URL must be absolute http(s)")
-	errOIDCSessionSecret   = errors.New("session secret is too short")
-	errOIDCNoKeyForKid     = errors.New("the issuer's JWKS carries no RSA key for the token's kid")
-	errOIDCDiscoveryDown   = errors.New("discovery unavailable")
-	errOIDCJWKSEmpty       = errors.New("the JWKS carries no usable RSA keys")
-	errOIDCIssuerStatus    = errors.New("issuer answered a non-200 status")
-	errOIDCNoUserinfo      = errors.New("no userinfo endpoint")
-	errOIDCUserinfoStatus  = errors.New("userinfo answered a non-200 status")
-	errOIDCUnsupportedAlg  = errors.New("unsupported id_token algorithm (only RS256)")
-	errOIDCSignature       = errors.New("id_token signature does not verify")
-	errOIDCNotAJWS         = errors.New("id_token is not a three-part JWS")
-	errOIDCIssuerMismatch  = errors.New("id_token issuer does not match the configured issuer")
-	errOIDCAudience        = errors.New("id_token audience does not include the client")
-	errOIDCTokenExpired    = errors.New("id_token is expired")
-	errOIDCNonceMismatch   = errors.New("id_token nonce does not match the login attempt")
-	errOIDCWeakModulus     = errors.New("JWK modulus is below the minimum bit length")
+	errOIDCIssuerURL = errors.New(
+		"issuer must be an absolute http(s) URL without a trailing slash",
+	)
+	errOIDCClientID     = errors.New("client id is required")
+	errOIDCClientSecret = errors.New(
+		"client secret is required (the native login is a confidential client)",
+	)
+	errOIDCRedirectURL    = errors.New("redirect URL must be absolute http(s)")
+	errOIDCSessionSecret  = errors.New("session secret is too short")
+	errOIDCNoKeyForKid    = errors.New("the issuer's JWKS carries no RSA key for the token's kid")
+	errOIDCDiscoveryDown  = errors.New("discovery unavailable")
+	errOIDCJWKSEmpty      = errors.New("the JWKS carries no usable RSA keys")
+	errOIDCIssuerStatus   = errors.New("issuer answered a non-200 status")
+	errOIDCNoUserinfo     = errors.New("no userinfo endpoint")
+	errOIDCUserinfoStatus = errors.New("userinfo answered a non-200 status")
+	errOIDCUnsupportedAlg = errors.New("unsupported id_token algorithm (only RS256)")
+	errOIDCSignature      = errors.New("id_token signature does not verify")
+	errOIDCNotAJWS        = errors.New("id_token is not a three-part JWS")
+	errOIDCIssuerMismatch = errors.New("id_token issuer does not match the configured issuer")
+	errOIDCAudience       = errors.New("id_token audience does not include the client")
+	errOIDCTokenExpired   = errors.New("id_token is expired")
+	errOIDCNonceMismatch  = errors.New("id_token nonce does not match the login attempt")
+	errOIDCWeakModulus    = errors.New("JWK modulus is below the minimum bit length")
 )
 
 // Typed login-failure codes, rendered on the error page and stable for
@@ -266,7 +270,8 @@ func normalizeOIDCConfig(cfg OIDCConfig) (OIDCConfig, error) {
 // validateAbsoluteHTTPURL checks one required http(s) URL.
 func validateAbsoluteHTTPURL(raw string, sentinel error) error {
 	parsed, err := url.Parse(raw)
-	if raw == "" || err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+	if raw == "" || err != nil || parsed.Host == "" ||
+		(parsed.Scheme != "http" && parsed.Scheme != "https") {
 		return sentinel
 	}
 
@@ -376,7 +381,11 @@ func (o *oidcLogin) handleLogout(w http.ResponseWriter, r *http.Request) {
 func (o *oidcLogin) handleLogin(w http.ResponseWriter, r *http.Request) {
 	disco, errCode := o.discovery(r.Context())
 	if errCode != "" {
-		o.serveError(w, oidcErrDiscovery, "the issuer's discovery document is unreachable or malformed")
+		o.serveError(
+			w,
+			oidcErrDiscovery,
+			"the issuer's discovery document is unreachable or malformed",
+		)
 
 		return
 	}
@@ -404,7 +413,11 @@ func (o *oidcLogin) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	authorize, err := url.Parse(disco.AuthorizationEndpoint)
 	if err != nil || authorize.Host == "" {
-		o.serveError(w, oidcErrConfig, "the discovery document's authorization endpoint is not an absolute URL")
+		o.serveError(
+			w,
+			oidcErrConfig,
+			"the discovery document's authorization endpoint is not an absolute URL",
+		)
 
 		return
 	}
@@ -424,8 +437,15 @@ func (o *oidcLogin) handleLogin(w http.ResponseWriter, r *http.Request) {
 	// for documented plain-HTTP local development); HttpOnly + Lax ride
 	// unconditionally.
 	http.SetCookie(w, &http.Cookie{
-		Name:     oidcAttemptCookieName,
-		Value:    o.seal(oidcAttempt{State: state, Nonce: nonce, Verifier: verifier, Expires: o.clock().Add(oidcAttemptTTL).Unix()}),
+		Name: oidcAttemptCookieName,
+		Value: o.seal(
+			oidcAttempt{
+				State:    state,
+				Nonce:    nonce,
+				Verifier: verifier,
+				Expires:  o.clock().Add(oidcAttemptTTL).Unix(),
+			},
+		),
 		Path:     "/",
 		MaxAge:   int(oidcAttemptTTL.Seconds()),
 		HttpOnly: true,
@@ -451,8 +471,14 @@ func (o *oidcLogin) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return // attemptFromRequest already served the error page
 	}
 
-	if state := r.URL.Query().Get("state"); state == "" || !hmac.Equal([]byte(state), []byte(attempt.State)) {
-		o.serveError(w, oidcErrStale, "state mismatch — the callback does not belong to your login attempt")
+	if state := r.URL.Query().
+		Get("state"); state == "" ||
+		!hmac.Equal([]byte(state), []byte(attempt.State)) {
+		o.serveError(
+			w,
+			oidcErrStale,
+			"state mismatch — the callback does not belong to your login attempt",
+		)
 
 		return
 	}
@@ -500,7 +526,11 @@ func (o *oidcLogin) attemptFromRequest(w http.ResponseWriter, r *http.Request) (
 // applies the userinfo fallback for missing profile claims. The PKCE
 // verifier rides the exchange (confidential client: one factor in the
 // Basic header, one in the form body).
-func (o *oidcLogin) claimsFromIssuer(w http.ResponseWriter, ctx context.Context, code, nonce, verifier string) (oidcClaims, bool) {
+func (o *oidcLogin) claimsFromIssuer(
+	w http.ResponseWriter,
+	ctx context.Context,
+	code, nonce, verifier string,
+) (oidcClaims, bool) {
 	tokens, errCode := o.exchange(ctx, code, verifier)
 	if errCode != "" {
 		o.serveError(w, errCode, "exchanging the authorization code failed")
@@ -518,7 +548,11 @@ func (o *oidcLogin) claimsFromIssuer(w http.ResponseWriter, ctx context.Context,
 	if claims.Email == "" || (o.cfg.Group != "" && claims.Groups == nil) {
 		fallback, err := o.userinfo(ctx, tokens.AccessToken)
 		if err != nil {
-			o.serveError(w, oidcErrToken, "the id_token lacks profile claims and the userinfo fallback failed: "+err.Error())
+			o.serveError(
+				w,
+				oidcErrToken,
+				"the id_token lacks profile claims and the userinfo fallback failed: "+err.Error(),
+			)
 
 			return oidcClaims{}, false
 		}
@@ -555,8 +589,14 @@ func (o *oidcLogin) grantSession(w http.ResponseWriter, claims oidcClaims) bool 
 	// for documented plain-HTTP local development); HttpOnly + Lax ride
 	// unconditionally.
 	http.SetCookie(w, &http.Cookie{
-		Name:     oidcSessionCookieName,
-		Value:    o.seal(oidcSession{Subject: claims.Subject, Email: claims.Email, Expires: o.clock().Add(o.cfg.SessionTTL).Unix()}),
+		Name: oidcSessionCookieName,
+		Value: o.seal(
+			oidcSession{
+				Subject: claims.Subject,
+				Email:   claims.Email,
+				Expires: o.clock().Add(o.cfg.SessionTTL).Unix(),
+			},
+		),
 		Path:     "/",
 		MaxAge:   int(o.cfg.SessionTTL.Seconds()),
 		HttpOnly: true,
@@ -583,7 +623,12 @@ func (o *oidcLogin) exchange(ctx context.Context, code, verifier string) (oidcTo
 		"code_verifier": {verifier},
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, disco.TokenEndpoint, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		disco.TokenEndpoint,
+		strings.NewReader(form.Encode()),
+	)
 	if err != nil {
 		return oidcTokens{}, oidcErrConfig
 	}

@@ -67,15 +67,18 @@ func newStubIssuer(t *testing.T) *stubIssuer {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
-		writeJSON(w, map[string]any{
-			"issuer":                 stub.server.URL,
-			"authorization_endpoint": stub.server.URL + "/authorize",
-			"token_endpoint":         stub.server.URL + "/token",
-			"userinfo_endpoint":      stub.server.URL + "/userinfo",
-			"jwks_uri":               stub.server.URL + "/jwks.json",
-		})
-	})
+	mux.HandleFunc(
+		"GET /.well-known/openid-configuration",
+		func(w http.ResponseWriter, _ *http.Request) {
+			writeJSON(w, map[string]any{
+				"issuer":                 stub.server.URL,
+				"authorization_endpoint": stub.server.URL + "/authorize",
+				"token_endpoint":         stub.server.URL + "/token",
+				"userinfo_endpoint":      stub.server.URL + "/userinfo",
+				"jwks_uri":               stub.server.URL + "/jwks.json",
+			})
+		},
+	)
 	mux.HandleFunc("GET /jwks.json", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, map[string]any{
 			"keys": []any{stub.jwk(stub.key.PublicKey)},
@@ -134,7 +137,9 @@ func (s *stubIssuer) idToken(nonce string) string {
 		claims["groups"] = s.groups
 	}
 
-	header := base64.RawURLEncoding.EncodeToString(mustJSONForStub(map[string]any{"alg": "RS256", "kid": s.kid}))
+	header := base64.RawURLEncoding.EncodeToString(
+		mustJSONForStub(map[string]any{"alg": "RS256", "kid": s.kid}),
+	)
 	payload := base64.RawURLEncoding.EncodeToString(mustJSONForStub(claims))
 
 	key := s.key
@@ -166,7 +171,11 @@ func (s *stubIssuer) tokenIssuerURL() string {
 // newTestMiddleware wires a middleware for the given stub with the
 // default test configuration. The returned login gives in-package
 // access for driving the dance.
-func newTestMiddleware(t *testing.T, stub *stubIssuer, mutate ...func(*OIDCConfig)) (*oidcLogin, http.Handler) {
+func newTestMiddleware(
+	t *testing.T,
+	stub *stubIssuer,
+	mutate ...func(*OIDCConfig),
+) (*oidcLogin, http.Handler) {
 	t.Helper()
 
 	cfg := OIDCConfig{
@@ -203,7 +212,12 @@ func newTestMiddleware(t *testing.T, stub *stubIssuer, mutate ...func(*OIDCConfi
 // driveLogin walks the browser dance against the stub: login redirect,
 // synthesized authorize round trip, callback with the attempt cookie.
 // It returns the session cookie on success.
-func driveLogin(t *testing.T, login *oidcLogin, handler http.Handler, stub *stubIssuer) *http.Cookie {
+func driveLogin(
+	t *testing.T,
+	login *oidcLogin,
+	handler http.Handler,
+	stub *stubIssuer,
+) *http.Cookie {
 	t.Helper()
 
 	recorder := httptest.NewRecorder()
@@ -236,7 +250,11 @@ func driveLogin(t *testing.T, login *oidcLogin, handler http.Handler, stub *stub
 	// The stub mints its id_token with the attempt's nonce bound.
 	stub.nonce = attempt.Nonce
 
-	callback := httptest.NewRequest(http.MethodGet, "/oidc/callback?code=stub-code&state="+url.QueryEscape(state), nil)
+	callback := httptest.NewRequest(
+		http.MethodGet,
+		"/oidc/callback?code=stub-code&state="+url.QueryEscape(state),
+		nil,
+	)
 	callback.AddCookie(attemptCookie)
 
 	recorder = httptest.NewRecorder()
@@ -300,16 +318,16 @@ func TestOIDC_ConfigValidation(t *testing.T) {
 	}
 
 	cases := map[string]func(*OIDCConfig){
-		"missing issuer":         func(c *OIDCConfig) { c.Issuer = "" },
-		"non-absolute issuer":    func(c *OIDCConfig) { c.Issuer = "auth.example.test" },
-		"trailing-slash issuer":  func(c *OIDCConfig) { c.Issuer = "https://auth.example.test/" },
-		"missing client id":      func(c *OIDCConfig) { c.ClientID = "" },
-		"missing client secret":  func(c *OIDCConfig) { c.ClientSecret = "" },
-		"missing redirect":       func(c *OIDCConfig) { c.RedirectURL = "" },
-		"relative redirect":      func(c *OIDCConfig) { c.RedirectURL = "/oidc/callback" },
-		"short session secret":   func(c *OIDCConfig) { c.SessionSecret = []byte("short") },
-		"public client refused":  func(c *OIDCConfig) { c.ClientSecret = "" },
-		"garbage scheme issuer":  func(c *OIDCConfig) { c.Issuer = "ftp://auth.example.test" },
+		"missing issuer":          func(c *OIDCConfig) { c.Issuer = "" },
+		"non-absolute issuer":     func(c *OIDCConfig) { c.Issuer = "auth.example.test" },
+		"trailing-slash issuer":   func(c *OIDCConfig) { c.Issuer = "https://auth.example.test/" },
+		"missing client id":       func(c *OIDCConfig) { c.ClientID = "" },
+		"missing client secret":   func(c *OIDCConfig) { c.ClientSecret = "" },
+		"missing redirect":        func(c *OIDCConfig) { c.RedirectURL = "" },
+		"relative redirect":       func(c *OIDCConfig) { c.RedirectURL = "/oidc/callback" },
+		"short session secret":    func(c *OIDCConfig) { c.SessionSecret = []byte("short") },
+		"public client refused":   func(c *OIDCConfig) { c.ClientSecret = "" },
+		"garbage scheme issuer":   func(c *OIDCConfig) { c.Issuer = "ftp://auth.example.test" },
 		"garbage scheme redirect": func(c *OIDCConfig) { c.RedirectURL = "ftp://health/oidc/callback" },
 	}
 
@@ -409,8 +427,13 @@ func TestOIDC_UnauthenticatedBrowserRedirectsToLogin(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health", nil))
 
-	if recorder.Code != http.StatusTemporaryRedirect || recorder.Header().Get("Location") != "/oidc/login" {
-		t.Fatalf("unauthed browser visit answered %d -> %q", recorder.Code, recorder.Header().Get("Location"))
+	if recorder.Code != http.StatusTemporaryRedirect ||
+		recorder.Header().Get("Location") != "/oidc/login" {
+		t.Fatalf(
+			"unauthed browser visit answered %d -> %q",
+			recorder.Code,
+			recorder.Header().Get("Location"),
+		)
 	}
 }
 
@@ -522,14 +545,23 @@ func TestOIDC_FailureTaxonomy(t *testing.T) {
 
 			stub.nonce = attempt.Nonce
 
-			callback := httptest.NewRequest(http.MethodGet, "/oidc/callback?code=stub-code&state="+url.QueryEscape(attempt.State), nil)
+			callback := httptest.NewRequest(
+				http.MethodGet,
+				"/oidc/callback?code=stub-code&state="+url.QueryEscape(attempt.State),
+				nil,
+			)
 			callback.AddCookie(attemptCookie)
 
 			recorder = httptest.NewRecorder()
 			handler.ServeHTTP(recorder, callback)
 
 			if recorder.Code != tt.code {
-				t.Fatalf("callback answered %d, want %d: %s", recorder.Code, tt.code, recorder.Body.String())
+				t.Fatalf(
+					"callback answered %d, want %d: %s",
+					recorder.Code,
+					tt.code,
+					recorder.Body.String(),
+				)
 			}
 
 			if !strings.Contains(recorder.Body.String(), tt.want) {
@@ -553,13 +585,18 @@ func TestOIDC_StateMismatchIsStale(t *testing.T) {
 		t.Fatal("login set no attempt cookie")
 	}
 
-	callback := httptest.NewRequest(http.MethodGet, "/oidc/callback?code=stub-code&state=forged-state", nil)
+	callback := httptest.NewRequest(
+		http.MethodGet,
+		"/oidc/callback?code=stub-code&state=forged-state",
+		nil,
+	)
 	callback.AddCookie(attemptCookie)
 
 	recorder = httptest.NewRecorder()
 	handler.ServeHTTP(recorder, callback)
 
-	if recorder.Code != http.StatusUnauthorized || !strings.Contains(recorder.Body.String(), oidcErrStale) {
+	if recorder.Code != http.StatusUnauthorized ||
+		!strings.Contains(recorder.Body.String(), oidcErrStale) {
 		t.Fatalf("forged state answered %d: %s", recorder.Code, recorder.Body.String())
 	}
 }
@@ -571,9 +608,13 @@ func TestOIDC_MissingAttemptCookieIsStale(t *testing.T) {
 	_, handler := newTestMiddleware(t, stub)
 
 	recorder := httptest.NewRecorder()
-	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/oidc/callback?code=x&state=y", nil))
+	handler.ServeHTTP(
+		recorder,
+		httptest.NewRequest(http.MethodGet, "/oidc/callback?code=x&state=y", nil),
+	)
 
-	if recorder.Code != http.StatusUnauthorized || !strings.Contains(recorder.Body.String(), oidcErrStale) {
+	if recorder.Code != http.StatusUnauthorized ||
+		!strings.Contains(recorder.Body.String(), oidcErrStale) {
 		t.Fatalf("cookieless callback answered %d: %s", recorder.Code, recorder.Body.String())
 	}
 }
@@ -585,9 +626,13 @@ func TestOIDC_IssuerErrorRedirectIsExchange(t *testing.T) {
 	_, handler := newTestMiddleware(t, stub)
 
 	recorder := httptest.NewRecorder()
-	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/oidc/callback?error=access_denied", nil))
+	handler.ServeHTTP(
+		recorder,
+		httptest.NewRequest(http.MethodGet, "/oidc/callback?error=access_denied", nil),
+	)
 
-	if recorder.Code != http.StatusBadGateway || !strings.Contains(recorder.Body.String(), oidcErrExchange) {
+	if recorder.Code != http.StatusBadGateway ||
+		!strings.Contains(recorder.Body.String(), oidcErrExchange) {
 		t.Fatalf("issuer error answered %d: %s", recorder.Code, recorder.Body.String())
 	}
 }
@@ -607,7 +652,8 @@ func TestOIDC_DeadIssuerIsDiscovery(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/oidc/login", nil))
 
-	if recorder.Code != http.StatusBadGateway || !strings.Contains(recorder.Body.String(), oidcErrDiscovery) {
+	if recorder.Code != http.StatusBadGateway ||
+		!strings.Contains(recorder.Body.String(), oidcErrDiscovery) {
 		t.Fatalf("dead issuer answered %d: %s", recorder.Code, recorder.Body.String())
 	}
 }
@@ -644,7 +690,13 @@ func TestOIDC_ExpiredSessionRejected(t *testing.T) {
 	stub := newStubIssuer(t)
 	login, _ := newTestMiddleware(t, stub)
 
-	expired := login.seal(oidcSession{Subject: "user-1", Email: stub.email, Expires: time.Now().Add(-time.Minute).Unix()})
+	expired := login.seal(
+		oidcSession{
+			Subject: "user-1",
+			Email:   stub.email,
+			Expires: time.Now().Add(-time.Minute).Unix(),
+		},
+	)
 
 	if login.validSession(expired) {
 		t.Fatal("an expired session validated")

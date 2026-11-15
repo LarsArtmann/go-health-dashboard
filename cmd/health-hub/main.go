@@ -108,19 +108,19 @@ const (
 	sseDrainEnvVar     = "HEALTH_HUB_SSE_DRAIN"
 	clientCAEnvVar     = "HEALTH_HUB_CLIENT_TLS_CA"
 	proxyEnvVar        = "HEALTH_HUB_HTTP_PROXY"
-	portEnvVar = "PORT"
-	addrEnvVar = "HEALTH_HUB_ADDR"
+	portEnvVar         = "PORT"
+	addrEnvVar         = "HEALTH_HUB_ADDR"
 
-	oidcIssuerEnvVar   = "HEALTH_HUB_OIDC_ISSUER"          //nolint:gosec // G101: an env-var NAME, never a value
+	oidcIssuerEnvVar   = "HEALTH_HUB_OIDC_ISSUER"
 	oidcClientIDEnvVar = "HEALTH_HUB_OIDC_CLIENT_ID"
-	oidcSecretFileVar  = "HEALTH_HUB_OIDC_CLIENT_SECRET_FILE" //nolint:gosec // G101: an env-var NAME, never a value
-	oidcSessionFileVar = "HEALTH_HUB_OIDC_SESSION_SECRET_FILE"
-	oidcRedirectEnvVar = "HEALTH_HUB_OIDC_REDIRECT_URL"
+	oidcSecretFileVar  = "HEALTH_HUB_OIDC_CLIENT_SECRET_FILE"  //nolint:gosec // G101: env-var NAME, never a value
+	oidcSessionFileVar = "HEALTH_HUB_OIDC_SESSION_SECRET_FILE" //nolint:gosec // G101: env-var NAME, never a value
+	oidcRedirectEnvVar = "HEALTH_HUB_OIDC_REDIRECT_URL"        //nolint:gosec // G101: env-var NAME, never a value
 	oidcGroupEnvVar    = "HEALTH_HUB_OIDC_GROUP"
 	oidcTTLEnvVar      = "HEALTH_HUB_OIDC_SESSION_TTL"
 	oidcInsecureVar    = "HEALTH_HUB_OIDC_COOKIE_INSECURE"
 
-	shutdownGrace    = 10 * time.Second
+	shutdownGrace      = 10 * time.Second
 	readHeaderTimeout  = 5 * time.Second
 	defaultFetchExpiry = 5 * time.Second
 	startupGate        = 15 * time.Second
@@ -622,14 +622,16 @@ func oidcOptionsFromEnv() ([]dashboard.Option, error) {
 	return []dashboard.Option{opt}, nil
 }
 
-var errEmptySecretFile = errors.New("points at an empty or missing file (LoadCredential-style paths land under /run/credentials/<unit>/)")
+var errEmptySecretFile = errors.New(
+	"points at an empty or missing file (LoadCredential-style paths land under /run/credentials/<unit>/)",
+)
 
 // readSecretFile reads one whitespace-trimmed secret value; empty
 // content is an error, not a silent empty credential. The path comes
 // from the unit's own Environment line (root-owned configuration), not
 // from any request data.
 func readSecretFile(path string) (string, error) {
-	raw, err := os.ReadFile(path) //nolint:gosec // G703: unit-provided config path, never request data
+	raw, err := os.ReadFile(path) //nolint:gosec // G703: unit config path
 	if err != nil {
 		return "", fmt.Errorf("reading the secret file: %w", err)
 	}

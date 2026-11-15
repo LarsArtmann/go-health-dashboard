@@ -598,7 +598,11 @@ func TestOIDCOptionFromEnv_HappyPathTrimsAndValidates(t *testing.T) {
 
 	// 24 bytes with surrounding whitespace: the trimmed value must pass
 	// the session-secret length floor.
-	if err := os.WriteFile(sessionSecret, []byte(" 0123456789abcdef01234567 \n"), 0o600); err != nil {
+	if err := os.WriteFile(
+		sessionSecret,
+		[]byte(" 0123456789abcdef01234567 \n"),
+		0o600,
+	); err != nil {
 		t.Fatal(err)
 	}
 
@@ -663,6 +667,9 @@ func TestServeMuxOIDCProbesStayPublic(t *testing.T) {
 	resp.Body.Close()
 
 	if resp.StatusCode != http.StatusTemporaryRedirect {
-		t.Errorf("dashboard answered %d without a session, want the login redirect", resp.StatusCode)
+		t.Errorf(
+			"dashboard answered %d without a session, want the login redirect",
+			resp.StatusCode,
+		)
 	}
 }

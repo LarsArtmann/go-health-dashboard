@@ -268,6 +268,37 @@ The Kubernetes probe endpoints (`/healthz`, `/readyz`, `/startupz`) are
 deliberately NOT wrapped — the kubelet cannot authenticate, and gating them
 breaks liveness and readiness gates.
 
+### Native OIDC login (`WithOIDC`)
+
+For a dashboard served from behind TLS on its own hostname, the library
+ships a full OpenID Connect login — no reverse-proxy auth chain, no extra
+dependencies (stdlib only): authorization code + PKCE S256, id_token
+verification via the issuer's JWKS, a userinfo fallback for issuers whose
+tokens carry no profile claims, a stateless HMAC-sealed session cookie,
+and an optional group gate:
+
+```go
+dash := dashboard.New(probe, dashboard.WithOIDC(dashboard.OIDCConfig{
+    Issuer:        "https://auth.example.com",
+    ClientID:      "health",
+    ClientSecret:  "...",                       // confidential client
+    RedirectURL:   "https://health.example.com/oidc/callback",
+    Group:         "viewers",                   // optional membership gate
+    SessionSecret: []byte("32 random bytes"),    // HMAC key, >= 16 bytes
+}))
+```
+
+Behavior: unauthenticated browser visits redirect to `/oidc/login`
+(default route names; configurable); JSON-negotiating requests get a
+clean `401 {"error":"unauthenticated"}`; `/oidc/logout` clears the LOCAL
+cookie only (the issuer session is never ended — a shared-IdP deployment
+keeps its other logins); login failures render a self-contained page
+carrying a typed code (`discovery`, `stale`, `exchange`, `token`,
+`unverified`, `group`, `config`) stable for monitoring. Kubelet probes
+stay public (`WithMiddleware` never wraps them). Call
+`dashboard.ValidateOIDC(cfg)` first when reading config from the
+environment, so a misconfiguration surfaces as a clean startup error.
+
 ## Prometheus Metrics
 
 Enable `WithMetrics(true)` and scrape `/health/metrics` (text exposition
@@ -376,8 +407,10 @@ go build -o health-hub ./cmd/health-hub
 
 NixOS hosts can deploy the hub as a systemd service instead:
 `nixosModules.default` exposes `services.health-dashboard` (`enable`,
-`remotes`, and the usual hub knobs), binds loopback by default, and ships
-no state — front it with your own reverse proxy for remote access.
+`remotes`, `addr`, `trend`, and — for a public hostname — an `oidc`
+submodule wiring the native login incl. LoadCredentials and an optional
+egress fence), binds loopback by default, and ships no state — front it
+with your own reverse proxy for remote access, or turn `oidc` on.
 
 | Variable                | Effect                                                        |
 | ----------------------- | ------------------------------------------------------------- |
@@ -387,6 +420,14 @@ no state — front it with your own reverse proxy for remote access.
 | `HEALTH_HUB_METRICS=1`  | Prometheus text at `/health/metrics`                          |
 | `PORT=8080`             | Listen port (default 8080)                                    |
 | `HEALTH_HUB_ADDR=...`   | Full listen address, overrides `PORT` (e.g. `127.0.0.1:8103`) |
+| `HEALTH_HUB_OIDC_ISSUER` | Turns the native OIDC login ON (all five OIDC vars together) |
+| `HEALTH_HUB_OIDC_CLIENT_ID` | Confidential client id at the issuer                        |
+| `HEALTH_HUB_OIDC_CLIENT_SECRET_FILE` | Client secret file, read once at startup (fail-fast) |
+| `HEALTH_HUB_OIDC_SESSION_SECRET_FILE` | Cookie HMAC key file (>= 16 bytes), read once at startup |
+| `HEALTH_HUB_OIDC_REDIRECT_URL` | Registered callback (`https://host/oidc/callback`)       |
+| `HEALTH_HUB_OIDC_GROUP` | Optional group gate (id_token/userinfo `groups` claim)         |
+| `HEALTH_HUB_OIDC_SESSION_TTL=12h` | Optional session lifetime                              |
+| `HEALTH_HUB_OIDC_COOKIE_INSECURE=1` | Dev only: drop the cookie Secure flag                  |
 
 Remote URLs are never logged verbatim (userinfo is redacted), and every
 misconfiguration fails fast with the offending entry named.

@@ -115,12 +115,12 @@ func (o *oidcLogin) expiredCookie(name string) *http.Cookie {
 // nonce, or PKCE verifier — 43 chars, exactly the RFC 7636 verifier
 // length).
 func oidcRandomToken() (string, error) {
-	buf := make([]byte, oidcRandomBytes)
-	if _, err := rand.Read(buf); err != nil {
+	var buf [oidcRandomBytes]byte
+	if _, err := rand.Read(buf[:]); err != nil {
 		return "", fmt.Errorf("reading %d random bytes: %w", oidcRandomBytes, err)
 	}
 
-	return base64.RawURLEncoding.EncodeToString(buf), nil
+	return base64.RawURLEncoding.EncodeToString(buf[:]), nil
 }
 
 // oidcS256Challenge derives the PKCE code_challenge from a verifier.

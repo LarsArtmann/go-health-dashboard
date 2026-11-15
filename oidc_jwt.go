@@ -16,7 +16,10 @@ import (
 // verifyIDToken checks an id_token end to end: shape, RS256 signature
 // via the issuer's JWKS, and the claim contract (issuer byte-equality,
 // audience, expiry with skew, nonce binding).
-func (o *oidcLogin) verifyIDToken(ctx context.Context, raw, expectedNonce string) (oidcClaims, error) {
+func (o *oidcLogin) verifyIDToken(
+	ctx context.Context,
+	raw, expectedNonce string,
+) (oidcClaims, error) {
 	header, payload, signature, signed, err := splitJWT(raw)
 	if err != nil {
 		return oidcClaims{}, err
@@ -33,7 +36,7 @@ func (o *oidcLogin) verifyIDToken(ctx context.Context, raw, expectedNonce string
 
 	digest := sha256.Sum256(signed)
 	if err := rsa.VerifyPKCS1v15(key, crypto.SHA256, digest[:], signature); err != nil {
-		return oidcClaims{}, fmt.Errorf("%w: %v", errOIDCSignature, err)
+		return oidcClaims{}, fmt.Errorf("%w: %w", errOIDCSignature, err)
 	}
 
 	claims, err := decodeClaims(payload)
@@ -118,7 +121,7 @@ func (a *oidcAudience) UnmarshalJSON(raw []byte) error {
 	if len(raw) > 0 && raw[0] == '"' {
 		var single string
 		if err := json.Unmarshal(raw, &single); err != nil {
-			return err
+			return fmt.Errorf("decoding the string audience: %w", err)
 		}
 
 		*a = oidcAudience{single}
@@ -128,7 +131,7 @@ func (a *oidcAudience) UnmarshalJSON(raw []byte) error {
 
 	var many []string
 	if err := json.Unmarshal(raw, &many); err != nil {
-		return err
+		return fmt.Errorf("decoding the array audience: %w", err)
 	}
 
 	*a = many

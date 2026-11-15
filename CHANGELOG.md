@@ -17,6 +17,22 @@ forgetting.
 
 ### Added
 
+- **Native OIDC login** (`dashboard.WithOIDC`, plus the
+  `HEALTH_HUB_OIDC_*` environment family for the `health-hub` binary and
+  a `services.health-dashboard.oidc` submodule for the NixOS module):
+  the whole browser dance against any OIDC-compliant issuer —
+  authorization code + PKCE S256, id_token verification via the issuer's
+  JWKS, a userinfo fallback for issuers whose tokens carry no profile
+  claims, an optional group gate, and a stateless HMAC-sealed session
+  cookie. Stdlib only, zero new dependencies. Unauthenticated browsers
+  redirect to `/oidc/login`; JSON-negotiating requests get a clean 401;
+  login failures render typed codes (`discovery`, `stale`, `exchange`,
+  `token`, `unverified`, `group`, `config`); `/oidc/logout` clears the
+  LOCAL cookie only (the issuer session is never ended); kubelet probes
+  stay public (`WithMiddleware` never wraps them). The NixOS module
+  wires LoadCredentials for both secret files and an optional
+  `egressCidrs` fence (IPAddressAllow loopback + pins) for issuers
+  behind split-horizon DNS on the same host.
 - SSE connection lifecycle metrics (`dashboard_sse_connections_opened_total`
   / `_closed_total`) and the watchdog gauge
   (`dashboard_pusher_last_tick_seconds`) — operators see live/leak state
