@@ -20,6 +20,31 @@
 //	PORT=8080                    port to listen on
 //	HEALTH_HUB_ADDR=127.0.0.1:8080  full listen address (overrides PORT)
 //
+// Native OIDC login (all five required together; absent = no auth, the
+// loopback-only default posture):
+//
+//	HEALTH_HUB_OIDC_ISSUER=https://auth.example.com   issuer base URL (no
+//	                             trailing slash; must match its discovery
+//	                             document byte-for-byte)
+//	HEALTH_HUB_OIDC_CLIENT_ID=health
+//	HEALTH_HUB_OIDC_CLIENT_SECRET_FILE=/run/credentials/…/client-secret
+//	                             read once at startup; missing/empty fails fast
+//	HEALTH_HUB_OIDC_SESSION_SECRET_FILE=/run/credentials/…/session-secret
+//	                             HMAC key for the cookies (>= 16 bytes)
+//	HEALTH_HUB_OIDC_REDIRECT_URL=https://health.example.com/oidc/callback
+//	HEALTH_HUB_OIDC_GROUP=pbx-health   optional group gate (id_token/userinfo
+//	                             groups claim)
+//	HEALTH_HUB_OIDC_SESSION_TTL=12h     optional session lifetime
+//	HEALTH_HUB_OIDC_COOKIE_INSECURE=1   dev only: drop the Secure attribute
+//
+// With OIDC on, every dashboard-owned surface (HTML, SSE, favicon,
+// metrics, trend, export) requires a session; /oidc/login starts the
+// authorization-code + PKCE S256 dance, /oidc/callback finishes it,
+// /oidc/logout clears the LOCAL cookie only. The kubelet probes
+// (/healthz, /readyz, /startupz) stay public — WithMiddleware never
+// wraps them — and JSON-negotiating unauthenticated requests get a
+// clean 401 instead of the login redirect.
+//
 // The hub serves /version (go-health VersionHandler, {"version":"..."}) so
 // "which build am I hitting?" is answerable at the HTTP level. Per-process
 // scalars deliberately do NOT ride the merged /health document: federation
@@ -85,6 +110,16 @@ const (
 	proxyEnvVar        = "HEALTH_HUB_HTTP_PROXY"
 	portEnvVar         = "PORT"
 	addrEnvVar         = "HEALTH_HUB_ADDR"
+
+	oidcIssuerEnvVar    = "HEALTH_HUB_OIDC_ISSUER"
+	oidcClientIDEnvVar  = "HEALTH_HUB_OIDC_CLIENT_ID"
+	oidcSecretFileVar   = "HEALTH_HUB_OIDC_CLIENT_SECRET_FILE"
+	oidcSessionFileVar  = "HEALTH_HUB_OIDC_SESSION_SECRET_FILE"
+	oidcRedirectEnvVar  = "HEALTH_HUB_OIDC_REDIRECT_URL"
+	oidcGroupEnvVar     = "HEALTH_HUB_OIDC_GROUP"
+	oidcTTLEnvVar       = "HEALTH_HUB_OIDC_SESSION_TTL"
+	oidcInsecureVar     = "HEALTH_HUB_OIDC_COOKIE_INSECURE"
+
 	shutdownGrace      = 10 * time.Second
 	readHeaderTimeout  = 5 * time.Second
 	defaultFetchExpiry = 5 * time.Second

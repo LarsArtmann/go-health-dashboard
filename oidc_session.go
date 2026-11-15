@@ -129,14 +129,16 @@ func oidcS256Challenge(verifier string) string {
 }
 
 // oidcErrorStatus maps a typed failure code onto the HTTP status the
-// error page answers — auth rejections stay in the 4xx family, issuer
-// trouble reads as bad gateway.
+// error page answers — identity failures stay 401, authorization
+// rejections read 403, issuer trouble reads as bad gateway.
 func oidcErrorStatus(code string) int {
 	switch code {
 	case oidcErrDiscovery, oidcErrExchange:
 		return http.StatusBadGateway
 	case oidcErrConfig:
 		return http.StatusInternalServerError
+	case oidcErrUnverified, oidcErrGroup:
+		return http.StatusForbidden
 	default:
 		return http.StatusUnauthorized
 	}

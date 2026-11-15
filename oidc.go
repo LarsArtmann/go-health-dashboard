@@ -183,7 +183,11 @@ func newOIDCMiddleware(cfg OIDCConfig) (func(http.Handler) http.Handler, error) 
 		return nil, err
 	}
 
-	oidc := &oidcLogin{cfg: cfg}
+	oidc := &oidcLogin{
+		cfg:     cfg,
+		client:  cfg.httpClient,
+		nowFunc: cfg.nowFunc,
+	}
 
 	return oidc.middleware, nil
 }
