@@ -29,10 +29,11 @@ forgetting.
   login failures render typed codes (`discovery`, `stale`, `exchange`,
   `token`, `unverified`, `group`, `config`); `/oidc/logout` clears the
   LOCAL cookie only (the issuer session is never ended); kubelet probes
-  stay public (`WithMiddleware` never wraps them). The NixOS module
-  wires LoadCredentials for both secret files and an optional
-  `egressCidrs` fence (IPAddressAllow loopback + pins) for issuers
-  behind split-horizon DNS on the same host.
+  stay public (`WithMiddleware` never wraps them). The NixOS module reads
+  both secret files directly as a static `health-dashboard` service user
+  (deployment grants the group read, 0640 root:health-dashboard shape)
+  and fences egress with the optional `egressCidrs` (IPAddressAllow
+  loopback + pins) for issuers behind split-horizon DNS on the same host.
 - SSE connection lifecycle metrics (`dashboard_sse_connections_opened_total`
   / `_closed_total`) and the watchdog gauge
   (`dashboard_pusher_last_tick_seconds`) — operators see live/leak state
@@ -49,6 +50,20 @@ forgetting.
   stay unlogged (M17).
 
 ### Fixed
+
+- `nixosModules.default`: the OIDC deployment no longer rides
+  `LoadCredential` — the module now runs a static `health-dashboard`
+  user/group and points `HEALTH_HUB_OIDC_{CLIENT,SESSION}_SECRET_FILE`
+  at the configured files directly. The credential indirection could
+  never work for root-owned secret sources: systemd's credential copy
+  preserves the source mode, so a `0600 root` file lands unreadable for
+  the unit's (dynamic) user and the hub crash-loops with `permission
+  denied` on `client-secret` — the health.artmann.tech hub's exact
+  never-green signature (start-limit-hit within 15s of boot). The
+  secret-file options moved from `str` to `path` (a same-shape absolute
+  string still coerces); deployment glue (an ownership heal granting
+  0640 root:health-dashboard) moves to the consumer, matching the
+  direct-secret-read doctrine used by the other services on that host.
 
 - Post-cut changelog backfill for three v0.13.3 changes whose entries were
   omitted at tag time (the code rode the release train via the auto-daemon;

@@ -27,9 +27,10 @@
 //	                             trailing slash; must match its discovery
 //	                             document byte-for-byte)
 //	HEALTH_HUB_OIDC_CLIENT_ID=health
-//	HEALTH_HUB_OIDC_CLIENT_SECRET_FILE=/run/credentials/…/client-secret
-//	                             read once at startup; missing/empty fails fast
-//	HEALTH_HUB_OIDC_SESSION_SECRET_FILE=/run/credentials/…/session-secret
+//	HEALTH_HUB_OIDC_CLIENT_SECRET_FILE=/path/to/client-secret
+//	                             read directly once at startup (any path the
+//	                             service user can open; missing/empty fails fast)
+//	HEALTH_HUB_OIDC_SESSION_SECRET_FILE=/path/to/session-secret
 //	                             HMAC key for the cookies (>= 16 bytes)
 //	HEALTH_HUB_OIDC_REDIRECT_URL=https://health.example.com/oidc/callback
 //	HEALTH_HUB_OIDC_GROUP=pbx-health   optional group gate (id_token/userinfo

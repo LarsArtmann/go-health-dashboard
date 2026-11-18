@@ -18,14 +18,20 @@
 #   services.health-dashboard = {
 #     enable = true;
 #     remotes = [ "cv=http://127.0.0.1:8098/health" ];
-#     oidc = {
-#       issuer = "https://auth.example.com";
-#       clientId = "health";
-#       redirectUrl = "https://health.example.com/oidc/callback";
-#       group = "viewers";              # optional membership gate
-#       clientSecretFile = "/run/credentials/health-dashboard.service/client-secret";
-#       sessionSecretFile = "/run/agenix/health-session-secret";
-#     };
+#   oidc = {
+#     issuer = "https://auth.example.com";
+#     clientId = "health";
+#     redirectUrl = "https://health.example.com/oidc/callback";
+#     group = "viewers";              # optional membership gate
+#     # Both secret files are read DIRECTLY as the static
+#     # `health-dashboard` service user once at startup (no LoadCredential
+#     # indirection — a DynamicUser could never read the root-owned copies,
+#     # the never-green EACCES class). The deployment must grant the
+#     # service user read access, 0640 root:health-dashboard being the
+#     # shape (a boot-time ownership heal is the usual glue).
+#     clientSecretFile = "/var/lib/secrets/health-client-secret";
+#     sessionSecretFile = "/var/lib/secrets/health-session-secret";
+#   };
 #   };
 {
   config,
@@ -35,19 +41,21 @@
 let
   cfg = config.services.health-dashboard;
 
-  oidcCreds = lib.optionals (cfg.oidc != null) [
-    "client-secret=${cfg.oidc.clientSecretFile}"
-    "session-secret=${cfg.oidc.sessionSecretFile}"
-  ];
-
+  # The secret files ride the deployment's own paths verbatim: the service
+  # user opens them directly (read once at startup, so rotation is replace
+  # + restart). A LoadCredential indirection was tried first and is WRONG
+  # for root-owned secret sources: the credential copy preserves the
+  # source mode (0600 root), and the unit's user — dynamic or static —
+  # cannot open it (the health.artmann.tech hub crash-looped exactly there,
+  # never green from day one).
   oidcEnv = lib.optionals (cfg.oidc != null) [
     "HEALTH_HUB_OIDC_ISSUER=${cfg.oidc.issuer}"
     "HEALTH_HUB_OIDC_CLIENT_ID=${cfg.oidc.clientId}"
     "HEALTH_HUB_OIDC_REDIRECT_URL=${cfg.oidc.redirectUrl}"
     "HEALTH_HUB_OIDC_GROUP=${cfg.oidc.group}"
     "HEALTH_HUB_OIDC_SESSION_TTL=${cfg.oidc.sessionTtl}"
-    "HEALTH_HUB_OIDC_CLIENT_SECRET_FILE=/run/credentials/health-dashboard.service/client-secret"
-    "HEALTH_HUB_OIDC_SESSION_SECRET_FILE=/run/credentials/health-dashboard.service/session-secret"
+    "HEALTH_HUB_OIDC_CLIENT_SECRET_FILE=${cfg.oidc.clientSecretFile}"
+    "HEALTH_HUB_OIDC_SESSION_SECRET_FILE=${cfg.oidc.sessionSecretFile}"
   ];
 
   # The OIDC egress fence: when the deployment pins egress CIDRs the unit
@@ -138,19 +146,22 @@ in
             };
 
             clientSecretFile = lib.mkOption {
-              type = lib.types.str;
+              type = lib.types.path;
               description = ''
-                Path to the confidential client secret (LoadCredential
-                `client-secret`; read once at startup, so rotation is a
-                unit restart).
+                Path to the confidential client secret, read directly as
+                the `health-dashboard` service user once at startup
+                (rotation = replace the file + restart the unit). The
+                deployment must grant the service user read access —
+                0640 root:health-dashboard is the shape.
               '';
             };
 
             sessionSecretFile = lib.mkOption {
-              type = lib.types.str;
+              type = lib.types.path;
               description = ''
-                Path to the cookie HMAC key, at least 16 bytes
-                (LoadCredential `session-secret`).
+                Path to the cookie HMAC key, at least 16 bytes, read
+                directly as the `health-dashboard` service user under the
+                same group-read contract as `clientSecretFile`.
               '';
             };
 
@@ -192,6 +203,16 @@ in
       }
     ];
 
+    # Static identity: the hub reads its OIDC secret files directly, so it
+    # needs a stable group the deployment can grant with (a DynamicUser
+    # rotates uid/gid per start and cannot be chgrp'd for).
+    users.users.health-dashboard = {
+      isSystemUser = true;
+      group = "health-dashboard";
+      description = "go-health-dashboard federation hub";
+    };
+    users.groups.health-dashboard = { };
+
     systemd.services.health-dashboard = {
       description = "Federated go-health hub";
       wantedBy = [ "multi-user.target" ];
@@ -200,8 +221,10 @@ in
       serviceConfig = {
         Type = "simple";
         # Stateless network daemon: no home, no state dir; the only
-        # secrets are the LoadCredential pair an OIDC deployment reads.
-        DynamicUser = true;
+        # secrets are the OIDC secret files read directly from their
+        # deployment paths (grant the group read — see the oidc options).
+        User = "health-dashboard";
+        Group = "health-dashboard";
         ExecStart = lib.getExe cfg.package;
         Environment = [
           "HEALTH_HUB_ADDR=${cfg.addr}"
@@ -209,7 +232,6 @@ in
         ]
         ++ lib.optional cfg.trend "HEALTH_HUB_TREND=1"
         ++ oidcEnv;
-        LoadCredential = oidcCreds;
         Restart = "on-failure";
         RestartSec = "5s";
         MemoryMax = lib.mkDefault "256M";
