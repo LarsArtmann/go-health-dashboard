@@ -3,28 +3,28 @@ module github.com/larsartmann/go-health-dashboard
 go 1.27
 
 require (
-	github.com/a-h/templ v0.3.1100
-	github.com/chromedp/cdproto v0.159.1
-	github.com/chromedp/chromedp v0.21.0
+	github.com/a-h/templ v0.3.1118
+	github.com/chromedp/cdproto v0.159.3
+	github.com/chromedp/chromedp v0.21.1
 	github.com/dustin/go-humanize v1.1.0
-	github.com/larsartmann/go-datastar v0.6.2
-	github.com/larsartmann/go-datastar/static v0.6.1
+	github.com/larsartmann/go-datastar v0.7.0
+	github.com/larsartmann/go-datastar/static v0.7.0
 	github.com/larsartmann/go-health v0.10.0
-	github.com/larsartmann/go-sse v0.6.2
+	github.com/larsartmann/go-sse v0.7.0
 	github.com/larsartmann/go-sse/ssetest v0.5.0
 	github.com/larsartmann/templ-components v1.27.0
 	github.com/larsartmann/templ-components/datastar v1.27.0
 	github.com/larsartmann/templ-components/icons v1.27.0
 	github.com/larsartmann/templ-components/utils v1.27.0
 	github.com/prometheus/client_model v0.6.3
-	github.com/prometheus/common v0.73.1
+	github.com/prometheus/common v0.74.0
 	github.com/samber/do/v2 v2.1.0
 )
 
 require (
 	github.com/Oudwins/tailwind-merge-go v0.2.3 // indirect
-	github.com/a-h/parse v0.0.0-20250122154542-74294addb73e // indirect
-	github.com/andybalholm/brotli v1.2.7 // indirect
+	github.com/a-h/parse v0.0.42 // indirect
+	github.com/andybalholm/brotli v1.3.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cli/browser v1.3.0 // indirect
 	github.com/fatih/color v1.19.0 // indirect
@@ -38,12 +38,12 @@ require (
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/natefinch/atomic v1.0.1 // indirect
-	github.com/pandatix/go-abnf v0.5.3 // indirect
+	github.com/pandatix/go-abnf v0.5.5 // indirect
 	github.com/samber/go-type-to-string v1.8.0 // indirect
-	golang.org/x/mod v0.42.0 // indirect
-	golang.org/x/net v0.61.0 // indirect
-	golang.org/x/sync v0.24.0 // indirect
-	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/mod v0.43.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
+	golang.org/x/sync v0.25.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/tools v0.52.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
