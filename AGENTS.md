@@ -440,12 +440,21 @@ layout), `docs/adr/0002-error-sentinel-family.md` (pusher-state sentinels),
   verified by fixed-SHA worktree byte-diffs at each step — the only
   delta against the pre-pass page is three dropped inter-anchor spaces
   inside a flex-gap container (visual: none).
-- **templ-generate is skip-gated: it races nix source snapshots** — the
-  step re-raws `*_templ.go` mid-run and BuildFlow lets nix-evaluating steps
-  snapshot during the raw window, poisoning the treefmt check
-  (nix-build-verify 0/10 before the skip, green after). Generated-file
-  freshness stays owned by CI hygiene + the flake apps. Re-verification
-  evidence + unskip condition: `docs/gotchas.md`.
+- **templ-generate runs in BuildFlow (owner decision 2026-11-24) and still
+  races nix snapshots** — `.buildflow.yml` was deleted by owner decision (its
+  only active skip was templ-generate) so BuildFlow owns regeneration; the step
+  invokes `go tool templ generate`, the go.mod pin (no version skew — the
+  stamp guard covers that). But buildflow 4381a1e still runs nix-evaluating
+  steps concurrently with the generator, verified live 2026-11-24: one full
+  run went red on the exact treefmt-check derivation a raw tree
+  deterministically produces (templ-generate rawed the tree 21:17:51;
+  nix-fmt:detect ran concurrently, found nothing, never repaired; nix-build
+  ingested the raw tree 21:19:06; the auto-daemon also committed the raw
+  window twice that day — `6bffd1a` after a flake-app run, `dc85129`
+  mid-buildflow-run). Recovery is always `nix fmt` + rebuild the check. Until
+  BuildFlow orders tree-mutating generators before nix-evaluating steps
+  (TODO_LIST Blocked row — upstream fleet fix), expect red nix-build steps
+  after runs that regenerate. Evidence + history: `docs/gotchas.md`.
 - **Pasted failures may predate HEAD — check provenance before diagnosing**
   — before diagnosing any pasted test failure, `rg` the cited assertion at
   HEAD and compare commit timestamps (`git log -1 --format='%ci'`): the

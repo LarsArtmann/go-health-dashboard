@@ -206,7 +206,7 @@ clone acceptance into an enforced count, following the go-etag
   number to zero; `--ignore-tests` keeps the gate on production code
   only, where per-test isolation does not apply.
 
-## templ-generate is skip-gated: it races nix source snapshots
+## templ-generate races nix source snapshots (skip removed 2026-11-24)
 
 The step re-raws `view_templ.go`/`page_scripts_templ.go` mid-run (templ
 emits unformatted Go; canonical order is generate → fmt). BuildFlow lets
@@ -222,6 +222,22 @@ hygiene job and the flake apps (both regenerate pre-build). Unskip when
 BuildFlow orders tree-mutating generators before all nix-evaluating steps
 (fleet-level DAG change; TODO_LIST Blocked row — includes the
 upstream-file vs local-patch decision).
+
+UPDATE 2026-11-24: the owner deleted `.buildflow.yml` (its only active skip
+was templ-generate) so BuildFlow owns regeneration — the step correctly
+invokes `go tool templ generate`, the go.mod pin. The ordering gap is NOT
+fixed at buildflow 4381a1e: a full run the same evening reproduced the race
+in one shot — templ-generate rawed `*_templ.go` at 21:17:51, nix-fmt:detect
+ran concurrently (18ms, cache-clean, never repaired), nix-build built the
+treefmt-check derivation from the raw tree at 21:19:06 and failed with the
+exact drv hash a raw tree deterministically produces; the auto-daemon also
+committed the raw window twice that day (`6bffd1a` after a flake-app run,
+`dc85129` mid-buildflow-run — the daemon half is independent of BuildFlow:
+ANY regeneration, flake apps included, must be followed by `nix fmt` before
+walking away). The DAG-ordering half — tree-mutating generators before all
+nix-evaluating steps — remains the upstream fleet fix (TODO_LIST Blocked
+row); until it lands, full runs that regenerate can go red on treefmt-check
+and the recovery is always `nix fmt` + rebuild.
 
 ## BuildFlow-adjacent tool traps
 
