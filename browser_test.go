@@ -1874,11 +1874,14 @@ func TestBrowser_StatusFilterChips(t *testing.T) {
 
 // TestBrowser_EvidenceDisclosureFocus proves the touch/keyboard evidence
 // disclosure: the pass badge's disclosure span is focusable, carries the
-// tooltip in a role="tooltip" element toggled by group-focus-within, and the
-// sr-only copy holds the same text for screen readers. The class contract is
-// asserted (the browser harness serves no Tailwind stylesheet, so the visual
-// flip itself is Tailwind's documented group-focus-within behavior, pinned
-// by the screenshot captures that render real CSS).
+// tooltip in a role="tooltip" element toggled by the named
+// group-focus-within/badge variant, and the sr-only copy holds the same
+// text for screen readers. The class contract is asserted (the browser
+// harness serves no Tailwind stylesheet, so the visual flip itself is
+// Tailwind's documented group-focus-within behavior, pinned by the
+// screenshot captures that render real CSS). The hover/focus isolation
+// against the healthy section's unnamed group ancestor has its own runtime
+// test below (TestBrowser_TooltipDisclosureIsolation).
 func TestBrowser_EvidenceDisclosureFocus(t *testing.T) {
 	t.Parallel()
 
@@ -1910,7 +1913,7 @@ func TestBrowser_EvidenceDisclosureFocus(t *testing.T) {
 		if (!tip || !sr) { return "no-tooltip-or-sr"; }
 		return JSON.stringify({
 			focused: document.activeElement === badge,
-			tipCarriesFlip: tip.className.indexOf("group-focus-within:block") !== -1,
+			tipCarriesFlip: tip.className.indexOf("group-focus-within/badge:block") !== -1,
 			tipStartsHidden: tip.className.indexOf("hidden") !== -1,
 			srMatchesTip: sr.textContent === tip.textContent,
 			srIsUnproven: sr.textContent.indexOf("unproven") !== -1

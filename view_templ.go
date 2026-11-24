@@ -1148,15 +1148,24 @@ func serviceNameCell(row checkRow) templ.Component {
 
 // disclosureTooltipClass styles the CSS-only disclosure tooltip shared by the
 // evidence affordances: dark surface, high-contrast text, pointer-events-none
-// so hover never flickers, and hidden until the parent group hovers or
-// receives focus. Class-driven display toggling keeps the render output free
-// of style attributes (CSP) and script-free (SSE patch purity).
-const disclosureTooltipClass = "pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-gray-900 px-2.5 py-1.5 text-left text-xs leading-snug text-gray-50 shadow-lg group-hover:block group-focus-within:block dark:bg-gray-700 dark:text-gray-100"
+// so hover never flickers, and hidden until the parent badge group hovers or
+// receives focus. The variant is NAMED (group/badge) on purpose: the healthy
+// group renders inside CollapsibleSection, whose <details> carries an unnamed
+// "group" class that is an ancestor of every healthy row — an unnamed
+// group-hover/group-focus-within would match that ancestor and open EVERY
+// tooltip in the section at once (hover one badge, all light up). Named
+// variants bind the flip to the badge's own wrapper only. Class-driven
+// display toggling keeps the render output free of style attributes (CSP)
+// and script-free (SSE patch purity).
+const disclosureTooltipClass = "pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-gray-900 px-2.5 py-1.5 text-left text-xs leading-snug text-gray-50 shadow-lg group-hover/badge:block group-focus-within/badge:block dark:bg-gray-700 dark:text-gray-100"
 
 // disclosureFocusClass styles the focusable half of a disclosure: cursor-help
-// signals there is more, and the focus-visible ring mirrors the theme
-// toggle's WCAG-locked pattern so keyboard users see where they are.
-const disclosureFocusClass = "group relative inline-flex cursor-help rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-500"
+// signals there is more, the named group/badge scopes the tooltip flip to
+// this wrapper (the healthy section's CollapsibleSection <details> is an
+// unnamed "group" ancestor — see disclosureTooltipClass), and the
+// focus-visible ring mirrors the theme toggle's WCAG-locked pattern so
+// keyboard users see where they are.
+const disclosureFocusClass = "group/badge relative inline-flex cursor-help rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-500"
 
 // statusBadge renders a row's status badge with its evidence disclosure.
 // Native title tooltips never reach touch users, so the evidence story rides
@@ -1237,7 +1246,7 @@ func statusBadge(row checkRow, ev evidenceSummary) templ.Component {
 			var templ_7745c5c3_Var46 string
 			templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 435, Col: 32}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 444, Col: 32}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 			if templ_7745c5c3_Err != nil {
@@ -1294,7 +1303,7 @@ func statusBadge(row checkRow, ev evidenceSummary) templ.Component {
 			var templ_7745c5c3_Var49 string
 			templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 438, Col: 65}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 447, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 			if templ_7745c5c3_Err != nil {
@@ -1373,7 +1382,7 @@ func infoDisclosure(text string) templ.Component {
 		var templ_7745c5c3_Var53 string
 		templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(text)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 450, Col: 30}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 459, Col: 30}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 		if templ_7745c5c3_Err != nil {
@@ -1430,7 +1439,7 @@ func infoDisclosure(text string) templ.Component {
 		var templ_7745c5c3_Var56 string
 		templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(text)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 453, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 462, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 		if templ_7745c5c3_Err != nil {
@@ -1478,7 +1487,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 			var templ_7745c5c3_Var58 string
 			templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(row.Error)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 466, Col: 72}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 475, Col: 72}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 			if templ_7745c5c3_Err != nil {
@@ -1496,7 +1505,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 			var templ_7745c5c3_Var59 string
 			templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(truncateError(row.Error))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 469, Col: 104}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 478, Col: 104}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 			if templ_7745c5c3_Err != nil {
@@ -1509,7 +1518,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 			var templ_7745c5c3_Var60 string
 			templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(row.Error)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 470, Col: 122}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 479, Col: 122}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 			if templ_7745c5c3_Err != nil {
@@ -1528,7 +1537,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 			var templ_7745c5c3_Var61 string
 			templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(row.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 474, Col: 100}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 483, Col: 100}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
 			if templ_7745c5c3_Err != nil {
@@ -1552,7 +1561,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 				var templ_7745c5c3_Var62 string
 				templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(row.SinceText)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 479, Col: 101}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 488, Col: 101}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 				if templ_7745c5c3_Err != nil {
@@ -1568,7 +1577,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 					var templ_7745c5c3_Var63 string
 					templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(" · ")
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 483, Col: 13}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 492, Col: 13}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 					if templ_7745c5c3_Err != nil {
@@ -1582,7 +1591,7 @@ func rowDetailsCell(row checkRow) templ.Component {
 				var templ_7745c5c3_Var64 string
 				templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(row.DurationText)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 485, Col: 90}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 494, Col: 90}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 				if templ_7745c5c3_Err != nil {
@@ -1711,7 +1720,7 @@ func timelineCard(data viewModel) templ.Component {
 				var templ_7745c5c3_Var69 string
 				templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinStringErrs(entry.At)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 523, Col: 85}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 532, Col: 85}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
 				if templ_7745c5c3_Err != nil {
@@ -1789,7 +1798,7 @@ func timelineNote(shown, total int) templ.Component {
 			var templ_7745c5c3_Var71 string
 			templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinStringErrs(shown)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 550, Col: 29}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 559, Col: 29}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 			if templ_7745c5c3_Err != nil {
@@ -1802,7 +1811,7 @@ func timelineNote(shown, total int) templ.Component {
 			var templ_7745c5c3_Var72 string
 			templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinStringErrs(total)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 550, Col: 42}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 559, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 			if templ_7745c5c3_Err != nil {
@@ -1874,7 +1883,7 @@ func latencyStatCard(data viewModel) templ.Component {
 			var templ_7745c5c3_Var76 string
 			templ_7745c5c3_Var76, templ_7745c5c3_Err = templruntime.NewAttributeExpression(latencyTooltipText(data)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 569, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 578, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var76)
 			if templ_7745c5c3_Err != nil {
@@ -1949,7 +1958,7 @@ func latencyStatCard(data viewModel) templ.Component {
 		var templ_7745c5c3_Var79 string
 		templ_7745c5c3_Var79, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%dms", data.LatencyMs))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 579, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 588, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var79))
 		if templ_7745c5c3_Err != nil {
@@ -2054,7 +2063,7 @@ func endpointLink(url string, icon icons.Name, label string) templ.Component {
 			var templ_7745c5c3_Var84 string
 			templ_7745c5c3_Var84, templ_7745c5c3_Err = templruntime.NewAttributeExpression(url).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 603, Col: 42}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 612, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var84)
 			if templ_7745c5c3_Err != nil {
@@ -2089,7 +2098,7 @@ func endpointLink(url string, icon icons.Name, label string) templ.Component {
 		var templ_7745c5c3_Var85 string
 		templ_7745c5c3_Var85, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 605, Col: 9}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view.templ`, Line: 614, Col: 9}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var85))
 		if templ_7745c5c3_Err != nil {

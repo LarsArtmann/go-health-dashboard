@@ -402,15 +402,24 @@ templ serviceNameCell(row checkRow) {
 
 // disclosureTooltipClass styles the CSS-only disclosure tooltip shared by the
 // evidence affordances: dark surface, high-contrast text, pointer-events-none
-// so hover never flickers, and hidden until the parent group hovers or
-// receives focus. Class-driven display toggling keeps the render output free
-// of style attributes (CSP) and script-free (SSE patch purity).
-const disclosureTooltipClass = "pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-gray-900 px-2.5 py-1.5 text-left text-xs leading-snug text-gray-50 shadow-lg group-hover:block group-focus-within:block dark:bg-gray-700 dark:text-gray-100"
+// so hover never flickers, and hidden until the parent badge group hovers or
+// receives focus. The variant is NAMED (group/badge) on purpose: the healthy
+// group renders inside CollapsibleSection, whose <details> carries an unnamed
+// "group" class that is an ancestor of every healthy row — an unnamed
+// group-hover/group-focus-within would match that ancestor and open EVERY
+// tooltip in the section at once (hover one badge, all light up). Named
+// variants bind the flip to the badge's own wrapper only. Class-driven
+// display toggling keeps the render output free of style attributes (CSP)
+// and script-free (SSE patch purity).
+const disclosureTooltipClass = "pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-gray-900 px-2.5 py-1.5 text-left text-xs leading-snug text-gray-50 shadow-lg group-hover/badge:block group-focus-within/badge:block dark:bg-gray-700 dark:text-gray-100"
 
 // disclosureFocusClass styles the focusable half of a disclosure: cursor-help
-// signals there is more, and the focus-visible ring mirrors the theme
-// toggle's WCAG-locked pattern so keyboard users see where they are.
-const disclosureFocusClass = "group relative inline-flex cursor-help rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-500"
+// signals there is more, the named group/badge scopes the tooltip flip to
+// this wrapper (the healthy section's CollapsibleSection <details> is an
+// unnamed "group" ancestor — see disclosureTooltipClass), and the
+// focus-visible ring mirrors the theme toggle's WCAG-locked pattern so
+// keyboard users see where they are.
+const disclosureFocusClass = "group/badge relative inline-flex cursor-help rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-500"
 
 // statusBadge renders a row's status badge with its evidence disclosure.
 // Native title tooltips never reach touch users, so the evidence story rides
