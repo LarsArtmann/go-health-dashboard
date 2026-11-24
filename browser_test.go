@@ -1929,6 +1929,158 @@ func TestBrowser_EvidenceDisclosureFocus(t *testing.T) {
 	assertNoBrowserErrors(t, errLog)
 }
 
+// disclosureIsolationCSS mirrors the compiled Tailwind output the production
+// page runs under, minus the @media (hover: hover) wrapper (headless Chrome
+// reports no hover-capable pointer, so the media-gated hover rule would
+// never fire in this harness; the matching semantics under test are
+// media-independent). Both variant forms are served on purpose: the UNNAMED
+// rules are what CollapsibleSection's <details class="group ..."> wrapper
+// makes every group-hover/group-focus-within utility inside the healthy
+// section respond to (the shared ancestor that once opened ALL tooltips at
+// once), and the NAMED rules are what the disclosure's group/badge classes
+// compile to. The test fails against unnamed-class markup precisely because
+// the unnamed rules reproduce that production hazard.
+const disclosureIsolationCSS = `.hidden { display: none; }
+.group:hover .group-hover\:block { display: block; }
+.group:focus-within .group-focus-within\:block { display: block; }
+.group\/badge:hover .group-hover\/badge\:block { display: block; }
+.group\/badge:focus-within .group-focus-within\/badge\:block { display: block; }
+`
+
+// TestBrowser_TooltipDisclosureIsolation pins the runtime fix for the
+// all-tooltips-open bug: the healthy group renders inside CollapsibleSection,
+// whose <details> carries an unnamed "group" class wrapping every healthy
+// row. Tailwind group variants match ANY .group ancestor, so before the
+// named group/badge scoping, hovering (or focusing) one badge inside the
+// section opened every tooltip in it. This test serves the isolation CSS
+// above, hovers badge 1 and focuses badge 2 inside the section, and asserts
+// exactly one tooltip is visible each time — the hovered/focused badge's own.
+func TestBrowser_TooltipDisclosureIsolation(t *testing.T) {
+	t.Parallel()
+
+	const nonce = "browser-tooltip-isolation-nonce"
+
+	s := setupDashboard(t,
+		dashboard.WithNonce(nonce),
+		dashboard.WithCSSPath("/static/app.css"),
+		dashboard.WithEmbeddedDatastarSDK(),
+		dashboard.WithHealthyGroupExpanded(),
+	)
+	defer s.cleanup()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/static/app.css", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		_, _ = w.Write([]byte(disclosureIsolationCSS))
+	})
+	mux.Handle("/", s.mux)
+
+	session := startBrowserSessionOn(t, s.dash, mux, nonce)
+	ctx, errLog := session.ctx, session.errLog
+
+	waitForSubscriber(t, s.dash)
+	time.Sleep(250 * time.Millisecond)
+
+	// Step 1: hover badge 1 inside the healthy section and assert the flip
+	// is isolated to its own tooltip.
+	var hoverResult string
+	if err := chromedp.Do(ctx, evalInto(`(function () {
+		const badges = [...document.querySelectorAll('details span[tabindex="0"]')];
+		if (badges.length < 2) { return "need-two-badges"; }
+		const target = badges[0];
+		const inSection = !!target.closest("details");
+		const srText = target.querySelector(".sr-only").textContent;
+		target.scrollIntoView({block: "center"});
+		const r = target.getBoundingClientRect();
+		return JSON.stringify({
+			inSection,
+			x: r.x + r.width / 2,
+			y: r.y + r.height / 2,
+			srText
+		});
+	})()`, &hoverResult)); err != nil {
+		t.Fatalf("locate hover badge: %v", err)
+	}
+
+	var hover struct {
+		InSection bool    `json:"inSection"`
+		X         float64 `json:"x"`
+		Y         float64 `json:"y"`
+		SrText    string  `json:"srText"`
+	}
+	if err := json.Unmarshal([]byte(hoverResult), &hover); err != nil {
+		t.Fatalf("parse hover target %q: %v", hoverResult, err)
+	}
+	if !hover.InSection {
+		t.Fatal(
+			"fixture drift: hovered badge is not inside the healthy details section; the isolation assertion would be vacuous",
+		)
+	}
+
+	if err := chromedp.Do(
+		ctx,
+		chromedp.MouseEvent(chromedp.MouseMoved, hover.X, hover.Y),
+	); err != nil {
+		t.Fatalf("hover badge: %v", err)
+	}
+	time.Sleep(150 * time.Millisecond)
+
+	assertOnlyTooltip := func(label, wantText string) {
+		t.Helper()
+
+		var report string
+		if err := chromedp.Do(ctx, evalInto(`(() => {
+			const visible = [...document.querySelectorAll('[role="tooltip"]')]
+				.filter((tip) => getComputedStyle(tip).display !== "none")
+				.map((tip) => tip.textContent.trim());
+			return JSON.stringify(visible);
+		})()`, &report)); err != nil {
+			t.Fatalf("probe visible tooltips: %v", err)
+		}
+
+		var visible []string
+		if err := json.Unmarshal([]byte(report), &visible); err != nil {
+			t.Fatalf("parse visible tooltips %q: %v", report, err)
+		}
+		if len(visible) != 1 {
+			t.Errorf(
+				"%s: %d tooltips visible (%v), want exactly 1 — tooltips are not isolated",
+				label,
+				len(visible),
+				visible,
+			)
+			return
+		}
+		if visible[0] != wantText {
+			t.Errorf(
+				"%s: visible tooltip text = %q, want the target badge's own %q",
+				label,
+				visible[0],
+				wantText,
+			)
+		}
+	}
+
+	assertOnlyTooltip("HOVER", hover.SrText)
+
+	// Step 2: focus badge 2 inside the section and assert the same isolation
+	// on the keyboard path.
+	var focusText string
+	if err := chromedp.Do(ctx, evalInto(`(() => {
+		const badges = [...document.querySelectorAll('details span[tabindex="0"]')];
+		const target = badges[1];
+		target.focus();
+		return target.querySelector(".sr-only").textContent;
+	})()`, &focusText)); err != nil {
+		t.Fatalf("focus badge: %v", err)
+	}
+	time.Sleep(150 * time.Millisecond)
+
+	assertOnlyTooltip("FOCUS", focusText)
+
+	assertNoBrowserErrors(t, errLog)
+}
+
 // TestBrowser_ConnectionPill proves the pill reflects the SSE stream
 // lifecycle: Live while the stream is up, a degraded state when the stream
 // cannot be reached, and Live again after the stream recovers.
