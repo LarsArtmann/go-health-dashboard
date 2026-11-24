@@ -1,15 +1,14 @@
 package dashboard_test
 
 // SCRATCH reproduction for the "hover one tooltip, all tooltips light up"
-// report. Serves a static fixture mirroring the golden badge-disclosure
-// markup, loads the Tailwind Play CDN (the page's no-CSSPath path), hovers
-// the first badge, and reports every tooltip's computed visibility plus the
-// matching stylesheet rules. Delete when diagnosed.
+// report. Drives the REAL rendered dashboard page (Play CDN path, the
+// no-CSSPath default the demos use) with headless Chrome, hovers the first
+// badge disclosure, and reports every role="tooltip" computed visibility.
+// Delete when diagnosed.
 
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -18,53 +17,27 @@ import (
 	"github.com/chromedp/chromedp/remote"
 )
 
-const tooltipFixturePage = `<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body>
-<div style="margin:200px 40px;display:flex;flex-direction:column;gap:200px;width:400px">
-  <span id="badge-1" tabindex="0" class="group relative inline-flex cursor-help rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-500"><span class="sr-only">tip one</span><span aria-hidden="true" class="contents"><span class="bg-green-100 font-medium inline-flex items-center px-2.5 py-0.5 rounded-md text-green-800 text-xs">pass</span><span role="tooltip" class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-gray-900 px-2.5 py-1.5 text-left text-xs leading-snug text-gray-50 shadow-lg group-hover:block group-focus-within:block dark:bg-gray-700 dark:text-gray-100">tip one</span></span></span>
-  <span id="badge-2" tabindex="0" class="group relative inline-flex cursor-help rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-500"><span class="sr-only">tip two</span><span aria-hidden="true" class="contents"><span class="bg-green-100 font-medium inline-flex items-center px-2.5 py-0.5 rounded-md text-green-800 text-xs">pass</span><span role="tooltip" class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-gray-900 px-2.5 py-1.5 text-left text-xs leading-snug text-gray-50 shadow-lg group-hover:block group-focus-within:block dark:bg-gray-700 dark:text-gray-100">tip two</span></span></span>
-  <span id="badge-3" tabindex="0" class="group relative inline-flex cursor-help rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-500"><span class="sr-only">tip three</span><span aria-hidden="true" class="contents"><span class="bg-green-100 font-medium inline-flex items-center px-2.5 py-0.5 rounded-md text-green-800 text-xs">pass</span><span role="tooltip" class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-gray-900 px-2.5 py-1.5 text-left text-xs leading-snug text-gray-50 shadow-lg group-hover:block group-focus-within:block dark:bg-gray-700 dark:text-gray-100">tip three</span></span></span>
-</div>
-</body>
-</html>`
-
 type tooltipState struct {
 	Text    string `json:"text"`
 	Display string `json:"display"`
 }
 
-type tooltipReport struct {
-	State []tooltipState `json:"state"`
-	Rules []string       `json:"rules"`
-}
-
-const tooltipVisibilityJS = `(() => {
+const realPageProbeJS = `(() => {
 	const tips = [...document.querySelectorAll('[role="tooltip"]')];
-	const state = tips.map((tip) => ({
-		text: tip.textContent.trim(),
+	return JSON.stringify(tips.map((tip) => ({
+		text: tip.textContent.trim().slice(0, 40),
 		display: getComputedStyle(tip).display,
-	}));
-	const styles = [...document.styleSheets].flatMap((sheet) => {
-		try { return [...sheet.cssRules]; } catch { return []; }
-	}).map((rule) => rule.cssText).filter((css) => css.indexOf("group-hover") !== -1);
-	return JSON.stringify({ state, rules: styles });
+	})));
 })()`
 
-func TestScratch_TooltipHoverIsolation(t *testing.T) {
+func TestScratch_TooltipHoverRealPage(t *testing.T) {
 	chromePath := usableChrome(t)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
-		_, _ = w.Write([]byte(tooltipFixturePage))
-	})
-	server := httptest.NewServer(mux)
-	defer server.Close()
+	s := setupDashboard(t)
+	defer s.cleanup()
+
+	server := httptest.NewServer(s.mux)
+	t.Cleanup(server.Close)
 
 	devtools, stopChrome := startHeadlessChrome(t, chromePath)
 	defer stopChrome()
@@ -78,16 +51,16 @@ func TestScratch_TooltipHoverIsolation(t *testing.T) {
 	ctx, cancel := chromedp.NewContext(allocCtx)
 	defer cancel()
 
-	if err := chromedp.Do(ctx, chromedp.Navigate(server.URL)); err != nil {
+	if err := chromedp.Do(ctx, chromedp.Navigate(server.URL+"/health")); err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
 
-	// Wait for the Play CDN stylesheet to land: before hover, tooltip 1 must
-	// already compute display:none (the compiled `hidden` class exists).
+	// The healthy fixture yields unproven-green disclosures; wait until the
+	// first tooltip computes hidden (CDN compiled) and page is interactive.
 	var report string
 	deadline := time.Now().Add(45 * time.Second)
 	for {
-		if err := chromedp.Do(ctx, evalInto(`getComputedStyle(document.querySelector('[role="tooltip"]')).display`, &report)); err != nil {
+		if err := chromedp.Do(ctx, evalInto(`(() => { const t = document.querySelector('[role="tooltip"]'); return t ? getComputedStyle(t).display : "no-tip"; })()`, &report)); err != nil {
 			t.Fatalf("probe display: %v", err)
 		}
 		if report == "none" || time.Now().After(deadline) {
@@ -95,49 +68,63 @@ func TestScratch_TooltipHoverIsolation(t *testing.T) {
 		}
 		time.Sleep(250 * time.Millisecond)
 	}
-	t.Logf("pre-hover tooltip display = %q (stylesheet compiled: %v)", report, report == "none")
+	t.Logf("pre-hover first tooltip display = %q", report)
 
 	var centerJSON string
-	if err := chromedp.Do(ctx, evalInto(`(() => { const r = document.querySelector('#badge-1').getBoundingClientRect(); return JSON.stringify({x: r.x + r.width/2, y: r.y + r.height/2}); })()`, &centerJSON)); err != nil {
+	if err := chromedp.Do(ctx, evalInto(`(() => {
+		const b = document.querySelector('span[tabindex="0"].group');
+		if (!b) { return "{}"; }
+		b.scrollIntoView({block: "center"});
+		const r = b.getBoundingClientRect();
+		return JSON.stringify({x: r.x + r.width/2, y: r.y + r.height/2, w: window.innerWidth, h: window.innerHeight});
+	})()`, &centerJSON)); err != nil {
 		t.Fatalf("badge center: %v", err)
 	}
 	var center struct {
 		X float64 `json:"x"`
 		Y float64 `json:"y"`
+		W int     `json:"w"`
+		H int     `json:"h"`
 	}
-	if err := json.Unmarshal([]byte(centerJSON), &center); err != nil {
-		t.Fatalf("parse badge center %q: %v", centerJSON, err)
+	if err := json.Unmarshal([]byte(centerJSON), &center); err != nil || center.X == 0 {
+		t.Fatalf("no badge found or bad center %q: %v", centerJSON, err)
 	}
+	t.Logf("hover target center=(%.1f,%.1f) viewport=%dx%d", center.X, center.Y, center.W, center.H)
 
 	if err := chromedp.Do(ctx,
-		chromedp.WaitVisible("#badge-1"),
+		chromedp.WaitVisible("span[tabindex=\"0\"].group"),
 		chromedp.MouseEvent(chromedp.MouseMoved, center.X, center.Y),
 	); err != nil {
 		t.Fatalf("hover: %v", err)
 	}
 	time.Sleep(300 * time.Millisecond)
 
-	if err := chromedp.Do(ctx, evalInto(tooltipVisibilityJS, &report)); err != nil {
-		t.Fatalf("visibility report: %v", err)
+	if err := chromedp.Do(ctx, evalInto(`(() => {
+		const chain = [...document.querySelectorAll(':hover')].map((el) => el.tagName + "." + (el.className || "").toString().slice(0, 60));
+		const hovered = document.querySelector('span[tabindex="0"].group:hover') !== null;
+		return JSON.stringify({ chain, hovered });
+	})()`, &report)); err != nil {
+		t.Fatalf("hover chain: %v", err)
 	}
-	var parsed tooltipReport
-	if err := json.Unmarshal([]byte(report), &parsed); err != nil {
-		t.Fatalf("parse report: %v", err)
+	t.Logf("hover chain after mouse move: %s", report)
+
+	if err := chromedp.Do(ctx, evalInto(realPageProbeJS, &report)); err != nil {
+		t.Fatalf("probe tooltips: %v", err)
+	}
+	var states []tooltipState
+	if err := json.Unmarshal([]byte(report), &states); err != nil {
+		t.Fatalf("parse states: %v", err)
 	}
 
 	visible := 0
-	for _, st := range parsed.State {
+	for _, st := range states {
 		t.Logf("tooltip %q display=%s", st.Text, st.Display)
 		if st.Display != "none" {
 			visible++
 		}
 	}
-	t.Logf("visible tooltips after hovering badge-1: %d of %d", visible, len(parsed.State))
-	for _, rule := range parsed.Rules {
-		t.Logf("group-hover rule: %.300s", rule)
-	}
-
-	if visible != 1 {
-		t.Errorf("REPRODUCED: %d tooltips visible after hovering one badge (want 1)", visible)
+	t.Logf("visible tooltips after hover: %d of %d", visible, len(states))
+	if len(states) > 1 && visible != 1 {
+		t.Errorf("REPRODUCED on real page: %d tooltips visible after hovering one badge (want 1)", visible)
 	}
 }
