@@ -6,14 +6,14 @@ package dashboard
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
+import "github.com/a-h/templ"
+import templruntime "github.com/a-h/templ/runtime"
+
 import (
 	"fmt"
 	"strconv"
 	"time"
 	"unicode/utf8"
-
-	"github.com/a-h/templ"
-	templruntime "github.com/a-h/templ/runtime"
 
 	health "github.com/larsartmann/go-health"
 	"github.com/larsartmann/templ-components/datastar"
@@ -907,7 +907,7 @@ func statusFilterChip(label, value string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Var29 := []any{statusFilterChipBaseClass}
+			var templ_7745c5c3_Var29 = []any{statusFilterChipBaseClass}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var29...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1023,7 +1023,7 @@ func groupCountBadge(group checkGroup) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Var36 := []any{"ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium tabular-nums", groupCountTone(group.Status)}
+			var templ_7745c5c3_Var36 = []any{"ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium tabular-nums", groupCountTone(group.Status)}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var36...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1211,7 +1211,7 @@ func statusBadge(row checkRow, ev evidenceSummary) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Var44 := []any{disclosureFocusClass}
+				var templ_7745c5c3_Var44 = []any{disclosureFocusClass}
 				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var44...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1268,7 +1268,7 @@ func statusBadge(row checkRow, ev evidenceSummary) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Var47 := []any{disclosureTooltipClass}
+				var templ_7745c5c3_Var47 = []any{disclosureTooltipClass}
 				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var47...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1347,7 +1347,7 @@ func infoDisclosure(text string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Var51 := []any{disclosureFocusClass}
+			var templ_7745c5c3_Var51 = []any{disclosureFocusClass}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var51...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1404,7 +1404,7 @@ func infoDisclosure(text string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Var54 := []any{disclosureTooltipClass}
+			var templ_7745c5c3_Var54 = []any{disclosureTooltipClass}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var54...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1862,7 +1862,7 @@ func latencyStatCard(data viewModel) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Var74 := []any{utils.Class("bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xs print:shadow-none print:border-0 print:bg-transparent p-5")}
+			var templ_7745c5c3_Var74 = []any{utils.Class("bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xs print:shadow-none print:border-0 print:bg-transparent p-5")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var74...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1923,7 +1923,7 @@ func latencyStatCard(data viewModel) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Var77 := []any{"text-2xl font-semibold", latencyValueClass(data.LatencyTone)}
+			var templ_7745c5c3_Var77 = []any{"text-2xl font-semibold", latencyValueClass(data.LatencyTone)}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var77...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -2042,7 +2042,7 @@ func endpointLink(url string, icon icons.Name, label string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Var82 := []any{endpointLinkClass}
+			var templ_7745c5c3_Var82 = []any{endpointLinkClass}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var82...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
