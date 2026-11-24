@@ -171,10 +171,11 @@ harsh label:
 
 ## f) UP TO 50 THINGS WE SHOULD GET DONE NEXT
 
-*(a brainstorm, not a commitment list — most items are ROADMAP fuel; the
-first block is the real priority.)*
+_(a brainstorm, not a commitment list — most items are ROADMAP fuel; the
+first block is the real priority.)_
 
 **Release & verification (do these first)**
+
 1. Decide the cut: patch release for this fix vs riding the next minor with
    the OIDC work (closes the rule-7 gap).
 2. When cutting: `bash scripts/pre-push-checks.sh` first; verify remote CI +
@@ -190,110 +191,110 @@ first block is the real priority.)*
 
 **Direct follow-ups on this fix**
 7. Env-guarded test that compiles REAL Tailwind v4 CSS at test time and
-   executes the hover flip in headless (closes Honest Gap #1).
+executes the hover flip in headless (closes Honest Gap #1).
 8. Env-guarded screenshot capture of an OPEN tooltip (dark + light) for the
-   docs.
+docs.
 9. Write the `docs/gotchas.md` war story (three-round repro journey, daemon
-   mutation capture, false leads).
+mutation capture, false leads).
 10. Add a mechanical guard: grep/lint rule banning unnamed
-    `group-hover:`/`group-focus-within:` (and bare `group ` additions) in
-    `*.templ` outside the sanctioned CollapsibleSection wrapper.
+`group-hover:`/`group-focus-within:` (and bare `group` additions) in
+`*.templ` outside the sanctioned CollapsibleSection wrapper.
 11. Cross-check this repo's README for any stale tooltip/CSS-build claims.
 12. CHANGELOG: link the concrete consumer rebuild recipe (`tc doctor` /
-    library-classes refresh) next to the migration note.
+library-classes refresh) next to the migration note.
 13. Verify the health-hub NixOS module / deploy stack CSS story: does
-    health.artmann.tech serve Play-CDN (fix arrives on rebuild) or compiled
-    CSS (needs regen)? Document the answer in deploy/README.md.
+health.artmann.tech serve Play-CDN (fix arrives on rebuild) or compiled
+CSS (needs regen)? Document the answer in deploy/README.md.
 14. Fleet sweep: which sibling repos use CollapsibleSection together with
-    unnamed `group-*` utilities (ChastityAPI, CV, go-taskqueue, dnsblockd,
-    dynamic-markdown-site, timesheets, library-policy, webphone are known
-    templ-components consumers)?
+unnamed `group-*` utilities (ChastityAPI, CV, go-taskqueue, dnsblockd,
+dynamic-markdown-site, timesheets, library-policy, webphone are known
+templ-components consumers)?
 15. Upstream (verify-before-filing first): propose templ-components document
-    or rename CollapsibleSection's `group` class as a NAMED group
-    (`group/section`) so consumers' unnamed variants stop colliding.
+or rename CollapsibleSection's `group` class as a NAMED group
+(`group/section`) so consumers' unnamed variants stop colliding.
 16. Consider an upstream `tc doctor` check for named-variant staleness in
-    consumer CSS.
+consumer CSS.
 17. Annotate the 2026-10-25 UI batch status report with a pointer to this
-    fix (docs-health ANNOTATE, when touching old reports next).
+fix (docs-health ANNOTATE, when touching old reports next).
 18. Extend the keyboard-navigation test to Tab THROUGH badge disclosures and
-    assert each opens only its own tooltip (focus leg already pinned
-    separately; tab-order version is belt-and-suspenders).
+assert each opens only its own tooltip (focus leg already pinned
+separately; tab-order version is belt-and-suspenders).
 19. Touch/tap verification on a mobile viewport (tap focuses → focus-within
-    holds the tip open) — chromedp touch emulation, env-guarded.
+holds the tip open) — chromedp touch emulation, env-guarded.
 20. Adjacent-row stacking check: focus badge A then click badge B — assert A
-    closes and B opens (z-index/overlap sanity).
+closes and B opens (z-index/overlap sanity).
 21. Narrow-viewport clipping check: `left-1/2 -translate-x-1/2` tooltips near
-    screen edges with `max-w-[16rem]`.
+screen edges with `max-w-[16rem]`.
 22. Verify SSE patch behavior when a badge is FOCUSED at patch time (patch
-    replaces content → focus lost → tooltip closes; is that the accepted UX?
-    document or fix).
+replaces content → focus lost → tooltip closes; is that the accepted UX?
+document or fix).
 
 **Hygiene / adjacent code health (noticed this session, unrelated)**
 23. Pre-existing gopls `scannererr` warning at browser_test.go:272 (bufio
-    Scanner without `scanner.Err()` check in `startHeadlessChrome`) — the
-    ONE genuinely fixable nit I touched the file but left alone.
+Scanner without `scanner.Err()` check in `startHeadlessChrome`) — the
+ONE genuinely fixable nit I touched the file but left alone.
 24. Pre-existing gopls `unusedparams` infos (browser_test.go:382 `dash`,
-    integration_test.go:295 `name`) — trivial cleanups.
+integration_test.go:295 `name`) — trivial cleanups.
 25. The eight templ `embedlit` hints in view.templ (pre-existing; evaluate
-    whether the suggested embedded-field removal is real or noise).
+whether the suggested embedded-field removal is real or noise).
 26. `latencywarn.html` golden carries no disclosures (grep-verified) — add a
-    golden scenario with MIXED severity + disclosures in source-grouping
-    mode if coverage feels thin.
+golden scenario with MIXED severity + disclosures in source-grouping
+mode if coverage feels thin.
 27. Assert in a CLI test (not just browser) that the rendered markup carries
-    `group-hover/badge:block` — cheap class-contract pin outside the browser
-    suite (golden diff covers it today; an explicit assertion reads better).
+`group-hover/badge:block` — cheap class-contract pin outside the browser
+suite (golden diff covers it today; an explicit assertion reads better).
 28. Re-verify erraudit nolint sites are still minimal next lint sweep
-    (per fleet policy; no finding this session).
+(per fleet policy; no finding this session).
 29. Consider `role="status"`/`aria-describedby` comparison with upstream
-    Tooltip's aria script — our sr-only pattern is audited, but record WHY
-    we diverge in one sentence in view.templ's doc comment (partially there
-    already).
+Tooltip's aria script — our sr-only pattern is audited, but record WHY
+we diverge in one sentence in view.templ's doc comment (partially there
+already).
 30. Check `forced-colors` / `prefers-reduced-motion` rendering of the
-    disclosure (display flip only; likely fine — one screenshot).
+disclosure (display flip only; likely fine — one screenshot).
 
 **Fleet / process**
 31. Record the "headless Chrome has no hover-capable pointer" fact in the
-    AGENTS.md Chrome gotcha cluster (it cost a false-negative diagnosis
-    round).
+AGENTS.md Chrome gotcha cluster (it cost a false-negative diagnosis
+round).
 32. Same for "Play CDN (cdn.tailwindcss.com) serves v3-style scoped rules —
-    verified 2026-11-24" so nobody re-litigates CDN vs compiled.
+verified 2026-11-24" so nobody re-litigates CDN vs compiled.
 33. After the cut: go-ecosystem-upgrade sweep of consumers onto the fixed
-    version.
+version.
 34. Keep the pre-push watched-workflows + fuzz registry gates green when the
-    cut lands (gate 5/12 are mechanical — nothing new needed here).
+cut lands (gate 5/12 are mechanical — nothing new needed here).
 35. TODO_LIST row for item 7 (real-CSS hover test) with a Blocked-by note
-    (Tailwind CLI in CI browser job).
+(Tailwind CLI in CI browser job).
 36. ROADMAP raw idea: custom `tc doctor`-style guard in THIS repo that fails
-    CI if the pinned templ-components emits classes absent from a
-    reference-compiled CSS.
+CI if the pinned templ-components emits classes absent from a
+reference-compiled CSS.
 
 **Explicitly NOT worth doing (anti-list, so nobody picks these up)**
 37. No wire contract changes — `/health` JSON, export, metrics untouched by
-    design; don't "improve" them onto this fix.
+design; don't "improve" them onto this fix.
 38. No Version const bump — the fleet standard ties it to the tag cut, not
-    to `[Unreleased]` accrual.
+to `[Unreleased]` accrual.
 39. Don't migrate CollapsibleSection usage away from `<details class="group">`
-    — the class is upstream-owned; the fix is consumer-side and correct.
+— the class is upstream-owned; the fix is consumer-side and correct.
 40. Don't add a custom stylesheet for the tooltip — the Play-CDN demo path
-    has no compiled CSS; class-only markup is the doctrine.
+has no compiled CSS; class-only markup is the doctrine.
 41. Don't chase the remaining `nlreturn`-style lint opinion beyond what the
-    fleet config already gates.
+fleet config already gates.
 42. Don't re-run LOADTEST for a render-only change.
 43. Don't refresh README screenshots for class-string-only diffs (pixels
-    unchanged).
+unchanged).
 44. Don't convert `browserStaticCSS` into a fuller Tailwind mirror — its
-    minimalism is the issue-#31 lesson.
+minimalism is the issue-#31 lesson.
 45. Don't add axe runs to the isolation test — the existing axe coverage
-    loads its own harness; doubling it adds flake surface for no new signal.
+loads its own harness; doubling it adds flake surface for no new signal.
 46. Don't pin a newer chromedp for this change — the migration ceremony is
-    gated and unrelated.
+gated and unrelated.
 47. Don't "fix" the `row-11`/`row-46` odd utilities seen in the accidental
-    v4 build output — scanner candidates, harmless.
+v4 build output — scanner candidates, harmless.
 48. Don't touch the `.crush/shell-output` dumps from this session (transient).
 49. Don't relitigate PushOnChange/fingerprint contracts — untouched, pinned,
-    green.
+green.
 50. Don't archive this report into `docs/status/archived/` until a later
-    session has actually harvested section (f).
+session has actually harvested section (f).
 
 ## g) QUESTIONS I CANNOT FIGURE OUT MYSELF
 
@@ -316,6 +317,6 @@ first block is the real priority.)*
 
 ---
 
-*Point-in-time snapshot; goes stale the moment HEAD moves. Section (f) is
+_Point-in-time snapshot; goes stale the moment HEAD moves. Section (f) is
 HARVEST fuel for TODO_LIST.md/ROADMAP.md — items 1-6 first. Waiting for your
-instructions.*
+instructions._
