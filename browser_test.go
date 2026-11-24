@@ -1993,20 +1993,20 @@ func TestBrowser_TooltipDisclosureIsolation(t *testing.T) {
 		target.scrollIntoView({block: "center"});
 		const r = target.getBoundingClientRect();
 		return JSON.stringify({
-			inSection,
+			in_section: inSection,
 			x: r.x + r.width / 2,
 			y: r.y + r.height / 2,
-			srText
+			sr_text: srText
 		});
 	})()`, &hoverResult)); err != nil {
 		t.Fatalf("locate hover badge: %v", err)
 	}
 
 	var hover struct {
-		InSection bool    `json:"inSection"`
+		InSection bool    `json:"in_section"`
 		X         float64 `json:"x"`
 		Y         float64 `json:"y"`
-		SrText    string  `json:"srText"`
+		SrText    string  `json:"sr_text"`
 	}
 	if err := json.Unmarshal([]byte(hoverResult), &hover); err != nil {
 		t.Fatalf("parse hover target %q: %v", hoverResult, err)
@@ -2049,6 +2049,7 @@ func TestBrowser_TooltipDisclosureIsolation(t *testing.T) {
 				len(visible),
 				visible,
 			)
+
 			return
 		}
 		if visible[0] != wantText {

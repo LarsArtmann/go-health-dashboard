@@ -51,6 +51,20 @@ forgetting.
 
 ### Fixed
 
+- **Badge tooltips no longer all open at once.** The evidence disclosure
+  tooltip flipped open on Tailwind's unnamed `group-hover` /
+  `group-focus-within` variants, which match ANY `.group` ancestor — and
+  the healthy group renders inside `CollapsibleSection`, whose
+  `<details class="group ...">` wraps every healthy row. Hovering (or
+  focusing) anything in the healthy section therefore opened EVERY
+  tooltip in it. The disclosure now scopes its flip to a NAMED group
+  (`group/badge` wrapper, `group-hover/badge:block` +
+  `group-focus-within/badge:block` tooltip), so only the hovered/focused
+  badge's own tooltip opens. Consumer CSS must be rebuilt so the named
+  variants compile (Tailwind ≥ 3.2 syntax; the Play CDN path needs no
+  action). Pinned by the runtime isolation test
+  `TestBrowser_TooltipDisclosureIsolation`.
+
 - `nixosModules.default`: the OIDC deployment no longer rides
   `LoadCredential` — the module now runs a static `health-dashboard`
   user/group and points `HEALTH_HUB_OIDC_{CLIENT,SESSION}_SECRET_FILE`
